@@ -9,6 +9,7 @@
 
 import { CAPABILITIES, EQUIPMENT, labelFor } from './vocabulary.js';
 import { DEFAULT_CONFIG } from './config.js';
+import { nutritionProblems } from './validate.js';
 
 /** Eating ware doesn't count as a "tool" (you'd use a plate for takeaway too). */
 const EATING_WARE = new Set(['plate', 'spoon', 'fork', 'mug']);
@@ -171,6 +172,7 @@ export function rank({ inventory, targets, context = {}, catalogue, config = DEF
   const filtered = [];
   for (const meal of catalogue) {
     if (kind !== 'any' && meal.kind !== kind) continue;
+    if (nutritionProblems(meal, config).length) continue; // not food worth suggesting
     const used = checkMeal(meal, inventory);
     if (!used.ok) {
       filtered.push({ meal, missing: used.missing });

@@ -94,7 +94,7 @@ const LAST_STEP = 2;
  * @param {{provider: string, apiKey: string, model: string, images?: Array<{base64: string, mediaType: string}>, prompt: string, thinking?: boolean}} p
  * @returns {{url: string, init: RequestInit}}
  */
-export function buildRequest({ provider, apiKey, model, images = [], prompt, thinking = 0, maxTokens = 2048 }) {
+export function buildRequest({ provider, apiKey, model, images = [], prompt, thinking = 0, maxTokens = 2048, resolution = 'medium' }) {
   const step = thinking === true ? 0 : thinking === false ? LAST_STEP : thinking;
   const json = (headers, body) => ({
     method: 'POST',
@@ -128,7 +128,7 @@ export function buildRequest({ provider, apiKey, model, images = [], prompt, thi
             role: 'user',
             content: [
               { type: 'text', text: prompt },
-              ...images.map((img) => ({ type: 'image_url', image_url: { url: `data:${img.mediaType};base64,${img.base64}`, detail: 'low' } })),
+              ...images.map((img) => ({ type: 'image_url', image_url: { url: `data:${img.mediaType};base64,${img.base64}`, detail: resolution === 'high' ? 'high' : 'low' } })),
             ],
           }],
         }),
@@ -148,7 +148,7 @@ export function buildRequest({ provider, apiKey, model, images = [], prompt, thi
             maxOutputTokens: maxTokens,
             // Speed knobs. If a model rejects them (HTTP 400) the call is resent without them.
             ...(geminiThinking(model, step) ? { thinkingConfig: geminiThinking(model, step) } : {}),
-            ...(step < LAST_STEP && images.length ? { mediaResolution: 'MEDIA_RESOLUTION_MEDIUM' } : {}),
+            ...(step < LAST_STEP && images.length ? { mediaResolution: `MEDIA_RESOLUTION_${resolution.toUpperCase()}` } : {}),
           },
         }),
       };
@@ -188,7 +188,7 @@ export function parseInventory(text) {
     const items = [...new Set(obj.have.filter((id) => typeof id === 'string'))].map((id) => known(id)
       ? { name: labelFor(id), category: FOODS[id] ? 'food' : EQUIPMENT[id]?.kind ?? 'utensil', canonical: id }
       : { name: id.replace(/_/g, ' ').slice(0, 80), category: 'other', canonical: null });
-    for (const name of Array.isArray(obj.other) ? obj.other.slice(0, 20) : []) {
+    for (const name of Array.isArray(obj.other) ? obj.other.slice(0, 40) : []) {
       if (typeof name === 'string' && name.trim()) items.push({ name: name.trim().slice(0, 80), category: 'other', canonical: null });
     }
     return items.map((i) => ({ brand: null, quantity: null, location: null, confidence: 'medium', ...i }));
@@ -278,7 +278,7 @@ export function modelChain(provider, chosen, available = [], max = 3) {
 export async function callModel({
   provider, apiKey, model, models = [], prompt, images = [], fetchImpl = fetch,
   deadlineMs = 12000, parallel = 2, maxTokens = 2048, onStatus = () => {}, onEvent = () => {},
-  hedgeMs = 0, signal = null, copies = 1,
+  hedgeMs = 0, signal = null, copies = 1, resolution = 'medium',
 }) {
   // `copies` > 1 repeats each model: Gemini's latency is bimodal (about 2 s or about
   // 8 s for the same request), so a duplicate sent a few seconds later often wins.
@@ -315,7 +315,7 @@ export async function callModel({
       const started = Date.now();
       onStatus(next <= 1 ? `Asking ${m}…` : `Still waiting, asking ${m} again…`);
       try {
-        const { url, init } = buildRequest({ provider, apiKey, model: m, images, prompt, thinking, maxTokens });
+        const { url, init } = buildRequest({ provider, apiKey, model: m, images, prompt, thinking, maxTokens, resolution });
         onEvent({ stage: 'sent', model: m, bytes: init.body.length, ms: Date.now() - t0 });
         const root = await send(url, { ...init, signal: controller.signal }, apiKey, fetchImpl);
         const text = extractText(provider, root);
@@ -372,10 +372,10 @@ export async function callModel({
  */
 export const PHOTOS_PER_REQUEST = 4;
 
-export async function scanKitchen({ images, deadlineMs = 12000, hedgeMs = 2500, copies = 3, graceMs = 2500, onEvent = () => {}, onStatus = () => {}, ...rest }) {
+export async function scanKitchen({ images, deadlineMs = 12000, hedgeMs = 2500, copies = 3, graceMs = 5000, perRequest = PHOTOS_PER_REQUEST, prompt = inventoryPrompt(), onEvent = () => {}, onStatus = () => {}, ...rest }) {
   const t0 = Date.now();
   const batches = [];
-  for (let i = 0; i < images.length; i += PHOTOS_PER_REQUEST) batches.push(images.slice(i, i + PHOTOS_PER_REQUEST));
+  for (let i = 0; i < images.length; i += perRequest) batches.push(images.slice(i, i + perRequest));
   let done = 0;
   const stop = new AbortController();
   let grace = null;
@@ -383,7 +383,7 @@ export async function scanKitchen({ images, deadlineMs = 12000, hedgeMs = 2500, 
     callModel({
       ...rest,
       images: batch,
-      prompt: inventoryPrompt(),
+      prompt,
       parallel: 1,
       copies,
       hedgeMs,

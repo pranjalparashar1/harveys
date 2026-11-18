@@ -106,6 +106,30 @@ export const CATALOGUE = [
     source: 'label',
   },
   {
+    // 1.3.4: the bowl an AI proposed from pranjal's real kitchen on 18 Nov, kept
+    // so Marco can pick it without the AI. Whey whisked thick with a little
+    // water, then crunchy makhana on top.
+    id: 'whey_makhana_bowl',
+    name: 'Whey and makhana bowl',
+    kind: 'meal',
+    equipment: [],
+    utensils: ['bowl', 'spoon'],
+    ingredients: [
+      { id: 'whey', amount: '1 scoop (30 g)', prep: 'ready' },
+      { id: 'makhana', amount: '1 cup (25 g)', prep: 'measure' },
+      { id: 'milk', amount: '100 ml, instead of water', prep: 'measure', optional: true },
+      { id: 'honey', amount: '1 tsp', prep: 'measure', optional: true },
+    ],
+    steps: [
+      { text: 'Whisk a scoop of whey with 4–5 tbsp water (or milk) into a thick pudding.', active: 1.5 },
+      { text: 'Tip makhana on top and eat while it is crunchy.', active: 0.5 },
+    ],
+    attention: 0,
+    cleanup: { dishes: 1, greasy: 0 },
+    macros: { protein: 27, kcal: 210, fiber: 2 },
+    source: 'estimate',
+  },
+  {
     id: 'whey_milk_shake',
     name: 'Whey shake with milk',
     kind: 'snack',

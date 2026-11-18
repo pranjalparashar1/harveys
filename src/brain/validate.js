@@ -6,6 +6,25 @@
 import { FOODS, EQUIPMENT, ASSUMED_BASICS, CAPABILITIES } from './vocabulary.js';
 import { DEFAULT_CONFIG } from './config.js';
 
+/**
+ * Why a meal isn't food worth suggesting, or [] if it passes. Shared by the AI
+ * gatekeeper below and the ranker, so the catalogue meets the same bar.
+ */
+export function nutritionProblems(meal, config = DEFAULT_CONFIG) {
+  const gate = config.nutritionGate;
+  const problems = [];
+  const protein = Number(meal.macros?.protein) || 0;
+  const kcal = Number(meal.macros?.kcal) || 0;
+  const min = gate.minProtein[meal.kind] ?? gate.minProtein.meal;
+  if (protein < min) problems.push(`only ${protein} g protein`);
+  else if (kcal / protein > gate.maxKcalPerGramProtein) problems.push(`${kcal} kcal for ${protein} g protein`);
+  const core = (meal.ingredients ?? []).filter((i) => !i.optional);
+  if (core.length && core.every((i) => gate.condimentGroups.includes(FOODS[i.id]?.group))) {
+    problems.push('only fats, spices or spreads');
+  }
+  return problems;
+}
+
 const EATING_WARE = new Set(['plate', 'spoon', 'fork', 'mug']);
 const num = (v, lo, hi) => (Number.isFinite(Number(v)) ? Math.min(hi, Math.max(lo, Number(v))) : null);
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
@@ -104,5 +123,6 @@ export function validateMeal(raw, opts = {}) {
     macros: { protein: Math.round(protein ?? 0), kcal: Math.round(kcal ?? 0), fiber: Math.round(fiber) },
     source: 'ai',
   };
+  if (protein != null && kcal != null) errors.push(...nutritionProblems(meal, config));
   return { ok: errors.length === 0, meal, errors, adjustments };
 }

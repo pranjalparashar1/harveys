@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CATALOGUE, buildInventory, rank, validateMeal } from '../src/brain/index.js';
+import { nutritionProblems } from '../src/brain/validate.js';
 import { DEMO_KITCHEN } from '../src/demo-kitchen.js';
 
 const TARGETS = { protein: 40, calories: 800, fiber: 15 };
@@ -73,4 +74,38 @@ test('garbage in is rejected, not thrown', () => {
     const v = validateMeal(junk);
     assert.equal(v.ok, false);
   }
+});
+
+// 1.3.4: a real iPhone scan found only butter, salt and oil, and the AI's
+// "Microwave Butter Salt Bowl" (1 g protein, 717 kcal) became Marco's pick.
+const BUTTER_SALT_BOWL = {
+  name: 'Microwave Butter Salt Bowl', kind: 'meal',
+  equipment: ['microwave', 'kitchen_scale'], utensils: ['bowl', 'spoon'],
+  ingredients: [{ id: 'butter', amount: '100g', prep: 'measure' }, { id: 'salt', amount: '2g', prep: 'measure' }],
+  steps: [{ text: 'Weigh butter.', active: 1 }, { text: 'Microwave until melted.', active: 0.5, passive: 1 }, { text: 'Stir in salt and eat.', active: 1 }],
+  attention: 0, cleanup: { dishes: 1, greasy: 2 }, macros: { protein: 1, kcal: 717, fiber: 0 },
+};
+
+test('golden: the butter-and-salt bowl is rejected, with a reason', () => {
+  const v = validateMeal(BUTTER_SALT_BOWL, { kind: 'meal' });
+  assert.equal(v.ok, false);
+  assert.ok(v.errors.some((e) => /protein/.test(e)), v.errors.join('; '));
+  assert.ok(v.errors.includes('only fats, spices or spreads'));
+});
+
+test('golden: even if it slipped through, the ranker never picks it', () => {
+  const meal = { ...validateMeal(BUTTER_SALT_BOWL).meal, origin: 'ai' };
+  const inv = buildInventory(['butter', 'salt', 'cooking oil', 'kitchen scale', 'microwave', 'air fryer']);
+  const result = rank({ inventory: inv, targets: { protein: 40, calories: 800, fiber: 15 }, context: TIRED, catalogue: [...CATALOGUE, meal] });
+  assert.equal(result.ranked.some((r) => r.meal.id === meal.id), false);
+});
+
+test('golden: high-calorie, low-protein dishes fail; lean high-protein ones pass', () => {
+  const base = { ...BUTTER_SALT_BOWL, ingredients: [{ id: 'oats', amount: '60 g', prep: 'measure' }, { id: 'butter', amount: '40 g', prep: 'measure' }] };
+  assert.equal(validateMeal({ ...base, macros: { protein: 10, kcal: 650, fiber: 5 } }).ok, false, '65 kcal per g protein');
+  assert.equal(validateMeal({ ...base, ingredients: [{ id: 'whey', amount: '1 scoop', prep: 'ready' }, { id: 'makhana', amount: '1 cup', prep: 'measure' }], macros: { protein: 28, kcal: 260, fiber: 2 } }).ok, true);
+});
+
+test('every catalogue meal passes the nutrition gate', () => {
+  for (const m of CATALOGUE) assert.deepEqual(nutritionProblems(m), [], m.id);
 });

@@ -4,20 +4,21 @@
 import { FOODS, EQUIPMENT, ASSUMED_BASICS } from '../brain/vocabulary.js';
 
 /**
- * Scan prompt (1.2): a compact answer is the biggest speed win. Listing ids
- * instead of a full object per item cuts the reply from thousands of tokens to
- * about a hundred, and the reply length is most of the wait.
+ * Scan prompt (1.3.4). Still a compact reply (ids, not objects), because reply
+ * length is most of the wait. 1.3's prompt asked only for what is "clearly
+ * visible", and on real photos (an Indian kitchen: packets, jars, an open
+ * fridge) the AI left out most packaged food. Measured on pranjal's 6 photos.
  */
 export function inventoryPrompt() {
   const foods = Object.keys(FOODS).join(',');
   const kit = [...Object.keys(EQUIPMENT), ...Object.keys(ASSUMED_BASICS)].join(',');
-  return `These photos show one kitchen (fridge, shelves, counter, drawers). List what is clearly visible that matters for cooking. Do not suggest meals.
+  return `You are taking stock of one home kitchen in India from these photos (shelves, an open fridge and its door, counters). List EVERY food and cooking item you can see. Go shelf by shelf and corner to corner. Read the text on every packet, jar, box, bottle and pouch, including the fridge door and bags; a brand counts as the food it sells (NAKPRO or any whey pack = whey; fox nut = makhana; protein oats = oats; olive oil = oil). Include food in clear bags or containers when you can tell what it is (chana = chickpeas, fusilli = pasta, an onion net = onion). Include half-hidden items when the label or shape makes them likely. Ignore cleaning products and decor. Do not suggest meals.
 
-Known food ids: ${foods}
-Known kit ids: ${kit}
+Food ids: ${foods}
+Kit ids: ${kit}
 
 Reply with ONLY this JSON, no prose:
-{"have":[ids from the two lists that you can see],"other":[short names of other visible food or cookware, max 15]}`;
+{"have":[every matching id],"other":[short names of other food or cookware that fits no id, max 30]}`;
 }
 
 /**

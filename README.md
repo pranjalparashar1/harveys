@@ -68,3 +68,11 @@ Repository **Settings → Pages → Build and deployment → Source: GitHub Acti
 ### Fresh files on every deploy (1.3.3)
 
 GitHub Pages caches every file for 10 minutes, so after the 1.3.2 deploy an iPhone ran the new `index.html` with the old `app.js` and `styles.css`: the scan crashed on a removed element and the icons rendered unstyled. The deploy now runs `scripts/stamp.mjs`, which gives the stylesheet, `app.js` and every module import a `?v=<commit>` URL, so a page only ever loads files from its own build. A test checks that every element `app.js` looks up exists in `index.html`.
+
+### Seeing the whole kitchen, and never picking non-food (1.3.4)
+
+Measured on pranjal's 6 real kitchen photos (19 known items in Marco's vocabulary), gemini-3.5-flash-lite, same 640 px photos:
+- 1.3.3: 11–13 of 19 found when every photo was read, 7 when the 2.5 s cutoff dropped photos. Packets, jars and bagged food were mostly missed.
+- 1.3.4: 16–19 of 19. The scan prompt now asks for every item shelf by shelf, reads packet labels (a brand counts as its food), and includes food in clear bags. Marco waits 5 s, not 2.5 s, for the last photo group.
+- A nutrition gate (`nutritionProblems` in `src/brain/validate.js`, thresholds in `config.js`) rejects any meal under 8 g protein (5 g for a snack), over 45 kcal per gram of protein, or made only of fats, spices and spreads. It applies to AI recipes and the catalogue alike, so "100 g butter with salt" can never be picked again.
+- The whey and makhana bowl is now a catalogue meal, so Marco can pick it without the AI.
