@@ -11,6 +11,11 @@ Tells you what to cook right now, from what you already have, that you will actu
 3. **What your AI spotted.** The AI returns a structured list of food, appliances, cookware and utensils. It never picks a meal. Remove mistakes, add what it missed.
 4. **Right now.** Energy (fresh / okay / tired), meal or snack, time, and what's left of today's protein, calories and fiber.
 5. **Cook this.** Marco's brain ranks its catalogue and shows the simplest meal you'll actually make, with the steps and a breakdown of why it won.
+6. **Your AI's recipe ideas** (1.1). With a key, the AI also designs up to 3 recipes from your inventory in a strict schema. `src/brain/validate.js` rejects anything Marco can't verify (unknown ingredients or kit, impossible macros) and corrects friction the AI understated (a knife and board for chopping, one dish per pan and utensil, at least half a minute per step). Survivors then go through the same inventory filter and score as the catalogue. The AI proposes; Marco picks.
+
+### Reliability (1.1)
+
+Every AI call retries twice with backoff on 5xx/429 (Gemini's 503 "high demand", Anthropic's 529), times out after 75 s instead of hanging, then falls back to other light, stable models the key can use. When a fallback works, Marco keeps using that model. Gemini "thinking" is turned down for scans, which makes them faster.
 
 No key? "Try a sample kitchen" loads a kitchen like pranjal's so the brain can be tested without any AI call.
 

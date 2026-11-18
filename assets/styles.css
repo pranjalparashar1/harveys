@@ -106,7 +106,8 @@ input:focus, select:focus { border-color: var(--accent); }
 .btn.link { background: none; border: none; color: var(--accent); padding: 10px 4px; }
 .btn.wide { width: 100%; padding: 14px; font-size: 17px; }
 
-.dropzone {
+.pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dropzone { position: relative;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 2px; padding: 22px 12px;
   border: 1.5px dashed var(--hairline); border-radius: 14px;
@@ -179,4 +180,10 @@ table.parts td.num, table.parts th.num { text-align: right; font-variant-numeric
 .unlock { font-size: 15px; margin: 6px 0; }
 
 .foot { color: var(--muted); font-size: 13px; padding: 8px 2px; }
+.pass, .fail { font-size: 13px; font-weight: 650; white-space: nowrap; }
+.pass { color: var(--good); }
+.pass.win { color: var(--accent); }
+.fail { color: var(--danger); white-space: normal; text-align: right; }
+.badge.ai { margin-left: 6px; color: var(--accent); background: var(--accent-soft); border-color: transparent; vertical-align: 1px; }
+#photo-status:empty { display: none; }
 [hidden] { display: none !important; }

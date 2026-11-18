@@ -5,8 +5,9 @@ import {
   CATALOGUE, DEFAULT_CONFIG, PROVISIONAL, ASSUMED_BASICS,
   buildInventory, kindOf, labelFor, rank, describeMissing,
 } from './brain/index.js';
-import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, detectProvider, checkKey, pickModel, scanKitchen, AIError } from './ai/providers.js';
+import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, detectProvider, checkKey, pickModel, scanKitchen, designRecipes, AIError } from './ai/providers.js';
 import { prepareImage } from './ai/images.js';
+import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 
 const MAX_PHOTOS = 8;
@@ -37,6 +38,7 @@ const state = {
   missingBasics: store.get('missingBasics', []),
   ctx: { mood: 'tired', kind: 'meal', when: 'now', targets: { protein: 40, calories: 800, fiber: 15 }, ...store.get('context', {}) },
   decided: false,
+  aiRecipes: { status: 'idle', accepted: [], rejected: [], model: null, error: null, key: null },
 };
 
 // ── Tiny DOM helper (text only, so AI output can never inject markup) ──────
@@ -134,39 +136,72 @@ function renderScanButton() {
   btn.textContent = !state.ai ? 'Add a key to scan' : n ? `Scan ${n} photo${n === 1 ? '' : 's'}` : 'Scan photos';
 }
 
-async function addPhotos(files) {
+async function addPhotos(fileList) {
+  // Copy first: the caller resets the <input>, which can empty a live FileList on iOS.
+  const files = Array.from(fileList ?? []);
   const err = $('scan-error');
+  const status = $('photo-status');
   show(err, false);
-  for (const file of [...files].slice(0, MAX_PHOTOS - state.photos.length)) {
+  if (!files.length) return;
+  const room = MAX_PHOTOS - state.photos.length;
+  const take = files.slice(0, Math.max(0, room));
+  const problems = [];
+  for (const [i, file] of take.entries()) {
+    status.textContent = `Preparing photo ${i + 1} of ${take.length}…`;
     try {
       state.photos.push(await prepareImage(file));
+      renderThumbs();
     } catch (e) {
-      err.textContent = e.message;
-      show(err);
+      problems.push(e.message);
     }
   }
-  if (files.length + state.photos.length > MAX_PHOTOS) {
-    err.textContent = `Marco sends up to ${MAX_PHOTOS} photos at once.`;
+  status.textContent = '';
+  if (files.length > take.length) problems.push(`Marco sends up to ${MAX_PHOTOS} photos at once, so ${files.length - take.length} were left out.`);
+  if (problems.length) {
+    err.textContent = problems.join(' ');
     show(err);
   }
   renderThumbs();
 }
 
+function explainError(e) {
+  if (!(e instanceof AIError)) return `Something went wrong: ${e.message}`;
+  let text = e.message;
+  if (e.kind === 'overloaded' || e.kind === 'rateLimited' || e.kind === 'timeout') {
+    text += ' Marco retried and tried other models first. The sample kitchen still works meanwhile.';
+  }
+  if (e.detail) text += ` (${e.detail.replace(/\s+/g, ' ').slice(0, 220)})`;
+  return text;
+}
+
 async function scan() {
   const btn = $('scan');
   const err = $('scan-error');
+  const status = $('photo-status');
   show(err, false);
   btn.disabled = true;
-  btn.textContent = 'Looking…';
+  const started = Date.now();
+  let phase = 'Looking…';
+  const tick = setInterval(() => { btn.textContent = `${phase} ${Math.round((Date.now() - started) / 1000)} s`; }, 500);
   try {
-    const items = await scanKitchen({ ...state.ai, images: state.photos });
+    const items = await scanKitchen({
+      ...state.ai,
+      images: state.photos,
+      onStatus: (s) => { phase = 'Looking…'; status.textContent = s; },
+    });
     setItems(items.map((i) => ({ ...i, source: 'ai' })));
+    status.textContent = `Found ${items.length} things with ${items.model}.`;
+    if (items.model !== state.ai.model) {
+      status.textContent += ` ${state.ai.model} was busy, so Marco switched to ${items.model}.`;
+      useWorkingModel(items.model);
+    }
     $('step-inventory').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
-    err.textContent = e instanceof AIError ? e.message : `Something went wrong: ${e.message}`;
-    if (e instanceof AIError && e.kind === 'network' && e.detail) err.textContent += ` (${e.detail.slice(0, 160)})`;
+    status.textContent = '';
+    err.textContent = explainError(e);
     show(err);
   } finally {
+    clearInterval(tick);
     renderScanButton();
   }
 }
@@ -264,10 +299,104 @@ function decide() {
     inventory: inventory(),
     targets: state.ctx.targets,
     context: { mood: state.ctx.mood, kind: state.ctx.kind, ...moment() },
-    catalogue: CATALOGUE,
+    // The AI's recipes compete on exactly the same terms as the catalogue.
+    catalogue: [...CATALOGUE, ...state.aiRecipes.accepted],
     config: DEFAULT_CONFIG,
   });
   renderResult(result);
+}
+
+// ── AI-designed recipes (proof of concept) ─────────────────────────────────
+// The AI proposes; validateMeal() and the ranker dispose. A recipe the AI
+// designs can only be suggested if it passes both, and then only if it scores
+// best.
+function recipeKey() {
+  return JSON.stringify([[...inventory().have].sort(), state.ctx.kind, state.ctx.mood, state.missingBasics]);
+}
+
+async function askAIForRecipes(force = false) {
+  if (!state.ai) return;
+  const key = recipeKey();
+  if (!force && state.aiRecipes.key === key && state.aiRecipes.status !== 'error') return;
+  const inv = inventory();
+  state.aiRecipes = { status: 'loading', accepted: [], rejected: [], model: null, error: null, key, note: 'Asking your AI to design recipes…' };
+  decide();
+  try {
+    const { recipes, model } = await designRecipes({
+      ...state.ai,
+      have: [...inv.have],
+      context: { kind: state.ctx.kind, mood: state.ctx.mood },
+      onStatus: (note) => { state.aiRecipes.note = note; renderAIStatus(); },
+    });
+    if (state.aiRecipes.key !== key) return; // inputs changed while waiting
+    const accepted = [];
+    const rejected = [];
+    recipes.forEach((raw, index) => {
+      const v = validateMeal(raw, { index, kind: state.ctx.kind });
+      if (v.ok) accepted.push({ ...v.meal, adjustments: v.adjustments });
+      else rejected.push({ name: v.meal?.name || raw?.name || `Recipe ${index + 1}`, reasons: v.errors });
+    });
+    state.aiRecipes = { status: 'done', accepted, rejected, model, error: null, key };
+    useWorkingModel(model);
+  } catch (e) {
+    if (state.aiRecipes.key !== key) return;
+    state.aiRecipes = { status: 'error', accepted: [], rejected: [], model: null, error: explainError(e), key };
+  }
+  decide();
+}
+
+/** After a fallback, keep using the model that answered so the next call is fast. */
+function useWorkingModel(model) {
+  if (!state.ai || !model || model === state.ai.model) return;
+  state.ai.model = model;
+  store.set('ai', state.ai);
+  renderKey();
+}
+
+function renderAIStatus() {
+  const el = document.querySelector('#ai-ideas .ai-note');
+  if (el && state.aiRecipes.status === 'loading') el.textContent = state.aiRecipes.note;
+}
+
+function aiIdeasCard(result) {
+  const ai = state.aiRecipes;
+  if (!state.ai) {
+    return h('section', { class: 'card', id: 'ai-ideas' },
+      h('h2', {}, "Your AI's recipe ideas"),
+      h('p', { class: 'hint' }, 'Add an API key above and your AI will also design recipes from what you have. Marco checks and scores them like any other meal.'));
+  }
+  const head = [h('h2', {}, "Your AI's recipe ideas"),
+    h('p', { class: 'hint' }, 'Your AI designs recipes from your inventory. Marco rejects any that use things you don’t have or don’t add up, then scores the rest against its own catalogue. The AI never picks.')];
+  if (ai.status === 'loading' || ai.status === 'idle') {
+    return h('section', { class: 'card', id: 'ai-ideas' }, head, h('p', { class: 'ai-note muted' }, ai.note || 'Asking your AI to design recipes…'));
+  }
+  if (ai.status === 'error') {
+    return h('section', { class: 'card', id: 'ai-ideas' }, head,
+      h('p', { class: 'error' }, ai.error),
+      h('button', { class: 'btn', type: 'button', onclick: () => askAIForRecipes(true) }, 'Try again'));
+  }
+  const position = new Map(result.ranked.map((r, i) => [r.meal.id, i + 1]));
+  const blocked = new Map(result.filtered.map((f) => [f.meal.id, f.missing]));
+  const rows = [
+    ...ai.accepted.map((m) => {
+      const pos = position.get(m.id);
+      const missing = blocked.get(m.id);
+      const verdict = pos
+        ? h('span', { class: pos === 1 ? 'pass win' : 'pass' }, pos === 1 ? 'Passed · Marco’s pick' : `Passed · ranked #${pos}`)
+        : missing
+          ? h('span', { class: 'fail' }, `Rejected · needs ${describeMissing(missing).join(', ')}`)
+          : h('span', { class: 'muted' }, 'Not a ' + state.ctx.kind);
+      return h('li', {},
+        h('div', { class: 'other-head' }, h('strong', {}, m.name), verdict),
+        m.adjustments?.length ? h('p', { class: 'mini' }, `Marco corrected: ${[...new Set(m.adjustments)].join('; ')}.`) : null);
+    }),
+    ...ai.rejected.map((r) => h('li', {},
+      h('div', { class: 'other-head' }, h('strong', {}, r.name), h('span', { class: 'fail' }, 'Rejected')),
+      h('p', { class: 'mini' }, `Because ${r.reasons.join('; ')}.`))),
+  ];
+  return h('section', { class: 'card', id: 'ai-ideas' }, head,
+    rows.length ? h('ul', { class: 'others' }, rows) : h('p', { class: 'muted' }, 'Your AI returned no recipes.'),
+    h('p', { class: 'mini' }, `Designed by ${ai.model}. `, h('button', { class: 'btn link', type: 'button', onclick: () => askAIForRecipes(true) }, 'Ask for new ideas')));
 }
 
 function ingredientLine(ing) {
@@ -284,7 +413,7 @@ function whyTable(r) {
     h('p', { class: 'formula' }, `score = payoff − λ × friction = ${fmt(r.payoff.value)} − ${fmt(r.lambda.value)} × ${fmt(r.friction)} = ${fmt(r.score)}`),
     h('h3', {}, 'Payoff'),
     h('table', { class: 'parts' }, h('tbody', {}, payRows)),
-    r.payoff.confidence < 1 ? h('p', { class: 'mini' }, `Generic estimate, counted at ${Math.round(r.payoff.confidence * 100)}%.`) : null,
+    r.payoff.confidence < 1 ? h('p', { class: 'mini' }, `Macros are ${r.meal.source === 'ai' ? 'an AI guess' : 'an estimate'}, so payoff counts at ${Math.round(r.payoff.confidence * 100)}%.`) : null,
     h('h3', {}, 'Friction (raw → 0–1, × weight)'),
     h('table', { class: 'parts' }, h('tbody', {}, fricRows)),
     h('h3', {}, 'λ, how much effort costs right now'),
@@ -306,7 +435,7 @@ function renderResult(result) {
   } else {
     const passive = top.raw.passiveMinutes;
     cards.push(h('section', { class: 'card pick' },
-      h('p', { class: 'pick-label' }, 'Cook this'),
+      h('p', { class: 'pick-label' }, top.meal.origin === 'ai' ? 'Cook this · designed by your AI, chosen by Marco' : 'Cook this'),
       h('h2', {}, top.meal.name),
       h('div', { class: 'reasons' }, top.reasons.map((r) => h('span', {}, r))),
       top.beats ? h('p', { class: 'beats' }, 'Beats ', h('strong', {}, top.beats.other.name), ': ', top.beats.reasons.join(', ') || 'a better balance of payoff and effort', '.') : null,
@@ -317,7 +446,7 @@ function renderResult(result) {
         h('p', { class: 'muted' }, [...top.used.equipment, ...top.used.utensils].map(labelFor).join(', ') || 'Nothing'),
         h('h3', {}, `Steps · about ${fmt(top.raw.activeMinutes, 1)} min hands-on${passive ? ` + ${passive} min waiting` : ''}`),
         h('ol', {}, top.meal.steps.map((s) => h('li', {}, s.text))),
-        h('p', { class: 'mini' }, `${top.meal.macros.protein} g protein · ${top.meal.macros.kcal} kcal · ${top.meal.macros.fiber} g fiber (${top.meal.source === 'label' ? 'from labels' : 'estimate'})`)),
+        h('p', { class: 'mini' }, `${top.meal.macros.protein} g protein · ${top.meal.macros.kcal} kcal · ${top.meal.macros.fiber} g fiber (${{ label: 'from labels', ai: 'AI estimate', estimate: 'estimate' }[top.meal.source] ?? 'estimate'})`)),
       whyTable(top)));
   }
 
@@ -326,10 +455,12 @@ function renderResult(result) {
       h('h2', {}, 'Also possible'),
       h('ul', { class: 'others' }, rest.slice(0, 6).map((r, i) =>
         h('li', {},
-          h('div', { class: 'other-head' }, h('strong', {}, `${i + 2}. ${r.meal.name}`), h('span', { class: 'score' }, `score ${fmt(r.score)}`)),
+          h('div', { class: 'other-head' }, h('strong', {}, `${i + 2}. ${r.meal.name}`, r.meal.origin === 'ai' ? h('span', { class: 'badge ai' }, 'AI') : null), h('span', { class: 'score' }, `score ${fmt(r.score)}`)),
           h('p', { class: 'mini' }, r.reasons.join(' · ')),
           whyTable(r))))));
   }
+
+  cards.push(aiIdeasCard(result));
 
   if (result.unlocks.length) {
     cards.push(h('section', { class: 'card' },
@@ -337,9 +468,10 @@ function renderResult(result) {
       result.unlocks.map((u) => h('p', { class: 'unlock' }, 'Get ', h('strong', {}, u.label.toLowerCase()), ` and you unlock ${u.meals.length} more: `, h('span', { class: 'muted' }, u.meals.join(', '))))));
   }
 
-  if (top && result.filtered.length) {
+  const blockedCatalogue = result.filtered.filter((f) => f.meal.origin !== 'ai');
+  if (top && blockedCatalogue.length) {
     cards.push(h('section', { class: 'card' },
-      h('details', {}, h('summary', {}, `Skipped ${result.filtered.length} meals you can't make right now`), blockedList(result.filtered))));
+      h('details', {}, h('summary', {}, `Skipped ${blockedCatalogue.length} meals you can't make right now`), blockedList(blockedCatalogue))));
   }
 
   root.replaceChildren(...cards);
@@ -358,7 +490,13 @@ function init() {
   $('forget-key').addEventListener('click', forgetKey);
   $('model').addEventListener('change', (e) => { state.ai.model = e.target.value; store.set('ai', state.ai); });
 
-  $('photo-input').addEventListener('change', (e) => { addPhotos(e.target.files); e.target.value = ''; });
+  for (const id of ['photo-input', 'camera-input']) {
+    $(id).addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files ?? []);
+      await addPhotos(files);
+      e.target.value = ''; // reset only after reading, so the same photo can be picked again
+    });
+  }
   $('scan').addEventListener('click', scan);
   $('use-demo').addEventListener('click', () => {
     setItems(DEMO_KITCHEN.map((i) => ({ ...i, source: 'demo' })));
@@ -385,6 +523,7 @@ function init() {
   }
   $('decide').addEventListener('click', () => {
     decide();
+    askAIForRecipes();
     $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 

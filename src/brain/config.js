@@ -53,7 +53,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   payoffWeights: Object.freeze({ protein: 3, calories: 1, fiber: 0.75 }),
 
   // Branded items with a label count fully, generic estimates a little less.
-  confidenceFactor: Object.freeze({ label: 1, estimate: 0.9 }),
+  confidenceFactor: Object.freeze({ label: 1, estimate: 0.9, ai: 0.8 }), // ai = macros guessed by the AI
 
   // λ_context = mood × time of day × day of week.
   lambda: Object.freeze({

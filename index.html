@@ -14,7 +14,7 @@
 <body>
   <main class="shell">
     <header class="hero">
-      <p class="eyebrow">Marco · prototype</p>
+      <p class="eyebrow">Marco 1.1 · prototype</p>
       <h1>What should I cook right now?</h1>
       <p class="lede">Photograph your kitchen. Your AI lists what it sees. Marco's own algorithm, not the AI, picks the meal you'll actually make, and tells you why.</p>
     </header>
@@ -50,11 +50,19 @@
         <h2 id="photos-title">Scan your kitchen</h2>
       </div>
       <p class="hint">Take a few photos: the fridge (door open), shelves, the counter, the drawers with your pans and utensils.</p>
-      <label class="dropzone" for="photo-input">
-        <input id="photo-input" type="file" accept="image/*" multiple>
-        <span class="dz-title">Add photos</span>
-        <span class="dz-sub">Camera or library · up to 8</span>
-      </label>
+      <div class="pickers">
+        <label class="dropzone" for="photo-input">
+          <input id="photo-input" type="file" accept="image/*" multiple>
+          <span class="dz-title">Choose photos</span>
+          <span class="dz-sub">Pick several at once · up to 8</span>
+        </label>
+        <label class="dropzone" for="camera-input">
+          <input id="camera-input" type="file" accept="image/*" capture="environment">
+          <span class="dz-title">Take a photo</span>
+          <span class="dz-sub">One at a time</span>
+        </label>
+      </div>
+      <p class="mini" id="photo-status" aria-live="polite"></p>
       <ul class="thumbs" id="thumbs"></ul>
       <div class="row">
         <button class="btn primary" id="scan" type="button" disabled>Scan photos</button>

@@ -12,7 +12,7 @@
 // The key lives only in this browser's localStorage and is sent only to the
 // provider it belongs to.
 
-import { inventoryPrompt } from './prompt.js';
+import { inventoryPrompt, recipePrompt } from './prompt.js';
 
 export const PROVIDERS = {
   claude: { label: 'Claude (Anthropic)', keyHint: 'sk-ant-…', keysUrl: 'https://console.anthropic.com/settings/keys' },
@@ -44,16 +44,25 @@ export function detectProvider(key) {
 }
 
 export class AIError extends Error {
-  /** @param {'invalidKey'|'rateLimited'|'network'|'malformedResponse'|'imageTooLarge'} kind */
-  constructor(kind, detail = '') {
+  /** @param {'invalidKey'|'rateLimited'|'overloaded'|'timeout'|'modelUnavailable'|'badRequest'|'network'|'malformedResponse'|'imageTooLarge'} kind */
+  constructor(kind, detail = '', status = 0) {
     super(AIError.message(kind));
     this.kind = kind;
     this.detail = detail;
+    this.status = status;
+  }
+  /** Worth trying again, or on another model. */
+  get retryable() {
+    return ['rateLimited', 'overloaded', 'timeout', 'modelUnavailable', 'malformedResponse'].includes(this.kind);
   }
   static message(kind) {
     return {
       invalidKey: 'That API key was rejected. Check it and try again.',
       rateLimited: 'The provider is rate-limiting requests. Try again in a moment.',
+      overloaded: 'Your AI provider is overloaded right now (high demand). Try again in a minute.',
+      timeout: 'Your AI took too long to answer.',
+      modelUnavailable: "That model isn't available on this key.",
+      badRequest: 'The provider refused the request.',
       network: "Couldn't reach the provider. Check your connection and try again.",
       malformedResponse: 'The provider sent back something unreadable. Try again, or add items by hand.',
       imageTooLarge: 'Those photos are too large to send together. Try fewer photos.',
@@ -67,12 +76,19 @@ const ANTHROPIC_HEADERS = (apiKey) => ({
   'anthropic-dangerous-direct-browser-access': 'true',
 });
 
+/** Gemini "thinking" makes a photo scan slow and more likely to time out; keep it low. */
+export function geminiThinking(model) {
+  if (/^gemini-2\.5-flash/.test(model)) return { thinkingBudget: 0 };
+  if (/^gemini-3/.test(model)) return { thinkingLevel: 'low' };
+  return null;
+}
+
 /**
- * Builds the request for one inventory scan. Pure, so it is unit-tested.
- * @param {{provider: string, apiKey: string, model: string, images: Array<{base64: string, mediaType: string}>, prompt?: string}} p
+ * Builds one request (photos optional). Pure, so it is unit-tested.
+ * @param {{provider: string, apiKey: string, model: string, images?: Array<{base64: string, mediaType: string}>, prompt: string, thinking?: boolean}} p
  * @returns {{url: string, init: RequestInit}}
  */
-export function buildScanRequest({ provider, apiKey, model, images, prompt = inventoryPrompt() }) {
+export function buildRequest({ provider, apiKey, model, images = [], prompt, thinking = true }) {
   const json = (headers, body) => ({
     method: 'POST',
     headers: { 'content-type': 'application/json', ...headers },
@@ -120,12 +136,20 @@ export function buildScanRequest({ provider, apiKey, model, images, prompt = inv
               ...images.map((img) => ({ inline_data: { mime_type: img.mediaType, data: img.base64 } })),
             ],
           }],
-          generationConfig: { responseMimeType: 'application/json' },
+          generationConfig: {
+            responseMimeType: 'application/json',
+            ...(thinking && geminiThinking(model) ? { thinkingConfig: geminiThinking(model) } : {}),
+          },
         }),
       };
     default:
       throw new Error(`Unknown provider ${provider}`);
   }
+}
+
+/** The inventory scan request (kept for the tests and for readability). */
+export function buildScanRequest({ prompt = inventoryPrompt(), ...rest }) {
+  return buildRequest({ prompt, ...rest });
 }
 
 /** Port of MacroResponseParsing.extractText(from…). */
@@ -146,16 +170,7 @@ const CATEGORIES = new Set(['food', 'appliance', 'cookware', 'utensil', 'cutlery
 
 /** Takes the first balanced {…} from model text and validates the inventory shape. */
 export function parseInventory(text) {
-  if (typeof text !== 'string') return null;
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start < 0 || end <= start) return null;
-  let obj;
-  try {
-    obj = JSON.parse(text.slice(start, end + 1));
-  } catch {
-    return null;
-  }
+  const obj = parseJsonObject(text);
   if (!obj || !Array.isArray(obj.items)) return null;
   return obj.items
     .filter((i) => i && typeof i.name === 'string' && i.name.trim())
@@ -175,33 +190,123 @@ function redact(text, apiKey) {
   return apiKey ? t.split(apiKey).join('***') : t;
 }
 
-async function send(url, init, apiKey, fetchImpl) {
+/** Maps an HTTP failure to an outcome, like Cals' MacroEstimationError. */
+export function errorForStatus(status, body = '') {
+  if (status === 401 || status === 403) return new AIError('invalidKey', body, status);
+  if (status === 429) return new AIError('rateLimited', body, status);
+  if (status === 413) return new AIError('imageTooLarge', body, status);
+  if (status === 404) return new AIError('modelUnavailable', body, status);
+  if (status === 400) return new AIError('badRequest', body, status);
+  // 500 internal, 502/504 gateway, 503 "high demand" (Gemini), 529 overloaded (Anthropic)
+  if (status >= 500) return new AIError('overloaded', body, status);
+  return new AIError('network', `HTTP ${status} ${body}`, status);
+}
+
+async function send(url, init, apiKey, fetchImpl, timeoutMs = 0) {
+  const controller = timeoutMs ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
   let response;
   try {
-    response = await fetchImpl(url, init);
+    response = await fetchImpl(url, controller ? { ...init, signal: controller.signal } : init);
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw errorForStatus(response.status, redact(body, apiKey));
+    }
+    return await response.json();
   } catch (e) {
-    throw new AIError('network', String(e?.message ?? e));
+    if (e instanceof AIError) throw e;
+    if (e?.name === 'AbortError') throw new AIError('timeout', `no answer after ${Math.round(timeoutMs / 1000)} s`);
+    throw new AIError('network', redact(String(e?.message ?? e), apiKey));
+  } finally {
+    if (timer) clearTimeout(timer);
   }
-  if (response.status === 401 || response.status === 403) throw new AIError('invalidKey');
-  if (response.status === 429) throw new AIError('rateLimited');
-  if (response.status === 413) throw new AIError('imageTooLarge');
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new AIError('network', `HTTP ${response.status} ${redact(body, apiKey)}`);
+}
+
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Models to try, in order: the chosen one, then light, stable alternatives the
+ * key can use. Overload is per model, so switching often gets through.
+ */
+export function modelChain(provider, chosen, available = [], max = 3) {
+  const stable = (m) => !/(preview|exp|experimental|latest|\d{2}-\d{2})/.test(m);
+  const light = { claude: /haiku|sonnet/, openAI: /mini|4o|4\.1/, gemini: /flash/ }[provider];
+  const pool = available.length ? available : FALLBACK_MODELS[provider];
+  const extras = [...FALLBACK_MODELS[provider], ...pool]
+    .filter((m) => !available.length || available.includes(m))
+    .filter((m) => m !== chosen && stable(m) && light.test(m));
+  return [...new Set([chosen, ...extras])].slice(0, max);
+}
+
+/**
+ * One call with retries: up to 2 tries per model with backoff, then the next
+ * model in the chain. A rejected key stops at once. Returns the model's text.
+ * @param {{provider, apiKey, model, models?: string[], prompt: string, images?: any[], fetchImpl?, timeoutMs?: number, onStatus?: (s: string) => void, backoffMs?: number[]}} p
+ */
+export async function callModel({ provider, apiKey, model, models = [], prompt, images = [], fetchImpl = fetch, timeoutMs = 75000, onStatus = () => {}, backoffMs = [1500, 4000] }) {
+  const chain = modelChain(provider, model, models);
+  let last;
+  for (const m of chain) {
+    let thinking = true;
+    for (let attempt = 0; attempt <= backoffMs.length; attempt++) {
+      onStatus(attempt ? `${m} is busy, retrying…` : m === model ? `Asking ${m}…` : `Trying ${m} instead…`);
+      try {
+        const { url, init } = buildRequest({ provider, apiKey, model: m, images, prompt, thinking });
+        const root = await send(url, init, apiKey, fetchImpl, timeoutMs);
+        const text = extractText(provider, root);
+        if (!text) throw new AIError('malformedResponse', 'empty answer');
+        return { text, model: m };
+      } catch (e) {
+        last = e;
+        if (!(e instanceof AIError)) throw e;
+        if (e.kind === 'invalidKey' || e.kind === 'imageTooLarge' || e.kind === 'network') throw e;
+        if (e.kind === 'badRequest' && provider === 'gemini' && thinking && geminiThinking(m)) {
+          thinking = false; // older model that doesn't know thinkingConfig: retry plainly
+          attempt--;
+          continue;
+        }
+        if (e.kind === 'badRequest' || e.kind === 'modelUnavailable' || e.kind === 'timeout') break; // next model
+        if (attempt < backoffMs.length) await wait(backoffMs[attempt]);
+      }
+    }
   }
-  return response.json();
+  last.detail = `${last.detail ? `${last.detail} ` : ''}(tried ${chain.join(', ')})`;
+  throw last;
 }
 
 /**
  * Sends the photos and returns the list of things the AI saw.
  * The AI only perceives; it never picks a meal.
  */
-export async function scanKitchen({ provider, apiKey, model, images, fetchImpl = fetch }) {
-  const { url, init } = buildScanRequest({ provider, apiKey, model, images });
-  const root = await send(url, init, apiKey, fetchImpl);
-  const items = parseInventory(extractText(provider, root));
-  if (!items) throw new AIError('malformedResponse', 'unparseable response');
-  return items;
+export async function scanKitchen({ images, ...rest }) {
+  const { text, model } = await callModel({ ...rest, images, prompt: inventoryPrompt() });
+  const items = parseInventory(text);
+  if (!items) throw new AIError('malformedResponse', 'unparseable inventory');
+  return Object.assign(items, { model });
+}
+
+/** First balanced {…} in model text, parsed, or null. */
+export function parseJsonObject(text) {
+  if (typeof text !== 'string') return null;
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start < 0 || end <= start) return null;
+  try {
+    return JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Asks the AI to design candidate recipes from what Marco knows you have.
+ * Returns raw candidates: the brain validates, filters and scores them.
+ */
+export async function designRecipes({ have, context, ...rest }) {
+  const { text, model } = await callModel({ ...rest, timeoutMs: 60000, prompt: recipePrompt({ have, context }) });
+  const obj = parseJsonObject(text);
+  if (!obj || !Array.isArray(obj.recipes)) throw new AIError('malformedResponse', 'unparseable recipes');
+  return { recipes: obj.recipes.slice(0, 5), model };
 }
 
 function modelsRequest(provider, apiKey) {
@@ -237,7 +342,7 @@ export function parseModelList(provider, root) {
 /** Validates the key (HTTP 200 on /models) and returns the usable models. */
 export async function checkKey({ provider, apiKey, fetchImpl = fetch }) {
   const { url, init } = modelsRequest(provider, apiKey);
-  const root = await send(url, init, apiKey, fetchImpl);
+  const root = await send(url, init, apiKey, fetchImpl, 20000);
   return parseModelList(provider, root);
 }
 
@@ -246,5 +351,6 @@ export function pickModel(provider, available) {
   const preferred = DEFAULT_MODEL[provider];
   if (!available?.length || available.includes(preferred)) return preferred;
   const light = { claude: /haiku/, openAI: /mini/, gemini: /flash/ }[provider];
-  return available.find((m) => light.test(m)) ?? available[0];
+  const stable = (m) => !/(preview|exp|experimental|latest)/.test(m);
+  return available.find((m) => light.test(m) && stable(m)) ?? available.find((m) => light.test(m)) ?? available[0];
 }
