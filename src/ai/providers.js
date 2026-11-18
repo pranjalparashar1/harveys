@@ -31,7 +31,7 @@ export const DEFAULT_MODEL = {
 /** Offline shortlist, as in Cals, used when /models can't be fetched. */
 export const FALLBACK_MODELS = {
   openAI: ['gpt-4.1-mini', 'gpt-4o-mini', 'gpt-4o', 'gpt-4.1'],
-  gemini: ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'],
+  gemini: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'], // 2.5-flash-lite returns 404 for new keys (checked 18 Nov 2026)
   claude: ['claude-haiku-4-5', 'claude-sonnet-4-6', 'claude-opus-4-8'],
 };
 
@@ -252,7 +252,8 @@ async function send(url, init, apiKey, fetchImpl, timeoutMs = 0) {
  */
 export function modelChain(provider, chosen, available = [], max = 3) {
   const stable = (m) => !/(preview|exp|experimental|latest|\d{2}-\d{2})/.test(m);
-  const light = { claude: /haiku|sonnet/, openAI: /mini|4o|4\.1/, gemini: /flash/ }[provider];
+  // Gemini: flash-lite only (pranjal's rule for their key; also the fastest tier).
+  const light = { claude: /haiku|sonnet/, openAI: /mini|4o|4\.1/, gemini: /flash-lite/ }[provider];
   const pool = available.length ? available : FALLBACK_MODELS[provider];
   const extras = [...FALLBACK_MODELS[provider], ...pool]
     .filter((m) => !available.length || available.includes(m))
@@ -277,9 +278,11 @@ export function modelChain(provider, chosen, available = [], max = 3) {
 export async function callModel({
   provider, apiKey, model, models = [], prompt, images = [], fetchImpl = fetch,
   deadlineMs = 12000, parallel = 2, maxTokens = 2048, onStatus = () => {}, onEvent = () => {},
-  hedgeMs = 0, signal = null,
+  hedgeMs = 0, signal = null, copies = 1,
 }) {
-  const chain = modelChain(provider, model, models);
+  // `copies` > 1 repeats each model: Gemini's latency is bimodal (about 2 s or about
+  // 8 s for the same request), so a duplicate sent a few seconds later often wins.
+  const chain = modelChain(provider, model, models).flatMap((m) => Array(copies).fill(m));
   const t0 = Date.now();
   const left = () => deadlineMs - (Date.now() - t0);
   const controllers = new Set();
@@ -310,7 +313,7 @@ export async function callModel({
       const controller = new AbortController();
       controllers.add(controller);
       const started = Date.now();
-      onStatus(m === model ? `Asking ${m}…` : `Also asking ${m}…`);
+      onStatus(next <= 1 ? `Asking ${m}…` : `Still waiting, asking ${m} again…`);
       try {
         const { url, init } = buildRequest({ provider, apiKey, model: m, images, prompt, thinking, maxTokens });
         onEvent({ stage: 'sent', model: m, bytes: init.body.length, ms: Date.now() - t0 });
@@ -344,7 +347,14 @@ export async function callModel({
 
     // Hedge: a model that is silent (not failing) never hands over on its own,
     // so after `hedgeMs` the next model starts alongside it.
-    if (hedgeMs) hedge = setTimeout(() => { if (!settled && next < chain.length) attempt(chain[next++]); }, hedgeMs);
+    const scheduleHedge = () => {
+      hedge = setTimeout(() => {
+        if (settled || next >= chain.length) return;
+        attempt(chain[next++]);
+        scheduleHedge();
+      }, hedgeMs);
+    };
+    if (hedgeMs) scheduleHedge();
     // The caller can stop waiting early (e.g. enough photos are already in).
     signal?.addEventListener('abort', () => finish(reject, new AIError('timeout', 'stopped early: enough photos were in')));
     while (next < Math.min(parallel, chain.length)) attempt(chain[next++]);
@@ -352,33 +362,39 @@ export async function callModel({
 }
 
 /**
- * Scan (1.3): one small request per photo, all at once, instead of one big
- * request. On a phone the upload of one 1 MB request (sent twice by the 1.2
- * race) was most of the wait, and one slow photo held up the rest. Now each
- * photo answers on its own, failures move to the next model, and whatever has
- * arrived by the deadline is used.
+ * Scan (1.3). Measured with a real Gemini key on 18 Nov 2026 (gemini-3.5-flash-lite):
+ *   • latency is set by Gemini's queue, not by the photos: 1 photo and 3 photos
+ *     both took about 1.3–2.4 s or 7.5–8.3 s (once 18 s), and text-only took 6.7 s;
+ *   • thinking was already 0 tokens, and replies were about 20 tokens.
+ * So photos go in small batches (up to 4 per request), and each batch is
+ * re-sent to the same model every `hedgeMs` (up to `copies` in flight) until one
+ * copy answers. Whatever has arrived by the deadline is used.
  */
-export async function scanKitchen({ images, deadlineMs = 12000, hedgeMs = 5000, graceMs = 2500, onEvent = () => {}, onStatus = () => {}, ...rest }) {
+export const PHOTOS_PER_REQUEST = 4;
+
+export async function scanKitchen({ images, deadlineMs = 12000, hedgeMs = 2500, copies = 3, graceMs = 2500, onEvent = () => {}, onStatus = () => {}, ...rest }) {
   const t0 = Date.now();
+  const batches = [];
+  for (let i = 0; i < images.length; i += PHOTOS_PER_REQUEST) batches.push(images.slice(i, i + PHOTOS_PER_REQUEST));
   let done = 0;
-  // Once most photos are in, a straggler gets `graceMs` more, then Marco moves on.
   const stop = new AbortController();
   let grace = null;
-  const results = await Promise.allSettled(images.map((img, i) =>
+  const results = await Promise.allSettled(batches.map((batch, b) =>
     callModel({
       ...rest,
-      images: [img],
+      images: batch,
       prompt: inventoryPrompt(),
-      parallel: 1, // one model per photo...
-      hedgeMs, // ...plus a second model if the first stays silent
+      parallel: 1,
+      copies,
+      hedgeMs,
       signal: stop.signal,
       deadlineMs: deadlineMs - (Date.now() - t0),
-      onStatus: () => {},
-      onEvent: (e) => onEvent({ ...e, photo: i + 1 }),
+      onStatus: batches.length === 1 ? onStatus : () => {},
+      onEvent: (e) => onEvent({ ...e, batch: batches.length > 1 ? b + 1 : null }),
     }).then((r) => {
       done++;
-      onStatus(`${done} of ${images.length} photos read…`);
-      if (!grace && done < images.length && done >= Math.ceil(images.length * 0.6)) {
+      if (batches.length > 1) onStatus(`${done} of ${batches.length} photo groups read…`);
+      if (!grace && done < batches.length) {
         grace = setTimeout(() => { onEvent({ stage: 'grace', ms: Date.now() - t0 }); stop.abort(); }, graceMs);
       }
       return r;
@@ -387,14 +403,14 @@ export async function scanKitchen({ images, deadlineMs = 12000, hedgeMs = 5000, 
   const items = [];
   const seen = new Set();
   const models = new Set();
-  let failures = 0;
+  let photosRead = 0;
   let lastError = null;
-  results.forEach((r) => {
+  results.forEach((r, b) => {
     if (r.status !== 'fulfilled') {
-      failures++;
       lastError = r.reason;
       return;
     }
+    photosRead += batches[b].length;
     models.add(r.value.model);
     for (const item of parseInventory(r.value.text) ?? []) {
       const key = item.canonical ?? item.name.toLowerCase();
@@ -404,11 +420,8 @@ export async function scanKitchen({ images, deadlineMs = 12000, hedgeMs = 5000, 
       }
     }
   });
-  if (failures === images.length) throw lastError ?? new AIError('malformedResponse', 'no photo could be read');
-  if (!items.length && results.every((r) => r.status === 'fulfilled' && !parseInventory(r.value.text))) {
-    throw new AIError('malformedResponse', 'unparseable inventory');
-  }
-  return Object.assign(items, { model: [...models].join(' + '), ms: Date.now() - t0, photosRead: images.length - failures, photosTotal: images.length });
+  if (photosRead === 0) throw lastError ?? new AIError('malformedResponse', 'no photo could be read');
+  return Object.assign(items, { model: [...models].join(' + '), ms: Date.now() - t0, photosRead, photosTotal: images.length });
 }
 
 /** First balanced {…} in model text, parsed, or null. */
@@ -429,7 +442,7 @@ export function parseJsonObject(text) {
  * Returns raw candidates: the brain validates, filters and scores them.
  */
 export async function designRecipes({ have, context, ...rest }) {
-  const { text, model } = await callModel({ deadlineMs: 9000, maxTokens: 1500, ...rest, prompt: recipePrompt({ have, context }) });
+  const { text, model } = await callModel({ deadlineMs: 9000, maxTokens: 1500, parallel: 1, copies: 3, hedgeMs: 3000, ...rest, prompt: recipePrompt({ have, context }) });
   const obj = parseJsonObject(text);
   if (!obj || !Array.isArray(obj.recipes)) throw new AIError('malformedResponse', 'unparseable recipes');
   return { recipes: obj.recipes.slice(0, 5), model };
@@ -460,7 +473,7 @@ export function parseModelList(provider, root) {
       return data
         .filter((m) => (m.supportedGenerationMethods ?? []).includes('generateContent'))
         .map((m) => String(m.name ?? '').replace(/^models\//, ''))
-        .filter((id) => id.startsWith('gemini-') && !/(tts|image|embedding|live|audio)/.test(id));
+        .filter((id) => /^gemini-\d/.test(id) && !/(tts|image|embedding|live|audio|transcribe|robotics|computer-use|customtools|omni|nano)/.test(id));
   }
   return [];
 }
@@ -473,10 +486,16 @@ export async function checkKey({ provider, apiKey, fetchImpl = fetch }) {
 }
 
 /** Picks the Cals default if the account has it, else the lightest-looking model. */
+/** Models Marco offers for a provider. Gemini: flash-lite only. */
+export function allowedModels(provider, available) {
+  const list = available?.length ? available : FALLBACK_MODELS[provider];
+  return provider === 'gemini' ? list.filter((m) => /flash-lite/.test(m)) : list;
+}
+
 export function pickModel(provider, available) {
   const preferred = DEFAULT_MODEL[provider];
   if (!available?.length || available.includes(preferred)) return preferred;
-  const light = { claude: /haiku/, openAI: /mini/, gemini: /flash/ }[provider];
+  const light = { claude: /haiku/, openAI: /mini/, gemini: /flash-lite/ }[provider];
   const stable = (m) => !/(preview|exp|experimental|latest)/.test(m);
   return available.find((m) => light.test(m) && stable(m)) ?? available.find((m) => light.test(m)) ?? available[0];
 }

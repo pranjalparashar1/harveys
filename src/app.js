@@ -5,12 +5,12 @@ import {
   CATALOGUE, DEFAULT_CONFIG, PROVISIONAL, ASSUMED_BASICS,
   buildInventory, kindOf, labelFor, rank, describeMissing,
 } from './brain/index.js';
-import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, detectProvider, checkKey, pickModel, scanKitchen, designRecipes, AIError } from './ai/providers.js';
+import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, allowedModels, detectProvider, checkKey, pickModel, scanKitchen, designRecipes, AIError } from './ai/providers.js';
 import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 
-const VERSION = '1.3.2';
+const VERSION = '1.3.3';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -76,7 +76,7 @@ function renderKey() {
   show($('key-edit'), !collapsed);
   if (state.ai) {
     $('key-name').textContent = PROVIDERS[state.ai.provider].label.replace(/ \(.*\)$/, '');
-    const models = state.ai.models?.length ? state.ai.models : FALLBACK_MODELS[state.ai.provider];
+    const models = allowedModels(state.ai.provider, state.ai.models);
     const list = models.includes(state.ai.model) ? models : [state.ai.model, ...models];
     $('model').replaceChildren(...list.map((m) => h('option', { value: m, selected: m === state.ai.model }, m)));
   }
@@ -114,7 +114,7 @@ async function saveKey() {
   setLabel($('save-key'), 'Checking…');
   try {
     const models = await checkKey({ provider, apiKey });
-    state.ai = { apiKey, provider, models, model: pickModel(provider, models) };
+    state.ai = { apiKey, provider, models, model: pickModel(provider, allowedModels(provider, models)) };
     editingKey = false;
   } catch (e) {
     if (e instanceof AIError && e.kind === 'invalidKey') {
@@ -264,7 +264,7 @@ async function scan() {
 // ── Debug panel: what each stage took, and the real error ──────────────────
 /** One line per request event: when it was sent and how big, then how it ended. */
 function debugEntry(e, at) {
-  const who = [e.photo ? `photo ${e.photo}` : null, e.model].filter(Boolean).join(' · ');
+  const who = [e.batch ? `group ${e.batch}` : null, e.model].filter(Boolean).join(' · ');
   if (e.stage === 'grace') return { stage: 'enough photos in', ms: at, detail: 'stopped waiting for the slowest photo' };
   if (e.stage === 'sent') return { stage: `${who} sent`, ms: at, detail: `${Math.round(e.bytes / 1024)} KB` };
   if (e.stage === 'model') {
@@ -454,14 +454,6 @@ async function askAIForRecipes(force = false) {
   decide();
 }
 
-/** After a fallback, keep using the model that answered so the next call is fast. */
-function useWorkingModel(model) {
-  if (!state.ai || !model || model === state.ai.model) return;
-  state.ai.model = model;
-  store.set('ai', state.ai);
-  renderKey();
-}
-
 function renderAIStatus() {
   const el = document.querySelector('#ai-ideas .ai-note');
   if (el && state.aiRecipes.status === 'loading') el.textContent = state.aiRecipes.note;
@@ -615,6 +607,11 @@ function init() {
   $('version').textContent = VERSION;
   addHaptics();
 
+  // Gemini keys use flash-lite models only; move a saved non-lite choice over.
+  if (state.ai?.provider === 'gemini' && !/flash-lite/.test(state.ai.model)) {
+    state.ai.model = pickModel('gemini', allowedModels('gemini', state.ai.models));
+    store.set('ai', state.ai);
+  }
   if (state.ai) $('api-key').value = state.ai.apiKey;
   $('change-key').addEventListener('click', editKey);
   $('cancel-key').addEventListener('click', () => {

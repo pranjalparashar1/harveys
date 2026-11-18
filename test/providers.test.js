@@ -130,7 +130,7 @@ test('when every model is overloaded the error says which were tried', async () 
   const { impl, calls } = byModel({ '*': [503, {}, 5] });
   await assert.rejects(callModel({ provider: 'gemini', apiKey: 'k', model: G[0], models: G, prompt: 'p', fetchImpl: impl }),
     (e) => e.kind === 'overloaded' && e.detail.includes('tried gemini-3.5-flash-lite'));
-  assert.equal(calls.length, 3);
+  assert.deepEqual(calls.map((c) => c.model), ['gemini-3.5-flash-lite', 'gemini-2.5-flash-lite']); // flash-lite only
 });
 
 test('a rejected key stops everything at once', async () => {
@@ -182,8 +182,8 @@ test('compact inventory replies become items with canonical ids', () => {
 });
 
 test('model chain prefers stable light models the key actually has', () => {
-  assert.deepEqual(modelChain('gemini', 'gemini-3.5-flash-lite', ['gemini-3.5-flash-lite', 'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash-exp']),
-    ['gemini-3.5-flash-lite', 'gemini-2.5-flash']);
+  assert.deepEqual(modelChain('gemini', 'gemini-3.5-flash-lite', ['gemini-3.5-flash-lite', 'gemini-2.5-pro', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-flash-lite-preview']),
+    ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']); // Gemini: flash-lite only, no previews
   assert.equal(modelChain('claude', 'claude-haiku-4-5', []).length, 2);
 });
 
@@ -196,22 +196,32 @@ test('designRecipes sends the inventory ids and returns raw recipes for the brai
   assert.equal(calls[0].body.messages[0].content.filter((c) => c.type === 'image').length, 0);
 });
 
-test('scan sends one small request per photo and merges what comes back', async () => {
-  const photos = [1, 2, 3].map((n) => ({ base64: `P${n}`, mediaType: 'image/jpeg' }));
-  const answers = { P1: '{"have":["paneer","air_fryer"]}', P2: '{"have":["paneer","eggs"],"other":["ketchup"]}' };
+test('scan sends photos in batches of 4 and merges what comes back', async () => {
+  const photos = [1, 2, 3, 4, 5].map((n) => ({ base64: `P${n}`, mediaType: 'image/jpeg' }));
   const calls = [];
   const impl = (url, init) => {
-    const body = JSON.parse(init.body);
-    const photo = body.contents[0].parts[1].inline_data.data;
-    calls.push(photo);
-    if (photo === 'P3') return new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(Object.assign(new Error('a'), { name: 'AbortError' }))));
-    return Promise.resolve(reply(200, GEMINI_OK(answers[photo])));
+    const datas = JSON.parse(init.body).contents[0].parts.slice(1).map((p) => p.inline_data.data);
+    calls.push(datas);
+    const text = datas[0] === 'P1' ? '{"have":["paneer","air_fryer"]}' : '{"have":["paneer","eggs"],"other":["ketchup"]}';
+    return Promise.resolve(reply(200, GEMINI_OK(text)));
   };
-  const items = await scanKitchen({ provider: 'gemini', apiKey: 'k', model: G[0], models: [G[0]], images: photos, fetchImpl: impl, deadlineMs: 200 });
-  assert.equal(calls.filter((c) => c === 'P1').length, 1);
+  const items = await scanKitchen({ provider: 'gemini', apiKey: 'k', model: G[0], models: [G[0]], images: photos, fetchImpl: impl, deadlineMs: 500 });
+  assert.deepEqual(calls.map((c) => c.length), [4, 1]);
   assert.deepEqual(items.map((i) => i.canonical ?? i.name), ['paneer', 'air_fryer', 'eggs', 'ketchup']);
-  assert.equal(items.photosRead, 2);
-  assert.equal(items.photosTotal, 3);
+  assert.equal(items.photosRead, 5);
+});
+
+test('a slow Gemini reply is re-sent to the same model, and the first copy back wins', async () => {
+  let n = 0;
+  const impl = (url, init) => {
+    n++;
+    if (n === 1) return new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(Object.assign(new Error('a'), { name: 'AbortError' }))));
+    return new Promise((r) => setTimeout(() => r(reply(200, GEMINI_OK('{"have":["eggs"]}'))), 10));
+  };
+  const events = [];
+  const items = await scanKitchen({ provider: 'gemini', apiKey: 'k', model: G[0], models: [G[0]], images: [{ base64: 'A', mediaType: 'image/jpeg' }], fetchImpl: impl, hedgeMs: 50, deadlineMs: 1000, onEvent: (e) => events.push(e) });
+  assert.equal(items[0].canonical, 'eggs');
+  assert.deepEqual(events.filter((e) => e.stage === 'sent').map((e) => e.model), [G[0], G[0]]);
 });
 
 test('scan fails only when no photo at all could be read', async () => {
@@ -228,15 +238,15 @@ test('a silent model gets a second model alongside it after the hedge delay', as
   assert.equal(calls.length, 2);
 });
 
-test('once most photos are in, a straggler only gets a short grace period', async () => {
-  const photos = [1, 2, 3].map((n) => ({ base64: `P${n}`, mediaType: 'image/jpeg' }));
+test('once one photo group is in, a straggling group only gets a short grace period', async () => {
+  const photos = [1, 2, 3, 4, 5].map((n) => ({ base64: `P${n}`, mediaType: 'image/jpeg' }));
   const impl = (url, init) => {
-    const photo = JSON.parse(init.body).contents[0].parts[1].inline_data.data;
-    if (photo === 'P3') return new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(Object.assign(new Error('a'), { name: 'AbortError' }))));
+    const first = JSON.parse(init.body).contents[0].parts[1].inline_data.data;
+    if (first === 'P5') return new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(Object.assign(new Error('a'), { name: 'AbortError' }))));
     return Promise.resolve(reply(200, GEMINI_OK('{"have":["paneer"]}')));
   };
   const t0 = Date.now();
   const items = await scanKitchen({ provider: 'gemini', apiKey: 'k', model: G[0], models: [G[0]], images: photos, fetchImpl: impl, deadlineMs: 5000, graceMs: 100, hedgeMs: 0 });
   assert.ok(Date.now() - t0 < 1000);
-  assert.equal(items.photosRead, 2);
+  assert.equal(items.photosRead, 4);
 });
