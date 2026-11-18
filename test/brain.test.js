@@ -148,3 +148,13 @@ test('catalogue only uses known ids and valid prep kinds', () => {
   }
   assert.equal(new Set(CATALOGUE.map((m) => m.id)).size, CATALOGUE.length);
 });
+
+test("golden: pranjal's real kitchen (18 Nov) picks the whey and makhana bowl", () => {
+  // What the 1.3.4 scan found in the 6 real photos (perception measured at 16–19 of 19).
+  const inv = buildInventory(['whey', 'makhana', 'oats', 'chickpeas', 'rice', 'pasta', 'onion', 'garlic', 'tomato',
+    'butter', 'oil', 'salt', 'black pepper', 'honey', 'air fryer', 'microwave', 'kitchen scale', 'frying pan', 'blender']);
+  for (const context of [{ hour: 22, weekday: 2 }, { hour: 19, weekday: 3 }, { hour: 13, weekday: 0 }]) {
+    const result = rank({ inventory: inv, targets: TARGETS, context: { kind: 'meal', ...context }, catalogue: CATALOGUE });
+    assert.equal(result.ranked[0].meal.id, 'whey_makhana_bowl', JSON.stringify(context));
+  }
+});
