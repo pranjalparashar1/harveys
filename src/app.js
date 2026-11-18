@@ -5,7 +5,7 @@ import {
   CATALOGUE, DEFAULT_CONFIG, PROVISIONAL, ASSUMED_BASICS,
   buildInventory, kindOf, labelFor, rank, describeMissing,
 } from './brain/index.js';
-import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, detectProvider, checkKey, pickModel, scanKitchen, designRecipes, AIError } from './ai/providers.js';
+import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, allowedModels, detectProvider, checkKey, pickModel, scanKitchen, designRecipes, AIError } from './ai/providers.js';
 import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
@@ -74,7 +74,7 @@ function renderKey() {
   show($('forget-key'), !!state.ai);
   show($('model-field'), !!(saved && provider));
   if (saved && provider) {
-    const models = state.ai.models?.length ? state.ai.models : FALLBACK_MODELS[provider];
+    const models = allowedModels(provider, state.ai.models);
     const list = models.includes(state.ai.model) ? models : [state.ai.model, ...models];
     $('model').replaceChildren(...list.map((m) => h('option', { value: m, selected: m === state.ai.model }, m)));
   }
@@ -94,7 +94,7 @@ async function saveKey() {
   $('save-key').textContent = 'Checking…';
   try {
     const models = await checkKey({ provider, apiKey });
-    state.ai = { apiKey, provider, models, model: pickModel(provider, models) };
+    state.ai = { apiKey, provider, models, model: pickModel(provider, allowedModels(provider, models)) };
   } catch (e) {
     if (e instanceof AIError && e.kind === 'invalidKey') {
       err.textContent = e.message;
@@ -172,7 +172,7 @@ function explainError(e) {
   if (!(e instanceof AIError)) return `Something went wrong: ${e.message}`;
   let text = e.message;
   if (e.kind === 'overloaded' || e.kind === 'rateLimited' || e.kind === 'timeout' || e.kind === 'network') {
-    text += ' Marco sent each photo separately, tried a second model, and stopped after 12 s so you still get a recipe. The Debug panel at the bottom shows each request.';
+    text += ' Marco re-sent the request every 2.5 s and stopped after 12 s so you still get a recipe. The Debug panel at the bottom shows each request.';
   }
   if (e.detail) text += ` (${e.detail.replace(/\s+/g, ' ').slice(0, 220)})`;
   return text;
@@ -235,7 +235,7 @@ async function scan() {
 // ── Debug panel: what each stage took, and the real error ──────────────────
 /** One line per request event: when it was sent and how big, then how it ended. */
 function debugEntry(e, at) {
-  const who = [e.photo ? `photo ${e.photo}` : null, e.model].filter(Boolean).join(' · ');
+  const who = [e.batch ? `group ${e.batch}` : null, e.model].filter(Boolean).join(' · ');
   if (e.stage === 'grace') return { stage: 'enough photos in', ms: at, detail: 'stopped waiting for the slowest photo' };
   if (e.stage === 'sent') return { stage: `${who} sent`, ms: at, detail: `${Math.round(e.bytes / 1024)} KB` };
   if (e.stage === 'model') {
@@ -433,14 +433,6 @@ async function askAIForRecipes(force = false) {
   decide();
 }
 
-/** After a fallback, keep using the model that answered so the next call is fast. */
-function useWorkingModel(model) {
-  if (!state.ai || !model || model === state.ai.model) return;
-  state.ai.model = model;
-  store.set('ai', state.ai);
-  renderKey();
-}
-
 function renderAIStatus() {
   const el = document.querySelector('#ai-ideas .ai-note');
   if (el && state.aiRecipes.status === 'loading') el.textContent = state.aiRecipes.note;
@@ -455,7 +447,14 @@ function aiIdeasCard(result) {
   }
   const head = [h('h2', {}, "Your AI's recipe ideas"),
     h('p', { class: 'hint' }, 'Your AI designs recipes from your inventory. Marco rejects any that use things you don’t have or don’t add up, then scores the rest against its own catalogue. The AI never picks.')];
-  if (ai.status === 'loading' || ai.status === 'idle') {
+  if (ai.status === 'idle') {
+    return h('section', { class: 'card', id: 'ai-ideas' }, head,
+      h('p', { class: 'muted' }, state.pickSource === 'sample' || state.pickSource === 'last'
+        ? "Skipped, because your AI didn't answer the scan in time."
+        : 'Tap “What should I cook?” to ask your AI for ideas.'),
+      h('button', { class: 'btn', type: 'button', onclick: () => askAIForRecipes(true) }, 'Ask now'));
+  }
+  if (ai.status === 'loading') {
     return h('section', { class: 'card', id: 'ai-ideas' }, head, h('p', { class: 'ai-note muted' }, ai.note || 'Asking your AI to design recipes…'));
   }
   if (ai.status === 'error') {
@@ -574,6 +573,11 @@ function blockedList(filtered) {
 
 // ── Wiring ──────────────────────────────────────────────────────────────────
 function init() {
+  // Gemini keys use flash-lite models only; move a saved non-lite choice over.
+  if (state.ai?.provider === 'gemini' && !/flash-lite/.test(state.ai.model)) {
+    state.ai.model = pickModel('gemini', allowedModels('gemini', state.ai.models));
+    store.set('ai', state.ai);
+  }
   if (state.ai) $('api-key').value = state.ai.apiKey;
   $('api-key').addEventListener('input', renderKey);
   $('save-key').addEventListener('click', saveKey);
