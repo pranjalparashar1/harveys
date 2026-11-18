@@ -63,6 +63,8 @@ function h(tag, attrs = {}, ...children) {
   return el;
 }
 const show = (el, on = true) => { el.hidden = !on; };
+/** Sets a button's text without removing its haptic switch. */
+const setLabel = (btn, text) => { (btn.querySelector('.lbl') ?? btn).textContent = text; };
 const fmt = (n, d = 2) => (Math.round(n * 10 ** d) / 10 ** d).toString();
 
 // ── 1 · Key ─────────────────────────────────────────────────────────────────
@@ -88,6 +90,13 @@ function renderKey() {
   renderScanButton();
 }
 
+function disarmForget() {
+  clearTimeout(forgetArmed);
+  forgetArmed = null;
+  $('forget-key').textContent = 'Forget key';
+  $('forget-key').classList.remove('armed');
+}
+
 function editKey() {
   editingKey = true;
   show($('key-error'), false);
@@ -102,7 +111,7 @@ async function saveKey() {
   const err = $('key-error');
   show(err, false);
   $('save-key').disabled = true;
-  $('save-key').textContent = 'Checking…';
+  setLabel($('save-key'), 'Checking…');
   try {
     const models = await checkKey({ provider, apiKey });
     state.ai = { apiKey, provider, models, model: pickModel(provider, models) };
@@ -120,13 +129,23 @@ async function saveKey() {
       show(err);
     }
   } finally {
-    $('save-key').textContent = 'Save';
+    setLabel($('save-key'), 'Save');
     store.set('ai', state.ai);
     renderKey();
   }
 }
 
+let forgetArmed = null;
 function forgetKey() {
+  // Destructive, so tap twice (no modal): the label asks once, for 4 s.
+  const btn = $('forget-key');
+  if (!forgetArmed) {
+    btn.textContent = 'Tap again to forget';
+    btn.classList.add('armed');
+    forgetArmed = setTimeout(disarmForget, 4000);
+    return;
+  }
+  disarmForget();
   state.ai = null;
   editingKey = false;
   store.set('ai', null);
@@ -148,7 +167,7 @@ function renderScanButton() {
   const btn = $('scan');
   const n = state.photos.length;
   btn.disabled = !state.ai || n === 0;
-  btn.textContent = n ? `Scan ${n} photo${n === 1 ? '' : 's'}` : 'Scan';
+  setLabel(btn, n ? `Scan ${n} photo${n === 1 ? '' : 's'}` : 'Scan');
 }
 
 async function addPhotos(fileList) {
@@ -162,7 +181,7 @@ async function addPhotos(fileList) {
   const take = files.slice(0, Math.max(0, room));
   const problems = [];
   for (const [i, file] of take.entries()) {
-    status.textContent = `Preparing ${i + 1} of ${take.length}…`;
+    status.textContent = 'Preparing…';
     try {
       const t = performance.now();
       const photo = await prepareImage(file);
@@ -202,19 +221,20 @@ async function scan() {
   const run = startDebugRun('scan', [
     { stage: 'photos ready', detail: `${state.photos.length} photo(s), ${Math.round(bytes / 1024)} KB to send, prepared in ${state.photos.map((p) => p.prepMs ?? '?').join(' + ')} ms` },
   ]);
-  const tick = setInterval(() => { btn.textContent = `Looking… ${Math.round(since() / 1000)} s`; }, 250);
+  setLabel(btn, 'Looking…');
+  btn.classList.add('shimmer');
   let source = 'ai';
   try {
     const items = await scanKitchen({
       ...state.ai,
       images: state.photos,
       deadlineMs: SCAN_DEADLINE_MS,
-      onStatus: (s) => { status.textContent = s; },
+      onStatus: () => {}, // progress lives on the button; counts stay off screen
       onEvent: (e) => logDebug(run, debugEntry(e, since())),
     });
     logDebug(run, { stage: 'AI reply parsed', ms: since(), detail: `${items.length} items from ${items.photosRead} of ${items.photosTotal} photos (${items.model})` });
     setItems(items.map((i) => ({ ...i, source: 'ai' })));
-    status.textContent = `${items.length} items · ${(since() / 1000).toFixed(1)} s`;
+    status.textContent = '';
   } catch (e) {
     logDebug(run, { stage: 'scan failed', ms: since(), detail: `${e.kind ?? 'error'}${e.status ? ` · HTTP ${e.status}` : ''} · ${String(e.detail ?? e.message).slice(0, 300)}` });
     err.textContent = explainError(e);
@@ -228,7 +248,7 @@ async function scan() {
       setItems(DEMO_KITCHEN.map((i) => ({ ...i, source: 'demo' })));
     }
   } finally {
-    clearInterval(tick);
+    btn.classList.remove('shimmer');
     renderScanButton();
   }
   // The pick comes from Marco's brain straight away; AI recipes upgrade it later.
@@ -323,14 +343,12 @@ function renderInventory() {
   const titles = { food: 'Food', kit: 'Kit', other: 'Not usable yet' };
   $('inventory-groups').replaceChildren(...Object.entries(groups).filter(([, list]) => list.length).map(([key, list]) =>
     h('div', { class: 'group' },
-      h('h3', {}, titles[key], h('span', {}, String(list.length))),
+      h('h3', {}, titles[key]),
       h('div', { class: 'chips' }, list.map(({ item, index, id }) =>
         h('span', { class: `chip${id ? '' : ' unknown'}`, title: id ? `Counts as: ${labelFor(id)}` : 'Not in Marco’s vocabulary yet' },
           item.name,
           item.quantity ? h('small', {}, ` · ${item.quantity}`) : null,
           h('button', { type: 'button', 'aria-label': `Remove ${item.name}`, onclick: () => setItems(state.items.filter((_, i) => i !== index)) }, '×')))))));
-  const usable = groups.food.length + groups.kit.length;
-  $('inv-count').textContent = String(usable);
   $('basics').replaceChildren(...Object.entries(ASSUMED_BASICS).map(([id, b]) => {
     const off = state.missingBasics.includes(id);
     return h('span', {
@@ -543,7 +561,7 @@ function renderResult(result) {
       h('h2', {}, 'Also possible'),
       h('ul', { class: 'others' }, rest.slice(0, 6).map((r, i) =>
         h('li', {},
-          h('div', { class: 'other-head' }, h('strong', {}, `${i + 2}. ${r.meal.name}`, r.meal.origin === 'ai' ? h('span', { class: 'badge ai' }, 'AI') : null), h('span', { class: 'score' }, `score ${fmt(r.score)}`)),
+          h('div', { class: 'other-head' }, h('strong', {}, `${i + 2}. ${r.meal.name}`, r.meal.origin === 'ai' ? h('span', { class: 'badge ai' }, 'AI') : null)),
           h('p', { class: 'mini' }, r.reasons.join(' · ')),
           whyTable(r))))));
   }
@@ -559,7 +577,7 @@ function renderResult(result) {
   const blockedCatalogue = result.filtered.filter((f) => f.meal.origin !== 'ai');
   if (top && blockedCatalogue.length) {
     cards.push(h('section', { class: 'card' },
-      h('details', {}, h('summary', {}, `${blockedCatalogue.length} meals you can’t make`), blockedList(blockedCatalogue))));
+      h('details', { class: 'skipped' }, h('summary', {}, 'Can’t make yet'), blockedList(blockedCatalogue))));
   }
 
   const shown = cards.filter(Boolean);
@@ -572,6 +590,21 @@ function blockedList(filtered) {
     h('li', {}, h('strong', {}, f.meal.name), h('p', { class: 'mini' }, describeMissing(f.missing).join(', ')))));
 }
 
+// ── Haptics: Kiron's invisible real iOS switch ──────────────────────────────
+// Safari ticks the Taptic Engine when a real <input type=checkbox switch> is
+// toggled, so each main button carries one, invisible, over its whole area.
+// The tap still bubbles to the button's own click handler. Android vibrates.
+function addHaptics() {
+  for (const btn of document.querySelectorAll('[data-haptic]')) {
+    btn.replaceChildren(h('span', { class: 'lbl' }, btn.textContent));
+    const sw = h('input', { type: 'checkbox', switch: true, class: 'haptic', tabindex: '-1', 'aria-hidden': 'true' });
+    btn.append(sw);
+  }
+  document.addEventListener('click', (e) => {
+    if (e.target.closest?.('[data-haptic]') && !('switch' in HTMLInputElement.prototype) && navigator.vibrate) navigator.vibrate(8);
+  });
+}
+
 // ── Wiring ──────────────────────────────────────────────────────────────────
 function init() {
   // Clean start on every load: no restored scan, no restored scroll.
@@ -580,6 +613,7 @@ function init() {
   window.scrollTo(0, 0);
   addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); }); // Safari back/forward cache
   $('version').textContent = VERSION;
+  addHaptics();
 
   if (state.ai) $('api-key').value = state.ai.apiKey;
   $('change-key').addEventListener('click', editKey);
