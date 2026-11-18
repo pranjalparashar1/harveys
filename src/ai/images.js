@@ -9,7 +9,7 @@
 //   • Photos are decoded one at a time so a burst of 12 MP images doesn't run
 //     the tab out of memory.
 
-export const MAX_SIDE = 768;
+export const MAX_SIDE = 640;
 const QUALITY = 0.6;
 
 async function decode(file) {

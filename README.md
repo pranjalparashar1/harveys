@@ -13,6 +13,15 @@ Tells you what to cook right now, from what you already have, that you will actu
 5. **Cook this.** Marco's brain ranks its catalogue and shows the simplest meal you'll actually make, with the steps and a breakdown of why it won.
 6. **Your AI's recipe ideas** (1.1). With a key, the AI also designs up to 3 recipes from your inventory in a strict schema. `src/brain/validate.js` rejects anything Marco can't verify (unknown ingredients or kit, impossible macros) and corrects friction the AI understated (a knife and board for chopping, one dish per pan and utensil, at least half a minute per step). Survivors then go through the same inventory filter and score as the catalogue. The AI proposes; Marco picks.
 
+### Per-photo scanning (1.3)
+
+On a real iPhone, 1.2's single 7-photo request (about 1 MB, raced on two models, so uploaded twice) got no answer from Gemini within 12 s. In 1.3:
+- **Each photo is its own small request** (640 px, about 60–120 KB), and all of them are sent at once.
+- **A silent model gets company.** If a photo has no answer after 5 s, a second, lighter model starts alongside the first.
+- **No waiting on stragglers.** Once 60% of the photos are in, the slowest gets 2.5 s more, then Marco moves on with what it has.
+- **Least thinking first.** Gemini 3 is asked for `thinkingLevel: minimal`. If a model rejects that, Marco steps up to `low`, never straight to full thinking.
+- **A fuller debug log.** It records every request (sent, size, answered or failed, and how long) and survives a reload.
+
 ### Speed budget (1.2)
 
 A recipe appears within 15 s of tapping Scan, every time:

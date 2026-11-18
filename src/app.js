@@ -38,7 +38,7 @@ const state = {
   missingBasics: store.get('missingBasics', []),
   ctx: { mood: 'tired', kind: 'meal', when: 'now', targets: { protein: 40, calories: 800, fiber: 15 }, ...store.get('context', {}) },
   decided: false,
-  debug: [],
+  debug: store.get('debugRuns', []),
   aiRecipes: { status: 'idle', accepted: [], rejected: [], model: null, error: null, key: null },
 };
 
@@ -172,7 +172,7 @@ function explainError(e) {
   if (!(e instanceof AIError)) return `Something went wrong: ${e.message}`;
   let text = e.message;
   if (e.kind === 'overloaded' || e.kind === 'rateLimited' || e.kind === 'timeout' || e.kind === 'network') {
-    text += ' Marco asked two models at once and gave up after 12 s so you still get a recipe.';
+    text += ' Marco sent each photo separately, tried a second model, and stopped after 12 s so you still get a recipe. The Debug panel at the bottom shows each request.';
   }
   if (e.detail) text += ` (${e.detail.replace(/\s+/g, ' ').slice(0, 220)})`;
   return text;
@@ -201,14 +201,11 @@ async function scan() {
       images: state.photos,
       deadlineMs: SCAN_DEADLINE_MS,
       onStatus: (s) => { status.textContent = s; },
-      onEvent: (e) => logDebug(run, e.stage === 'model'
-        ? { stage: `${e.model}`, ms: e.ms, detail: e.ok ? 'answered' : `${e.kind}${e.status ? ` · HTTP ${e.status}` : ''}${e.detail ? ` · ${e.detail}` : ''}` }
-        : { stage: 'deadline hit', ms: e.ms }),
+      onEvent: (e) => logDebug(run, debugEntry(e, since())),
     });
-    logDebug(run, { stage: 'AI reply parsed', ms: since(), detail: `${items.length} items from ${items.model}` });
+    logDebug(run, { stage: 'AI reply parsed', ms: since(), detail: `${items.length} items from ${items.photosRead} of ${items.photosTotal} photos (${items.model})` });
     setItems(items.map((i) => ({ ...i, source: 'ai' })));
-    status.textContent = `Found ${items.length} things with ${items.model} in ${(since() / 1000).toFixed(1)} s.`;
-    useWorkingModel(items.model);
+    status.textContent = `Found ${items.length} things in ${items.photosRead} of ${items.photosTotal} photos, in ${(since() / 1000).toFixed(1)} s.`;
   } catch (e) {
     logDebug(run, { stage: 'scan failed', ms: since(), detail: `${e.kind ?? 'error'}${e.status ? ` · HTTP ${e.status}` : ''} · ${String(e.detail ?? e.message).slice(0, 300)}` });
     err.textContent = explainError(e);
@@ -236,10 +233,21 @@ async function scan() {
 }
 
 // ── Debug panel: what each stage took, and the real error ──────────────────
+/** One line per request event: when it was sent and how big, then how it ended. */
+function debugEntry(e, at) {
+  const who = [e.photo ? `photo ${e.photo}` : null, e.model].filter(Boolean).join(' · ');
+  if (e.stage === 'grace') return { stage: 'enough photos in', ms: at, detail: 'stopped waiting for the slowest photo' };
+  if (e.stage === 'sent') return { stage: `${who} sent`, ms: at, detail: `${Math.round(e.bytes / 1024)} KB` };
+  if (e.stage === 'model') {
+    return { stage: `${who} ${e.ok ? 'answered' : 'failed'}`, ms: at,
+      detail: e.ok ? `took ${(e.ms / 1000).toFixed(1)} s` : `${e.kind}${e.status ? ` · HTTP ${e.status}` : ''} after ${(e.ms / 1000).toFixed(1)} s${e.detail ? ` · ${e.detail}` : ''}` };
+  }
+  return { stage: `${who ? `${who} · ` : ''}deadline hit`, ms: at, detail: e.pending ? `${e.pending} request(s) still had no answer` : '' };
+}
 function startDebugRun(kind, entries = []) {
   const run = { kind, at: new Date().toLocaleTimeString(), entries: entries.map((e) => ({ ms: 0, ...e })), total: null };
   state.debug.unshift(run);
-  state.debug = state.debug.slice(0, 6);
+  state.debug = state.debug.slice(0, 4);
   renderDebug();
   return run;
 }
@@ -247,8 +255,12 @@ function logDebug(run, entry) {
   run.entries.push(entry);
   renderDebug();
 }
+function saveDebug() {
+  store.set('debugRuns', state.debug); // survives a reload, so a failed scan can still be copied
+}
 function finishDebugRun(run, total) {
   run.total = total;
+  saveDebug();
   if (run.kind === 'scan') {
     const times = [...store.get('scanTimes', []), { ms: total, ok: !run.entries.some((e) => e.stage === 'scan failed'), at: Date.now() }].slice(-10);
     store.set('scanTimes', times);
@@ -272,7 +284,7 @@ function renderDebug() {
   );
 }
 function copyDebug() {
-  const text = JSON.stringify({ version: '1.2', provider: state.ai?.provider, model: state.ai?.model, scanTimes: store.get('scanTimes', []), runs: state.debug }, null, 1);
+  const text = JSON.stringify({ version: '1.3', ua: navigator.userAgent, conn: navigator.connection?.effectiveType ?? null, provider: state.ai?.provider, model: state.ai?.model, scanTimes: store.get('scanTimes', []), runs: state.debug }, null, 1);
   navigator.clipboard?.writeText(text).then(() => { $('copy-debug').textContent = 'Copied'; }, () => {});
 }
 
@@ -396,9 +408,7 @@ async function askAIForRecipes(force = false) {
   const run = startDebugRun('recipes');
   try {
     const { recipes, model } = await designRecipes({
-      onEvent: (e) => logDebug(run, e.stage === 'model'
-        ? { stage: `${e.model}`, ms: e.ms, detail: e.ok ? 'answered' : `${e.kind}${e.status ? ` · HTTP ${e.status}` : ''}${e.detail ? ` · ${e.detail}` : ''}` }
-        : { stage: 'deadline hit', ms: e.ms }),
+      onEvent: (e) => logDebug(run, debugEntry(e, Math.round(performance.now() - t0))),
       ...state.ai,
       have: [...inv.have],
       context: { kind: state.ctx.kind, mood: state.ctx.mood },

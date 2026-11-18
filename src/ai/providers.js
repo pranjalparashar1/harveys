@@ -77,19 +77,25 @@ const ANTHROPIC_HEADERS = (apiKey) => ({
   'anthropic-dangerous-direct-browser-access': 'true',
 });
 
-/** Gemini "thinking" makes a photo scan slow and more likely to time out; keep it low. */
-export function geminiThinking(model) {
-  if (/^gemini-2\.5-flash/.test(model)) return { thinkingBudget: 0 };
-  if (/^gemini-3/.test(model)) return { thinkingLevel: 'low' };
+/**
+ * Gemini "thinking" is most of a scan's wait. Step 0 asks for the least
+ * thinking; if a model rejects that (HTTP 400) the call steps up: 'low', then
+ * no setting at all.
+ */
+export function geminiThinking(model, step = 0) {
+  if (/^gemini-2\.5-flash/.test(model)) return step === 0 ? { thinkingBudget: 0 } : null;
+  if (/^gemini-3/.test(model)) return [{ thinkingLevel: 'minimal' }, { thinkingLevel: 'low' }][step] ?? null;
   return null;
 }
+const LAST_STEP = 2;
 
 /**
  * Builds one request (photos optional). Pure, so it is unit-tested.
  * @param {{provider: string, apiKey: string, model: string, images?: Array<{base64: string, mediaType: string}>, prompt: string, thinking?: boolean}} p
  * @returns {{url: string, init: RequestInit}}
  */
-export function buildRequest({ provider, apiKey, model, images = [], prompt, thinking = true, maxTokens = 1024 }) {
+export function buildRequest({ provider, apiKey, model, images = [], prompt, thinking = 0, maxTokens = 2048 }) {
+  const step = thinking === true ? 0 : thinking === false ? LAST_STEP : thinking;
   const json = (headers, body) => ({
     method: 'POST',
     headers: { 'content-type': 'application/json', ...headers },
@@ -141,8 +147,8 @@ export function buildRequest({ provider, apiKey, model, images = [], prompt, thi
             responseMimeType: 'application/json',
             maxOutputTokens: maxTokens,
             // Speed knobs. If a model rejects them (HTTP 400) the call is resent without them.
-            ...(thinking && geminiThinking(model) ? { thinkingConfig: geminiThinking(model) } : {}),
-            ...(thinking && images.length ? { mediaResolution: 'MEDIA_RESOLUTION_MEDIUM' } : {}),
+            ...(geminiThinking(model, step) ? { thinkingConfig: geminiThinking(model, step) } : {}),
+            ...(step < LAST_STEP && images.length ? { mediaResolution: 'MEDIA_RESOLUTION_MEDIUM' } : {}),
           },
         }),
       };
@@ -270,7 +276,8 @@ export function modelChain(provider, chosen, available = [], max = 3) {
  */
 export async function callModel({
   provider, apiKey, model, models = [], prompt, images = [], fetchImpl = fetch,
-  deadlineMs = 12000, parallel = 2, maxTokens = 1024, onStatus = () => {}, onEvent = () => {},
+  deadlineMs = 12000, parallel = 2, maxTokens = 2048, onStatus = () => {}, onEvent = () => {},
+  hedgeMs = 0, signal = null,
 }) {
   const chain = modelChain(provider, model, models);
   const t0 = Date.now();
@@ -282,21 +289,23 @@ export async function callModel({
   let settled = false;
 
   return await new Promise((resolve, reject) => {
+    let hedge = null;
     const finish = (fn, value) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      clearTimeout(hedge);
       for (const c of controllers) c.abort();
       fn(value);
     };
     const timer = setTimeout(() => {
       const e = last && last.kind !== 'timeout' ? last : new AIError('timeout', `no answer within ${Math.round(deadlineMs / 1000)} s`);
       e.detail = `${e.detail ? `${e.detail} ` : ''}(tried ${chain.slice(0, Math.max(next, 1)).join(', ')})`;
-      onEvent({ stage: 'deadline', ms: Date.now() - t0 });
+      onEvent({ stage: 'deadline', ms: Date.now() - t0, pending: running });
       finish(reject, e);
     }, deadlineMs);
 
-    const attempt = async (m, thinking = true) => {
+    const attempt = async (m, thinking = 0) => {
       running++;
       const controller = new AbortController();
       controllers.add(controller);
@@ -304,6 +313,7 @@ export async function callModel({
       onStatus(m === model ? `Asking ${m}…` : `Also asking ${m}…`);
       try {
         const { url, init } = buildRequest({ provider, apiKey, model: m, images, prompt, thinking, maxTokens });
+        onEvent({ stage: 'sent', model: m, bytes: init.body.length, ms: Date.now() - t0 });
         const root = await send(url, { ...init, signal: controller.signal }, apiKey, fetchImpl);
         const text = extractText(provider, root);
         if (!text) throw new AIError('malformedResponse', 'empty answer');
@@ -315,10 +325,10 @@ export async function callModel({
         onEvent({ stage: 'model', model: m, ok: false, kind: e.kind, status: e.status, detail: String(e.detail ?? '').slice(0, 300), ms: Date.now() - started });
         if (e.kind === 'invalidKey' || e.kind === 'imageTooLarge') return finish(reject, e);
         last = e;
-        if (e.kind === 'badRequest' && thinking && provider === 'gemini') {
+        if (e.kind === 'badRequest' && provider === 'gemini' && thinking < LAST_STEP) {
           running--;
           controllers.delete(controller);
-          return attempt(m, false); // a model that rejects the speed knobs: resend plainly
+          return attempt(m, thinking + 1); // a model that rejects a speed knob: step up and resend
         }
       } finally {
         controllers.delete(controller);
@@ -332,15 +342,73 @@ export async function callModel({
       }
     };
 
+    // Hedge: a model that is silent (not failing) never hands over on its own,
+    // so after `hedgeMs` the next model starts alongside it.
+    if (hedgeMs) hedge = setTimeout(() => { if (!settled && next < chain.length) attempt(chain[next++]); }, hedgeMs);
+    // The caller can stop waiting early (e.g. enough photos are already in).
+    signal?.addEventListener('abort', () => finish(reject, new AIError('timeout', 'stopped early: enough photos were in')));
     while (next < Math.min(parallel, chain.length)) attempt(chain[next++]);
   });
 }
 
-export async function scanKitchen({ images, ...rest }) {
-  const { text, model, ms } = await callModel({ deadlineMs: 12000, ...rest, images, prompt: inventoryPrompt() });
-  const items = parseInventory(text);
-  if (!items) throw new AIError('malformedResponse', 'unparseable inventory');
-  return Object.assign(items, { model, ms });
+/**
+ * Scan (1.3): one small request per photo, all at once, instead of one big
+ * request. On a phone the upload of one 1 MB request (sent twice by the 1.2
+ * race) was most of the wait, and one slow photo held up the rest. Now each
+ * photo answers on its own, failures move to the next model, and whatever has
+ * arrived by the deadline is used.
+ */
+export async function scanKitchen({ images, deadlineMs = 12000, hedgeMs = 5000, graceMs = 2500, onEvent = () => {}, onStatus = () => {}, ...rest }) {
+  const t0 = Date.now();
+  let done = 0;
+  // Once most photos are in, a straggler gets `graceMs` more, then Marco moves on.
+  const stop = new AbortController();
+  let grace = null;
+  const results = await Promise.allSettled(images.map((img, i) =>
+    callModel({
+      ...rest,
+      images: [img],
+      prompt: inventoryPrompt(),
+      parallel: 1, // one model per photo...
+      hedgeMs, // ...plus a second model if the first stays silent
+      signal: stop.signal,
+      deadlineMs: deadlineMs - (Date.now() - t0),
+      onStatus: () => {},
+      onEvent: (e) => onEvent({ ...e, photo: i + 1 }),
+    }).then((r) => {
+      done++;
+      onStatus(`${done} of ${images.length} photos read…`);
+      if (!grace && done < images.length && done >= Math.ceil(images.length * 0.6)) {
+        grace = setTimeout(() => { onEvent({ stage: 'grace', ms: Date.now() - t0 }); stop.abort(); }, graceMs);
+      }
+      return r;
+    })));
+  clearTimeout(grace);
+  const items = [];
+  const seen = new Set();
+  const models = new Set();
+  let failures = 0;
+  let lastError = null;
+  results.forEach((r) => {
+    if (r.status !== 'fulfilled') {
+      failures++;
+      lastError = r.reason;
+      return;
+    }
+    models.add(r.value.model);
+    for (const item of parseInventory(r.value.text) ?? []) {
+      const key = item.canonical ?? item.name.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        items.push(item);
+      }
+    }
+  });
+  if (failures === images.length) throw lastError ?? new AIError('malformedResponse', 'no photo could be read');
+  if (!items.length && results.every((r) => r.status === 'fulfilled' && !parseInventory(r.value.text))) {
+    throw new AIError('malformedResponse', 'unparseable inventory');
+  }
+  return Object.assign(items, { model: [...models].join(' + '), ms: Date.now() - t0, photosRead: images.length - failures, photosTotal: images.length });
 }
 
 /** First balanced {…} in model text, parsed, or null. */
