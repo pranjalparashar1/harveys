@@ -14,7 +14,7 @@
 <body>
   <main class="shell">
     <header class="hero">
-      <p class="eyebrow">Marco 1.1 · prototype</p>
+      <p class="eyebrow">Marco 1.2 · prototype</p>
       <h1>What should I cook right now?</h1>
       <p class="lede">Photograph your kitchen. Your AI lists what it sees. Marco's own algorithm, not the AI, picks the meal you'll actually make, and tells you why.</p>
     </header>
@@ -135,6 +135,13 @@
 
     <!-- 5 · Result -->
     <section id="result" aria-live="polite" hidden></section>
+
+    <details class="card debug" id="debug">
+      <summary>Debug: timings and errors</summary>
+      <p class="hint">What each stage took on this device, and the exact error when something fails. Nothing here includes your key.</p>
+      <div id="debug-body"></div>
+      <button class="btn" id="copy-debug" type="button">Copy for Claude</button>
+    </details>
 
     <footer class="foot">
       <p>Weights are <strong>placeholders</strong> until they're fitted to your meal log. The AI only lists what it sees; the choice and the reasons come from Marco's deterministic ranker (<code>src/brain/</code>).</p>

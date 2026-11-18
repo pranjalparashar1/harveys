@@ -38,6 +38,7 @@ const state = {
   missingBasics: store.get('missingBasics', []),
   ctx: { mood: 'tired', kind: 'meal', when: 'now', targets: { protein: 40, calories: 800, fiber: 15 }, ...store.get('context', {}) },
   decided: false,
+  debug: [],
   aiRecipes: { status: 'idle', accepted: [], rejected: [], model: null, error: null, key: null },
 };
 
@@ -149,7 +150,10 @@ async function addPhotos(fileList) {
   for (const [i, file] of take.entries()) {
     status.textContent = `Preparing photo ${i + 1} of ${take.length}…`;
     try {
-      state.photos.push(await prepareImage(file));
+      const t = performance.now();
+      const photo = await prepareImage(file);
+      photo.prepMs = Math.round(performance.now() - t);
+      state.photos.push(photo);
       renderThumbs();
     } catch (e) {
       problems.push(e.message);
@@ -167,12 +171,15 @@ async function addPhotos(fileList) {
 function explainError(e) {
   if (!(e instanceof AIError)) return `Something went wrong: ${e.message}`;
   let text = e.message;
-  if (e.kind === 'overloaded' || e.kind === 'rateLimited' || e.kind === 'timeout') {
-    text += ' Marco retried and tried other models first. The sample kitchen still works meanwhile.';
+  if (e.kind === 'overloaded' || e.kind === 'rateLimited' || e.kind === 'timeout' || e.kind === 'network') {
+    text += ' Marco asked two models at once and gave up after 12 s so you still get a recipe.';
   }
   if (e.detail) text += ` (${e.detail.replace(/\s+/g, ' ').slice(0, 220)})`;
   return text;
 }
+
+// Marco 1.2 time budget: a recipe on screen within 15 s of tapping Scan.
+const SCAN_DEADLINE_MS = 12000;
 
 async function scan() {
   const btn = $('scan');
@@ -180,30 +187,93 @@ async function scan() {
   const status = $('photo-status');
   show(err, false);
   btn.disabled = true;
-  const started = Date.now();
-  let phase = 'Looking…';
-  const tick = setInterval(() => { btn.textContent = `${phase} ${Math.round((Date.now() - started) / 1000)} s`; }, 500);
+  const t0 = performance.now();
+  const since = () => Math.round(performance.now() - t0);
+  const bytes = state.photos.reduce((a, p) => a + p.base64.length * 0.75, 0);
+  const run = startDebugRun('scan', [
+    { stage: 'photos ready', detail: `${state.photos.length} photo(s), ${Math.round(bytes / 1024)} KB to send, prepared in ${state.photos.map((p) => p.prepMs ?? '?').join(' + ')} ms` },
+  ]);
+  const tick = setInterval(() => { btn.textContent = `Looking… ${Math.round(since() / 1000)} s`; }, 250);
+  let source = 'ai';
   try {
     const items = await scanKitchen({
       ...state.ai,
       images: state.photos,
-      onStatus: (s) => { phase = 'Looking…'; status.textContent = s; },
+      deadlineMs: SCAN_DEADLINE_MS,
+      onStatus: (s) => { status.textContent = s; },
+      onEvent: (e) => logDebug(run, e.stage === 'model'
+        ? { stage: `${e.model}`, ms: e.ms, detail: e.ok ? 'answered' : `${e.kind}${e.status ? ` · HTTP ${e.status}` : ''}${e.detail ? ` · ${e.detail}` : ''}` }
+        : { stage: 'deadline hit', ms: e.ms }),
     });
+    logDebug(run, { stage: 'AI reply parsed', ms: since(), detail: `${items.length} items from ${items.model}` });
     setItems(items.map((i) => ({ ...i, source: 'ai' })));
-    status.textContent = `Found ${items.length} things with ${items.model}.`;
-    if (items.model !== state.ai.model) {
-      status.textContent += ` ${state.ai.model} was busy, so Marco switched to ${items.model}.`;
-      useWorkingModel(items.model);
-    }
-    $('step-inventory').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    status.textContent = `Found ${items.length} things with ${items.model} in ${(since() / 1000).toFixed(1)} s.`;
+    useWorkingModel(items.model);
   } catch (e) {
-    status.textContent = '';
+    logDebug(run, { stage: 'scan failed', ms: since(), detail: `${e.kind ?? 'error'}${e.status ? ` · HTTP ${e.status}` : ''} · ${String(e.detail ?? e.message).slice(0, 300)}` });
     err.textContent = explainError(e);
     show(err);
+    status.textContent = '';
+    // Fallback: never leave the page without a recipe.
+    if (state.items.length) {
+      source = 'last';
+    } else {
+      source = 'sample';
+      setItems(DEMO_KITCHEN.map((i) => ({ ...i, source: 'demo' })));
+    }
   } finally {
     clearInterval(tick);
     renderScanButton();
   }
+  // The pick comes from Marco's brain straight away; AI recipes upgrade it later.
+  const tb = performance.now();
+  decide({ source });
+  logDebug(run, { stage: 'Marco picked', ms: since(), detail: `brain took ${Math.round(performance.now() - tb)} ms` });
+  finishDebugRun(run, since());
+  $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Only ask for recipe ideas when the AI is answering; otherwise it would just time out again.
+  if (source === 'ai') askAIForRecipes();
+}
+
+// ── Debug panel: what each stage took, and the real error ──────────────────
+function startDebugRun(kind, entries = []) {
+  const run = { kind, at: new Date().toLocaleTimeString(), entries: entries.map((e) => ({ ms: 0, ...e })), total: null };
+  state.debug.unshift(run);
+  state.debug = state.debug.slice(0, 6);
+  renderDebug();
+  return run;
+}
+function logDebug(run, entry) {
+  run.entries.push(entry);
+  renderDebug();
+}
+function finishDebugRun(run, total) {
+  run.total = total;
+  if (run.kind === 'scan') {
+    const times = [...store.get('scanTimes', []), { ms: total, ok: !run.entries.some((e) => e.stage === 'scan failed'), at: Date.now() }].slice(-10);
+    store.set('scanTimes', times);
+  }
+  renderDebug();
+}
+function renderDebug() {
+  const box = $('debug-body');
+  if (!box) return;
+  const times = store.get('scanTimes', []);
+  const sorted = times.map((t) => t.ms).sort((a, b) => a - b);
+  const summary = times.length
+    ? `Last ${times.length} scans to a recipe: typical ${(sorted[Math.floor((sorted.length - 1) / 2)] / 1000).toFixed(1)} s, slowest ${(sorted[sorted.length - 1] / 1000).toFixed(1)} s, ${times.filter((t) => t.ok).length} answered by the AI.`
+    : 'No scans yet.';
+  box.replaceChildren(
+    h('p', { class: 'mini' }, summary),
+    ...state.debug.map((run) => h('div', { class: 'debug-run' },
+      h('h3', {}, `${run.kind === 'scan' ? 'Scan' : 'Recipe ideas'} at ${run.at}${run.total != null ? ` · ${(run.total / 1000).toFixed(1)} s total` : ' · running…'}`),
+      h('table', { class: 'parts' }, h('tbody', {}, run.entries.map((e) =>
+        h('tr', {}, h('td', {}, e.stage), h('td', { class: 'num' }, e.ms != null ? `${(e.ms / 1000).toFixed(1)} s` : ''), h('td', { class: 'dbg' }, e.detail ?? ''))))))),
+  );
+}
+function copyDebug() {
+  const text = JSON.stringify({ version: '1.2', provider: state.ai?.provider, model: state.ai?.model, scanTimes: store.get('scanTimes', []), runs: state.debug }, null, 1);
+  navigator.clipboard?.writeText(text).then(() => { $('copy-debug').textContent = 'Copied'; }, () => {});
 }
 
 // ── 3 · Inventory ───────────────────────────────────────────────────────────
@@ -293,7 +363,8 @@ function updateCtx(patch) {
 }
 
 // ── 5 · Decide and explain ──────────────────────────────────────────────────
-function decide() {
+function decide(opts = {}) {
+  if (opts.source) state.pickSource = opts.source;
   state.decided = true;
   const result = rank({
     inventory: inventory(),
@@ -321,8 +392,13 @@ async function askAIForRecipes(force = false) {
   const inv = inventory();
   state.aiRecipes = { status: 'loading', accepted: [], rejected: [], model: null, error: null, key, note: 'Asking your AI to design recipes…' };
   decide();
+  const t0 = performance.now();
+  const run = startDebugRun('recipes');
   try {
     const { recipes, model } = await designRecipes({
+      onEvent: (e) => logDebug(run, e.stage === 'model'
+        ? { stage: `${e.model}`, ms: e.ms, detail: e.ok ? 'answered' : `${e.kind}${e.status ? ` · HTTP ${e.status}` : ''}${e.detail ? ` · ${e.detail}` : ''}` }
+        : { stage: 'deadline hit', ms: e.ms }),
       ...state.ai,
       have: [...inv.have],
       context: { kind: state.ctx.kind, mood: state.ctx.mood },
@@ -337,10 +413,12 @@ async function askAIForRecipes(force = false) {
       else rejected.push({ name: v.meal?.name || raw?.name || `Recipe ${index + 1}`, reasons: v.errors });
     });
     state.aiRecipes = { status: 'done', accepted, rejected, model, error: null, key };
-    useWorkingModel(model);
+    finishDebugRun(run, Math.round(performance.now() - t0));
   } catch (e) {
     if (state.aiRecipes.key !== key) return;
     state.aiRecipes = { status: 'error', accepted: [], rejected: [], model: null, error: explainError(e), key };
+    logDebug(run, { stage: 'failed', detail: `${e.kind ?? 'error'}${e.status ? ` · HTTP ${e.status}` : ''} · ${String(e.detail ?? e.message).slice(0, 300)}` });
+    finishDebugRun(run, Math.round(performance.now() - t0));
   }
   decide();
 }
@@ -436,6 +514,8 @@ function renderResult(result) {
     const passive = top.raw.passiveMinutes;
     cards.push(h('section', { class: 'card pick' },
       h('p', { class: 'pick-label' }, top.meal.origin === 'ai' ? 'Cook this · designed by your AI, chosen by Marco' : 'Cook this'),
+      state.pickSource === 'sample' ? h('p', { class: 'fallback-note' }, "Your AI didn't answer in time, so this pick uses the sample kitchen. Scan again, or see the debug panel below for the exact error.") : null,
+      state.pickSource === 'last' ? h('p', { class: 'fallback-note' }, "Your AI didn't answer in time, so this pick uses your last scan. Scan again, or see the debug panel below for the exact error.") : null,
       h('h2', {}, top.meal.name),
       h('div', { class: 'reasons' }, top.reasons.map((r) => h('span', {}, r))),
       top.beats ? h('p', { class: 'beats' }, 'Beats ', h('strong', {}, top.beats.other.name), ': ', top.beats.reasons.join(', ') || 'a better balance of payoff and effort', '.') : null,
@@ -498,7 +578,9 @@ function init() {
     });
   }
   $('scan').addEventListener('click', scan);
+  $('copy-debug')?.addEventListener('click', copyDebug);
   $('use-demo').addEventListener('click', () => {
+    state.pickSource = 'inventory';
     setItems(DEMO_KITCHEN.map((i) => ({ ...i, source: 'demo' })));
     $('step-inventory').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
@@ -522,12 +604,13 @@ function init() {
     $(id).addEventListener('change', (e) => updateCtx({ targets: { ...state.ctx.targets, [key]: Math.max(0, Number(e.target.value) || 0) } }));
   }
   $('decide').addEventListener('click', () => {
-    decide();
+    decide({ source: 'inventory' });
     askAIForRecipes();
     $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   renderKey();
+  renderDebug();
   renderThumbs();
   renderInventory();
   renderContext();

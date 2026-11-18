@@ -13,6 +13,17 @@ Tells you what to cook right now, from what you already have, that you will actu
 5. **Cook this.** Marco's brain ranks its catalogue and shows the simplest meal you'll actually make, with the steps and a breakdown of why it won.
 6. **Your AI's recipe ideas** (1.1). With a key, the AI also designs up to 3 recipes from your inventory in a strict schema. `src/brain/validate.js` rejects anything Marco can't verify (unknown ingredients or kit, impossible macros) and corrects friction the AI understated (a knife and board for chopping, one dish per pan and utensil, at least half a minute per step). Survivors then go through the same inventory filter and score as the catalogue. The AI proposes; Marco picks.
 
+### Speed budget (1.2)
+
+A recipe appears within 15 s of tapping Scan, every time:
+- Photos go at 768 px. Gemini reads them at medium resolution and OpenAI at low detail.
+- The AI replies in a compact form (`{"have": [ids], "other": [names]}`) instead of a full object per item, which is most of the speed-up.
+- Two fast models are asked at once. The first good answer wins, and the other request is cancelled.
+- Each call has a hard deadline: 12 s for the scan and 9 s for recipe ideas. iOS Safari otherwise cuts requests off at about 60 s with "Load failed".
+- Marco's brain picks straight after the scan. Recipes the AI designs arrive later and can only upgrade the pick.
+- If the AI never answers, the pick uses your last scan, or the sample kitchen with a clear note.
+- The **Debug** panel at the bottom of the page shows each stage's time, the real HTTP status and error text, and the typical and slowest time over the last 10 scans. "Copy for Claude" copies all of this without the key.
+
 ### Reliability (1.1)
 
 Every AI call retries twice with backoff on 5xx/429 (Gemini's 503 "high demand", Anthropic's 529), times out after 75 s instead of hanging, then falls back to other light, stable models the key can use. When a fallback works, Marco keeps using that model. Gemini "thinking" is turned down for scans, which makes them faster.
