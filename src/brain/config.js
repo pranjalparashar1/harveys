@@ -64,9 +64,11 @@ export const DEFAULT_CONFIG = Object.freeze({
   }),
 
   // Sanity gate: what counts as food at all (1.3.4). A real pick on a phone was
-  // "100 g butter, microwaved, with salt": 1 g protein, 717 kcal. Anything
-  // failing these never reaches the ranking, whoever designed it.
+  // "100 g butter, microwaved, with salt": 1 g protein, 717 kcal.
+  // OFF on purpose (pranjal, 18 Nov): odd lowest-friction ideas show the ranker
+  // working and may inspire. Set `enabled: true` to reject them again.
   nutritionGate: Object.freeze({
+    enabled: false,
     minProtein: Object.freeze({ meal: 8, snack: 5 }), // grams
     maxKcalPerGramProtein: 45, // poha, the leanest-protein catalogue meal, is 42
     // At least one ingredient must be real food, not only fat, spice or spread.

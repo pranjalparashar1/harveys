@@ -12,6 +12,7 @@ import { DEFAULT_CONFIG } from './config.js';
  */
 export function nutritionProblems(meal, config = DEFAULT_CONFIG) {
   const gate = config.nutritionGate;
+  if (!gate?.enabled) return [];
   const problems = [];
   const protein = Number(meal.macros?.protein) || 0;
   const kcal = Number(meal.macros?.kcal) || 0;
