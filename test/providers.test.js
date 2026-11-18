@@ -85,65 +85,97 @@ test('model listing filters to usable models and picks a light default', async (
 });
 
 const GEMINI_OK = (text) => ({ candidates: [{ content: { parts: [{ text }] } }] });
-function scripted(responses) {
+const reply = (status, body) => ({ status, ok: status === 200, json: async () => body, text: async () => JSON.stringify(body) });
+
+/** fetch fake: per model, a [status, body, delayMs] answer; delay Infinity = never answers. */
+function byModel(table) {
   const calls = [];
-  const impl = async (url, init) => {
-    calls.push({ url, body: JSON.parse(init.body) });
-    const [status, body] = responses[Math.min(calls.length - 1, responses.length - 1)];
-    return { status, ok: status === 200, json: async () => body, text: async () => JSON.stringify(body) };
+  const impl = (url, init) => {
+    const model = (url.match(/models\/([^:]+):/) ?? [])[1] ?? JSON.parse(init.body).model;
+    calls.push({ model, body: JSON.parse(init.body) });
+    const [status, body, delay = 0] = table[model] ?? table['*'] ?? [500, {}];
+    return new Promise((resolve, reject) => {
+      const t = delay === Infinity ? null : setTimeout(() => resolve(reply(status, body)), delay);
+      init.signal?.addEventListener('abort', () => { clearTimeout(t); reject(Object.assign(new Error('aborted'), { name: 'AbortError' })); });
+    });
   };
   return { impl, calls };
 }
+const G = ['gemini-3.5-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 
-test('503 "high demand" is retried, then succeeds on the same model', async () => {
-  const { impl, calls } = scripted([[503, { error: { message: 'This model is currently experiencing high demand.' } }], [200, GEMINI_OK('{"items":[]}')]]);
-  const r = await callModel({ provider: 'gemini', apiKey: 'k', model: 'gemini-2.5-flash', prompt: 'p', fetchImpl: impl, backoffMs: [0, 0] });
-  assert.equal(r.model, 'gemini-2.5-flash');
+test('two fast models race and the first good answer wins', async () => {
+  const { impl, calls } = byModel({
+    'gemini-3.5-flash-lite': [200, GEMINI_OK('{"have":[]}'), 300],
+    'gemini-2.5-flash-lite': [200, GEMINI_OK('{"have":[]}'), 20],
+  });
+  const r = await callModel({ provider: 'gemini', apiKey: 'k', model: G[0], models: G, prompt: 'p', fetchImpl: impl });
+  assert.equal(r.model, 'gemini-2.5-flash-lite');
   assert.equal(calls.length, 2);
 });
 
-test('a model that stays overloaded hands over to another model', async () => {
-  const { impl, calls } = scripted([[503, {}], [503, {}], [503, {}], [200, GEMINI_OK('{"items":[]}')]]);
-  const statuses = [];
-  const r = await callModel({ provider: 'gemini', apiKey: 'k', model: 'gemini-3.5-flash-lite', models: ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro'],
-    prompt: 'p', fetchImpl: impl, backoffMs: [0, 0], onStatus: (s) => statuses.push(s) });
-  assert.equal(r.model, 'gemini-2.5-flash');
-  assert.ok(calls[3].url.includes('gemini-2.5-flash:'));
-  assert.ok(statuses.some((s) => s.includes('instead')));
+test('503 "high demand" on one model: another model answers', async () => {
+  const events = [];
+  const { impl } = byModel({
+    'gemini-3.5-flash-lite': [503, { error: { message: 'This model is currently experiencing high demand.' } }, 5],
+    '*': [200, GEMINI_OK('{"have":[]}'), 30],
+  });
+  const r = await callModel({ provider: 'gemini', apiKey: 'k', model: G[0], models: G, prompt: 'p', fetchImpl: impl, onEvent: (e) => events.push(e) });
+  assert.notEqual(r.model, G[0]);
+  const failed = events.find((e) => e.model === G[0]);
+  assert.equal(failed.status, 503);
+  assert.match(failed.detail, /high demand/);
 });
 
 test('when every model is overloaded the error says which were tried', async () => {
-  const { impl } = scripted([[503, {}]]);
-  await assert.rejects(callModel({ provider: 'gemini', apiKey: 'k', model: 'gemini-2.5-flash', prompt: 'p', fetchImpl: impl, backoffMs: [0] }),
-    (e) => e.kind === 'overloaded' && e.detail.includes('tried gemini-2.5-flash'));
+  const { impl, calls } = byModel({ '*': [503, {}, 5] });
+  await assert.rejects(callModel({ provider: 'gemini', apiKey: 'k', model: G[0], models: G, prompt: 'p', fetchImpl: impl }),
+    (e) => e.kind === 'overloaded' && e.detail.includes('tried gemini-3.5-flash-lite'));
+  assert.equal(calls.length, 3);
 });
 
-test('a rejected key is not retried', async () => {
-  const { impl, calls } = scripted([[401, {}]]);
-  await assert.rejects(callModel({ provider: 'claude', apiKey: 'k', model: 'claude-haiku-4-5', prompt: 'p', fetchImpl: impl, backoffMs: [0, 0] }), (e) => e.kind === 'invalidKey');
-  assert.equal(calls.length, 1);
+test('a rejected key stops everything at once', async () => {
+  const { impl } = byModel({ '*': [401, {}, 5] });
+  await assert.rejects(callModel({ provider: 'claude', apiKey: 'k', model: 'claude-haiku-4-5', prompt: 'p', fetchImpl: impl }), (e) => e.kind === 'invalidKey');
 });
 
-test('a hung request times out and moves on instead of sticking on "Looking…"', async () => {
+test('an AI that never answers gives up at the deadline, not after a minute', async () => {
+  const { impl } = byModel({ '*': [200, {}, Infinity] });
+  const t0 = Date.now();
+  await assert.rejects(callModel({ provider: 'gemini', apiKey: 'k', model: G[0], models: G, prompt: 'p', fetchImpl: impl, deadlineMs: 300 }),
+    (e) => e.kind === 'timeout');
+  assert.ok(Date.now() - t0 < 600);
+});
+
+test('Gemini speed knobs are set, and dropped if a model rejects them', async () => {
+  const cfg = (m, images = []) => JSON.parse(buildRequest({ provider: 'gemini', apiKey: 'k', model: m, prompt: 'p', images }).init.body).generationConfig;
+  assert.deepEqual(cfg('gemini-2.5-flash').thinkingConfig, { thinkingBudget: 0 });
+  assert.deepEqual(cfg('gemini-3.5-flash-lite').thinkingConfig, { thinkingLevel: 'low' });
+  assert.equal(cfg('gemini-1.5-flash').thinkingConfig, undefined);
+  assert.equal(cfg('gemini-2.5-flash', [{ base64: 'A', mediaType: 'image/jpeg' }]).mediaResolution, 'MEDIA_RESOLUTION_MEDIUM');
+  assert.equal(cfg('gemini-2.5-flash').maxOutputTokens, 1024);
   let n = 0;
-  const impl = (url, init) => {
+  const impl = async (url, init) => {
+    const body = JSON.parse(init.body);
     n++;
-    if (n === 1) return new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
-    return Promise.resolve({ status: 200, ok: true, json: async () => GEMINI_OK('{"items":[]}'), text: async () => '' });
+    return body.generationConfig.thinkingConfig ? reply(400, {}) : reply(200, GEMINI_OK('{"have":[]}'));
   };
-  const r = await callModel({ provider: 'gemini', apiKey: 'k', model: 'gemini-3.5-flash-lite', models: ['gemini-3.5-flash-lite', 'gemini-2.5-flash'], prompt: 'p', fetchImpl: impl, timeoutMs: 50, backoffMs: [0] });
-  assert.equal(r.model, 'gemini-2.5-flash');
+  const r = await callModel({ provider: 'gemini', apiKey: 'k', model: G[0], models: [G[0]], prompt: 'p', fetchImpl: impl, parallel: 1 });
+  assert.equal(r.model, G[0]);
+  assert.equal(n, 2);
 });
 
-test('Gemini thinking is turned down, and dropped if the model rejects it', async () => {
-  const body = (m) => JSON.parse(buildRequest({ provider: 'gemini', apiKey: 'k', model: m, prompt: 'p' }).init.body).generationConfig;
-  assert.deepEqual(body('gemini-2.5-flash').thinkingConfig, { thinkingBudget: 0 });
-  assert.deepEqual(body('gemini-3.5-flash-lite').thinkingConfig, { thinkingLevel: 'low' });
-  assert.equal(body('gemini-1.5-flash').thinkingConfig, undefined);
-  const { impl, calls } = scripted([[400, {}], [200, GEMINI_OK('{"items":[]}')]]);
-  await callModel({ provider: 'gemini', apiKey: 'k', model: 'gemini-3.5-flash-lite', prompt: 'p', fetchImpl: impl, backoffMs: [0] });
-  assert.ok(calls[0].body.generationConfig.thinkingConfig);
-  assert.equal(calls[1].body.generationConfig.thinkingConfig, undefined);
+test('OpenAI images go at low detail, Claude replies are capped short', () => {
+  const o = JSON.parse(buildRequest({ provider: 'openAI', apiKey: 'k', model: 'm', prompt: 'p', images: IMG }).init.body);
+  assert.equal(o.messages[0].content[1].image_url.detail, 'low');
+  const c = JSON.parse(buildRequest({ provider: 'claude', apiKey: 'k', model: 'm', prompt: 'p' }).init.body);
+  assert.equal(c.max_tokens, 1024);
+});
+
+test('compact inventory replies become items with canonical ids', () => {
+  const items = parseInventory('{"have":["paneer","air_fryer","made_up"],"other":["ketchup bottle"]}');
+  assert.deepEqual(items.map((i) => [i.name, i.canonical, i.category]), [
+    ['Paneer', 'paneer', 'food'], ['Air fryer', 'air_fryer', 'appliance'], ['made up', null, 'other'], ['ketchup bottle', null, 'other'],
+  ]);
 });
 
 test('model chain prefers stable light models the key actually has', () => {
@@ -153,7 +185,7 @@ test('model chain prefers stable light models the key actually has', () => {
 });
 
 test('designRecipes sends the inventory ids and returns raw recipes for the brain', async () => {
-  const { impl, calls } = scripted([[200, { content: [{ type: 'text', text: '{"recipes":[{"name":"x"}]}' }] }]]);
+  const { impl, calls } = byModel({ '*': [200, { content: [{ type: 'text', text: '{"recipes":[{"name":"x"}]}' }] }] });
   const r = await designRecipes({ provider: 'claude', apiKey: 'k', model: 'claude-haiku-4-5', have: ['paneer', 'air_fryer'], context: { kind: 'meal', mood: 'tired' }, fetchImpl: impl, backoffMs: [] });
   assert.equal(r.recipes.length, 1);
   const prompt = calls[0].body.messages[0].content.find((c) => c.type === 'text').text;

@@ -13,6 +13,7 @@
 // provider it belongs to.
 
 import { inventoryPrompt, recipePrompt } from './prompt.js';
+import { FOODS, EQUIPMENT, ASSUMED_BASICS, labelFor } from '../brain/vocabulary.js';
 
 export const PROVIDERS = {
   claude: { label: 'Claude (Anthropic)', keyHint: 'sk-ant-…', keysUrl: 'https://console.anthropic.com/settings/keys' },
@@ -88,7 +89,7 @@ export function geminiThinking(model) {
  * @param {{provider: string, apiKey: string, model: string, images?: Array<{base64: string, mediaType: string}>, prompt: string, thinking?: boolean}} p
  * @returns {{url: string, init: RequestInit}}
  */
-export function buildRequest({ provider, apiKey, model, images = [], prompt, thinking = true }) {
+export function buildRequest({ provider, apiKey, model, images = [], prompt, thinking = true, maxTokens = 1024 }) {
   const json = (headers, body) => ({
     method: 'POST',
     headers: { 'content-type': 'application/json', ...headers },
@@ -100,7 +101,7 @@ export function buildRequest({ provider, apiKey, model, images = [], prompt, thi
         url: 'https://api.anthropic.com/v1/messages',
         init: json(ANTHROPIC_HEADERS(apiKey), {
           model,
-          max_tokens: 4096,
+          max_tokens: maxTokens,
           messages: [{
             role: 'user',
             content: [
@@ -115,13 +116,13 @@ export function buildRequest({ provider, apiKey, model, images = [], prompt, thi
         url: 'https://api.openai.com/v1/chat/completions',
         init: json({ authorization: `Bearer ${apiKey}` }, {
           model,
-          max_completion_tokens: 4096,
+          max_completion_tokens: maxTokens,
           response_format: { type: 'json_object' },
           messages: [{
             role: 'user',
             content: [
               { type: 'text', text: prompt },
-              ...images.map((img) => ({ type: 'image_url', image_url: { url: `data:${img.mediaType};base64,${img.base64}` } })),
+              ...images.map((img) => ({ type: 'image_url', image_url: { url: `data:${img.mediaType};base64,${img.base64}`, detail: 'low' } })),
             ],
           }],
         }),
@@ -138,7 +139,10 @@ export function buildRequest({ provider, apiKey, model, images = [], prompt, thi
           }],
           generationConfig: {
             responseMimeType: 'application/json',
+            maxOutputTokens: maxTokens,
+            // Speed knobs. If a model rejects them (HTTP 400) the call is resent without them.
             ...(thinking && geminiThinking(model) ? { thinkingConfig: geminiThinking(model) } : {}),
+            ...(thinking && images.length ? { mediaResolution: 'MEDIA_RESOLUTION_MEDIUM' } : {}),
           },
         }),
       };
@@ -171,7 +175,20 @@ const CATEGORIES = new Set(['food', 'appliance', 'cookware', 'utensil', 'cutlery
 /** Takes the first balanced {…} from model text and validates the inventory shape. */
 export function parseInventory(text) {
   const obj = parseJsonObject(text);
-  if (!obj || !Array.isArray(obj.items)) return null;
+  if (!obj) return null;
+  // 1.2 compact form: {"have": [ids], "other": [names]}
+  if (Array.isArray(obj.have)) {
+    const known = (id) => FOODS[id] || EQUIPMENT[id] || ASSUMED_BASICS[id];
+    const items = [...new Set(obj.have.filter((id) => typeof id === 'string'))].map((id) => known(id)
+      ? { name: labelFor(id), category: FOODS[id] ? 'food' : EQUIPMENT[id]?.kind ?? 'utensil', canonical: id }
+      : { name: id.replace(/_/g, ' ').slice(0, 80), category: 'other', canonical: null });
+    for (const name of Array.isArray(obj.other) ? obj.other.slice(0, 20) : []) {
+      if (typeof name === 'string' && name.trim()) items.push({ name: name.trim().slice(0, 80), category: 'other', canonical: null });
+    }
+    return items.map((i) => ({ brand: null, quantity: null, location: null, confidence: 'medium', ...i }));
+  }
+  // 1.0 / 1.1 long form: {"items": [{name, category, canonical, …}]}
+  if (!Array.isArray(obj.items)) return null;
   return obj.items
     .filter((i) => i && typeof i.name === 'string' && i.name.trim())
     .map((i) => ({
@@ -203,7 +220,8 @@ export function errorForStatus(status, body = '') {
 }
 
 async function send(url, init, apiKey, fetchImpl, timeoutMs = 0) {
-  const controller = timeoutMs ? new AbortController() : null;
+  // `init.signal` (from callModel) or `timeoutMs` (key check) cancels the request.
+  const controller = timeoutMs && !init.signal ? new AbortController() : null;
   const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
   let response;
   try {
@@ -215,18 +233,16 @@ async function send(url, init, apiKey, fetchImpl, timeoutMs = 0) {
     return await response.json();
   } catch (e) {
     if (e instanceof AIError) throw e;
-    if (e?.name === 'AbortError') throw new AIError('timeout', `no answer after ${Math.round(timeoutMs / 1000)} s`);
+    if (e?.name === 'AbortError') throw new AIError('timeout', 'cancelled');
     throw new AIError('network', redact(String(e?.message ?? e), apiKey));
   } finally {
     if (timer) clearTimeout(timer);
   }
 }
 
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-
 /**
- * Models to try, in order: the chosen one, then light, stable alternatives the
- * key can use. Overload is per model, so switching often gets through.
+ * Models to race, in order: the chosen one, then light, stable alternatives
+ * the key can use. Overload is per model, so a second model often answers.
  */
 export function modelChain(provider, chosen, available = [], max = 3) {
   const stable = (m) => !/(preview|exp|experimental|latest|\d{2}-\d{2})/.test(m);
@@ -234,55 +250,97 @@ export function modelChain(provider, chosen, available = [], max = 3) {
   const pool = available.length ? available : FALLBACK_MODELS[provider];
   const extras = [...FALLBACK_MODELS[provider], ...pool]
     .filter((m) => !available.length || available.includes(m))
-    .filter((m) => m !== chosen && stable(m) && light.test(m));
+    .filter((m) => m !== chosen && stable(m) && light.test(m))
+    // fastest first: lite/mini/haiku before the rest
+    .sort((a, b) => Number(/lite|-mini|haiku/.test(b)) - Number(/lite|-mini|haiku/.test(a)));
   return [...new Set([chosen, ...extras])].slice(0, max);
 }
 
 /**
- * One call with retries: up to 2 tries per model with backoff, then the next
- * model in the chain. A rejected key stops at once. Returns the model's text.
- * @param {{provider, apiKey, model, models?: string[], prompt: string, images?: any[], fetchImpl?, timeoutMs?: number, onStatus?: (s: string) => void, backoffMs?: number[]}} p
+ * One AI call under a hard deadline (Marco 1.2).
+ *
+ *   • Two models start at once; the first good answer wins and the other is cancelled.
+ *   • If one fails fast (busy, quota, network), the next model in the chain starts,
+ *     as long as there is time left.
+ *   • Nothing outlives `deadlineMs`. iOS Safari kills requests after about 60 s and
+ *     reports "Load failed", which 1.1 showed as "Couldn't reach the provider".
+ *   • Every attempt is reported through `onEvent` for the debug panel.
+ *
+ * @returns {Promise<{text: string, model: string, ms: number}>}
  */
-export async function callModel({ provider, apiKey, model, models = [], prompt, images = [], fetchImpl = fetch, timeoutMs = 75000, onStatus = () => {}, backoffMs = [1500, 4000] }) {
+export async function callModel({
+  provider, apiKey, model, models = [], prompt, images = [], fetchImpl = fetch,
+  deadlineMs = 12000, parallel = 2, maxTokens = 1024, onStatus = () => {}, onEvent = () => {},
+}) {
   const chain = modelChain(provider, model, models);
-  let last;
-  for (const m of chain) {
-    let thinking = true;
-    for (let attempt = 0; attempt <= backoffMs.length; attempt++) {
-      onStatus(attempt ? `${m} is busy, retrying…` : m === model ? `Asking ${m}…` : `Trying ${m} instead…`);
+  const t0 = Date.now();
+  const left = () => deadlineMs - (Date.now() - t0);
+  const controllers = new Set();
+  let next = 0;
+  let running = 0;
+  let last = null;
+  let settled = false;
+
+  return await new Promise((resolve, reject) => {
+    const finish = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      for (const c of controllers) c.abort();
+      fn(value);
+    };
+    const timer = setTimeout(() => {
+      const e = last && last.kind !== 'timeout' ? last : new AIError('timeout', `no answer within ${Math.round(deadlineMs / 1000)} s`);
+      e.detail = `${e.detail ? `${e.detail} ` : ''}(tried ${chain.slice(0, Math.max(next, 1)).join(', ')})`;
+      onEvent({ stage: 'deadline', ms: Date.now() - t0 });
+      finish(reject, e);
+    }, deadlineMs);
+
+    const attempt = async (m, thinking = true) => {
+      running++;
+      const controller = new AbortController();
+      controllers.add(controller);
+      const started = Date.now();
+      onStatus(m === model ? `Asking ${m}…` : `Also asking ${m}…`);
       try {
-        const { url, init } = buildRequest({ provider, apiKey, model: m, images, prompt, thinking });
-        const root = await send(url, init, apiKey, fetchImpl, timeoutMs);
+        const { url, init } = buildRequest({ provider, apiKey, model: m, images, prompt, thinking, maxTokens });
+        const root = await send(url, { ...init, signal: controller.signal }, apiKey, fetchImpl);
         const text = extractText(provider, root);
         if (!text) throw new AIError('malformedResponse', 'empty answer');
-        return { text, model: m };
-      } catch (e) {
+        onEvent({ stage: 'model', model: m, ok: true, ms: Date.now() - started });
+        finish(resolve, { text, model: m, ms: Date.now() - t0 });
+      } catch (err) {
+        const e = err instanceof AIError ? err : new AIError('network', String(err?.message ?? err));
+        if (settled) return;
+        onEvent({ stage: 'model', model: m, ok: false, kind: e.kind, status: e.status, detail: String(e.detail ?? '').slice(0, 300), ms: Date.now() - started });
+        if (e.kind === 'invalidKey' || e.kind === 'imageTooLarge') return finish(reject, e);
         last = e;
-        if (!(e instanceof AIError)) throw e;
-        if (e.kind === 'invalidKey' || e.kind === 'imageTooLarge' || e.kind === 'network') throw e;
-        if (e.kind === 'badRequest' && provider === 'gemini' && thinking && geminiThinking(m)) {
-          thinking = false; // older model that doesn't know thinkingConfig: retry plainly
-          attempt--;
-          continue;
+        if (e.kind === 'badRequest' && thinking && provider === 'gemini') {
+          running--;
+          controllers.delete(controller);
+          return attempt(m, false); // a model that rejects the speed knobs: resend plainly
         }
-        if (e.kind === 'badRequest' || e.kind === 'modelUnavailable' || e.kind === 'timeout') break; // next model
-        if (attempt < backoffMs.length) await wait(backoffMs[attempt]);
+      } finally {
+        controllers.delete(controller);
       }
-    }
-  }
-  last.detail = `${last.detail ? `${last.detail} ` : ''}(tried ${chain.join(', ')})`;
-  throw last;
+      running--;
+      if (settled) return;
+      if (next < chain.length && left() > 2500) return attempt(chain[next++]);
+      if (running === 0) {
+        last.detail = `${last.detail ? `${last.detail} ` : ''}(tried ${chain.slice(0, next).join(', ')})`;
+        finish(reject, last);
+      }
+    };
+
+    while (next < Math.min(parallel, chain.length)) attempt(chain[next++]);
+  });
 }
 
-/**
- * Sends the photos and returns the list of things the AI saw.
- * The AI only perceives; it never picks a meal.
- */
 export async function scanKitchen({ images, ...rest }) {
-  const { text, model } = await callModel({ ...rest, images, prompt: inventoryPrompt() });
+  const { text, model, ms } = await callModel({ deadlineMs: 12000, ...rest, images, prompt: inventoryPrompt() });
   const items = parseInventory(text);
   if (!items) throw new AIError('malformedResponse', 'unparseable inventory');
-  return Object.assign(items, { model });
+  return Object.assign(items, { model, ms });
 }
 
 /** First balanced {…} in model text, parsed, or null. */
@@ -303,7 +361,7 @@ export function parseJsonObject(text) {
  * Returns raw candidates: the brain validates, filters and scores them.
  */
 export async function designRecipes({ have, context, ...rest }) {
-  const { text, model } = await callModel({ ...rest, timeoutMs: 60000, prompt: recipePrompt({ have, context }) });
+  const { text, model } = await callModel({ deadlineMs: 9000, maxTokens: 1500, ...rest, prompt: recipePrompt({ have, context }) });
   const obj = parseJsonObject(text);
   if (!obj || !Array.isArray(obj.recipes)) throw new AIError('malformedResponse', 'unparseable recipes');
   return { recipes: obj.recipes.slice(0, 5), model };
