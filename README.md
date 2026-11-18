@@ -8,8 +8,8 @@ Tells you what to cook right now, from what you already have, that you will actu
 
 1. **Your AI.** Paste an API key from Claude, OpenAI or Gemini. The provider is detected from the key's format, the same way Cals does it. The key is stored only in this browser's `localStorage` and sent only to that provider.
 2. **Scan your kitchen.** Add up to 8 photos (fridge, shelves, counter, drawers). They are shrunk to 1280 px and sent in one request.
-3. **What your AI spotted.** The AI returns a structured list of food, appliances, cookware and utensils. It never picks a meal. Remove mistakes, add what it missed.
-4. **Right now.** Energy (fresh / okay / tired), meal or snack, time, and what's left of today's protein, calories and fiber.
+3. **Spotted.** The AI returns a structured list of food, appliances, cookware and utensils. It never picks a meal. Remove mistakes, add what it missed. Kept in memory only, so every reload starts clean (1.3.2).
+4. **Right now.** Meal or snack, time, and what's left of today's protein, calories and fiber. Mood/energy is not asked from 1.3.2 on; λ then has no mood factor (neutral, same as "okay"), and `contextLambda` still accepts a mood when the page asks again.
 5. **Cook this.** Marco's brain ranks its catalogue and shows the simplest meal you'll actually make, with the steps and a breakdown of why it won.
 6. **Your AI's recipe ideas** (1.1). With a key, the AI also designs up to 3 recipes from your inventory in a strict schema. `src/brain/validate.js` rejects anything Marco can't verify (unknown ingredients or kit, impossible macros) and corrects friction the AI understated (a knife and board for chopping, one dish per pan and utensil, at least half a minute per step). Survivors then go through the same inventory filter and score as the catalogue. The AI proposes; Marco picks.
 
@@ -51,7 +51,7 @@ Pure ES modules: no DOM, no network, no clock, no randomness. Written to port to
 
 - **Payoff:** progress toward what's left of today's protein, calories and fiber, capped at the target.
 - **Friction:** tools, ingredients weighted by prep (ready < measure < peel/chop), steps, hands-on minutes (waiting time excluded), attention needed, cleanup (dishes + greasiness).
-- **λ_context:** mood × late night × weekday/weekend.
+- **λ_context:** mood (optional, neutral when absent) × late night × weekday/weekend.
 - **Weights:** `src/brain/config.js` is the only place tunable numbers live. **They are placeholders** (equal weights) until they're fitted to the meal log.
 - **Catalogue:** `src/brain/catalogue.js`, 26 seeded lazy meals with structured friction data. **Vocabulary:** `src/brain/vocabulary.js`, the ids the AI maps what it sees onto.
 

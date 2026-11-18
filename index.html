@@ -14,138 +14,101 @@
 <body>
   <main class="shell">
     <header class="hero">
-      <p class="eyebrow">Marco 1.3 · prototype</p>
-      <h1>What should I cook right now?</h1>
-      <p class="lede">Photograph your kitchen. Your AI lists what it sees. Marco's own algorithm, not the AI, picks the meal you'll actually make, and tells you why.</p>
+      <h1>Marco</h1>
     </header>
 
-    <!-- 1 · AI key -->
-    <section class="card" id="step-key" aria-labelledby="key-title">
-      <div class="card-head">
-        <span class="step-num">1</span>
-        <h2 id="key-title">Your AI</h2>
-        <span class="status" id="key-status"></span>
+    <!-- Key: a quiet one-line row once saved -->
+    <section class="card" id="step-key" aria-label="AI key">
+      <div class="key-saved" id="key-saved" hidden>
+        <span class="dot" aria-hidden="true"></span>
+        <span class="key-name" id="key-name"></span>
+        <select id="model" aria-label="Model"></select>
+        <button class="btn link" id="change-key" type="button">Change</button>
       </div>
-      <p class="hint">Paste an API key from Claude, OpenAI or Gemini. Marco detects which one it is. The key stays in this browser only and is sent only to that provider.</p>
-      <label class="field">
-        <span>API key</span>
-        <input id="api-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-ant-…, sk-… or AIza…">
-      </label>
-      <p class="detected" id="detected"></p>
-      <label class="field" id="model-field" hidden>
-        <span>Model</span>
-        <select id="model"></select>
-      </label>
-      <div class="row">
-        <button class="btn" id="save-key" type="button">Save and check key</button>
-        <button class="btn ghost" id="forget-key" type="button" hidden>Forget key</button>
+      <div id="key-edit">
+        <label class="field">
+          <span>API key</span>
+          <input id="api-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-ant-…, sk-… or AIza…">
+        </label>
+        <p class="detected" id="detected"></p>
+        <div class="row">
+          <button class="btn primary" id="save-key" type="button">Save</button>
+          <button class="btn ghost" id="cancel-key" type="button" hidden>Cancel</button>
+          <button class="btn link quiet" id="forget-key" type="button" hidden>Forget key</button>
+        </div>
       </div>
       <p class="error" id="key-error" role="alert" hidden></p>
     </section>
 
-    <!-- 2 · Photos -->
+    <!-- Kitchen -->
     <section class="card" id="step-photos" aria-labelledby="photos-title">
-      <div class="card-head">
-        <span class="step-num">2</span>
-        <h2 id="photos-title">Scan your kitchen</h2>
-      </div>
-      <p class="hint">Take a few photos: the fridge (door open), shelves, the counter, the drawers with your pans and utensils.</p>
+      <h2 id="photos-title">Kitchen</h2>
       <div class="pickers">
         <label class="dropzone" for="photo-input">
           <input id="photo-input" type="file" accept="image/*" multiple>
-          <span class="dz-title">Choose photos</span>
-          <span class="dz-sub">Pick several at once · up to 8</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>
+          <span class="dz-title">Photos</span>
         </label>
         <label class="dropzone" for="camera-input">
           <input id="camera-input" type="file" accept="image/*" capture="environment">
-          <span class="dz-title">Take a photo</span>
-          <span class="dz-sub">One at a time</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <span class="dz-title">Camera</span>
         </label>
       </div>
-      <p class="mini" id="photo-status" aria-live="polite"></p>
       <ul class="thumbs" id="thumbs"></ul>
-      <div class="row">
-        <button class="btn primary" id="scan" type="button" disabled>Scan photos</button>
-        <button class="btn link" id="use-demo" type="button">No key? Try a sample kitchen</button>
-      </div>
+      <p class="mini" id="photo-status" aria-live="polite"></p>
+      <button class="btn primary wide" id="scan" type="button" disabled>Scan</button>
+      <button class="btn link sample" id="use-demo" type="button">Sample kitchen</button>
       <p class="error" id="scan-error" role="alert" hidden></p>
     </section>
 
-    <!-- 3 · Inventory -->
-    <section class="card" id="step-inventory" aria-labelledby="inv-title" hidden>
+    <!-- Spotted (only after a scan; never restored on reload) -->
+    <section class="card rise" id="step-inventory" aria-labelledby="inv-title" hidden>
       <div class="card-head">
-        <span class="step-num">3</span>
-        <h2 id="inv-title">What your AI spotted</h2>
+        <h2 id="inv-title">Spotted</h2>
         <span class="status" id="inv-count"></span>
       </div>
-      <p class="hint">Tap × to remove anything it got wrong. Items Marco can cook with are solid; the rest are listed but don't unlock meals yet.</p>
       <div id="inventory-groups"></div>
-      <form class="row add-row" id="add-form">
-        <input id="add-input" type="text" placeholder="Add something it missed, e.g. eggs" autocomplete="off">
-        <button class="btn" type="submit">Add</button>
+      <form class="add-row" id="add-form">
+        <input id="add-input" type="text" placeholder="Add" autocomplete="off" aria-label="Add an item">
+        <button class="btn" type="submit" aria-label="Add">+</button>
       </form>
       <details class="basics">
-        <summary>Small kit Marco assumes you have</summary>
-        <p class="hint">Untick anything you don't have. Meals that need it will be skipped.</p>
+        <summary>Basics</summary>
         <div class="chips" id="basics"></div>
       </details>
     </section>
 
-    <!-- 4 · Context -->
-    <section class="card" id="step-context" aria-labelledby="ctx-title" hidden>
-      <div class="card-head">
-        <span class="step-num">4</span>
-        <h2 id="ctx-title">Right now</h2>
+    <!-- Right now -->
+    <section class="card rise" id="step-context" aria-label="Right now" hidden>
+      <div class="segmented" id="kind" role="radiogroup" aria-label="Meal or snack">
+        <button type="button" role="radio" data-value="meal">Meal</button>
+        <button type="button" role="radio" data-value="snack">Snack</button>
       </div>
-      <div class="field">
-        <span>How much energy do you have?</span>
-        <div class="segmented" id="mood" role="radiogroup">
-          <button type="button" role="radio" data-value="fresh">Fresh</button>
-          <button type="button" role="radio" data-value="okay">Okay</button>
-          <button type="button" role="radio" data-value="tired">Tired</button>
-        </div>
-      </div>
-      <div class="field">
-        <span>Looking for</span>
-        <div class="segmented" id="kind" role="radiogroup">
-          <button type="button" role="radio" data-value="meal">A meal</button>
-          <button type="button" role="radio" data-value="snack">A snack</button>
-        </div>
-      </div>
-      <div class="field">
-        <span>When</span>
-        <select id="when">
-          <option value="now">Now</option>
-          <option value="weekday-evening">Weekday, 7 pm</option>
-          <option value="weekday-late">Weekday, 10:30 pm</option>
-          <option value="weekend-lunch">Weekend, 1 pm</option>
-        </select>
-        <small class="hint" id="when-detail"></small>
-      </div>
-      <div class="field">
-        <span>Still to eat today</span>
-        <div class="targets">
-          <label><input id="t-protein" type="number" inputmode="numeric" min="0" step="5"><span>g protein</span></label>
-          <label><input id="t-calories" type="number" inputmode="numeric" min="0" step="50"><span>kcal</span></label>
-          <label><input id="t-fiber" type="number" inputmode="numeric" min="0" step="1"><span>g fiber</span></label>
-        </div>
+      <div class="ctx-grid">
+        <label class="field">
+          <span>When</span>
+          <select id="when">
+            <option value="now">Now</option>
+            <option value="weekday-evening">Weekday, 7 pm</option>
+            <option value="weekday-late">Weekday, 10:30 pm</option>
+            <option value="weekend-lunch">Weekend, 1 pm</option>
+          </select>
+        </label>
+        <label class="field"><span>Protein</span><span class="unit-input"><input id="t-protein" type="number" inputmode="numeric" min="0" step="5"><i>g</i></span></label>
+        <label class="field"><span>Calories</span><span class="unit-input"><input id="t-calories" type="number" inputmode="numeric" min="0" step="50"><i>kcal</i></span></label>
+        <label class="field"><span>Fiber</span><span class="unit-input"><input id="t-fiber" type="number" inputmode="numeric" min="0" step="1"><i>g</i></span></label>
       </div>
       <button class="btn primary wide" id="decide" type="button">What should I cook?</button>
     </section>
 
-    <!-- 5 · Result -->
     <section id="result" aria-live="polite" hidden></section>
 
-    <details class="card debug" id="debug">
-      <summary>Debug: timings and errors</summary>
-      <p class="hint">What each stage took on this device, and the exact error when something fails. Nothing here includes your key.</p>
+    <details class="debug" id="debug">
+      <summary>Debug · <span id="version">1.3.2</span></summary>
       <div id="debug-body"></div>
       <button class="btn" id="copy-debug" type="button">Copy for Claude</button>
     </details>
-
-    <footer class="foot">
-      <p>Weights are <strong>placeholders</strong> until they're fitted to your meal log. The AI only lists what it sees; the choice and the reasons come from Marco's deterministic ranker (<code>src/brain/</code>).</p>
-    </footer>
   </main>
   <script type="module" src="src/app.js"></script>
 </body>

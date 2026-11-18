@@ -22,15 +22,20 @@ const FRICTION_LABELS = {
   cleanup: 'cleanup',
 };
 
-/** λ_context with its named parts. */
+/**
+ * λ_context with its named parts.
+ * Mood is optional: with no mood given (the 1.3.2 page doesn't ask), it adds no
+ * factor, so λ comes from time of day and day of week alone. An unknown mood
+ * counts as 'okay'.
+ */
 export function contextLambda(context = {}, config = DEFAULT_CONFIG) {
   const { lambda } = config;
-  const mood = context.mood in lambda.mood ? context.mood : 'okay';
+  const mood = context.mood == null ? null : context.mood in lambda.mood ? context.mood : 'okay';
   const hour = Number.isFinite(context.hour) ? context.hour : 19;
   const day = Number.isFinite(context.weekday) ? context.weekday : 3; // 0 = Sunday
   const late = hour >= 21 || hour < 5;
   const weekend = day === 0 || day === 6;
-  const parts = [{ name: `mood: ${mood}`, factor: lambda.mood[mood] }];
+  const parts = mood ? [{ name: `mood: ${mood}`, factor: lambda.mood[mood] }] : [];
   if (late) parts.push({ name: 'late night', factor: lambda.lateNight });
   parts.push(weekend ? { name: 'weekend', factor: lambda.weekend } : { name: 'weekday', factor: lambda.weeknight });
   const value = parts.reduce((acc, p) => acc * p.factor, 1);
