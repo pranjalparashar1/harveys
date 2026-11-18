@@ -121,7 +121,7 @@ test('503 "high demand" on one model: another model answers', async () => {
   });
   const r = await callModel({ provider: 'gemini', apiKey: 'k', model: G[0], models: G, prompt: 'p', fetchImpl: impl, onEvent: (e) => events.push(e) });
   assert.notEqual(r.model, G[0]);
-  const failed = events.find((e) => e.model === G[0]);
+  const failed = events.find((e) => e.model === G[0] && e.stage === 'model');
   assert.equal(failed.status, 503);
   assert.match(failed.detail, /high demand/);
 });
@@ -149,18 +149,21 @@ test('an AI that never answers gives up at the deadline, not after a minute', as
 test('Gemini speed knobs are set, and dropped if a model rejects them', async () => {
   const cfg = (m, images = []) => JSON.parse(buildRequest({ provider: 'gemini', apiKey: 'k', model: m, prompt: 'p', images }).init.body).generationConfig;
   assert.deepEqual(cfg('gemini-2.5-flash').thinkingConfig, { thinkingBudget: 0 });
-  assert.deepEqual(cfg('gemini-3.5-flash-lite').thinkingConfig, { thinkingLevel: 'low' });
+  assert.deepEqual(cfg('gemini-3.5-flash-lite').thinkingConfig, { thinkingLevel: 'minimal' });
   assert.equal(cfg('gemini-1.5-flash').thinkingConfig, undefined);
   assert.equal(cfg('gemini-2.5-flash', [{ base64: 'A', mediaType: 'image/jpeg' }]).mediaResolution, 'MEDIA_RESOLUTION_MEDIUM');
-  assert.equal(cfg('gemini-2.5-flash').maxOutputTokens, 1024);
+  assert.equal(cfg('gemini-2.5-flash').maxOutputTokens, 2048);
   let n = 0;
   const impl = async (url, init) => {
     const body = JSON.parse(init.body);
     n++;
-    return body.generationConfig.thinkingConfig ? reply(400, {}) : reply(200, GEMINI_OK('{"have":[]}'));
+    seen.push(body.generationConfig.thinkingConfig?.thinkingLevel ?? 'none');
+    return body.generationConfig.thinkingConfig?.thinkingLevel === 'minimal' ? reply(400, {}) : reply(200, GEMINI_OK('{"have":[]}'));
   };
+  const seen = [];
   const r = await callModel({ provider: 'gemini', apiKey: 'k', model: G[0], models: [G[0]], prompt: 'p', fetchImpl: impl, parallel: 1 });
   assert.equal(r.model, G[0]);
+  assert.deepEqual(seen, ['minimal', 'low']); // steps up to 'low', never straight to full thinking
   assert.equal(n, 2);
 });
 
@@ -168,7 +171,7 @@ test('OpenAI images go at low detail, Claude replies are capped short', () => {
   const o = JSON.parse(buildRequest({ provider: 'openAI', apiKey: 'k', model: 'm', prompt: 'p', images: IMG }).init.body);
   assert.equal(o.messages[0].content[1].image_url.detail, 'low');
   const c = JSON.parse(buildRequest({ provider: 'claude', apiKey: 'k', model: 'm', prompt: 'p' }).init.body);
-  assert.equal(c.max_tokens, 1024);
+  assert.equal(c.max_tokens, 2048);
 });
 
 test('compact inventory replies become items with canonical ids', () => {
@@ -191,4 +194,49 @@ test('designRecipes sends the inventory ids and returns raw recipes for the brai
   const prompt = calls[0].body.messages[0].content.find((c) => c.type === 'text').text;
   assert.ok(prompt.includes('paneer') && prompt.includes('air_fryer'));
   assert.equal(calls[0].body.messages[0].content.filter((c) => c.type === 'image').length, 0);
+});
+
+test('scan sends one small request per photo and merges what comes back', async () => {
+  const photos = [1, 2, 3].map((n) => ({ base64: `P${n}`, mediaType: 'image/jpeg' }));
+  const answers = { P1: '{"have":["paneer","air_fryer"]}', P2: '{"have":["paneer","eggs"],"other":["ketchup"]}' };
+  const calls = [];
+  const impl = (url, init) => {
+    const body = JSON.parse(init.body);
+    const photo = body.contents[0].parts[1].inline_data.data;
+    calls.push(photo);
+    if (photo === 'P3') return new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(Object.assign(new Error('a'), { name: 'AbortError' }))));
+    return Promise.resolve(reply(200, GEMINI_OK(answers[photo])));
+  };
+  const items = await scanKitchen({ provider: 'gemini', apiKey: 'k', model: G[0], models: [G[0]], images: photos, fetchImpl: impl, deadlineMs: 200 });
+  assert.equal(calls.filter((c) => c === 'P1').length, 1);
+  assert.deepEqual(items.map((i) => i.canonical ?? i.name), ['paneer', 'air_fryer', 'eggs', 'ketchup']);
+  assert.equal(items.photosRead, 2);
+  assert.equal(items.photosTotal, 3);
+});
+
+test('scan fails only when no photo at all could be read', async () => {
+  const photos = [1, 2].map((n) => ({ base64: `P${n}`, mediaType: 'image/jpeg' }));
+  const { impl } = byModel({ '*': [503, {}, 5] });
+  await assert.rejects(scanKitchen({ provider: 'gemini', apiKey: 'k', model: G[0], models: G, images: photos, fetchImpl: impl, deadlineMs: 500 }),
+    (e) => e.kind === 'overloaded');
+});
+
+test('a silent model gets a second model alongside it after the hedge delay', async () => {
+  const { impl, calls } = byModel({ [G[0]]: [200, {}, Infinity], '*': [200, GEMINI_OK('{"have":["eggs"]}'), 5] });
+  const r = await callModel({ provider: 'gemini', apiKey: 'k', model: G[0], models: G, prompt: 'p', fetchImpl: impl, parallel: 1, hedgeMs: 50, deadlineMs: 1000 });
+  assert.notEqual(r.model, G[0]);
+  assert.equal(calls.length, 2);
+});
+
+test('once most photos are in, a straggler only gets a short grace period', async () => {
+  const photos = [1, 2, 3].map((n) => ({ base64: `P${n}`, mediaType: 'image/jpeg' }));
+  const impl = (url, init) => {
+    const photo = JSON.parse(init.body).contents[0].parts[1].inline_data.data;
+    if (photo === 'P3') return new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(Object.assign(new Error('a'), { name: 'AbortError' }))));
+    return Promise.resolve(reply(200, GEMINI_OK('{"have":["paneer"]}')));
+  };
+  const t0 = Date.now();
+  const items = await scanKitchen({ provider: 'gemini', apiKey: 'k', model: G[0], models: [G[0]], images: photos, fetchImpl: impl, deadlineMs: 5000, graceMs: 100, hedgeMs: 0 });
+  assert.ok(Date.now() - t0 < 1000);
+  assert.equal(items.photosRead, 2);
 });
