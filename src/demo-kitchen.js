@@ -1,0 +1,25 @@
+// A sample inventory shaped like the AI's output, based on pranjal's kitchen.
+// Used by the "Try with a sample kitchen" button and by the tests.
+export const DEMO_KITCHEN = [
+  { name: 'Protein bread', category: 'food', canonical: 'protein_bread', location: 'counter' },
+  { name: 'Amul cheese slices', category: 'food', canonical: 'cheese_slices', location: 'fridge' },
+  { name: 'Amul butter', category: 'food', canonical: 'butter', location: 'fridge' },
+  { name: 'Malai paneer', category: 'food', canonical: 'paneer', location: 'fridge' },
+  { name: 'Nakpro whey protein', category: 'food', canonical: 'whey', location: 'shelf' },
+  { name: 'Toned milk', category: 'food', canonical: 'milk', location: 'fridge' },
+  { name: 'Makhana', category: 'food', canonical: 'makhana', location: 'drawer' },
+  { name: 'Fusilli pasta', category: 'food', canonical: 'pasta', location: 'shelf' },
+  { name: 'Tomatoes', category: 'food', canonical: 'tomato', location: 'fridge' },
+  { name: 'Garlic', category: 'food', canonical: 'garlic', location: 'basket' },
+  { name: 'Olive oil', category: 'food', canonical: 'oil', location: 'shelf' },
+  { name: 'Salt', category: 'food', canonical: 'salt', location: 'shelf' },
+  { name: 'Chilli flakes sachets', category: 'food', canonical: 'chilli_flakes', location: 'drawer' },
+  { name: 'Philips air fryer', category: 'appliance', canonical: 'air_fryer', location: 'counter' },
+  { name: 'Induction cooktop', category: 'appliance', canonical: 'induction', location: 'counter' },
+  { name: 'Microwave', category: 'appliance', canonical: 'microwave', location: 'counter' },
+  { name: 'Kitchen scale', category: 'appliance', canonical: 'kitchen_scale', location: 'drawer' },
+  { name: 'Steel pot', category: 'cookware', canonical: 'saucepan', location: 'shelf' },
+  { name: 'Nonstick pan', category: 'cookware', canonical: 'frying_pan', location: 'shelf' },
+  { name: 'Steel strainer', category: 'cookware', canonical: 'strainer', location: 'drawer' },
+  { name: 'Butter knife', category: 'cutlery', canonical: null, location: 'drawer' },
+];

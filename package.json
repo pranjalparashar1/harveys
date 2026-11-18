@@ -1,0 +1,10 @@
+{
+  "name": "marco",
+  "private": true,
+  "type": "module",
+  "description": "Marco web prototype: scan your kitchen, get the meal you will actually cook.",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "serve": "python3 -m http.server 8000"
+  }
+}
