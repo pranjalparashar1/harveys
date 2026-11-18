@@ -10,6 +10,7 @@ import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 
+const VERSION = '1.3.2';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -31,12 +32,19 @@ const store = {
   },
 };
 
+function savedContext() {
+  const { mood, ...rest } = store.get('context', {}); // drop a mood saved by 1.3 or earlier
+  return rest;
+}
+
 const state = {
   ai: store.get('ai', null), // { apiKey, provider, model, models }
   photos: [], // { base64, mediaType, previewUrl }
-  items: store.get('inventory', []), // [{ name, canonical, category, source }]
+  // Not restored on reload: every page load starts clean (demo-ready).
+  items: [], // [{ name, canonical, category, source }]
   missingBasics: store.get('missingBasics', []),
-  ctx: { mood: 'tired', kind: 'meal', when: 'now', targets: { protein: 40, calories: 800, fiber: 15 }, ...store.get('context', {}) },
+  // No mood: 1.3.2 doesn't ask, so the ranker's λ is neutral on mood (see contextLambda).
+  ctx: { kind: 'meal', when: 'now', targets: { protein: 40, calories: 800, fiber: 15 }, ...savedContext() },
   decided: false,
   debug: store.get('debugRuns', []),
   aiRecipes: { status: 'idle', accepted: [], rejected: [], model: null, error: null, key: null },
@@ -55,33 +63,45 @@ function h(tag, attrs = {}, ...children) {
   return el;
 }
 const show = (el, on = true) => { el.hidden = !on; };
+/** Sets a button's text without removing its haptic switch. */
+const setLabel = (btn, text) => { (btn.querySelector('.lbl') ?? btn).textContent = text; };
 const fmt = (n, d = 2) => (Math.round(n * 10 ** d) / 10 ** d).toString();
 
 // ── 1 · Key ─────────────────────────────────────────────────────────────────
+let editingKey = false;
+
 function renderKey() {
-  const key = $('api-key').value.trim();
-  const provider = detectProvider(key);
-  const saved = state.ai && state.ai.apiKey === key;
-  $('detected').replaceChildren(
-    key
-      ? provider
-        ? h('span', {}, 'Detected ', h('strong', {}, PROVIDERS[provider].label), saved ? ' · saved in this browser' : '')
-        : h('span', {}, "That doesn't look like a Claude, OpenAI or Gemini key.")
-      : h('span', {}, 'Get a key: ',
-          ...Object.values(PROVIDERS).flatMap((p, i) => [i ? ' · ' : '', h('a', { href: p.keysUrl, target: '_blank', rel: 'noopener' }, p.label)])),
-  );
-  $('save-key').disabled = !provider;
-  show($('forget-key'), !!state.ai);
-  show($('model-field'), !!(saved && provider));
-  if (saved && provider) {
-    const models = state.ai.models?.length ? state.ai.models : FALLBACK_MODELS[provider];
+  const collapsed = !!state.ai && !editingKey;
+  show($('key-saved'), collapsed);
+  show($('key-edit'), !collapsed);
+  if (state.ai) {
+    $('key-name').textContent = PROVIDERS[state.ai.provider].label.replace(/ \(.*\)$/, '');
+    const models = state.ai.models?.length ? state.ai.models : FALLBACK_MODELS[state.ai.provider];
     const list = models.includes(state.ai.model) ? models : [state.ai.model, ...models];
     $('model').replaceChildren(...list.map((m) => h('option', { value: m, selected: m === state.ai.model }, m)));
   }
-  const status = $('key-status');
-  status.textContent = state.ai ? `${PROVIDERS[state.ai.provider].label} ready` : 'No key';
-  status.classList.toggle('ok', !!state.ai);
+  const key = $('api-key').value.trim();
+  const provider = detectProvider(key);
+  $('detected').textContent = key ? (provider ? PROVIDERS[provider].label : 'Not a Claude, OpenAI or Gemini key') : '';
+  $('detected').classList.toggle('ok', !!provider);
+  $('save-key').disabled = !provider;
+  show($('forget-key'), !!state.ai);
+  show($('cancel-key'), !!state.ai);
   renderScanButton();
+}
+
+function disarmForget() {
+  clearTimeout(forgetArmed);
+  forgetArmed = null;
+  $('forget-key').textContent = 'Forget key';
+  $('forget-key').classList.remove('armed');
+}
+
+function editKey() {
+  editingKey = true;
+  show($('key-error'), false);
+  renderKey();
+  $('api-key').focus();
 }
 
 async function saveKey() {
@@ -91,10 +111,11 @@ async function saveKey() {
   const err = $('key-error');
   show(err, false);
   $('save-key').disabled = true;
-  $('save-key').textContent = 'Checking…';
+  setLabel($('save-key'), 'Checking…');
   try {
     const models = await checkKey({ provider, apiKey });
     state.ai = { apiKey, provider, models, model: pickModel(provider, models) };
+    editingKey = false;
   } catch (e) {
     if (e instanceof AIError && e.kind === 'invalidKey') {
       err.textContent = e.message;
@@ -103,18 +124,30 @@ async function saveKey() {
     } else {
       // Offline or CORS hiccup on /models: keep the key and use Cals' default model.
       state.ai = { apiKey, provider, models: [], model: DEFAULT_MODEL[provider] };
-      err.textContent = "Couldn't confirm the key right now, but it's saved. The scan will tell us if it works.";
+      editingKey = false;
+      err.textContent = "Saved, but couldn't confirm the key yet.";
       show(err);
     }
   } finally {
-    $('save-key').textContent = 'Save and check key';
+    setLabel($('save-key'), 'Save');
     store.set('ai', state.ai);
     renderKey();
   }
 }
 
+let forgetArmed = null;
 function forgetKey() {
+  // Destructive, so tap twice (no modal): the label asks once, for 4 s.
+  const btn = $('forget-key');
+  if (!forgetArmed) {
+    btn.textContent = 'Tap again to forget';
+    btn.classList.add('armed');
+    forgetArmed = setTimeout(disarmForget, 4000);
+    return;
+  }
+  disarmForget();
   state.ai = null;
+  editingKey = false;
   store.set('ai', null);
   $('api-key').value = '';
   show($('key-error'), false);
@@ -134,7 +167,7 @@ function renderScanButton() {
   const btn = $('scan');
   const n = state.photos.length;
   btn.disabled = !state.ai || n === 0;
-  btn.textContent = !state.ai ? 'Add a key to scan' : n ? `Scan ${n} photo${n === 1 ? '' : 's'}` : 'Scan photos';
+  setLabel(btn, n ? `Scan ${n} photo${n === 1 ? '' : 's'}` : 'Scan');
 }
 
 async function addPhotos(fileList) {
@@ -148,7 +181,7 @@ async function addPhotos(fileList) {
   const take = files.slice(0, Math.max(0, room));
   const problems = [];
   for (const [i, file] of take.entries()) {
-    status.textContent = `Preparing photo ${i + 1} of ${take.length}…`;
+    status.textContent = 'Preparing…';
     try {
       const t = performance.now();
       const photo = await prepareImage(file);
@@ -160,7 +193,7 @@ async function addPhotos(fileList) {
     }
   }
   status.textContent = '';
-  if (files.length > take.length) problems.push(`Marco sends up to ${MAX_PHOTOS} photos at once, so ${files.length - take.length} were left out.`);
+  if (files.length > take.length) problems.push(`Up to ${MAX_PHOTOS} photos; ${files.length - take.length} left out.`);
   if (problems.length) {
     err.textContent = problems.join(' ');
     show(err);
@@ -168,14 +201,9 @@ async function addPhotos(fileList) {
   renderThumbs();
 }
 
+/** Short, human error for the page. The full detail goes to the Debug panel. */
 function explainError(e) {
-  if (!(e instanceof AIError)) return `Something went wrong: ${e.message}`;
-  let text = e.message;
-  if (e.kind === 'overloaded' || e.kind === 'rateLimited' || e.kind === 'timeout' || e.kind === 'network') {
-    text += ' Marco sent each photo separately, tried a second model, and stopped after 12 s so you still get a recipe. The Debug panel at the bottom shows each request.';
-  }
-  if (e.detail) text += ` (${e.detail.replace(/\s+/g, ' ').slice(0, 220)})`;
-  return text;
+  return e instanceof AIError ? e.message : `Something went wrong: ${e.message}`;
 }
 
 // Marco 1.2 time budget: a recipe on screen within 15 s of tapping Scan.
@@ -193,19 +221,20 @@ async function scan() {
   const run = startDebugRun('scan', [
     { stage: 'photos ready', detail: `${state.photos.length} photo(s), ${Math.round(bytes / 1024)} KB to send, prepared in ${state.photos.map((p) => p.prepMs ?? '?').join(' + ')} ms` },
   ]);
-  const tick = setInterval(() => { btn.textContent = `Looking… ${Math.round(since() / 1000)} s`; }, 250);
+  setLabel(btn, 'Looking…');
+  btn.classList.add('shimmer');
   let source = 'ai';
   try {
     const items = await scanKitchen({
       ...state.ai,
       images: state.photos,
       deadlineMs: SCAN_DEADLINE_MS,
-      onStatus: (s) => { status.textContent = s; },
+      onStatus: () => {}, // progress lives on the button; counts stay off screen
       onEvent: (e) => logDebug(run, debugEntry(e, since())),
     });
     logDebug(run, { stage: 'AI reply parsed', ms: since(), detail: `${items.length} items from ${items.photosRead} of ${items.photosTotal} photos (${items.model})` });
     setItems(items.map((i) => ({ ...i, source: 'ai' })));
-    status.textContent = `Found ${items.length} things in ${items.photosRead} of ${items.photosTotal} photos, in ${(since() / 1000).toFixed(1)} s.`;
+    status.textContent = '';
   } catch (e) {
     logDebug(run, { stage: 'scan failed', ms: since(), detail: `${e.kind ?? 'error'}${e.status ? ` · HTTP ${e.status}` : ''} · ${String(e.detail ?? e.message).slice(0, 300)}` });
     err.textContent = explainError(e);
@@ -219,7 +248,7 @@ async function scan() {
       setItems(DEMO_KITCHEN.map((i) => ({ ...i, source: 'demo' })));
     }
   } finally {
-    clearInterval(tick);
+    btn.classList.remove('shimmer');
     renderScanButton();
   }
   // The pick comes from Marco's brain straight away; AI recipes upgrade it later.
@@ -284,14 +313,13 @@ function renderDebug() {
   );
 }
 function copyDebug() {
-  const text = JSON.stringify({ version: '1.3', ua: navigator.userAgent, conn: navigator.connection?.effectiveType ?? null, provider: state.ai?.provider, model: state.ai?.model, scanTimes: store.get('scanTimes', []), runs: state.debug }, null, 1);
+  const text = JSON.stringify({ version: VERSION, ua: navigator.userAgent, conn: navigator.connection?.effectiveType ?? null, provider: state.ai?.provider, model: state.ai?.model, scanTimes: store.get('scanTimes', []), runs: state.debug }, null, 1);
   navigator.clipboard?.writeText(text).then(() => { $('copy-debug').textContent = 'Copied'; }, () => {});
 }
 
 // ── 3 · Inventory ───────────────────────────────────────────────────────────
 function setItems(items) {
-  state.items = items;
-  store.set('inventory', items);
+  state.items = items; // memory only, so a reload starts clean
   renderInventory();
   if (state.decided) decide();
 }
@@ -312,17 +340,15 @@ function renderInventory() {
     const bucket = kind === 'food' ? 'food' : kind ? 'kit' : 'other';
     groups[bucket].push({ item, index, id });
   });
-  const titles = { food: 'Food', kit: 'Appliances, cookware and utensils', other: "Spotted, but Marco can't cook with it yet" };
+  const titles = { food: 'Food', kit: 'Kit', other: 'Not usable yet' };
   $('inventory-groups').replaceChildren(...Object.entries(groups).filter(([, list]) => list.length).map(([key, list]) =>
     h('div', { class: 'group' },
-      h('h3', {}, `${titles[key]} · ${list.length}`),
+      h('h3', {}, titles[key]),
       h('div', { class: 'chips' }, list.map(({ item, index, id }) =>
         h('span', { class: `chip${id ? '' : ' unknown'}`, title: id ? `Counts as: ${labelFor(id)}` : 'Not in Marco’s vocabulary yet' },
           item.name,
           item.quantity ? h('small', {}, ` · ${item.quantity}`) : null,
           h('button', { type: 'button', 'aria-label': `Remove ${item.name}`, onclick: () => setItems(state.items.filter((_, i) => i !== index)) }, '×')))))));
-  const usable = groups.food.length + groups.kit.length;
-  $('inv-count').textContent = `${usable} usable`;
   $('basics').replaceChildren(...Object.entries(ASSUMED_BASICS).map(([id, b]) => {
     const off = state.missingBasics.includes(id);
     return h('span', {
@@ -346,7 +372,6 @@ const WHEN = {
   'weekday-late': { hour: 22, weekday: 2 },
   'weekend-lunch': { hour: 13, weekday: 0 },
 };
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function moment() {
   if (WHEN[state.ctx.when]) return WHEN[state.ctx.when];
@@ -355,13 +380,8 @@ function moment() {
 }
 
 function renderContext() {
-  for (const group of ['mood', 'kind']) {
-    for (const b of $(group).querySelectorAll('button')) b.setAttribute('aria-checked', String(b.dataset.value === state.ctx[group]));
-  }
+  for (const b of $('kind').querySelectorAll('button')) b.setAttribute('aria-checked', String(b.dataset.value === state.ctx.kind));
   $('when').value = state.ctx.when;
-  const m = moment();
-  const hour12 = `${((m.hour + 11) % 12) + 1} ${m.hour < 12 ? 'am' : 'pm'}`;
-  $('when-detail').textContent = state.ctx.when === 'now' ? `${DAYS[m.weekday]}, around ${hour12}` : '';
   $('t-protein').value = state.ctx.targets.protein;
   $('t-calories').value = state.ctx.targets.calories;
   $('t-fiber').value = state.ctx.targets.fiber;
@@ -381,7 +401,8 @@ function decide(opts = {}) {
   const result = rank({
     inventory: inventory(),
     targets: state.ctx.targets,
-    context: { mood: state.ctx.mood, kind: state.ctx.kind, ...moment() },
+    // No mood: λ is neutral on mood. Pass one here when the page asks again.
+    context: { kind: state.ctx.kind, ...moment() },
     // The AI's recipes compete on exactly the same terms as the catalogue.
     catalogue: [...CATALOGUE, ...state.aiRecipes.accepted],
     config: DEFAULT_CONFIG,
@@ -394,7 +415,7 @@ function decide(opts = {}) {
 // designs can only be suggested if it passes both, and then only if it scores
 // best.
 function recipeKey() {
-  return JSON.stringify([[...inventory().have].sort(), state.ctx.kind, state.ctx.mood, state.missingBasics]);
+  return JSON.stringify([[...inventory().have].sort(), state.ctx.kind, state.missingBasics]);
 }
 
 async function askAIForRecipes(force = false) {
@@ -411,7 +432,7 @@ async function askAIForRecipes(force = false) {
       onEvent: (e) => logDebug(run, debugEntry(e, Math.round(performance.now() - t0))),
       ...state.ai,
       have: [...inv.have],
-      context: { kind: state.ctx.kind, mood: state.ctx.mood },
+      context: { kind: state.ctx.kind },
       onStatus: (note) => { state.aiRecipes.note = note; renderAIStatus(); },
     });
     if (state.aiRecipes.key !== key) return; // inputs changed while waiting
@@ -448,15 +469,10 @@ function renderAIStatus() {
 
 function aiIdeasCard(result) {
   const ai = state.aiRecipes;
-  if (!state.ai) {
-    return h('section', { class: 'card', id: 'ai-ideas' },
-      h('h2', {}, "Your AI's recipe ideas"),
-      h('p', { class: 'hint' }, 'Add an API key above and your AI will also design recipes from what you have. Marco checks and scores them like any other meal.'));
-  }
-  const head = [h('h2', {}, "Your AI's recipe ideas"),
-    h('p', { class: 'hint' }, 'Your AI designs recipes from your inventory. Marco rejects any that use things you don’t have or don’t add up, then scores the rest against its own catalogue. The AI never picks.')];
-  if (ai.status === 'loading' || ai.status === 'idle') {
-    return h('section', { class: 'card', id: 'ai-ideas' }, head, h('p', { class: 'ai-note muted' }, ai.note || 'Asking your AI to design recipes…'));
+  if (!state.ai || ai.status === 'idle') return null;
+  const head = [h('h2', {}, 'AI ideas')];
+  if (ai.status === 'loading') {
+    return h('section', { class: 'card', id: 'ai-ideas' }, head, h('p', { class: 'ai-note muted shimmer' }, ai.note || 'Designing…'));
   }
   if (ai.status === 'error') {
     return h('section', { class: 'card', id: 'ai-ideas' }, head,
@@ -470,21 +486,21 @@ function aiIdeasCard(result) {
       const pos = position.get(m.id);
       const missing = blocked.get(m.id);
       const verdict = pos
-        ? h('span', { class: pos === 1 ? 'pass win' : 'pass' }, pos === 1 ? 'Passed · Marco’s pick' : `Passed · ranked #${pos}`)
+        ? h('span', { class: pos === 1 ? 'pass win' : 'pass' }, pos === 1 ? 'Marco’s pick' : `#${pos}`)
         : missing
-          ? h('span', { class: 'fail' }, `Rejected · needs ${describeMissing(missing).join(', ')}`)
+          ? h('span', { class: 'fail' }, `Needs ${describeMissing(missing).join(', ')}`)
           : h('span', { class: 'muted' }, 'Not a ' + state.ctx.kind);
       return h('li', {},
         h('div', { class: 'other-head' }, h('strong', {}, m.name), verdict),
-        m.adjustments?.length ? h('p', { class: 'mini' }, `Marco corrected: ${[...new Set(m.adjustments)].join('; ')}.`) : null);
+        m.adjustments?.length ? h('p', { class: 'mini' }, `Corrected: ${[...new Set(m.adjustments)].join('; ')}`) : null);
     }),
     ...ai.rejected.map((r) => h('li', {},
       h('div', { class: 'other-head' }, h('strong', {}, r.name), h('span', { class: 'fail' }, 'Rejected')),
-      h('p', { class: 'mini' }, `Because ${r.reasons.join('; ')}.`))),
+      h('p', { class: 'mini' }, r.reasons.join('; ')))),
   ];
   return h('section', { class: 'card', id: 'ai-ideas' }, head,
-    rows.length ? h('ul', { class: 'others' }, rows) : h('p', { class: 'muted' }, 'Your AI returned no recipes.'),
-    h('p', { class: 'mini' }, `Designed by ${ai.model}. `, h('button', { class: 'btn link', type: 'button', onclick: () => askAIForRecipes(true) }, 'Ask for new ideas')));
+    rows.length ? h('ul', { class: 'others' }, rows) : h('p', { class: 'muted' }, 'None this time.'),
+    h('p', { class: 'mini ai-foot' }, ai.model, h('button', { class: 'btn link', type: 'button', onclick: () => askAIForRecipes(true) }, 'New ideas')));
 }
 
 function ingredientLine(ing) {
@@ -501,31 +517,31 @@ function whyTable(r) {
     h('p', { class: 'formula' }, `score = payoff − λ × friction = ${fmt(r.payoff.value)} − ${fmt(r.lambda.value)} × ${fmt(r.friction)} = ${fmt(r.score)}`),
     h('h3', {}, 'Payoff'),
     h('table', { class: 'parts' }, h('tbody', {}, payRows)),
-    r.payoff.confidence < 1 ? h('p', { class: 'mini' }, `Macros are ${r.meal.source === 'ai' ? 'an AI guess' : 'an estimate'}, so payoff counts at ${Math.round(r.payoff.confidence * 100)}%.`) : null,
+    r.payoff.confidence < 1 ? h('p', { class: 'mini' }, `Payoff × ${Math.round(r.payoff.confidence * 100)}% (${r.meal.source === 'ai' ? 'AI-guessed' : 'estimated'} macros)`) : null,
     h('h3', {}, 'Friction (raw → 0–1, × weight)'),
     h('table', { class: 'parts' }, h('tbody', {}, fricRows)),
-    h('h3', {}, 'λ, how much effort costs right now'),
+    h('h3', {}, 'λ'),
     h('p', { class: 'mini' }, r.lambda.parts.map((p) => `${p.name} ×${p.factor}`).join(' · '), ` = ${fmt(r.lambda.value)}`),
-    PROVISIONAL ? h('p', { class: 'mini' }, h('span', { class: 'badge' }, 'Placeholder weights'), ' All weights are equal until they are fitted to your meal log (src/brain/config.js).') : null);
+    PROVISIONAL ? h('p', { class: 'mini' }, h('span', { class: 'badge' }, 'Placeholder weights')) : null);
 }
 
 function renderResult(result) {
   const root = $('result');
+  const appearing = root.hidden; // animate in once, not on every re-rank
   show(root);
   const [top, ...rest] = result.ranked;
   const cards = [];
 
   if (!top) {
     cards.push(h('section', { class: 'card' },
-      h('h2', {}, 'Nothing Marco knows fits yet'),
-      h('p', { class: 'hint' }, 'Add a few more items, or check the small kit list. Here is what blocked the closest meals:'),
+      h('h2', {}, 'Nothing fits yet'),
       blockedList(result.filtered.slice(0, 6))));
   } else {
     const passive = top.raw.passiveMinutes;
     cards.push(h('section', { class: 'card pick' },
-      h('p', { class: 'pick-label' }, top.meal.origin === 'ai' ? 'Cook this · designed by your AI, chosen by Marco' : 'Cook this'),
-      state.pickSource === 'sample' ? h('p', { class: 'fallback-note' }, "Your AI didn't answer in time, so this pick uses the sample kitchen. Scan again, or see the debug panel below for the exact error.") : null,
-      state.pickSource === 'last' ? h('p', { class: 'fallback-note' }, "Your AI didn't answer in time, so this pick uses your last scan. Scan again, or see the debug panel below for the exact error.") : null,
+      h('p', { class: 'pick-label' }, top.meal.origin === 'ai' ? 'Cook this · AI recipe' : 'Cook this'),
+      state.pickSource === 'sample' ? h('p', { class: 'fallback-note' }, 'No AI answer in time · sample kitchen') : null,
+      state.pickSource === 'last' ? h('p', { class: 'fallback-note' }, 'No AI answer in time · last scan') : null,
       h('h2', {}, top.meal.name),
       h('div', { class: 'reasons' }, top.reasons.map((r) => h('span', {}, r))),
       top.beats ? h('p', { class: 'beats' }, 'Beats ', h('strong', {}, top.beats.other.name), ': ', top.beats.reasons.join(', ') || 'a better balance of payoff and effort', '.') : null,
@@ -545,7 +561,7 @@ function renderResult(result) {
       h('h2', {}, 'Also possible'),
       h('ul', { class: 'others' }, rest.slice(0, 6).map((r, i) =>
         h('li', {},
-          h('div', { class: 'other-head' }, h('strong', {}, `${i + 2}. ${r.meal.name}`, r.meal.origin === 'ai' ? h('span', { class: 'badge ai' }, 'AI') : null), h('span', { class: 'score' }, `score ${fmt(r.score)}`)),
+          h('div', { class: 'other-head' }, h('strong', {}, `${i + 2}. ${r.meal.name}`, r.meal.origin === 'ai' ? h('span', { class: 'badge ai' }, 'AI') : null)),
           h('p', { class: 'mini' }, r.reasons.join(' · ')),
           whyTable(r))))));
   }
@@ -561,20 +577,52 @@ function renderResult(result) {
   const blockedCatalogue = result.filtered.filter((f) => f.meal.origin !== 'ai');
   if (top && blockedCatalogue.length) {
     cards.push(h('section', { class: 'card' },
-      h('details', {}, h('summary', {}, `Skipped ${blockedCatalogue.length} meals you can't make right now`), blockedList(blockedCatalogue))));
+      h('details', { class: 'skipped' }, h('summary', {}, 'Can’t make yet'), blockedList(blockedCatalogue))));
   }
 
-  root.replaceChildren(...cards);
+  const shown = cards.filter(Boolean);
+  if (appearing) shown.forEach((c, i) => { c.classList.add('rise'); c.style.animationDelay = `${i * 60}ms`; });
+  root.replaceChildren(...shown);
 }
 
 function blockedList(filtered) {
   return h('ul', { class: 'others' }, filtered.map((f) =>
-    h('li', {}, h('strong', {}, f.meal.name), h('p', { class: 'mini' }, `Missing: ${describeMissing(f.missing).join(', ')}`))));
+    h('li', {}, h('strong', {}, f.meal.name), h('p', { class: 'mini' }, describeMissing(f.missing).join(', ')))));
+}
+
+// ── Haptics: Kiron's invisible real iOS switch ──────────────────────────────
+// Safari ticks the Taptic Engine when a real <input type=checkbox switch> is
+// toggled, so each main button carries one, invisible, over its whole area.
+// The tap still bubbles to the button's own click handler. Android vibrates.
+function addHaptics() {
+  for (const btn of document.querySelectorAll('[data-haptic]')) {
+    btn.replaceChildren(h('span', { class: 'lbl' }, btn.textContent));
+    const sw = h('input', { type: 'checkbox', switch: true, class: 'haptic', tabindex: '-1', 'aria-hidden': 'true' });
+    btn.append(sw);
+  }
+  document.addEventListener('click', (e) => {
+    if (e.target.closest?.('[data-haptic]') && !('switch' in HTMLInputElement.prototype) && navigator.vibrate) navigator.vibrate(8);
+  });
 }
 
 // ── Wiring ──────────────────────────────────────────────────────────────────
 function init() {
+  // Clean start on every load: no restored scan, no restored scroll.
+  store.set('inventory', null); // 1.3 and earlier kept the last scan here
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.scrollTo(0, 0);
+  addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); }); // Safari back/forward cache
+  $('version').textContent = VERSION;
+  addHaptics();
+
   if (state.ai) $('api-key').value = state.ai.apiKey;
+  $('change-key').addEventListener('click', editKey);
+  $('cancel-key').addEventListener('click', () => {
+    editingKey = false;
+    $('api-key').value = state.ai?.apiKey ?? '';
+    show($('key-error'), false);
+    renderKey();
+  });
   $('api-key').addEventListener('input', renderKey);
   $('save-key').addEventListener('click', saveKey);
   $('forget-key').addEventListener('click', forgetKey);
@@ -603,12 +651,10 @@ function init() {
     $('add-input').value = '';
   });
 
-  for (const group of ['mood', 'kind']) {
-    $(group).addEventListener('click', (e) => {
-      const v = e.target.closest('button')?.dataset.value;
-      if (v) updateCtx({ [group]: v });
-    });
-  }
+  $('kind').addEventListener('click', (e) => {
+    const v = e.target.closest('button')?.dataset.value;
+    if (v) updateCtx({ kind: v });
+  });
   $('when').addEventListener('change', (e) => updateCtx({ when: e.target.value }));
   for (const [id, key] of [['t-protein', 'protein'], ['t-calories', 'calories'], ['t-fiber', 'fiber']]) {
     $(id).addEventListener('change', (e) => updateCtx({ targets: { ...state.ctx.targets, [key]: Math.max(0, Number(e.target.value) || 0) } }));

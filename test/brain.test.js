@@ -78,6 +78,13 @@ test('λ is higher when tired late on a weeknight than fresh on a weekend', () =
   assert.deepEqual(contextLambda(TIRED_WEEKNIGHT).parts.map((p) => p.name), ['mood: tired', 'late night', 'weekday']);
 });
 
+test('with no mood, λ is neutral on mood and still follows the clock', () => {
+  const noMood = contextLambda({ hour: 22, weekday: 2 });
+  assert.deepEqual(noMood.parts.map((p) => p.name), ['late night', 'weekday']);
+  assert.equal(noMood.value, contextLambda({ mood: 'okay', hour: 22, weekday: 2 }).value);
+  assert.ok(Number.isFinite(rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: { hour: 19, weekday: 3 }, catalogue: CATALOGUE }).ranked[0].score));
+});
+
 test('payoff is capped: overshooting the remaining protein earns nothing extra', () => {
   const inv = buildInventory(DEMO_KITCHEN);
   const small = rank({ inventory: inv, targets: { protein: 10, calories: 800, fiber: 15 }, context: TIRED_WEEKNIGHT, catalogue: CATALOGUE });
