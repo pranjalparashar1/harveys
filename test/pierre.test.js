@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   validateQuiz, blankState, startRound, queue, tapTexture, tapTaste, tapCentre, tapPrep, tapRated, tapRemove, upgradeAnswer,
-  canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload, decodePayload, STEPS,
+  canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload, decodePayload, STEPS, stepsOf, tapVerdict,
 } from '../src/quiz/quiz.js';
 import { rawVector, roleOf, plateShape, partnersFor, dishProfile, partVector, mergeRatings, pullOf } from '../src/brain/ingredients.js';
 import { renderBrainFile } from '../scripts/ingest-pierre.mjs';
@@ -155,11 +155,11 @@ test('a food is rated, part of prep, or both, and the export and brain file carr
     eggs: { texture: { creamy: 2 }, taste: { fat: 1 }, centre: 3, at: '2026-11-19T12:02:00.000Z' },
   };
   const text = encodePayload(quiz, answers);
-  assert.match(text, /^poha \| prep \| 2026-11-19T12:00:00.000Z$/m);
-  assert.match(text, /^paneer \| t 0\.3\.0\.0\.0 \| s 0\.0\.1\.0\.0\.0\.0 \| c 4 \| prep \| 2026-11-19T12:01:00.000Z$/m);
-  assert.match(text, /^eggs \| t 0\.2\.0\.0\.0 \| s 0\.0\.1\.0\.0\.0\.0 \| c 3 \| 2026-11-19T12:02:00.000Z$/m);
+  assert.match(text, /^poha \| prep \| 2026-11-19T12:00Z$/m);
+  assert.match(text, /^paneer \| t 0\.3\.0\.0\.0 \| s 0\.0\.1\.0\.0\.0\.0 \| c 4 \| prep \| 2026-11-19T12:01Z$/m);
+  assert.match(text, /^eggs \| t 0\.2\.0\.0\.0 \| s 0\.0\.1\.0\.0\.0\.0 \| c 3 \| 2026-11-19T12:02Z$/m);
   const backText = decodePayload(text);
-  assert.deepEqual(backText.poha, { prep: true, at: '2026-11-19T12:00:00.000Z' });
+  assert.deepEqual(backText.poha, { prep: true, at: '2026-11-19T12:00Z' });
   assert.equal(backText.paneer.prep, true);
   assert.equal(backText.paneer.centre, 4);
   assert.equal(backText.eggs.prep, undefined);
@@ -291,7 +291,7 @@ test('Remove from list: any step, skips the rest, exported as remove, ingested a
   const text = encodePayload(quiz, s.answers);
   assert.match(text, new RegExp(`${a} \\| remove \\| 2026-11-20`));
   const got = decodePayload(text);
-  assert.deepEqual(got[a], { remove: true, at: '2026-11-20T10:00:00.000Z' });
+  assert.deepEqual(got[a], { remove: true, at: '2026-11-20T10:00Z' });
   const kb = mergeRatings({ foods: { [a]: { centre: 2 } }, prep: { [a]: {} }, excluded: ['okra'] }, got);
   assert.ok(!kb.foods[a] && !kb.prep[a]);
   assert.deepEqual(kb.excluded, [a, 'okra'].sort());
@@ -336,21 +336,76 @@ test('dish profile: the anchor dominates texture, any part brings a taste', () =
 });
 
 test('the technique layer: a rated "food@technique" wins, an unknown technique falls back to raw', () => {
-  const kb = mergeRatings(KB, { 'paneer@fried': { texture: { crisp: 2, creamy: 2, chewy: 2 }, taste: { fat: 1, salt: 0 }, centre: 4 } });
+  const kb = mergeRatings({ foods: KB.foods }, { 'paneer@fried': { texture: { crisp: 2, creamy: 2, chewy: 2 }, taste: { fat: 1, salt: 0 }, verdict: 2 } });
+  assert.ok(kb.tech['paneer@fried'] && !kb.foods['paneer@fried'], 'cooked ratings live in tech');
   const fried = partVector({ id: 'paneer', technique: 'fried' }, kb);
   assert.equal(fried.source, 'rated');
   assert.equal(fried.texture.crisp, 2);
+  assert.equal(fried.centre, KB.foods.paneer.centre, 'the centre is the food’s own');
+  assert.equal(fried.verdict, 2);
+  assert.deepEqual(dishProfile([{ id: 'paneer', technique: 'fried' }, 'onion'], kb).verdicts, { 'paneer@fried': 2 });
   const boiled = partVector({ id: 'paneer', technique: 'boiled' }, kb);
   assert.match(boiled.source, /^raw/);
   const shifted = partVector({ id: 'paneer', technique: 'airfried' }, kb, { airfried: { texture: { crisp: 2, juicy: -1 } } });
   assert.equal(shifted.texture.crisp, 2);
   assert.equal(shifted.texture.juicy, 0);
-  assert.equal(rawVector('paneer@fried', kb).centre, 4);
 });
 
 test('the pages exist and are deployed', () => {
   const html = readFileSync(new URL('../pierre.html', import.meta.url), 'utf8');
   assert.match(html, /src\/pierre\.js/);
   assert.match(readFileSync(new URL('../train.html', import.meta.url), 'utf8'), /href="pierre\.html"/);
-  assert.match(readFileSync(new URL('../.github/workflows/pages.yml', import.meta.url), 'utf8'), /pierre\.html/);
+  assert.match(readFileSync(new URL('../.github/workflows/pages.yml', import.meta.url), 'utf8'), /pierre\.html tutor\.html/);
+  assert.match(readFileSync(new URL('../tutor.html', import.meta.url), 'utf8'), /data-quiz="pierre-tutor"[^]*src\/pierre\.js/);
+  assert.match(readFileSync(new URL('../train.html', import.meta.url), 'utf8'), /href="tutor\.html"/);
+});
+
+const tutor = validateQuiz(JSON.parse(readFileSync(new URL('../src/quiz/pierre-tutor.json', import.meta.url), 'utf8')));
+
+test('Pierre-tutor: pairs come from prep foods (and the tutor list), never a set-aside food', async () => {
+  const { PIERRE_RAW: kb } = await import('../src/brain/pierre-raw.js');
+  const tutorList = quiz.tutor.map((f) => f.id);
+  assert.deepEqual(stepsOf(tutor), ['texture', 'taste', 'verdict']);
+  assert.ok(tutor.foods.length >= 60);
+  for (const f of tutor.foods) {
+    assert.equal(f.id, `${f.food}@${f.technique}`);
+    assert.ok(kb.prep[f.food] || tutorList.includes(f.food), `${f.food} is prep or a tutor food`);
+    assert.ok(!kb.excluded.includes(f.food), `${f.food} is set aside`);
+    assert.ok(tutor.techniques[f.technique], `${f.technique} is described`);
+  }
+  for (const id of ['eggs@scrambled', 'paneer@microwaved', 'eggs@microwaved', 'moong_dal@tadka', 'besan@chilla']) assert.ok(tutor.foods.some((f) => f.id === id), id);
+});
+
+test('Pierre-tutor: texture, taste, then a verdict; exported as v and ingested into tech', () => {
+  let s = startRound(tutor, blankState(), mulberry32(5));
+  const id = s.round.ids[0];
+  const steps = stepsOf(tutor);
+  s = { ...s, round: { ...s.round, draft: tapTexture(s.round.draft, 'crisp', 3) } };
+  s = advance(tutor, s);
+  s = { ...s, round: { ...s.round, draft: tapTaste(s.round.draft, 'fat', 2) } };
+  s = advance(tutor, s);
+  assert.equal(steps[s.round.step], 'verdict');
+  assert.equal(canAdvance(s.round.step, s.round.draft, steps), false, 'needs a verdict');
+  let d = tapVerdict(s.round.draft, 0);
+  assert.equal(d.verdict, 0);
+  assert.ok(canAdvance(s.round.step, d, steps), 'Fail (0) is a real answer');
+  assert.equal(tapVerdict(d, 0).verdict, null, 'tap again to clear');
+  s = advance(tutor, { ...s, round: { ...s.round, draft: d } }, new Date('2026-11-20T09:00:00Z'));
+  assert.deepEqual(s.answers[id], { texture: { crisp: 3, creamy: 0, chewy: 0, juicy: 0, flaky: 0 }, taste: { salt: 0, sugar: 0, fat: 2, acid: 0, heat: 0, canvas: 0, fresh: 0 }, verdict: 0, v: 2, at: '2026-11-20T09:00:00.000Z' });
+  const prev = back(tutor, s);
+  assert.equal(steps[prev.round.step], 'verdict');
+  assert.equal(prev.round.draft.verdict, 0);
+  const text = encodePayload(tutor, s.answers);
+  assert.match(text, /^#harveys pierre-tutor v1/);
+  assert.ok(text.includes(`${id} | t 3.0.0.0.0 | s 0.0.2.0.0.0.0 | v 0 | 2026-11-20`));
+  const got = decodePayload(text);
+  assert.equal(got[id].verdict, 0);
+  const kb = mergeRatings({ foods: {}, prep: {} }, got);
+  assert.equal(kb.tech[id].verdict, 0);
+  assert.equal(kb.tech[id].texture.crisp, 3);
+  assert.ok(!kb.foods[id]);
+  // Every pair in one issue URL.
+  const all = Object.fromEntries(tutor.foods.map((f) => [f.id, s.answers[id]]));
+  const url = new URLSearchParams({ title: 'Pierre-tutor: 77 foods', labels: 'pierre-tutor', body: '```\n' + encodePayload(tutor, all) + '\n```' }).toString();
+  assert.ok(url.length < 7000, `issue URL is ${url.length} chars`);
 });

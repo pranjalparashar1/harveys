@@ -397,3 +397,5 @@ a.btn.send.fresh:not(.primary) { border-color: var(--accent); color: var(--accen
 .qcardp .btn.remove.on { color: var(--no); font-weight: 700; }
 .tile.removed { opacity: .45; }
 .tile.removed b { text-decoration: line-through; }
+/* Pierre-tutor 1.8.0: what the technique means, under the food's name. */
+.qcardp .how { margin: -8px 0 0; color: var(--muted); font-size: 15px; }

@@ -13,6 +13,8 @@
 //   at:      when it was rated
 // prep: foods marked "part of prep, needs further processing" (soaked poha).
 //   They have no raw ratings; Pierre-tutor rates them with a technique.
+// tech: Pierre-tutor ratings of a food cooked one way ("paneer@pan_fried"): texture and
+//   taste as above, plus verdict (2 pass, 1 meh, 0 fail). Its centre is the food's own.
 // excluded: foods set aside for now (too much work, or unfamiliar). Not trained on.
 export const PIERRE_RAW = {
   version: 1,

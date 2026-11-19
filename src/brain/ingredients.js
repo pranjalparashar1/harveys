@@ -92,8 +92,8 @@ export function partnersFor(anchorId, inventoryIds, kb = PIERRE_RAW) {
 }
 
 // ── Techniques (Pierre-tutor fills these) ───────────────────────────────────
-// A technique either has a rating of its own for a specific food ("paneer@fried",
-// stored in the same brain file once Pierre-tutor exists), or a general effect
+// A technique either has a rating of its own for a specific food ("paneer@pan_fried",
+// rated in Pierre-tutor and kept in the brain file's `tech`), or a general effect
 // that shifts any raw vector: { texture: { crisp: +2 }, taste: { fat: 1 } }.
 // Empty for now: no guesses until there are real ratings.
 export const TECHNIQUES = {};
@@ -103,8 +103,18 @@ export const techKey = (id, technique) => (technique ? `${id}@${technique}` : id
 /** The vector for one part of a dish: a food, optionally cooked a certain way. */
 export function partVector(part, kb = PIERRE_RAW, techniques = TECHNIQUES) {
   const { id, technique } = typeof part === 'string' ? { id: part } : part;
-  const rated = technique ? rawVector(techKey(id, technique), kb) : null;
-  if (rated) return { ...rated, id, technique, source: 'rated' };
+  const t = technique ? kb.tech?.[techKey(id, technique)] : null;
+  if (t) {
+    return {
+      id,
+      technique,
+      texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(t.texture?.[k] ?? 0, 0, 3)])),
+      taste: Object.fromEntries(TASTES.map((k) => [k, clamp(t.taste?.[k] ?? 0, 0, 3)])),
+      centre: rawVector(id, kb)?.centre ?? 3, // prep-only foods (eggs) have no centre yet
+      verdict: t.verdict,
+      source: 'rated',
+    };
+  }
   const raw = rawVector(id, kb);
   if (!raw) return null;
   const effect = technique ? techniques[technique] : null;
@@ -142,6 +152,8 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
     tastes: TASTES.filter((k) => k !== 'canvas' && taste[k] > 0),
     shape: plateShape(vs.map((v) => v.id), kb),
     missing: parts.map((p) => (typeof p === 'string' ? p : p.id)).filter((id) => !rawVector(id, kb)),
+    // Pierre's verdicts on the cooked parts (2 pass, 1 meh, 0 fail): the worst one shows.
+    verdicts: Object.fromEntries(vs.filter((v) => v.verdict != null).map((v) => [techKey(v.id, v.technique), v.verdict])),
   };
 }
 
@@ -155,15 +167,27 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
 export function mergeRatings(kb, ratings, { exclude = [] } = {}) {
   const foods = { ...(kb.foods ?? {}) };
   const prep = { ...(kb.prep ?? {}) };
+  const tech = { ...(kb.tech ?? {}) };
   // Foods set aside for now (too much work, or unfamiliar): kept out of training
   // until pranjal brings them back. A later rating doesn't re-add them.
   const excluded = [...new Set([...(kb.excluded ?? []), ...exclude])].sort();
-  for (const id of excluded) { delete foods[id]; delete prep[id]; }
+  for (const id of excluded) { delete foods[id]; delete prep[id]; delete tech[id]; }
   for (const [id, r] of Object.entries(ratings)) {
     if (!/^[a-z][a-z0-9_@]*$/.test(id) || excluded.includes(id)) continue;
-    if (r.remove) { excluded.push(id); delete foods[id]; delete prep[id]; continue; }
-    const old = foods[id] ?? prep[id];
+    if (r.remove) { excluded.push(id); delete foods[id]; delete prep[id]; delete tech[id]; continue; }
+    const old = foods[id] ?? prep[id] ?? tech[id];
     if (old?.at && r.at && old.at > r.at) continue;
+    // Pierre-tutor: a food cooked one way, with Pierre's verdict. Its centre is the food's own.
+    if (id.includes('@')) {
+      if (r.verdict == null) continue;
+      tech[id] = {
+        texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(Math.round(r.texture?.[k] ?? 0), 0, 3)])),
+        taste: Object.fromEntries(TASTES.map((k) => [k, clamp(Math.round(r.taste?.[k] ?? 0), 0, 3)])),
+        verdict: clamp(Math.round(r.verdict), 0, 2),
+        ...(r.at ? { at: r.at } : {}),
+      };
+      continue;
+    }
     if (r.prep) prep[id] = r.at ? { at: r.at } : {};
     else delete prep[id];
     if (r.centre == null) {
@@ -180,7 +204,7 @@ export function mergeRatings(kb, ratings, { exclude = [] } = {}) {
     };
   }
   const sorted = (o) => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]));
-  return { ...kb, foods: sorted(foods), prep: sorted(prep), excluded: [...new Set(excluded)].sort() };
+  return { ...kb, foods: sorted(foods), prep: sorted(prep), ...(Object.keys(tech).length ? { tech: sorted(tech) } : {}), excluded: [...new Set(excluded)].sort() };
 }
 
 function clamp(x, lo, hi) {
