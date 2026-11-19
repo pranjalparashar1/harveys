@@ -4,11 +4,11 @@
 // timer; Back returns to the previous screen. Every tap toggles. "Send to Marco" hands the ratings
 // over as text that scripts/ingest-pierre.mjs writes into the brain file.
 import {
-  STEPS, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapPrep,
+  STEPS, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapPrep, tapRated, isRated,
   canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload,
 } from './quiz/quiz.js';
 
-const VERSION = '1.5.2';
+const VERSION = '1.5.3';
 const RENAMED = { protein_bread: 'bread' };
 const KEY = 'marco.pierre.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/marco/issues/new';
@@ -106,10 +106,14 @@ function renderPlay() {
         <span class="k">${c.value}</span><span class="ct"><b>${esc(c.label)}</b><small>${esc(c.line)}</small></span>
       </button>`).join('') + `</div>`;
   }
-  if (d.prep) input = `<div class="prep-dim" aria-hidden="true">${input}</div>`;
-  input += `<button type="button" class="opt prep${d.prep ? ' sel' : ''}" data-prep="1" aria-pressed="${d.prep}"><span class="k box">${d.prep ? '✓' : ''}</span><span class="ct"><b>Part of prep</b><small>Needs further processing</small></span></button>`;
+  if (!d.rated) input = `<div class="prep-dim" aria-hidden="true">${input}</div>`;
+  // What the food is: rated, part of prep, or both. Set on its first screen.
+  if (step === 'texture') {
+    const kind = (key, on, title, line) => `<button type="button" class="opt kind${on ? ' sel' : ''}" data-kind="${key}" aria-pressed="${on}"><span class="k box">${on ? '✓' : ''}</span><span class="ct"><b>${title}</b><small>${line}</small></span></button>`;
+    input = `<div class="opts grid2 kinds" role="group" aria-label="This food is">${kind('rated', d.rated, 'Rate it', 'Texture, taste, centre')}${kind('prep', d.prep, 'Part of prep', 'Needs further processing')}</div>` + input;
+  }
   const last = r.i + 1 >= r.ids.length;
-  const nextLabel = step !== 'centre' && !d.prep ? 'Next' : last ? 'Finish round' : 'Next food';
+  const nextLabel = step !== 'centre' && d.rated ? 'Next' : last ? 'Finish round' : 'Next food';
   const ok = canAdvance(r.step, d);
   app.innerHTML = `
   <header class="top play"><div class="top-in">
@@ -150,7 +154,7 @@ function renderEnd() {
 
 function tile(f) {
   const a = state.answers[f.id];
-  return `<div class="tile"><b>${esc(f.name)}</b><span class="c${a?.prep ? ' prep' : ''}">${a?.prep ? 'P' : a?.centre ?? ''}</span></div>`;
+  return `<div class="tile"><b>${esc(f.name)}</b>${isRated(a) ? `<span class="c">${a.centre}</span>` : ''}${a?.prep ? `<span class="c prep${isRated(a) ? ' second' : ''}">P</span>` : ''}</div>`;
 }
 
 // ── Taps ────────────────────────────────────────────────────────────────────
@@ -164,9 +168,9 @@ function patch(fn) {
 
 let armed = 0;
 app.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-tex],[data-taste],[data-centre],[data-prep],[data-act]');
+  const el = e.target.closest('[data-tex],[data-taste],[data-centre],[data-kind],[data-act]');
   if (!el) return;
-  if (el.dataset.prep) return patch((d) => tapPrep(d));
+  if (el.dataset.kind) return patch((d) => (el.dataset.kind === 'prep' ? tapPrep(d) : tapRated(d)));
   if (el.closest('.prep-dim')) return;
   if (el.dataset.tex) return patch((d) => tapTexture(d, el.dataset.tex, Number(el.dataset.lv)));
   if (el.dataset.taste) return patch((d) => tapTaste(d, el.dataset.taste));
@@ -178,7 +182,7 @@ app.addEventListener('click', (e) => {
     dir = -1;
     if (location.hash !== '#play') location.hash = 'play'; else { render(); scrollTo(0, 0); }
   } else if (act === 'next') {
-    if (!canAdvance(state.round.step, state.round.draft)) return toast('Pick one to go on.');
+    if (!canAdvance(state.round.step, state.round.draft)) return toast(state.round.draft.rated ? 'Pick one to go on.' : 'Rate it, or mark it part of prep.');
     state = advance(quiz, state);
     save();
     dir = 1;

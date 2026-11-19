@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  validateQuiz, blankState, startRound, queue, tapTexture, tapTaste, tapCentre, tapPrep,
+  validateQuiz, blankState, startRound, queue, tapTexture, tapTaste, tapCentre, tapPrep, tapRated,
   canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload, decodePayload, STEPS,
 } from '../src/quiz/quiz.js';
 import { rawVector, roleOf, plateShape, partnersFor, dishProfile, partVector, mergeRatings, pullOf } from '../src/brain/ingredients.js';
@@ -109,30 +109,60 @@ test('Back goes to the previous step, then into the previous food with its answe
   assert.equal(e.round.step, 0);
 });
 
-test('"Part of prep" skips the ratings, toggles off, and travels in the export to the brain file', () => {
+test('a food is rated, part of prep, or both, and the export and brain file carry it', () => {
   let s = startRound(quiz, blankState(), mulberry32(5));
-  const first = s.round.ids[0];
-  let d = tapPrep(s.round.draft);
-  assert.equal(d.prep, true);
+  const [first, second, third] = s.round.ids;
+  // Prep only (soaked poha): untick "Rate it", tick "Part of prep", straight to the next food.
+  let d = tapRated(s.round.draft);
+  assert.equal(canAdvance(0, d), false, 'needs at least one of the two');
+  d = tapPrep(d);
   assert.equal(tapPrep(d).prep, false, 'a second tap undoes it');
   s = { ...s, round: { ...s.round, draft: d } };
-  assert.ok(canAdvance(0, d));
   s = advance(quiz, s, new Date('2026-11-19T12:00:00Z'));
   assert.deepEqual(s.answers[first], { prep: true, at: '2026-11-19T12:00:00.000Z' });
-  assert.equal(s.round.i, 1, 'straight to the next food');
-  // It can also be ticked on the last step, with no centre.
-  s = advance(quiz, advance(quiz, s));
-  s = { ...s, round: { ...s.round, draft: tapPrep(s.round.draft) } };
+  assert.equal(s.round.ids[s.round.i], second);
+  // Both (paneer): prep ticked, ratings still asked.
+  s = { ...s, round: { ...s.round, draft: tapPrep(tapTexture(s.round.draft, 'creamy', 3)) } };
   s = advance(quiz, s);
-  assert.equal(s.answers[s.round.ids[1]].prep, true);
-  const text = encodePayload(quiz, { poha: { prep: true, at: '2026-11-19T12:00:00.000Z' } });
+  assert.equal(s.round.step, 1, 'ratings carry on');
+  s = advance(quiz, s);
+  s = { ...s, round: { ...s.round, draft: tapCentre(s.round.draft, 4) } };
+  s = advance(quiz, s, new Date('2026-11-19T12:01:00Z'));
+  assert.equal(s.answers[second].prep, true);
+  assert.equal(s.answers[second].centre, 4);
+  assert.equal(s.answers[second].texture.creamy, 3);
+  assert.equal(s.round.ids[s.round.i], third);
+  // Back restores both kinds.
+  let b = back(quiz, s);
+  assert.equal(b.round.step, 2);
+  assert.equal(b.round.draft.prep, true);
+  assert.equal(b.round.draft.rated, true);
+  b = back(quiz, back(quiz, back(quiz, b)));
+  assert.equal(b.round.ids[b.round.i], first);
+  assert.equal(b.round.draft.rated, false);
+  assert.equal(b.round.draft.prep, true);
+  // Export and ingest.
+  const answers = {
+    poha: { prep: true, at: '2026-11-19T12:00:00.000Z' },
+    paneer: { texture: { creamy: 3 }, taste: { fat: 1 }, centre: 4, prep: true, at: '2026-11-19T12:01:00.000Z' },
+    eggs: { texture: { creamy: 2 }, taste: { fat: 1 }, centre: 3, at: '2026-11-19T12:02:00.000Z' },
+  };
+  const text = encodePayload(quiz, answers);
   assert.match(text, /^poha \| prep \| 2026-11-19T12:00:00.000Z$/m);
-  const back = decodePayload(text);
-  assert.deepEqual(back.poha, { prep: true, at: '2026-11-19T12:00:00.000Z' });
-  let kb = mergeRatings({ version: 1, foods: { poha: { centre: 3, at: '2026-11-01T00:00:00.000Z' } }, prep: {} }, back);
-  assert.equal(kb.foods.poha, undefined, 'a newer prep mark replaces raw ratings');
+  assert.match(text, /^paneer \| t 0\.3\.0\.0\.0 \| s fat \| c 4 \| prep \| 2026-11-19T12:01:00.000Z$/m);
+  assert.match(text, /^eggs \| t 0\.2\.0\.0\.0 \| s fat \| c 3 \| 2026-11-19T12:02:00.000Z$/m);
+  const backText = decodePayload(text);
+  assert.deepEqual(backText.poha, { prep: true, at: '2026-11-19T12:00:00.000Z' });
+  assert.equal(backText.paneer.prep, true);
+  assert.equal(backText.paneer.centre, 4);
+  assert.equal(backText.eggs.prep, undefined);
+  const kb = mergeRatings({ version: 1, foods: { poha: { centre: 3, at: '2026-11-01T00:00:00.000Z' } }, prep: { eggs: { at: '2026-11-01T00:00:00.000Z' } } }, backText);
+  assert.equal(kb.foods.poha, undefined, 'prep only: no raw ratings');
   assert.ok(kb.prep.poha);
-  assert.equal(rawVector('poha', kb), null);
+  assert.equal(kb.foods.paneer.centre, 4, 'both: rated');
+  assert.ok(kb.prep.paneer, 'both: and listed as prep');
+  assert.equal(kb.prep.eggs, undefined, 'a newer rated-only answer drops the old prep mark');
+  assert.equal(rawVector('paneer', kb).centre, 4);
 });
 
 test('the Send to Marco text round-trips', () => {
