@@ -249,27 +249,6 @@ export const PIERRE_RAW = {
       role: 'minor',
       at: '2026-11-19T14:26:09.548Z'
     },
-    chia_seeds: {
-      texture: {
-        crisp: 0,
-        creamy: 0,
-        chewy: 0,
-        juicy: 0,
-        flaky: 0
-      },
-      taste: {
-        salt: 0,
-        sugar: 0,
-        fat: 0,
-        acid: 0,
-        heat: 0,
-        canvas: 0,
-        fresh: 0
-      },
-      centre: 1,
-      role: 'minor',
-      at: '2026-11-19T17:24:29.379Z'
-    },
     chickpeas: {
       texture: {
         crisp: 0,
@@ -1214,6 +1193,7 @@ export const PIERRE_RAW = {
     'buttermilk',
     'cauliflower',
     'cheese_spread',
+    'chia_seeds',
     'coconut',
     'corn_flakes',
     'daliya',
