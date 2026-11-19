@@ -9,8 +9,11 @@
 //   taste:   0/1 each for salt, sugar, fat, acid, heat, plus fresh (Pierre's bonus)
 //   centre:  1–5 (accent, support, partner, centre, the meal)
 //   at:      when it was rated
+// prep: foods marked "part of prep, needs further processing" (soaked poha).
+//   They have no raw ratings; Pierre-tutor rates them with a technique.
 export const PIERRE_RAW = {
   version: 1,
   ratedBy: 'pranjal',
   foods: {},
+  prep: {},
 };

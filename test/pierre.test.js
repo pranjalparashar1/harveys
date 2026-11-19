@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  validateQuiz, blankState, startRound, queue, tapTexture, tapTaste, tapCentre,
+  validateQuiz, blankState, startRound, queue, tapTexture, tapTaste, tapCentre, tapPrep,
   canAdvance, advance, roundOver, unsent, markSent, encodePayload, decodePayload, STEPS,
 } from '../src/quiz/quiz.js';
 import { isOpenLicence, toPhoto } from '../src/quiz/photos.js';
@@ -75,6 +75,32 @@ test('three steps per food, the centre is required, no way back', () => {
   assert.equal(Object.keys(s.answers).length, 7);
   assert.equal(unsent(s).length, 7);
   assert.equal(unsent(markSent(s, Object.keys(s.answers), new Date('2027-01-01'))).length, 0);
+});
+
+test('"Part of prep" skips the ratings, toggles off, and travels in the export to the brain file', () => {
+  let s = startRound(quiz, blankState(), mulberry32(5));
+  const first = s.round.ids[0];
+  let d = tapPrep(s.round.draft);
+  assert.equal(d.prep, true);
+  assert.equal(tapPrep(d).prep, false, 'a second tap undoes it');
+  s = { ...s, round: { ...s.round, draft: d } };
+  assert.ok(canAdvance(0, d));
+  s = advance(quiz, s, new Date('2026-11-19T12:00:00Z'));
+  assert.deepEqual(s.answers[first], { prep: true, at: '2026-11-19T12:00:00.000Z' });
+  assert.equal(s.round.i, 1, 'straight to the next food');
+  // It can also be ticked on the last step, with no centre.
+  s = advance(quiz, advance(quiz, s));
+  s = { ...s, round: { ...s.round, draft: tapPrep(s.round.draft) } };
+  s = advance(quiz, s);
+  assert.equal(s.answers[s.round.ids[1]].prep, true);
+  const text = encodePayload(quiz, { poha: { prep: true, at: '2026-11-19T12:00:00.000Z' } });
+  assert.match(text, /^poha \| prep \| 2026-11-19T12:00:00.000Z$/m);
+  const back = decodePayload(text);
+  assert.deepEqual(back.poha, { prep: true, at: '2026-11-19T12:00:00.000Z' });
+  let kb = mergeRatings({ version: 1, foods: { poha: { centre: 3, at: '2026-11-01T00:00:00.000Z' } }, prep: {} }, back);
+  assert.equal(kb.foods.poha, undefined, 'a newer prep mark replaces raw ratings');
+  assert.ok(kb.prep.poha);
+  assert.equal(rawVector('poha', kb), null);
 });
 
 test('the Send to Marco text round-trips', () => {

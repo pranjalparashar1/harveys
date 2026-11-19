@@ -90,7 +90,7 @@ The live ranker (`ranker.js`, `config.js`) is unchanged: fitted weights move the
 
 ### Pierre-trainer: rate raw foods (1.5.0)
 
-`pierre.html` (the **Begin** button at the top of Train) is a quiz on Kiron's player: rounds of 7 raw foods, the user's own kitchen first, one photo per food. Each food takes three screens: **texture** (crisp, creamy, chewy, juicy, flaky: none to high), **taste** (tap what's there: salt, sweet, fat, acid, heat, plus fresh as Pierre's bonus) and **how central** it is to a meal (1 accent to 5 the meal). Every tap toggles; no streaks, timer or going back. Progress is saved after every screen.
+`pierre.html` (the **Begin** button at the top of Train) is a quiz on Kiron's player: rounds of 7 raw foods, the user's own kitchen first, one photo per food. Each food takes three screens: **texture** (crisp, creamy, chewy, juicy, flaky: none to high), **taste** (tap what's there: salt, sweet, fat, acid, heat, plus fresh as Pierre's bonus) and **how central** it is to a meal (1 accent to 5 the meal). Every tap toggles; no streaks, timer or going back. **Part of prep** (needs further processing, like soaked poha) on any step skips the ratings; the food goes into the export as `poha | prep` and into the brain file's `prep` list for Pierre-tutor. Progress is saved after every screen.
 
 - **Quiz file:** `src/quiz/pierre-trainer.json` (45 foods, veg and eggs, no spices or condiments; rated as plainly eaten, so rice, dal and pasta are cooked plain. Besan, suji and vermicelli wait for Pierre-tutor, since they are cooked too many ways). Engine: `src/quiz/quiz.js`.
 - **Photos:** looked up live from Wikipedia/Wikimedia Commons (`src/quiz/photos.js`); only CC0, public-domain, CC BY and CC BY-SA images, credited on the photo.

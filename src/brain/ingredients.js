@@ -134,13 +134,24 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
 }
 
 // ── Ratings in, brain file out ──────────────────────────────────────────────
-/** Merges quiz ratings ({ id: { texture, taste, centre, at } }) into a brain file. Newer wins. */
+/**
+ * Merges quiz ratings ({ id: { texture, taste, centre, at } }) into a brain file. Newer wins.
+ * A food sent as { prep: true } ("part of prep, needs further processing", like soaked
+ * poha) has no raw ratings: it goes to `prep`, the list Pierre-tutor starts from.
+ */
 export function mergeRatings(kb, ratings) {
   const foods = { ...(kb.foods ?? {}) };
+  const prep = { ...(kb.prep ?? {}) };
   for (const [id, r] of Object.entries(ratings)) {
     if (!/^[a-z][a-z0-9_@]*$/.test(id)) continue;
-    const old = foods[id];
+    const old = foods[id] ?? prep[id];
     if (old?.at && r.at && old.at > r.at) continue;
+    if (r.prep) {
+      delete foods[id];
+      prep[id] = r.at ? { at: r.at } : {};
+      continue;
+    }
+    delete prep[id];
     foods[id] = {
       texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(Math.round(r.texture?.[k] ?? 0), 0, 3)])),
       taste: Object.fromEntries(TASTES.map((k) => [k, r.taste?.[k] ? 1 : 0])),
@@ -149,7 +160,8 @@ export function mergeRatings(kb, ratings) {
       ...(r.at ? { at: r.at } : {}),
     };
   }
-  return { ...kb, foods: Object.fromEntries(Object.keys(foods).sort().map((k) => [k, foods[k]])) };
+  const sorted = (o) => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]));
+  return { ...kb, foods: sorted(foods), prep: sorted(prep) };
 }
 
 function clamp(x, lo, hi) {

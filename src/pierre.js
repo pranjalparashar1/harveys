@@ -4,7 +4,7 @@
 // timer, no going back. Every tap toggles. "Send to Marco" hands the ratings
 // over as text that scripts/ingest-pierre.mjs writes into the brain file.
 import {
-  STEPS, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre,
+  STEPS, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapPrep,
   canAdvance, advance, roundOver, unsent, markSent, encodePayload,
 } from './quiz/quiz.js';
 import { photosFor } from './quiz/photos.js';
@@ -123,8 +123,10 @@ function renderPlay() {
         <span class="k">${c.value}</span><span class="ct"><b>${esc(c.label)}</b><small>${esc(c.line)}</small></span>
       </button>`).join('') + `</div>`;
   }
+  if (d.prep) input = `<div class="prep-dim" aria-hidden="true">${input}</div>`;
+  input += `<button type="button" class="opt prep${d.prep ? ' sel' : ''}" data-prep="1" aria-pressed="${d.prep}"><span class="k box">${d.prep ? '✓' : ''}</span><span class="ct"><b>Part of prep</b><small>Needs further processing</small></span></button>`;
   const last = r.i + 1 >= r.ids.length;
-  const nextLabel = step !== 'centre' ? 'Next' : last ? 'Finish round' : 'Next food';
+  const nextLabel = step !== 'centre' && !d.prep ? 'Next' : last ? 'Finish round' : 'Next food';
   const ok = canAdvance(r.step, d);
   app.innerHTML = `
   <header class="top play"><div class="top-in">
@@ -165,7 +167,7 @@ function renderEnd() {
 function tile(f) {
   const a = state.answers[f.id];
   const p = photos[f.id];
-  return `<div class="tile">${p?.src ? `<img src="${esc(p.src)}" alt="">` : `<span class="ph">${esc(f.name[0])}</span>`}<b>${esc(f.name)}</b><span class="c">${a?.centre ?? ''}</span></div>`;
+  return `<div class="tile">${p?.src ? `<img src="${esc(p.src)}" alt="">` : `<span class="ph">${esc(f.name[0])}</span>`}<b>${esc(f.name)}</b><span class="c${a?.prep ? ' prep' : ''}">${a?.prep ? 'P' : a?.centre ?? ''}</span></div>`;
 }
 
 // ── Taps ────────────────────────────────────────────────────────────────────
@@ -179,8 +181,10 @@ function patch(fn) {
 
 let armed = 0;
 app.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-tex],[data-taste],[data-centre],[data-act]');
+  const el = e.target.closest('[data-tex],[data-taste],[data-centre],[data-prep],[data-act]');
   if (!el) return;
+  if (el.dataset.prep) return patch((d) => tapPrep(d));
+  if (el.closest('.prep-dim')) return;
   if (el.dataset.tex) return patch((d) => tapTexture(d, el.dataset.tex, Number(el.dataset.lv)));
   if (el.dataset.taste) return patch((d) => tapTaste(d, el.dataset.taste));
   if (el.dataset.centre) return patch((d) => tapCentre(d, Number(el.dataset.centre)));

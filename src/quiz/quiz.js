@@ -31,6 +31,7 @@ export const blankDraft = (quiz) => ({
   texture: Object.fromEntries(quiz.textures.map((t) => [t.id, 0])),
   taste: Object.fromEntries(quiz.tastes.map((t) => [t.id, 0])),
   centre: null,
+  prep: false,
 });
 
 /** Foods not yet rated, the user's own kitchen first, each group shuffled. */
@@ -59,15 +60,21 @@ export function tapCentre(draft, value) {
   return { ...draft, centre: draft.centre === value ? null : value };
 }
 
-/** Texture and taste can be all-none; the centre needs an answer. */
-export const canAdvance = (step, draft) => STEPS[step] !== 'centre' || draft.centre != null;
+/** "Part of prep, needs further processing" (soaked poha): no ratings, flagged for Pierre-tutor. */
+export function tapPrep(draft) {
+  return { ...draft, prep: !draft.prep };
+}
+
+/** Texture and taste can be all-none; the centre needs an answer, unless the food is only prep. */
+export const canAdvance = (step, draft) => draft.prep || STEPS[step] !== 'centre' || draft.centre != null;
 
 /** Next step, or the next food (saving this one), or the end of the round. */
 export function advance(quiz, state, now = new Date()) {
   const r = state.round;
   if (!r || r.i >= r.ids.length || !canAdvance(r.step, r.draft)) return state;
-  if (r.step < STEPS.length - 1) return { ...state, round: { ...r, step: r.step + 1 } };
-  const answers = { ...state.answers, [r.ids[r.i]]: { ...r.draft, at: now.toISOString() } };
+  if (!r.draft.prep && r.step < STEPS.length - 1) return { ...state, round: { ...r, step: r.step + 1 } };
+  const answer = r.draft.prep ? { prep: true } : (({ prep, ...rest }) => rest)(r.draft);
+  const answers = { ...state.answers, [r.ids[r.i]]: { ...answer, at: now.toISOString() } };
   return { ...state, answers, round: { ...r, i: r.i + 1, step: 0, draft: blankDraft(quiz) } };
 }
 
@@ -79,11 +86,14 @@ export const markSent = (state, ids, now = new Date()) => ({ ...state, sent: { .
 // One food per line, readable by a person and parsed by scripts/ingest-pierre.mjs:
 //   paneer | t 0.3.2.1.0 | s fat | c 4 | 2026-11-19T11:30:00.000Z
 // t = crisp.creamy.chewy.juicy.flaky (0–3), s = tastes present (or -), c = centre 1–5.
+// A food marked "part of prep" is one line with no ratings, for Pierre-tutor:
+//   poha | prep | 2026-11-19T11:30:00.000Z
 export function encodePayload(quiz, answers, ids = Object.keys(answers)) {
   const tex = quiz.textures.map((t) => t.id);
   const tas = quiz.tastes.map((t) => t.id);
   const lines = ids.filter((id) => answers[id]).map((id) => {
     const a = answers[id];
+    if (a.prep) return `${id} | prep | ${a.at}`;
     const s = tas.filter((k) => a.taste[k]);
     return `${id} | t ${tex.map((k) => a.texture[k] ?? 0).join('.')} | s ${s.length ? s.join(' ') : '-'} | c ${a.centre} | ${a.at}`;
   });
@@ -97,6 +107,8 @@ export function decodePayload(text) {
   const tex = texLine ? texLine.slice(9).trim().split('.') : ['crisp', 'creamy', 'chewy', 'juicy', 'flaky'];
   const out = {};
   for (const l of lines) {
+    const p = /^([a-z][a-z0-9_@]*)\s*\|\s*prep(?:\s*\|\s*(\S+))?$/.exec(l);
+    if (p) { out[p[1]] = { prep: true, ...(p[2] ? { at: p[2] } : {}) }; continue; }
     const m = /^([a-z][a-z0-9_@]*)\s*\|\s*t\s+([0-3](?:\.[0-3])*)\s*\|\s*s\s+([a-z -]+?)\s*\|\s*c\s+([1-5])(?:\s*\|\s*(\S+))?$/.exec(l);
     if (!m) continue;
     const levels = m[2].split('.').map(Number);
