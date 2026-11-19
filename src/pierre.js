@@ -5,16 +5,17 @@
 // food aside. "Send to Harvey's" hands the ratings
 // over as text that scripts/ingest-pierre.mjs writes into the brain file.
 import {
-  stepsOf, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapVerdict, tapPrep, tapRated, tapRemove, isRated, isRemoved, upgradeAnswer,
+  stepsOf, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapReady, tapPrep, tapRated, tapRemove, isRated, isRemoved, upgradeAnswer,
   canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload,
 } from './quiz/quiz.js';
 
-const VERSION = '1.8.0';
+const VERSION = '1.8.1';
 const RENAMED = { protein_bread: 'bread' };
 // One player, two quizzes: Pierre-trainer (raw foods) and Pierre-tutor (a food cooked one way).
 const QUIZ = document.body.dataset.quiz || 'pierre-trainer';
-const KEY = QUIZ === 'pierre-tutor' ? 'harveys.tutor.v1' : 'marco.pierre.v1';
-const VERDICT_MARK = { 2: '✓', 1: '~', 0: '✕' };
+// The tutor starts fresh with readiness (1.8.1): earlier tutor answers aren't carried over.
+const KEY = QUIZ === 'pierre-tutor' ? 'harveys.tutor.v2' : 'marco.pierre.v1';
+
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
 const app = document.getElementById('app');
 
@@ -107,10 +108,10 @@ function renderPlay() {
     const bonus = quiz.tastes.filter((t) => t.bonus);
     input = `<h2 class="step">Taste</h2>` + rows(main, d.taste, 'data-taste')
       + (bonus.length ? `<h2 class="step bonus">Bonus</h2>` + rows(bonus, d.taste, 'data-taste') : '');
-  } else if (step === 'verdict') {
-    input = `<h2 class="step">Pierre’s verdict</h2><div class="opts" role="radiogroup" aria-label="Pierre’s verdict">` + quiz.verdict.map((c) => `
-      <button type="button" class="opt centre verdict${d.verdict === c.value ? ' sel' : ''}" role="radio" aria-checked="${d.verdict === c.value}" data-verdict="${c.value}">
-        <span class="k">${VERDICT_MARK[c.value]}</span><span class="ct"><b>${esc(c.label)}</b><small>${esc(c.line)}</small></span>
+  } else if (step === 'ready') {
+    input = `<h2 class="step">How ready?</h2><div class="opts" role="radiogroup" aria-label="How ready">` + quiz.ready.map((c) => `
+      <button type="button" class="opt centre ready${d.ready === c.value ? ' sel' : ''}" role="radio" aria-checked="${d.ready === c.value}" data-ready="${c.value}">
+        <span class="k">${c.value}</span><span class="ct"><b>${esc(c.label)}</b><small>${esc(c.line)}</small></span>
       </button>`).join('') + `</div>`;
   } else {
     input = `<h2 class="step">How central?</h2><div class="opts" role="radiogroup" aria-label="How central">` + quiz.centre.map((c) => `
@@ -175,7 +176,7 @@ function renderEnd() {
 function tile(f) {
   const a = state.answers[f.id];
   if (isRemoved(a)) return `<div class="tile removed"><b>${esc(f.name)}</b><span class="c">✕</span></div>`;
-  return `<div class="tile"><b>${esc(f.name)}</b>${isRated(a) ? `<span class="c">${a.verdict != null ? VERDICT_MARK[a.verdict] : a.centre}</span>` : ''}${a?.prep ? `<span class="c prep${isRated(a) ? ' second' : ''}">P</span>` : ''}</div>`;
+  return `<div class="tile"><b>${esc(f.name)}</b>${isRated(a) ? `<span class="c">${a.ready != null ? a.ready : a.centre}</span>` : ''}${a?.prep ? `<span class="c prep${isRated(a) ? ' second' : ''}">P</span>` : ''}</div>`;
 }
 
 // ── Taps ────────────────────────────────────────────────────────────────────
@@ -189,14 +190,14 @@ function patch(fn) {
 
 let armed = 0;
 app.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-tex],[data-taste],[data-centre],[data-verdict],[data-kind],[data-act]');
+  const el = e.target.closest('[data-tex],[data-taste],[data-centre],[data-ready],[data-kind],[data-act]');
   if (!el) return;
   if (el.dataset.kind) return patch((d) => (el.dataset.kind === 'prep' ? tapPrep(d) : tapRated(d)));
   if (el.closest('.prep-dim')) return;
   if (el.dataset.tex) return patch((d) => tapTexture(d, el.dataset.tex, Number(el.dataset.lv)));
   if (el.dataset.taste) return patch((d) => tapTaste(d, el.dataset.taste, Number(el.dataset.lv)));
   if (el.dataset.centre) return patch((d) => tapCentre(d, Number(el.dataset.centre)));
-  if (el.dataset.verdict) return patch((d) => tapVerdict(d, Number(el.dataset.verdict)));
+  if (el.dataset.ready) return patch((d) => tapReady(d, Number(el.dataset.ready)));
   const act = el.dataset.act;
   if (act === 'remove') return patch(tapRemove);
   if (act === 'back') {

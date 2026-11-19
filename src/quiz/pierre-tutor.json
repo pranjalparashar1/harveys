@@ -3,12 +3,12 @@
   "version": 1,
   "id": "pierre-tutor",
   "title": "Pierre-tutor",
-  "purpose": "Rate a food cooked one way on Pierre's two sides, and give Pierre's verdict.",
+  "purpose": "Rate a food cooked one way on Pierre's two sides, and how ready it is to eat.",
   "round": 7,
   "steps": [
     "texture",
     "taste",
-    "verdict"
+    "ready"
   ],
   "kinds": false,
   "textures": [
@@ -71,21 +71,31 @@
       "bonus": true
     }
   ],
-  "verdict": [
+  "ready": [
+    {
+      "value": 4,
+      "label": "Eat it as it is",
+      "line": "Salted scrambled eggs."
+    },
+    {
+      "value": 3,
+      "label": "Needs only seasoning",
+      "line": "Paneer scrambled with no salt yet."
+    },
     {
       "value": 2,
-      "label": "Pass",
-      "line": "A real cook would make it this way."
+      "label": "Needs something added",
+      "line": "A sauce, a chutney or a masala."
     },
     {
       "value": 1,
-      "label": "Meh",
-      "line": "Edible. Nobody asks for seconds."
+      "label": "Needs another cooking step",
+      "line": "Boiled soya chunks, then fried or air-fried."
     },
     {
       "value": 0,
-      "label": "Fail",
-      "line": "Pierre walks out."
+      "label": "Inedible",
+      "line": "Nobody would make it this way. Harvey’s never suggests it."
     }
   ],
   "rated": "cooked this one way with only a little fat and salt, so the result is the same every time",
