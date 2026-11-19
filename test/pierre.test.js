@@ -1,0 +1,178 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import {
+  validateQuiz, blankState, startRound, queue, tapTexture, tapTaste, tapCentre,
+  canAdvance, advance, roundOver, unsent, markSent, encodePayload, decodePayload, STEPS,
+} from '../src/quiz/quiz.js';
+import { isOpenLicence, toPhoto } from '../src/quiz/photos.js';
+import { rawVector, roleOf, plateShape, partnersFor, dishProfile, partVector, mergeRatings, pullOf } from '../src/brain/ingredients.js';
+import { renderBrainFile } from '../scripts/ingest-pierre.mjs';
+import { mulberry32 } from '../src/brain/learn.js';
+
+const quiz = validateQuiz(JSON.parse(readFileSync(new URL('../src/quiz/pierre-trainer.json', import.meta.url), 'utf8')));
+
+test('the quiz file is valid: veg and egg foods, no spices or condiments', () => {
+  assert.ok(quiz.foods.length >= 40);
+  const ids = quiz.foods.map((f) => f.id);
+  for (const banned of ['chicken', 'tuna', 'salt', 'turmeric', 'garam_masala', 'ketchup', 'mayo', 'oil']) assert.ok(!ids.includes(banned), banned);
+  assert.deepEqual(quiz.textures.map((t) => t.id), ['crisp', 'creamy', 'chewy', 'juicy', 'flaky']);
+  assert.deepEqual(quiz.tastes.map((t) => t.id), ['salt', 'sugar', 'fat', 'acid', 'heat', 'fresh']);
+  assert.deepEqual(quiz.centre.map((c) => c.value), [1, 2, 3, 4, 5]);
+  assert.throws(() => validateQuiz({ ...quiz, foods: [...quiz.foods, quiz.foods[0]] }), /twice/);
+});
+
+test('rounds take the user’s kitchen first, seven at a time, never a rated food', () => {
+  let s = startRound(quiz, blankState(), mulberry32(1));
+  assert.equal(s.round.ids.length, 7);
+  const kitchen = new Set(quiz.foods.filter((f) => f.kitchen).map((f) => f.id));
+  assert.ok(s.round.ids.every((id) => kitchen.has(id)));
+  s = { ...s, answers: { paneer: { at: 'x' } } };
+  assert.ok(!queue(quiz, s, mulberry32(2)).includes('paneer'));
+});
+
+test('every tap toggles: a second tap on the same option undoes it', () => {
+  const s = startRound(quiz, blankState(), mulberry32(3));
+  let d = s.round.draft;
+  d = tapTexture(d, 'creamy', 3);
+  assert.equal(d.texture.creamy, 3);
+  d = tapTexture(d, 'creamy', 2);
+  assert.equal(d.texture.creamy, 2);
+  d = tapTexture(d, 'creamy', 2);
+  assert.equal(d.texture.creamy, 0);
+  d = tapTaste(d, 'fat');
+  assert.equal(d.taste.fat, 1);
+  assert.equal(tapTaste(d, 'fat').taste.fat, 0);
+  d = tapCentre(d, 4);
+  assert.equal(d.centre, 4);
+  assert.equal(tapCentre(d, 4).centre, null);
+});
+
+test('three steps per food, the centre is required, no way back', () => {
+  let s = startRound(quiz, blankState(), mulberry32(4));
+  const first = s.round.ids[0];
+  s = advance(quiz, s); // texture → taste (all none is fine)
+  s = advance(quiz, s); // taste → centre
+  assert.equal(STEPS[s.round.step], 'centre');
+  assert.equal(canAdvance(s.round.step, s.round.draft), false);
+  assert.equal(advance(quiz, s), s, 'cannot go on without a centre');
+  s = { ...s, round: { ...s.round, draft: tapCentre(s.round.draft, 4) } };
+  s = advance(quiz, s, new Date('2026-11-19T12:00:00Z'));
+  assert.equal(s.answers[first].centre, 4);
+  assert.equal(s.round.i, 1);
+  assert.equal(s.round.step, 0);
+  assert.equal(s.round.draft.centre, null, 'a fresh draft for the next food');
+  for (let i = 1; i < 7; i++) {
+    s = advance(quiz, advance(quiz, s));
+    s = { ...s, round: { ...s.round, draft: tapCentre(s.round.draft, 2) } };
+    s = advance(quiz, s);
+  }
+  assert.ok(roundOver(s));
+  assert.equal(Object.keys(s.answers).length, 7);
+  assert.equal(unsent(s).length, 7);
+  assert.equal(unsent(markSent(s, Object.keys(s.answers), new Date('2027-01-01'))).length, 0);
+});
+
+test('the Send to Marco text round-trips', () => {
+  const answers = {
+    paneer: { texture: { crisp: 0, creamy: 3, chewy: 2, juicy: 1, flaky: 0 }, taste: { salt: 0, sugar: 0, fat: 1, acid: 0, heat: 0, fresh: 0 }, centre: 4, at: '2026-11-19T12:00:00.000Z' },
+    cheese_slices: { texture: { crisp: 0, creamy: 2, chewy: 1, juicy: 0, flaky: 0 }, taste: { salt: 1, sugar: 0, fat: 1, acid: 1, heat: 0, fresh: 0 }, centre: 2, at: '2026-11-19T12:01:00.000Z' },
+    makhana: { texture: { crisp: 3, creamy: 0, chewy: 0, juicy: 0, flaky: 1 }, taste: { salt: 0, sugar: 0, fat: 0, acid: 0, heat: 0, fresh: 0 }, centre: 3, at: '2026-11-19T12:02:00.000Z' },
+  };
+  const text = encodePayload(quiz, answers);
+  assert.match(text, /^#marco pierre-trainer v1/);
+  assert.match(text, /paneer \| t 0\.3\.2\.1\.0 \| s fat \| c 4/);
+  assert.match(text, /makhana \| t 3\.0\.0\.0\.1 \| s - \| c 3/);
+  const back = decodePayload('Here you go:\n```\n' + text + '\n```\n');
+  assert.equal(back.paneer.texture.creamy, 3);
+  assert.equal(back.paneer.taste.fat, 1);
+  assert.equal(back.cheese_slices.taste.acid, 1);
+  assert.equal(back.makhana.centre, 3);
+  assert.deepEqual(Object.keys(back.makhana.taste), []);
+  assert.throws(() => decodePayload('hello'), /not a Pierre-trainer/);
+  // A prefilled GitHub issue for every food still fits in a URL.
+  const all = Object.fromEntries(quiz.foods.map((f) => [f.id, { ...answers.cheese_slices }]));
+  assert.ok(encodeURIComponent(encodePayload(quiz, all)).length < 7000);
+});
+
+test('ingesting writes a brain file that imports and keeps the newest rating', async () => {
+  const text = encodePayload(quiz, {
+    paneer: { texture: { creamy: 3, chewy: 2 }, taste: { fat: 1 }, centre: 4, at: '2026-11-19T12:00:00.000Z' },
+    eggs: { texture: { creamy: 2, juicy: 1 }, taste: { fat: 1 }, centre: 3, at: '2026-11-19T12:00:00.000Z' },
+  });
+  let kb = mergeRatings({ version: 1, foods: {} }, decodePayload(text));
+  assert.equal(kb.foods.paneer.role, 'major');
+  kb = mergeRatings(kb, { paneer: { centre: 2, at: '2026-01-01T00:00:00.000Z' } });
+  assert.equal(kb.foods.paneer.centre, 4, 'an older rating does not win');
+  const src = renderBrainFile(kb);
+  const mod = await import('data:text/javascript,' + encodeURIComponent(src));
+  assert.equal(mod.PIERRE_RAW.foods.eggs.centre, 3);
+});
+
+const KB = mergeRatings({ version: 1, foods: {} }, {
+  paneer: { texture: { creamy: 3, chewy: 2, juicy: 1 }, taste: { fat: 1 }, centre: 4 },
+  eggs: { texture: { creamy: 2, juicy: 2 }, taste: { fat: 1 }, centre: 3 },
+  rice: { texture: { chewy: 1, creamy: 1 }, taste: {}, centre: 5 },
+  onion: { texture: { crisp: 2, juicy: 2 }, taste: { sugar: 1, heat: 1, fresh: 1 }, centre: 2 },
+  butter: { texture: { creamy: 3 }, taste: { fat: 1, salt: 1 }, centre: 1 },
+  makhana: { texture: { crisp: 3 }, taste: {}, centre: 3 },
+  mushroom: { texture: { chewy: 2, juicy: 2 }, taste: {}, centre: 3 },
+});
+
+test('centrality: major from 3, co-leads within 1 of the anchor, pull doubles per step', () => {
+  assert.equal(roleOf(2), 'minor');
+  assert.equal(roleOf(3), 'major');
+  assert.deepEqual([1, 2, 3, 4, 5].map(pullOf), [1, 2, 4, 8, 16]);
+  const bhurji = plateShape(['eggs', 'paneer', 'onion', 'butter'], KB);
+  assert.equal(bhurji.anchor, 'paneer');
+  assert.deepEqual(bhurji.leads, ['paneer', 'eggs']);
+  assert.deepEqual(bhurji.supports, ['onion']);
+  assert.deepEqual(bhurji.accents, ['butter']);
+  assert.ok(bhurji.meal);
+  assert.equal(bhurji.majors, 2);
+  const rice = plateShape(['rice', 'eggs', 'onion'], KB);
+  assert.deepEqual(rice.leads, ['rice'], 'eggs (3) are 2 below rice (5): support, not co-lead');
+  assert.deepEqual(rice.supports, ['eggs', 'onion']);
+  assert.equal(plateShape(['onion', 'butter'], KB).meal, false);
+  assert.equal(plateShape(['paneer', 'eggs', 'mushroom', 'makhana'], KB).crowded, true);
+  assert.deepEqual(partnersFor('paneer', ['eggs', 'onion', 'rice', 'butter', 'mushroom'], KB), ['rice', 'eggs', 'mushroom']);
+});
+
+test('dish profile: the anchor dominates texture, any part brings a taste', () => {
+  const p = dishProfile(['paneer', 'butter', 'onion'], KB);
+  assert.ok(p.texture.creamy > 2.2);
+  assert.ok(p.texture.crisp < 0.5, 'a little onion does not make paneer crunchy');
+  assert.equal(p.taste.salt, 1, 'butter salts the dish');
+  assert.equal(p.taste.fresh, 1);
+  assert.deepEqual(p.textures, ['creamy']);
+  assert.deepEqual(dishProfile(['paneer', 'saffron'], KB).missing, ['saffron']);
+});
+
+test('the technique layer: a rated "food@technique" wins, an unknown technique falls back to raw', () => {
+  const kb = mergeRatings(KB, { 'paneer@fried': { texture: { crisp: 2, creamy: 2, chewy: 2 }, taste: { fat: 1, salt: 0 }, centre: 4 } });
+  const fried = partVector({ id: 'paneer', technique: 'fried' }, kb);
+  assert.equal(fried.source, 'rated');
+  assert.equal(fried.texture.crisp, 2);
+  const boiled = partVector({ id: 'paneer', technique: 'boiled' }, kb);
+  assert.match(boiled.source, /^raw/);
+  const shifted = partVector({ id: 'paneer', technique: 'airfried' }, kb, { airfried: { texture: { crisp: 2, juicy: -1 } } });
+  assert.equal(shifted.texture.crisp, 2);
+  assert.equal(shifted.texture.juicy, 0);
+  assert.equal(rawVector('paneer@fried', kb).centre, 4);
+});
+
+test('photos: only open licences, and only images', () => {
+  for (const ok of ['CC BY-SA 4.0', 'CC BY 2.0', 'CC0', 'Public domain', 'cc-by-sa-3.0']) assert.ok(isOpenLicence(ok), ok);
+  for (const no of ['Fair use', 'All rights reserved', '', undefined]) assert.ok(!isOpenLicence(no), String(no));
+  const page = (licence, mime = 'image/jpeg') => ({ imageinfo: [{ mime, thumburl: 'https://upload.wikimedia.org/x.jpg', descriptionurl: 'https://commons.wikimedia.org/wiki/File:X.jpg', extmetadata: { LicenseShortName: { value: licence }, Artist: { value: '<a href="#">Jane</a> Doe' } } }] });
+  assert.deepEqual(toPhoto(page('CC BY-SA 4.0')), { src: 'https://upload.wikimedia.org/x.jpg', page: 'https://commons.wikimedia.org/wiki/File:X.jpg', author: 'Jane Doe', licence: 'CC BY-SA 4.0' });
+  assert.equal(toPhoto(page('Fair use')), null);
+  assert.equal(toPhoto(page('CC0', 'image/svg+xml')), null);
+});
+
+test('the pages exist and are deployed', () => {
+  const html = readFileSync(new URL('../pierre.html', import.meta.url), 'utf8');
+  assert.match(html, /src\/pierre\.js/);
+  assert.match(readFileSync(new URL('../train.html', import.meta.url), 'utf8'), /href="pierre\.html"/);
+  assert.match(readFileSync(new URL('../.github/workflows/pages.yml', import.meta.url), 'utf8'), /pierre\.html/);
+});
