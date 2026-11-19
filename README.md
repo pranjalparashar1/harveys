@@ -92,7 +92,7 @@ The live ranker (`ranker.js`, `config.js`) is unchanged: fitted weights move the
 
 `pierre.html` (the **Begin** button at the top of Train) is a quiz on Kiron's player: rounds of 7 raw foods, the user's own kitchen first, one photo per food. Each food takes three screens: **texture** (crisp, creamy, chewy, juicy, flaky: none to high), **taste** (tap what's there: salt, sweet, fat, acid, heat, plus fresh as Pierre's bonus) and **how central** it is to a meal (1 accent to 5 the meal). Every tap toggles; no streaks, timer or going back. Progress is saved after every screen.
 
-- **Quiz file:** `src/quiz/pierre-trainer.json` (48 foods, veg and eggs, no spices or condiments). Engine: `src/quiz/quiz.js`.
+- **Quiz file:** `src/quiz/pierre-trainer.json` (45 foods, veg and eggs, no spices or condiments; rated as plainly eaten, so rice, dal and pasta are cooked plain. Besan, suji and vermicelli wait for Pierre-tutor, since they are cooked too many ways). Engine: `src/quiz/quiz.js`.
 - **Photos:** looked up live from Wikipedia/Wikimedia Commons (`src/quiz/photos.js`); only CC0, public-domain, CC BY and CC BY-SA images, credited on the photo.
 - **Send to Marco:** opens a prefilled GitHub issue (and copies the same text). To pull it into the brain: `node scripts/ingest-pierre.mjs export.txt`, which rewrites `src/brain/pierre-raw.js`.
 - **Knowledge base:** `src/brain/ingredients.js`. Centre 3+ is a major ingredient; the top food anchors the dish; majors within 1 of it are co-leads; a food's pull on texture doubles per step. A technique layer (`paneer@fried`) is ready for Pierre-tutor.

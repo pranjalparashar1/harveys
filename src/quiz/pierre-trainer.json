@@ -92,6 +92,7 @@
       "line": "Everything else is a side."
     }
   ],
+  "rated": "as you would plainly eat it: rice, dal and pasta cooked plain",
   "foods": [
     {"id": "paneer", "name": "Paneer", "group": "dairy", "kitchen": true, "photo": {"wiki": "Paneer"}},
     {"id": "eggs", "name": "Eggs", "group": "protein", "kitchen": true, "photo": {"wiki": "Egg as food"}},
@@ -106,7 +107,6 @@
     {"id": "cheese_slices", "name": "Cheese slice", "group": "dairy", "kitchen": true, "photo": {"wiki": "Processed cheese"}},
     {"id": "tofu", "name": "Tofu", "group": "protein", "kitchen": true, "photo": {"wiki": "Tofu"}},
     {"id": "mushroom", "name": "Mushrooms", "group": "veg", "kitchen": true, "photo": {"wiki": "Agaricus bisporus"}},
-    {"id": "besan", "name": "Besan", "group": "grain", "kitchen": true, "photo": {"wiki": "Gram flour"}},
     {"id": "poha", "name": "Poha", "group": "grain", "kitchen": true, "photo": {"wiki": "Flattened rice"}},
     {"id": "rice", "name": "Rice", "group": "grain", "kitchen": true, "photo": {"wiki": "Basmati"}},
     {"id": "moong_dal", "name": "Moong dal", "group": "legume", "kitchen": true, "photo": {"search": "moong dal"}},
@@ -138,8 +138,11 @@
     {"id": "rajma", "name": "Rajma", "group": "legume", "photo": {"wiki": "Kidney bean"}},
     {"id": "masoor_dal", "name": "Masoor dal", "group": "legume", "photo": {"search": "masoor dal red lentils"}},
     {"id": "toor_dal", "name": "Toor dal", "group": "legume", "photo": {"search": "toor dal"}},
-    {"id": "suji", "name": "Suji", "group": "grain", "photo": {"wiki": "Semolina"}},
-    {"id": "vermicelli", "name": "Vermicelli", "group": "grain", "photo": {"wiki": "Vermicelli"}},
     {"id": "sprouts", "name": "Moong sprouts", "group": "legume", "photo": {"wiki": "Bean sprout"}}
+  ],
+  "tutor": [
+    {"id": "besan", "name": "Besan", "group": "grain", "kitchen": true, "photo": {"wiki": "Gram flour"}, "why": "cooked many ways; needs a technique"},
+    {"id": "suji", "name": "Suji", "group": "grain", "photo": {"wiki": "Semolina"}, "why": "cooked many ways; needs a technique"},
+    {"id": "vermicelli", "name": "Vermicelli", "group": "grain", "photo": {"wiki": "Vermicelli"}, "why": "cooked many ways; needs a technique"}
   ]
 }

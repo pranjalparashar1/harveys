@@ -14,6 +14,10 @@ const quiz = validateQuiz(JSON.parse(readFileSync(new URL('../src/quiz/pierre-tr
 
 test('the quiz file is valid: veg and egg foods, no spices or condiments', () => {
   assert.ok(quiz.foods.length >= 40);
+  for (const later of ['besan', 'suji', 'vermicelli']) {
+    assert.ok(!quiz.foods.some((f) => f.id === later), `${later} waits for Pierre-tutor`);
+    assert.ok(quiz.tutor.some((f) => f.id === later));
+  }
   const ids = quiz.foods.map((f) => f.id);
   for (const banned of ['chicken', 'tuna', 'salt', 'turmeric', 'garam_masala', 'ketchup', 'mayo', 'oil']) assert.ok(!ids.includes(banned), banned);
   assert.deepEqual(quiz.textures.map((t) => t.id), ['crisp', 'creamy', 'chewy', 'juicy', 'flaky']);
