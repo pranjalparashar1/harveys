@@ -16,6 +16,845 @@
 export const PIERRE_RAW = {
   version: 1,
   ratedBy: 'pranjal',
-  foods: {},
-  prep: {},
+  foods: {
+    almonds: {
+      texture: {
+        crisp: 2,
+        creamy: 0,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 3,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      centre: 1,
+      role: 'minor',
+      at: '2026-11-19T16:31:57.144Z'
+    },
+    apple: {
+      texture: {
+        crisp: 3,
+        creamy: 0,
+        chewy: 0,
+        juicy: 3,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 3,
+        fat: 0,
+        acid: 1,
+        heat: 0,
+        canvas: 0,
+        fresh: 3
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T14:59:26.882Z'
+    },
+    banana: {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 2,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 2
+      },
+      centre: 3,
+      role: 'major',
+      at: '2026-11-19T14:55:17.692Z'
+    },
+    bread: {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 2,
+        juicy: 0,
+        flaky: 1
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 4,
+      role: 'major',
+      at: '2026-11-19T14:24:15.807Z'
+    },
+    butter: {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 2,
+        sugar: 1,
+        fat: 3,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      centre: 1,
+      role: 'minor',
+      at: '2026-11-19T14:54:11.864Z'
+    },
+    cabbage: {
+      texture: {
+        crisp: 3,
+        creamy: 0,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 1
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T15:11:31.554Z'
+    },
+    capsicum: {
+      texture: {
+        crisp: 2,
+        creamy: 0,
+        chewy: 0,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 1,
+        canvas: 0,
+        fresh: 1
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T16:31:19.296Z'
+    },
+    carrot: {
+      texture: {
+        crisp: 3,
+        creamy: 0,
+        chewy: 0,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 2
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T15:07:44.988Z'
+    },
+    cheese_slices: {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 3,
+        sugar: 0,
+        fat: 3,
+        acid: 1,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T14:26:09.548Z'
+    },
+    chickpeas: {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 4,
+      role: 'major',
+      at: '2026-11-19T14:27:28.172Z'
+    },
+    cream: {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 3,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T14:53:06.875Z'
+    },
+    cucumber: {
+      texture: {
+        crisp: 3,
+        creamy: 0,
+        chewy: 0,
+        juicy: 2,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 3
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T16:31:00.964Z'
+    },
+    curd: {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 2,
+        acid: 1,
+        heat: 0,
+        canvas: 3,
+        fresh: 3
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T14:25:00.753Z'
+    },
+    frozen_peas: {
+      texture: {
+        crisp: 1,
+        creamy: 0,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 1
+      },
+      centre: 3,
+      role: 'major',
+      at: '2026-11-19T16:36:56.370Z'
+    },
+    ghee: {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 3,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      centre: 1,
+      role: 'minor',
+      at: '2026-11-19T15:55:49.746Z'
+    },
+    makhana: {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 3,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 3,
+      role: 'major',
+      at: '2026-11-19T14:54:31.644Z'
+    },
+    masoor_dal: {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 4,
+      role: 'major',
+      at: '2026-11-19T15:04:25.751Z'
+    },
+    milk: {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 0,
+        juicy: 2,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 2,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T14:51:03.325Z'
+    },
+    moong_dal: {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      centre: 5,
+      role: 'major',
+      at: '2026-11-19T14:56:26.802Z'
+    },
+    mushroom: {
+      texture: {
+        crisp: 1,
+        creamy: 1,
+        chewy: 2,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 3,
+      role: 'major',
+      at: '2026-11-19T14:29:55.998Z'
+    },
+    oats: {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 4,
+      role: 'major',
+      at: '2026-11-19T14:25:33.784Z'
+    },
+    onion: {
+      texture: {
+        crisp: 3,
+        creamy: 0,
+        chewy: 0,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 2,
+        canvas: 0,
+        fresh: 2
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T15:11:10.743Z'
+    },
+    paneer: {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 1,
+        juicy: 0,
+        flaky: 1
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 2,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 4,
+      role: 'major',
+      at: '2026-11-19T14:28:07.192Z'
+    },
+    pasta: {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 3,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 5,
+      role: 'major',
+      at: '2026-11-19T14:22:04.035Z'
+    },
+    peanut_butter: {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 3,
+        fat: 3,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T16:32:17.873Z'
+    },
+    peanuts: {
+      texture: {
+        crisp: 2,
+        creamy: 1,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 3,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T14:59:58.679Z'
+    },
+    potato: {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 0,
+        flaky: 1
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 4,
+      role: 'major',
+      at: '2026-11-19T15:06:52.720Z'
+    },
+    rajma: {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      centre: 3,
+      role: 'major',
+      at: '2026-11-19T16:36:31.194Z'
+    },
+    rice: {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 4,
+      role: 'major',
+      at: '2026-11-19T14:54:57.556Z'
+    },
+    soya_chunks: {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 3,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 4,
+      role: 'major',
+      at: '2026-11-19T14:55:38.733Z'
+    },
+    sweet_corn: {
+      texture: {
+        crisp: 1,
+        creamy: 1,
+        chewy: 1,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 0
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T15:09:36.657Z'
+    },
+    tofu: {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 2,
+        juicy: 0,
+        flaky: 1
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 3,
+      role: 'major',
+      at: '2026-11-19T14:22:28.361Z'
+    },
+    tomato: {
+      texture: {
+        crisp: 2,
+        creamy: 0,
+        chewy: 1,
+        juicy: 2,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 2,
+        heat: 0,
+        canvas: 0,
+        fresh: 3
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T15:09:06.479Z'
+    },
+    toor_dal: {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      centre: 4,
+      role: 'major',
+      at: '2026-11-19T15:55:32.103Z'
+    }
+  },
+  prep: {
+    almonds: {
+      at: '2026-11-19T16:31:57.144Z'
+    },
+    apple: {
+      at: '2026-11-19T14:59:26.882Z'
+    },
+    banana: {
+      at: '2026-11-19T14:55:17.692Z'
+    },
+    bread: {
+      at: '2026-11-19T14:24:15.807Z'
+    },
+    brinjal: {
+      at: '2026-11-19T16:32:24.183Z'
+    },
+    broccoli: {
+      at: '2026-11-19T15:55:09.756Z'
+    },
+    butter: {
+      at: '2026-11-19T14:54:11.864Z'
+    },
+    cabbage: {
+      at: '2026-11-19T15:11:31.554Z'
+    },
+    capsicum: {
+      at: '2026-11-19T16:31:19.296Z'
+    },
+    cauliflower: {
+      at: '2026-11-19T15:06:34.922Z'
+    },
+    cheese_slices: {
+      at: '2026-11-19T14:26:09.548Z'
+    },
+    chickpeas: {
+      at: '2026-11-19T14:27:28.172Z'
+    },
+    cucumber: {
+      at: '2026-11-19T16:31:00.964Z'
+    },
+    eggs: {
+      at: '2026-11-19T14:58:09.969Z'
+    },
+    frozen_peas: {
+      at: '2026-11-19T16:36:56.370Z'
+    },
+    ghee: {
+      at: '2026-11-19T15:55:49.746Z'
+    },
+    lauki: {
+      at: '2026-11-19T16:31:26.618Z'
+    },
+    makhana: {
+      at: '2026-11-19T14:54:31.644Z'
+    },
+    masoor_dal: {
+      at: '2026-11-19T15:04:25.751Z'
+    },
+    milk: {
+      at: '2026-11-19T14:51:03.325Z'
+    },
+    moong_dal: {
+      at: '2026-11-19T14:56:26.802Z'
+    },
+    mushroom: {
+      at: '2026-11-19T14:29:55.998Z'
+    },
+    oats: {
+      at: '2026-11-19T14:25:33.784Z'
+    },
+    okra: {
+      at: '2026-11-19T16:37:01.475Z'
+    },
+    onion: {
+      at: '2026-11-19T15:11:10.743Z'
+    },
+    paneer: {
+      at: '2026-11-19T14:28:07.192Z'
+    },
+    pasta: {
+      at: '2026-11-19T14:22:04.035Z'
+    },
+    peanuts: {
+      at: '2026-11-19T14:59:58.679Z'
+    },
+    poha: {
+      at: '2026-11-19T14:26:12.531Z'
+    },
+    potato: {
+      at: '2026-11-19T15:06:52.720Z'
+    },
+    rajma: {
+      at: '2026-11-19T16:36:31.194Z'
+    },
+    rice: {
+      at: '2026-11-19T14:54:57.556Z'
+    },
+    soya_chunks: {
+      at: '2026-11-19T14:55:38.733Z'
+    },
+    spinach: {
+      at: '2026-11-19T15:55:07.089Z'
+    },
+    sprouts: {
+      at: '2026-11-19T16:32:21.474Z'
+    },
+    sweet_corn: {
+      at: '2026-11-19T15:09:36.657Z'
+    },
+    sweet_potato: {
+      at: '2026-11-19T15:11:37.660Z'
+    },
+    tofu: {
+      at: '2026-11-19T14:22:28.361Z'
+    },
+    tomato: {
+      at: '2026-11-19T15:09:06.479Z'
+    },
+    toor_dal: {
+      at: '2026-11-19T15:55:32.103Z'
+    },
+    whey: {
+      at: '2026-11-19T14:48:22.280Z'
+    }
+  }
 };
