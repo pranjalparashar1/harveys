@@ -98,7 +98,7 @@
     {"id": "eggs", "name": "Eggs", "group": "protein", "kitchen": true},
     {"id": "whey", "name": "Whey protein", "group": "protein", "kitchen": true},
     {"id": "makhana", "name": "Makhana", "group": "snack", "kitchen": true},
-    {"id": "protein_bread", "name": "Protein bread", "group": "bread", "kitchen": true},
+    {"id": "bread", "name": "Bread", "group": "bread", "kitchen": true},
     {"id": "pasta", "name": "Fusilli", "group": "grain", "kitchen": true},
     {"id": "oats", "name": "Oats", "group": "grain", "kitchen": true},
     {"id": "banana", "name": "Banana", "group": "fruit", "kitchen": true},

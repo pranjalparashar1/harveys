@@ -8,7 +8,8 @@ import {
   canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload,
 } from './quiz/quiz.js';
 
-const VERSION = '1.5.1';
+const VERSION = '1.5.2';
+const RENAMED = { protein_bread: 'bread' };
 const KEY = 'marco.pierre.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/marco/issues/new';
 const app = document.getElementById('app');
@@ -23,7 +24,12 @@ const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matche
 
 function load() {
   try { state = { ...blankState(), ...JSON.parse(localStorage.getItem(KEY)) }; } catch { state = blankState(); }
-  // A saved round whose foods are gone from the quiz (renamed) restarts cleanly.
+  // Foods that left the quiz (protein bread became plain bread in 1.5.2): their old
+  // answers aren't sent, and a saved round asks the replacement instead.
+  const known = new Set(quiz.foods.map((f) => f.id));
+  for (const id of Object.keys(state.answers)) if (!known.has(id)) delete state.answers[id];
+  if (state.round) state.round = { ...state.round, ids: state.round.ids.map((id) => RENAMED[id] ?? id) };
+  // A saved round whose foods are gone from the quiz restarts cleanly.
   if (state.round && !state.round.ids.every((id) => quiz.foods.some((f) => f.id === id))) state.round = null;
 }
 function save() {
