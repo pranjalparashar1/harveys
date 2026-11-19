@@ -152,11 +152,15 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
  * like soaked poha), or both (paneer). Prep foods are listed in `prep`, where Pierre-tutor
  * starts; a food that is only prep has no raw ratings.
  */
-export function mergeRatings(kb, ratings) {
+export function mergeRatings(kb, ratings, { exclude = [] } = {}) {
   const foods = { ...(kb.foods ?? {}) };
   const prep = { ...(kb.prep ?? {}) };
+  // Foods set aside for now (too much work, or unfamiliar): kept out of training
+  // until pranjal brings them back. A later rating doesn't re-add them.
+  const excluded = [...new Set([...(kb.excluded ?? []), ...exclude])].sort();
+  for (const id of excluded) { delete foods[id]; delete prep[id]; }
   for (const [id, r] of Object.entries(ratings)) {
-    if (!/^[a-z][a-z0-9_@]*$/.test(id)) continue;
+    if (!/^[a-z][a-z0-9_@]*$/.test(id) || excluded.includes(id)) continue;
     const old = foods[id] ?? prep[id];
     if (old?.at && r.at && old.at > r.at) continue;
     if (r.prep) prep[id] = r.at ? { at: r.at } : {};
@@ -175,7 +179,7 @@ export function mergeRatings(kb, ratings) {
     };
   }
   const sorted = (o) => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]));
-  return { ...kb, foods: sorted(foods), prep: sorted(prep) };
+  return { ...kb, foods: sorted(foods), prep: sorted(prep), excluded };
 }
 
 function clamp(x, lo, hi) {

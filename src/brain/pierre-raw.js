@@ -13,6 +13,7 @@
 //   at:      when it was rated
 // prep: foods marked "part of prep, needs further processing" (soaked poha).
 //   They have no raw ratings; Pierre-tutor rates them with a technique.
+// excluded: foods set aside for now (too much work, or unfamiliar). Not trained on.
 export const PIERRE_RAW = {
   version: 1,
   ratedBy: 'pranjal',
@@ -53,11 +54,11 @@ export const PIERRE_RAW = {
         acid: 1,
         heat: 0,
         canvas: 0,
-        fresh: 3
+        fresh: 2
       },
       centre: 2,
       role: 'minor',
-      at: '2026-11-19T14:59:26.882Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     banana: {
       texture: {
@@ -97,9 +98,9 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      centre: 4,
+      centre: 5,
       role: 'major',
-      at: '2026-11-19T14:24:15.807Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     butter: {
       texture: {
@@ -283,12 +284,12 @@ export const PIERRE_RAW = {
         fat: 2,
         acid: 1,
         heat: 0,
-        canvas: 3,
+        canvas: 2,
         fresh: 3
       },
       centre: 2,
       role: 'minor',
-      at: '2026-11-19T14:25:00.753Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     frozen_peas: {
       texture: {
@@ -307,9 +308,9 @@ export const PIERRE_RAW = {
         canvas: 2,
         fresh: 1
       },
-      centre: 3,
-      role: 'major',
-      at: '2026-11-19T16:36:56.370Z'
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T16:45:16.000Z'
     },
     ghee: {
       texture: {
@@ -412,9 +413,9 @@ export const PIERRE_RAW = {
         canvas: 2,
         fresh: 0
       },
-      centre: 5,
+      centre: 4,
       role: 'major',
-      at: '2026-11-19T14:56:26.802Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     mushroom: {
       texture: {
@@ -454,9 +455,9 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      centre: 4,
+      centre: 5,
       role: 'major',
-      at: '2026-11-19T14:25:33.784Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     onion: {
       texture: {
@@ -601,9 +602,9 @@ export const PIERRE_RAW = {
         canvas: 2,
         fresh: 0
       },
-      centre: 3,
+      centre: 4,
       role: 'major',
-      at: '2026-11-19T16:36:31.194Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     rice: {
       texture: {
@@ -622,9 +623,9 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      centre: 4,
+      centre: 5,
       role: 'major',
-      at: '2026-11-19T14:54:57.556Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     soya_chunks: {
       texture: {
@@ -704,11 +705,11 @@ export const PIERRE_RAW = {
         acid: 2,
         heat: 0,
         canvas: 0,
-        fresh: 3
+        fresh: 2
       },
       centre: 2,
       role: 'minor',
-      at: '2026-11-19T15:09:06.479Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     toor_dal: {
       texture: {
@@ -737,19 +738,13 @@ export const PIERRE_RAW = {
       at: '2026-11-19T16:31:57.144Z'
     },
     apple: {
-      at: '2026-11-19T14:59:26.882Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     banana: {
       at: '2026-11-19T14:55:17.692Z'
     },
     bread: {
-      at: '2026-11-19T14:24:15.807Z'
-    },
-    brinjal: {
-      at: '2026-11-19T16:32:24.183Z'
-    },
-    broccoli: {
-      at: '2026-11-19T15:55:09.756Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     butter: {
       at: '2026-11-19T14:54:11.864Z'
@@ -759,9 +754,6 @@ export const PIERRE_RAW = {
     },
     capsicum: {
       at: '2026-11-19T16:31:19.296Z'
-    },
-    cauliflower: {
-      at: '2026-11-19T15:06:34.922Z'
     },
     cheese_slices: {
       at: '2026-11-19T14:26:09.548Z'
@@ -776,13 +768,10 @@ export const PIERRE_RAW = {
       at: '2026-11-19T14:58:09.969Z'
     },
     frozen_peas: {
-      at: '2026-11-19T16:36:56.370Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     ghee: {
       at: '2026-11-19T15:55:49.746Z'
-    },
-    lauki: {
-      at: '2026-11-19T16:31:26.618Z'
     },
     makhana: {
       at: '2026-11-19T14:54:31.644Z'
@@ -794,16 +783,13 @@ export const PIERRE_RAW = {
       at: '2026-11-19T14:51:03.325Z'
     },
     moong_dal: {
-      at: '2026-11-19T14:56:26.802Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     mushroom: {
       at: '2026-11-19T14:29:55.998Z'
     },
     oats: {
-      at: '2026-11-19T14:25:33.784Z'
-    },
-    okra: {
-      at: '2026-11-19T16:37:01.475Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     onion: {
       at: '2026-11-19T15:11:10.743Z'
@@ -824,31 +810,22 @@ export const PIERRE_RAW = {
       at: '2026-11-19T15:06:52.720Z'
     },
     rajma: {
-      at: '2026-11-19T16:36:31.194Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     rice: {
-      at: '2026-11-19T14:54:57.556Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     soya_chunks: {
       at: '2026-11-19T14:55:38.733Z'
     },
-    spinach: {
-      at: '2026-11-19T15:55:07.089Z'
-    },
-    sprouts: {
-      at: '2026-11-19T16:32:21.474Z'
-    },
     sweet_corn: {
       at: '2026-11-19T15:09:36.657Z'
-    },
-    sweet_potato: {
-      at: '2026-11-19T15:11:37.660Z'
     },
     tofu: {
       at: '2026-11-19T14:22:28.361Z'
     },
     tomato: {
-      at: '2026-11-19T15:09:06.479Z'
+      at: '2026-11-19T16:45:16.000Z'
     },
     toor_dal: {
       at: '2026-11-19T15:55:32.103Z'
@@ -856,5 +833,15 @@ export const PIERRE_RAW = {
     whey: {
       at: '2026-11-19T14:48:22.280Z'
     }
-  }
+  },
+  excluded: [
+    'brinjal',
+    'broccoli',
+    'cauliflower',
+    'lauki',
+    'okra',
+    'spinach',
+    'sprouts',
+    'sweet_potato'
+  ]
 };

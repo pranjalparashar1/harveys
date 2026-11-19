@@ -259,6 +259,17 @@ test('the real brain file: issue #16 ingested', async () => {
   assert.equal(kb.foods.cream.taste.canvas, 0);
   assert.ok(kb.prep.eggs && !kb.foods.eggs, 'eggs are prep only');
   assert.ok(kb.prep.paneer && kb.foods.paneer, 'paneer is rated and prep');
+  for (const id of ['rice', 'oats', 'bread', 'pasta']) assert.equal(kb.foods[id].centre, 5, `${id} is a base`);
+  for (const id of ['moong_dal', 'masoor_dal', 'toor_dal', 'rajma', 'chickpeas']) assert.equal(kb.foods[id].centre, 4, id);
+  assert.ok(kb.excluded.includes('spinach') && !kb.prep.spinach, 'spinach set aside');
+});
+
+test('excluded foods leave the brain and stay out on later ingests', () => {
+  const kb = mergeRatings({ foods: {}, prep: { spinach: {}, eggs: {} } }, {}, { exclude: ['spinach'] });
+  assert.deepEqual(Object.keys(kb.prep), ['eggs']);
+  const again = mergeRatings(kb, { spinach: { prep: true, at: '2027-01-01T00:00:00Z' } });
+  assert.ok(!again.prep.spinach);
+  assert.deepEqual(again.excluded, ['spinach']);
 });
 
 test('centrality: major from 3, co-leads within 1 of the anchor, pull doubles per step', () => {
