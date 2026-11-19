@@ -4,7 +4,7 @@ Tells you what to cook right now, from what you already have, that you will actu
 
 ## Web prototype
 
-**Live:** https://pranjalparashar1.github.io/marco/ (after GitHub Pages is enabled, see below)
+**Live:** https://pranjalparashar1.github.io/harveys/ (after GitHub Pages is enabled, see below)
 
 1. **Your AI.** Paste an API key from Claude, OpenAI or Gemini. The provider is detected from the key's format, the same way Cals does it. The key is stored only in this browser's `localStorage` and sent only to that provider.
 2. **Scan your kitchen.** Add up to 8 photos (fridge, shelves, counter, drawers). They are shrunk to 1280 px and sent in one request.

@@ -11,7 +11,7 @@ import {
 const VERSION = '1.6.0';
 const RENAMED = { protein_bread: 'bread' };
 const KEY = 'marco.pierre.v1';
-const REPO_ISSUE = 'https://github.com/pranjalparashar1/marco/issues/new';
+const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
 const app = document.getElementById('app');
 
 let quiz = null;
