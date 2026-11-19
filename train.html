@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Train Marco</title>
+  <meta name="description" content="Pick the dish you'd cook tonight. Marco and Pierre learn from every tap.">
+  <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d97757'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='36' text-anchor='middle' fill='%23fff'%3EM%3C/text%3E%3C/svg%3E">
+  <link rel="preload" href="assets/fonts/poppins-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/poppins-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero hero-row">
+      <h1>Train</h1>
+      <a class="btn link" href="./">Marco</a>
+    </header>
+
+    <!-- Tonight -->
+    <div class="segmented" id="mood" role="radiogroup" aria-label="Tonight I feel">
+      <button type="button" role="radio" data-haptic data-value="fresh">Fresh</button>
+      <button type="button" role="radio" data-haptic data-value="okay">Okay</button>
+      <button type="button" role="radio" data-haptic data-value="tired">Tired</button>
+    </div>
+
+    <!-- The pair -->
+    <section class="pair" id="pair" aria-live="polite"></section>
+    <div class="pair-actions">
+      <button class="btn ghost" id="neither" data-haptic type="button">Neither</button>
+      <button class="btn link quiet-left" id="skip" type="button">Skip</button>
+      <button class="btn link quiet-left" id="undo" type="button" hidden>Undo</button>
+    </div>
+    <p class="mini center" id="tally"></p>
+
+    <!-- What Marco learned -->
+    <section class="card" id="learned" aria-labelledby="learned-title">
+      <h2 id="learned-title">What Marco learned</h2>
+      <div id="learned-body"></div>
+    </section>
+
+    <!-- Your dishes -->
+    <section class="card" id="mine" aria-labelledby="mine-title">
+      <div class="card-head">
+        <h2 id="mine-title">Your dishes</h2>
+        <span class="status" id="mine-count"></span>
+      </div>
+      <ul class="others" id="mine-list"></ul>
+      <details class="add-dish" id="add-dish">
+        <summary>Add a dish</summary>
+        <form id="dish-form" autocomplete="off">
+          <label class="field"><span>Name</span><input id="d-name" type="text" required placeholder="Egg bhurji, my way"></label>
+          <label class="field"><span>How you make it, the lazy way</span><textarea id="d-how" rows="4" placeholder="Butter in the pan, crack 3 eggs, scramble 2 min, salt and pepper, eat from the pan."></textarea></label>
+          <label class="field"><span>Main ingredients</span><input id="d-ingredients" type="text" placeholder="eggs, butter, onion"></label>
+          <div class="field"><span>Tools</span><div class="chips" id="d-tools"></div></div>
+          <div class="form-grid">
+            <label class="field"><span>Hands-on</span><span class="unit-input"><input id="d-handsOn" type="number" inputmode="decimal" min="0" step="1" value="5"><i>min</i></span></label>
+            <label class="field"><span>Waiting</span><span class="unit-input"><input id="d-waiting" type="number" inputmode="decimal" min="0" step="1" value="0"><i>min</i></span></label>
+            <label class="field"><span>To peel</span><input id="d-peels" type="number" inputmode="numeric" min="0" step="1" value="0" aria-label="Things to peel (garlic, onion, ginger)"></label>
+            <label class="field"><span>To cut</span><input id="d-cuts" type="number" inputmode="numeric" min="0" step="1" value="0" aria-label="Things to cut (paneer, tomato, chilli)"></label>
+            <label class="field"><span>Steps</span><input id="d-steps" type="number" inputmode="numeric" min="1" step="1" value="2"></label>
+            <label class="field"><span>To wash</span><input id="d-cleanup" type="number" inputmode="numeric" min="0" step="1" value="1" aria-label="Things to wash up"></label>
+            <label class="field"><span>Protein</span><span class="unit-input"><input id="d-protein" type="number" inputmode="numeric" min="0" step="1" value="20"><i>g</i></span></label>
+            <label class="field"><span>Greasy</span>
+              <select id="d-greasy"><option value="0">No</option><option value="1">A bit</option><option value="2">Very</option></select>
+            </label>
+            <label class="field"><span>Attention</span>
+              <select id="d-attention">
+                <option value="0">Walk away</option>
+                <option value="1" selected>Check in</option>
+                <option value="2">Stay close</option>
+                <option value="3">Skill / burns</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-grid two">
+            <label class="field"><span>Pre-prep</span><select id="d-prePrep"></select></label>
+            <label class="field"><span>Pre-prep is</span><input id="d-prePrepText" type="text" placeholder="Soak the rice"></label>
+          </div>
+          <div class="field"><span>Pierre</span>
+            <div class="segmented verdict" id="d-verdict" role="radiogroup" aria-label="Pierre's verdict">
+              <button type="button" role="radio" data-value="pass">Pass</button>
+              <button type="button" role="radio" data-value="meh">Meh</button>
+              <button type="button" role="radio" data-value="fail">Fail</button>
+            </div>
+          </div>
+          <label class="field"><span>Why (optional)</span><input id="d-why" type="text" placeholder="Butter makes it"></label>
+          <div class="row">
+            <button class="btn primary" id="d-save" data-haptic type="button">Save dish</button>
+            <button class="btn ghost" id="d-cancel" type="button" hidden>Cancel</button>
+          </div>
+        </form>
+      </details>
+      <details class="add-dish" id="import">
+        <summary>Paste dishes from Claude</summary>
+        <textarea id="import-text" rows="5" placeholder='[{"name": "…", "how": "…", "counts": {…}}]' aria-label="Dishes as JSON"></textarea>
+        <div class="row"><button class="btn" id="import-go" type="button">Add them</button></div>
+        <p class="mini" id="import-status" role="status"></p>
+      </details>
+    </section>
+
+    <!-- Wacky ideas -->
+    <section class="card" id="wacky" aria-labelledby="wacky-title">
+      <div class="card-head">
+        <h2 id="wacky-title">Wacky ideas</h2>
+        <span class="status" id="wacky-count"></span>
+      </div>
+      <p class="mini">The AI invents dishes, from silly to elaborate. They join the pairs so you judge them, not a filter.</p>
+      <button class="btn wide" id="wacky-go" data-haptic type="button">Invent 4 dishes</button>
+      <p class="mini" id="wacky-status" role="status"></p>
+    </section>
+
+    <section class="card" aria-label="Export">
+      <button class="btn primary wide no-top" id="export" data-haptic type="button">Copy for Claude</button>
+      <div class="row center-row">
+        <button class="btn link quiet" id="reset" type="button">Start over</button>
+      </div>
+    </section>
+
+    <p class="mini center" id="version">1.4.0</p>
+  </main>
+  <script type="module" src="src/train.js"></script>
+</body>
+</html>

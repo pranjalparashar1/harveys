@@ -76,3 +76,14 @@ Measured on pranjal's 6 real kitchen photos (19 known items in Marco's vocabular
 - 1.3.4: 16–19 of 19. The scan prompt now asks for every item shelf by shelf, reads packet labels (a brand counts as its food), and includes food in clear bags. Marco waits 5 s, not 2.5 s, for the last photo group.
 - A nutrition gate (`nutritionProblems` in `src/brain/validate.js`, thresholds in `config.js`) rejects any meal under 8 g protein (5 g for a snack), over 45 kcal per gram of protein, or made only of fats, spices and spreads. It applies to AI recipes and the catalogue alike. It is **off by default** (`nutritionGate.enabled: false`): odd lowest-friction ideas such as "100 g butter with salt" are allowed to surface, as proof the ranker optimises friction and as possible inspiration.
 - The whey and makhana bowl is now a catalogue meal, so Marco can pick it without the AI.
+
+### Training Marco and Pierre: pick two (1.4.0)
+
+`train.html` (the **Train** link on the main page) shows two dishes. Tap the one you'd cook tonight, or **Neither**, and give either a Pierre verdict (pass, meh, fail, plus an optional why). Marco is the whole brain; Pierre is the taste layer inside it (good result with maximal simplicity, not austerity).
+
+- **Pool:** built-in meals (vegetarian + eggs only), pan-fried paneer, your own dishes (form, or pasted JSON from Claude), and AI-invented ones (**Invent 4 dishes**, uses the key saved on the main page; Gemini keys use flash-lite only).
+- **Pierre** (`src/brain/learn.js`): a logistic model over technique tags (method × main ingredient, e.g. `microwave × paneer`), seeded with the 19 Nov chat verdicts. It guesses a verdict for dishes nobody judged.
+- **Marco:** a Bradley–Terry model, P(A over B) = σ(u_A − u_B), u = θ·x over protein, Pierre and friction (tools without the stove, hands-on, waiting, pre-prep, peels, cuts, steps, attention, washing up). θ starts at a prior and is fit by MAP after every tap; "Neither" fits a would-cook threshold; λ per mood (fresh, okay, tired) is fit once a mood has 4 picks. Weights are shown as grams of protein you'd give up to avoid one more of each.
+- **Data** stays in this browser. **Copy for Claude** exports picks, verdicts, dishes and the fit.
+
+The live ranker (`ranker.js`, `config.js`) is unchanged: fitted weights move there only after review. A pasted item list (one per line or comma-separated) now works as the inventory on the main page.

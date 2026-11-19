@@ -50,3 +50,13 @@ export function buildInventory(items, options = {}) {
   }
   return { have, missingBasics: new Set(options.missingBasics ?? []), matched, unmatched };
 }
+
+/** Splits pasted text into item names: lines, commas, semicolons; drops bullets and numbering. */
+export function parseItemList(text) {
+  const seen = new Set();
+  return String(text ?? '')
+    .split(/[\n,;]+/)
+    .map((s) => s.replace(/^\s*(?:[-*•·]|\d+[.)])\s*/, '').trim())
+    .filter((s) => s.length > 1 && !seen.has(s.toLowerCase()) && seen.add(s.toLowerCase()))
+    .slice(0, 200);
+}

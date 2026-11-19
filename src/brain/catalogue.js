@@ -13,6 +13,8 @@
 //   attention   0 walk away … 3 needs watching / skill
 //   cleanup     { dishes, greasy 0–2 }
 //   macros      { protein g, kcal, fiber g }, source: 'label' | 'estimate'
+//   prePrep     { minutes, text } optional: soaking or marinating done ahead (1.4).
+//               The 1.3 ranker ignores it; the pick-two trainer (learn.js) uses it.
 
 export const CATALOGUE = [
   {
@@ -500,6 +502,7 @@ export const CATALOGUE = [
     attention: 0,
     cleanup: { dishes: 3, greasy: 0 },
     macros: { protein: 13, kcal: 300, fiber: 11 },
+    prePrep: { minutes: 480, text: 'Soak dry chickpeas overnight, then boil them (skip with canned)' },
     source: 'estimate',
   },
   {
@@ -571,6 +574,7 @@ export const CATALOGUE = [
     attention: 1,
     cleanup: { dishes: 2, greasy: 1 },
     macros: { protein: 12, kcal: 330, fiber: 4 },
+    prePrep: { minutes: 60, text: 'Soak the rice and dal for about an hour' },
     source: 'estimate',
   },
   {
@@ -617,6 +621,7 @@ export const CATALOGUE = [
     attention: 2,
     cleanup: { dishes: 5, greasy: 2 },
     macros: { protein: 9, kcal: 380, fiber: 3 },
+    prePrep: { minutes: 15, text: 'Soak the poha for 15 minutes' },
     source: 'estimate',
   },
   {
