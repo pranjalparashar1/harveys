@@ -1,6 +1,6 @@
 {
   "format": "marco-quiz",
-  "version": 1,
+  "version": 2,
   "id": "pierre-trainer",
   "title": "Pierre-trainer",
   "purpose": "Rate raw foods on Pierre's two sides (texture and taste) and on how central they are to a meal.",
@@ -39,13 +39,36 @@
     "High"
   ],
   "tastes": [
-    { "id": "salt", "label": "Salt" },
-    { "id": "sugar", "label": "Sweet" },
-    { "id": "fat", "label": "Fat" },
-    { "id": "acid", "label": "Acid" },
-    { "id": "heat", "label": "Heat" },
-    { "id": "canvas", "label": "Canvas", "line": "Its flavour comes from the technique or what's added" },
-    { "id": "fresh", "label": "Fresh", "bonus": true }
+    {
+      "id": "salt",
+      "label": "Salt"
+    },
+    {
+      "id": "sugar",
+      "label": "Sweet"
+    },
+    {
+      "id": "fat",
+      "label": "Fat"
+    },
+    {
+      "id": "acid",
+      "label": "Acid"
+    },
+    {
+      "id": "heat",
+      "label": "Heat"
+    },
+    {
+      "id": "canvas",
+      "label": "Canvas",
+      "line": "Its flavour comes from the technique or what's added"
+    },
+    {
+      "id": "fresh",
+      "label": "Fresh",
+      "bonus": true
+    }
   ],
   "centre": [
     {
@@ -76,55 +99,293 @@
   ],
   "rated": "as you would plainly eat it: rice, dal and pasta cooked plain",
   "foods": [
-    {"id": "paneer", "name": "Paneer", "group": "dairy", "kitchen": true},
-    {"id": "eggs", "name": "Eggs", "group": "protein", "kitchen": true},
-    {"id": "whey", "name": "Whey protein", "group": "protein", "kitchen": true},
-    {"id": "makhana", "name": "Makhana", "group": "snack", "kitchen": true},
-    {"id": "bread", "name": "Bread", "group": "bread", "kitchen": true},
-    {"id": "pasta", "name": "Fusilli", "group": "grain", "kitchen": true},
-    {"id": "oats", "name": "Oats", "group": "grain", "kitchen": true},
-    {"id": "banana", "name": "Banana", "group": "fruit", "kitchen": true},
-    {"id": "milk", "name": "Milk", "group": "dairy", "kitchen": true},
-    {"id": "curd", "name": "Curd", "group": "dairy", "kitchen": true},
-    {"id": "cheese_slices", "name": "Cheese slice", "group": "dairy", "kitchen": true},
-    {"id": "tofu", "name": "Tofu", "group": "protein", "kitchen": true},
-    {"id": "mushroom", "name": "Mushrooms", "group": "veg", "kitchen": true},
-    {"id": "poha", "name": "Poha", "group": "grain", "kitchen": true},
-    {"id": "rice", "name": "Rice", "group": "grain", "kitchen": true},
-    {"id": "moong_dal", "name": "Moong dal", "group": "legume", "kitchen": true},
-    {"id": "chickpeas", "name": "Chickpeas", "group": "legume", "kitchen": true},
-    {"id": "soya_chunks", "name": "Soya chunks", "group": "protein", "kitchen": true},
-    {"id": "cream", "name": "Fresh cream", "group": "dairy", "kitchen": true},
-    {"id": "butter", "name": "Butter", "group": "fat", "kitchen": true},
-    {"id": "ghee", "name": "Ghee", "group": "fat"},
-    {"id": "potato", "name": "Potato", "group": "veg"},
-    {"id": "onion", "name": "Onion", "group": "veg"},
-    {"id": "tomato", "name": "Tomato", "group": "veg"},
-    {"id": "spinach", "name": "Spinach", "group": "veg"},
-    {"id": "capsicum", "name": "Capsicum", "group": "veg"},
-    {"id": "cauliflower", "name": "Cauliflower", "group": "veg"},
-    {"id": "frozen_peas", "name": "Green peas", "group": "veg"},
-    {"id": "sweet_corn", "name": "Sweet corn", "group": "veg"},
-    {"id": "carrot", "name": "Carrot", "group": "veg"},
-    {"id": "cucumber", "name": "Cucumber", "group": "veg"},
-    {"id": "sweet_potato", "name": "Sweet potato", "group": "veg"},
-    {"id": "okra", "name": "Bhindi", "group": "veg"},
-    {"id": "brinjal", "name": "Brinjal", "group": "veg"},
-    {"id": "cabbage", "name": "Cabbage", "group": "veg"},
-    {"id": "broccoli", "name": "Broccoli", "group": "veg"},
-    {"id": "lauki", "name": "Lauki", "group": "veg"},
-    {"id": "apple", "name": "Apple", "group": "fruit"},
-    {"id": "peanuts", "name": "Peanuts", "group": "nut"},
-    {"id": "almonds", "name": "Almonds", "group": "nut"},
-    {"id": "peanut_butter", "name": "Peanut butter", "group": "spread"},
-    {"id": "rajma", "name": "Rajma", "group": "legume"},
-    {"id": "masoor_dal", "name": "Masoor dal", "group": "legume"},
-    {"id": "toor_dal", "name": "Toor dal", "group": "legume"},
-    {"id": "sprouts", "name": "Moong sprouts", "group": "legume"}
+    {
+      "id": "noodles",
+      "name": "Noodles",
+      "group": "grain",
+      "everyday": true
+    },
+    {
+      "id": "roti",
+      "name": "Roti",
+      "group": "grain",
+      "everyday": true
+    },
+    {
+      "id": "daliya",
+      "name": "Daliya",
+      "group": "grain",
+      "everyday": true
+    },
+    {
+      "id": "murmura",
+      "name": "Murmura",
+      "group": "grain",
+      "everyday": true
+    },
+    {
+      "id": "sabudana",
+      "name": "Sabudana",
+      "group": "grain",
+      "everyday": true
+    },
+    {
+      "id": "corn_flakes",
+      "name": "Corn flakes",
+      "group": "grain",
+      "everyday": true
+    },
+    {
+      "id": "khakhra",
+      "name": "Khakhra",
+      "group": "grain",
+      "everyday": true
+    },
+    {
+      "id": "chana_dal",
+      "name": "Chana dal",
+      "group": "legume",
+      "everyday": true
+    },
+    {
+      "id": "urad_dal",
+      "name": "Urad dal",
+      "group": "legume",
+      "everyday": true
+    },
+    {
+      "id": "kala_chana",
+      "name": "Kala chana",
+      "group": "legume",
+      "everyday": true
+    },
+    {
+      "id": "lobia",
+      "name": "Lobia",
+      "group": "legume",
+      "everyday": true
+    },
+    {
+      "id": "green_moong",
+      "name": "Whole green moong",
+      "group": "legume",
+      "everyday": true
+    },
+    {
+      "id": "roasted_chana",
+      "name": "Roasted chana",
+      "group": "legume",
+      "everyday": true
+    },
+    {
+      "id": "hung_curd",
+      "name": "Hung curd",
+      "group": "dairy",
+      "everyday": true
+    },
+    {
+      "id": "buttermilk",
+      "name": "Chaas",
+      "group": "dairy",
+      "everyday": true
+    },
+    {
+      "id": "mozzarella",
+      "name": "Mozzarella",
+      "group": "dairy",
+      "everyday": true
+    },
+    {
+      "id": "cheese_spread",
+      "name": "Cheese spread",
+      "group": "dairy",
+      "everyday": true
+    },
+    {
+      "id": "green_beans",
+      "name": "Green beans",
+      "group": "veg"
+    },
+    {
+      "id": "beetroot",
+      "name": "Beetroot",
+      "group": "veg"
+    },
+    {
+      "id": "radish",
+      "name": "Mooli",
+      "group": "veg"
+    },
+    {
+      "id": "pumpkin",
+      "name": "Pumpkin",
+      "group": "veg"
+    },
+    {
+      "id": "zucchini",
+      "name": "Zucchini",
+      "group": "veg"
+    },
+    {
+      "id": "lettuce",
+      "name": "Lettuce",
+      "group": "veg"
+    },
+    {
+      "id": "spring_onion",
+      "name": "Spring onion",
+      "group": "veg"
+    },
+    {
+      "id": "baby_corn",
+      "name": "Baby corn",
+      "group": "veg"
+    },
+    {
+      "id": "lemon",
+      "name": "Lemon",
+      "group": "fruit"
+    },
+    {
+      "id": "coriander",
+      "name": "Coriander",
+      "group": "herb"
+    },
+    {
+      "id": "mango",
+      "name": "Mango",
+      "group": "fruit"
+    },
+    {
+      "id": "papaya",
+      "name": "Papaya",
+      "group": "fruit"
+    },
+    {
+      "id": "orange",
+      "name": "Orange",
+      "group": "fruit"
+    },
+    {
+      "id": "grapes",
+      "name": "Grapes",
+      "group": "fruit"
+    },
+    {
+      "id": "pomegranate",
+      "name": "Pomegranate",
+      "group": "fruit"
+    },
+    {
+      "id": "watermelon",
+      "name": "Watermelon",
+      "group": "fruit"
+    },
+    {
+      "id": "guava",
+      "name": "Guava",
+      "group": "fruit"
+    },
+    {
+      "id": "dates",
+      "name": "Dates",
+      "group": "fruit"
+    },
+    {
+      "id": "raisins",
+      "name": "Raisins",
+      "group": "fruit"
+    },
+    {
+      "id": "cashews",
+      "name": "Cashews",
+      "group": "nut"
+    },
+    {
+      "id": "walnuts",
+      "name": "Walnuts",
+      "group": "nut"
+    },
+    {
+      "id": "chia_seeds",
+      "name": "Chia seeds",
+      "group": "nut"
+    },
+    {
+      "id": "coconut",
+      "name": "Coconut",
+      "group": "nut"
+    }
   ],
   "tutor": [
-    {"id": "besan", "name": "Besan", "group": "grain", "kitchen": true, "why": "cooked many ways; needs a technique"},
-    {"id": "suji", "name": "Suji", "group": "grain", "why": "cooked many ways; needs a technique"},
-    {"id": "vermicelli", "name": "Vermicelli", "group": "grain", "why": "cooked many ways; needs a technique"}
-  ]
+    {
+      "id": "besan",
+      "name": "Besan",
+      "group": "grain",
+      "everyday": true,
+      "why": "cooked many ways; needs a technique"
+    },
+    {
+      "id": "suji",
+      "name": "Suji",
+      "group": "grain",
+      "why": "cooked many ways; needs a technique"
+    },
+    {
+      "id": "vermicelli",
+      "name": "Vermicelli",
+      "group": "grain",
+      "why": "cooked many ways; needs a technique"
+    }
+  ],
+  "edition": 2,
+  "done": {
+    "round1": [
+      "paneer",
+      "eggs",
+      "whey",
+      "makhana",
+      "bread",
+      "pasta",
+      "oats",
+      "banana",
+      "milk",
+      "curd",
+      "cheese_slices",
+      "tofu",
+      "mushroom",
+      "poha",
+      "rice",
+      "moong_dal",
+      "chickpeas",
+      "soya_chunks",
+      "cream",
+      "butter",
+      "ghee",
+      "potato",
+      "onion",
+      "tomato",
+      "spinach",
+      "capsicum",
+      "cauliflower",
+      "frozen_peas",
+      "sweet_corn",
+      "carrot",
+      "cucumber",
+      "sweet_potato",
+      "okra",
+      "brinjal",
+      "cabbage",
+      "broccoli",
+      "lauki",
+      "apple",
+      "peanuts",
+      "almonds",
+      "peanut_butter",
+      "rajma",
+      "masoor_dal",
+      "toor_dal",
+      "sprouts"
+    ]
+  }
 }

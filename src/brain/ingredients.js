@@ -161,6 +161,7 @@ export function mergeRatings(kb, ratings, { exclude = [] } = {}) {
   for (const id of excluded) { delete foods[id]; delete prep[id]; }
   for (const [id, r] of Object.entries(ratings)) {
     if (!/^[a-z][a-z0-9_@]*$/.test(id) || excluded.includes(id)) continue;
+    if (r.remove) { excluded.push(id); delete foods[id]; delete prep[id]; continue; }
     const old = foods[id] ?? prep[id];
     if (old?.at && r.at && old.at > r.at) continue;
     if (r.prep) prep[id] = r.at ? { at: r.at } : {};
@@ -179,7 +180,7 @@ export function mergeRatings(kb, ratings, { exclude = [] } = {}) {
     };
   }
   const sorted = (o) => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]));
-  return { ...kb, foods: sorted(foods), prep: sorted(prep), excluded };
+  return { ...kb, foods: sorted(foods), prep: sorted(prep), excluded: [...new Set(excluded)].sort() };
 }
 
 function clamp(x, lo, hi) {
