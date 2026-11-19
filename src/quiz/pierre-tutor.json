@@ -3,12 +3,12 @@
   "version": 1,
   "id": "pierre-tutor",
   "title": "Pierre-tutor",
-  "purpose": "Rate a food cooked one way on Pierre's two sides, and give Pierre's verdict.",
+  "purpose": "Rate a food cooked one way on Pierre's two sides, and say whether it's usable at all.",
   "round": 7,
   "steps": [
     "texture",
     "taste",
-    "verdict"
+    "usable"
   ],
   "kinds": false,
   "textures": [
@@ -71,21 +71,16 @@
       "bonus": true
     }
   ],
-  "verdict": [
-    {
-      "value": 2,
-      "label": "Pass",
-      "line": "A real cook would make it this way."
-    },
+  "usable": [
     {
       "value": 1,
-      "label": "Meh",
-      "line": "Edible. Nobody asks for seconds."
+      "label": "Yes",
+      "line": "A usable building block. How good it is comes from texture and taste."
     },
     {
       "value": 0,
-      "label": "Fail",
-      "line": "Pierre walks out."
+      "label": "No",
+      "line": "Nobody would eat it this way. Harvey’s never suggests it."
     }
   ],
   "rated": "cooked this one way with only a little fat and salt, so the result is the same every time",

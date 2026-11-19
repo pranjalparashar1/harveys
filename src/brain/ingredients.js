@@ -111,7 +111,7 @@ export function partVector(part, kb = PIERRE_RAW, techniques = TECHNIQUES) {
       texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(t.texture?.[k] ?? 0, 0, 3)])),
       taste: Object.fromEntries(TASTES.map((k) => [k, clamp(t.taste?.[k] ?? 0, 0, 3)])),
       centre: rawVector(id, kb)?.centre ?? 3, // prep-only foods (eggs) have no centre yet
-      verdict: t.verdict,
+      usable: t.usable,
       source: 'rated',
     };
   }
@@ -152,8 +152,8 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
     tastes: TASTES.filter((k) => k !== 'canvas' && taste[k] > 0),
     shape: plateShape(vs.map((v) => v.id), kb),
     missing: parts.map((p) => (typeof p === 'string' ? p : p.id)).filter((id) => !rawVector(id, kb)),
-    // Pierre's verdicts on the cooked parts (2 pass, 1 meh, 0 fail): the worst one shows.
-    verdicts: Object.fromEntries(vs.filter((v) => v.verdict != null).map((v) => [techKey(v.id, v.technique), v.verdict])),
+    // Cooked parts pranjal marked not usable (boiled soya chunks): a veto on the dish.
+    unusable: vs.filter((v) => v.usable === false).map((v) => techKey(v.id, v.technique)),
   };
 }
 
@@ -177,13 +177,14 @@ export function mergeRatings(kb, ratings, { exclude = [] } = {}) {
     if (r.remove) { excluded.push(id); delete foods[id]; delete prep[id]; delete tech[id]; continue; }
     const old = foods[id] ?? prep[id] ?? tech[id];
     if (old?.at && r.at && old.at > r.at) continue;
-    // Pierre-tutor: a food cooked one way, with Pierre's verdict. Its centre is the food's own.
+    // Pierre-tutor: a food cooked one way, and whether it's usable at all. Its centre is the food's own.
     if (id.includes('@')) {
-      if (r.verdict == null) continue;
+      const usable = r.usable ?? (r.verdict != null ? (r.verdict > 0 ? 1 : 0) : null);
+      if (usable == null) continue;
       tech[id] = {
         texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(Math.round(r.texture?.[k] ?? 0), 0, 3)])),
         taste: Object.fromEntries(TASTES.map((k) => [k, clamp(Math.round(r.taste?.[k] ?? 0), 0, 3)])),
-        verdict: clamp(Math.round(r.verdict), 0, 2),
+        usable: usable > 0,
         ...(r.at ? { at: r.at } : {}),
       };
       continue;

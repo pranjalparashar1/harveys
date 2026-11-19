@@ -5,16 +5,16 @@
 // food aside. "Send to Harvey's" hands the ratings
 // over as text that scripts/ingest-pierre.mjs writes into the brain file.
 import {
-  stepsOf, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapVerdict, tapPrep, tapRated, tapRemove, isRated, isRemoved, upgradeAnswer,
+  stepsOf, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapUsable, upgradeTutorAnswer, tapPrep, tapRated, tapRemove, isRated, isRemoved, upgradeAnswer,
   canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload,
 } from './quiz/quiz.js';
 
-const VERSION = '1.8.0';
+const VERSION = '1.8.1';
 const RENAMED = { protein_bread: 'bread' };
 // One player, two quizzes: Pierre-trainer (raw foods) and Pierre-tutor (a food cooked one way).
 const QUIZ = document.body.dataset.quiz || 'pierre-trainer';
 const KEY = QUIZ === 'pierre-tutor' ? 'harveys.tutor.v1' : 'marco.pierre.v1';
-const VERDICT_MARK = { 2: '✓', 1: '~', 0: '✕' };
+const USABLE_MARK = { 1: '✓', 0: '✕' };
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
 const app = document.getElementById('app');
 
@@ -31,7 +31,8 @@ function load() {
   try { state = { ...blankState(), ...JSON.parse(localStorage.getItem(KEY)) }; } catch { state = blankState(); }
   // Foods that left the quiz (protein bread became plain bread in 1.5.2): their old
   // answers aren't sent, and a saved round asks the replacement instead.
-  for (const [id, a] of Object.entries(state.answers)) state.answers[id] = upgradeAnswer(a);
+  for (const [id, a] of Object.entries(state.answers)) state.answers[id] = upgradeTutorAnswer(upgradeAnswer(a));
+  if (state.round?.draft && state.round.draft.usable === undefined) state.round.draft = { ...upgradeTutorAnswer(state.round.draft), usable: state.round.draft.verdict == null ? null : state.round.draft.verdict > 0 ? 1 : 0 };
   const known = new Set(quiz.foods.map((f) => f.id));
   for (const id of Object.keys(state.answers)) if (!known.has(id)) delete state.answers[id];
   if (state.round) state.round = { ...state.round, ids: state.round.ids.map((id) => RENAMED[id] ?? id) };
@@ -107,10 +108,10 @@ function renderPlay() {
     const bonus = quiz.tastes.filter((t) => t.bonus);
     input = `<h2 class="step">Taste</h2>` + rows(main, d.taste, 'data-taste')
       + (bonus.length ? `<h2 class="step bonus">Bonus</h2>` + rows(bonus, d.taste, 'data-taste') : '');
-  } else if (step === 'verdict') {
-    input = `<h2 class="step">Pierre’s verdict</h2><div class="opts" role="radiogroup" aria-label="Pierre’s verdict">` + quiz.verdict.map((c) => `
-      <button type="button" class="opt centre verdict${d.verdict === c.value ? ' sel' : ''}" role="radio" aria-checked="${d.verdict === c.value}" data-verdict="${c.value}">
-        <span class="k">${VERDICT_MARK[c.value]}</span><span class="ct"><b>${esc(c.label)}</b><small>${esc(c.line)}</small></span>
+  } else if (step === 'usable') {
+    input = `<h2 class="step">Usable?</h2><div class="opts" role="radiogroup" aria-label="Usable?">` + quiz.usable.map((c) => `
+      <button type="button" class="opt centre usable${d.usable === c.value ? ' sel' : ''}" role="radio" aria-checked="${d.usable === c.value}" data-usable="${c.value}">
+        <span class="k">${USABLE_MARK[c.value]}</span><span class="ct"><b>${esc(c.label)}</b><small>${esc(c.line)}</small></span>
       </button>`).join('') + `</div>`;
   } else {
     input = `<h2 class="step">How central?</h2><div class="opts" role="radiogroup" aria-label="How central">` + quiz.centre.map((c) => `
@@ -175,7 +176,7 @@ function renderEnd() {
 function tile(f) {
   const a = state.answers[f.id];
   if (isRemoved(a)) return `<div class="tile removed"><b>${esc(f.name)}</b><span class="c">✕</span></div>`;
-  return `<div class="tile"><b>${esc(f.name)}</b>${isRated(a) ? `<span class="c">${a.verdict != null ? VERDICT_MARK[a.verdict] : a.centre}</span>` : ''}${a?.prep ? `<span class="c prep${isRated(a) ? ' second' : ''}">P</span>` : ''}</div>`;
+  return `<div class="tile"><b>${esc(f.name)}</b>${isRated(a) ? `<span class="c">${a.usable != null ? USABLE_MARK[a.usable] : a.centre}</span>` : ''}${a?.prep ? `<span class="c prep${isRated(a) ? ' second' : ''}">P</span>` : ''}</div>`;
 }
 
 // ── Taps ────────────────────────────────────────────────────────────────────
@@ -189,14 +190,14 @@ function patch(fn) {
 
 let armed = 0;
 app.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-tex],[data-taste],[data-centre],[data-verdict],[data-kind],[data-act]');
+  const el = e.target.closest('[data-tex],[data-taste],[data-centre],[data-usable],[data-kind],[data-act]');
   if (!el) return;
   if (el.dataset.kind) return patch((d) => (el.dataset.kind === 'prep' ? tapPrep(d) : tapRated(d)));
   if (el.closest('.prep-dim')) return;
   if (el.dataset.tex) return patch((d) => tapTexture(d, el.dataset.tex, Number(el.dataset.lv)));
   if (el.dataset.taste) return patch((d) => tapTaste(d, el.dataset.taste, Number(el.dataset.lv)));
   if (el.dataset.centre) return patch((d) => tapCentre(d, Number(el.dataset.centre)));
-  if (el.dataset.verdict) return patch((d) => tapVerdict(d, Number(el.dataset.verdict)));
+  if (el.dataset.usable) return patch((d) => tapUsable(d, Number(el.dataset.usable)));
   const act = el.dataset.act;
   if (act === 'remove') return patch(tapRemove);
   if (act === 'back') {
