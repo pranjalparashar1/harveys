@@ -135,9 +135,10 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
 
 // ── Ratings in, brain file out ──────────────────────────────────────────────
 /**
- * Merges quiz ratings ({ id: { texture, taste, centre, at } }) into a brain file. Newer wins.
- * A food sent as { prep: true } ("part of prep, needs further processing", like soaked
- * poha) has no raw ratings: it goes to `prep`, the list Pierre-tutor starts from.
+ * Merges quiz ratings ({ id: { texture, taste, centre, prep, at } }) into a brain file. Newer wins.
+ * A food is rated (it has a centre), part of prep (`prep: true`, "needs further processing",
+ * like soaked poha), or both (paneer). Prep foods are listed in `prep`, where Pierre-tutor
+ * starts; a food that is only prep has no raw ratings.
  */
 export function mergeRatings(kb, ratings) {
   const foods = { ...(kb.foods ?? {}) };
@@ -146,12 +147,12 @@ export function mergeRatings(kb, ratings) {
     if (!/^[a-z][a-z0-9_@]*$/.test(id)) continue;
     const old = foods[id] ?? prep[id];
     if (old?.at && r.at && old.at > r.at) continue;
-    if (r.prep) {
+    if (r.prep) prep[id] = r.at ? { at: r.at } : {};
+    else delete prep[id];
+    if (r.centre == null) {
       delete foods[id];
-      prep[id] = r.at ? { at: r.at } : {};
       continue;
     }
-    delete prep[id];
     foods[id] = {
       texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(Math.round(r.texture?.[k] ?? 0), 0, 3)])),
       taste: Object.fromEntries(TASTES.map((k) => [k, r.taste?.[k] ? 1 : 0])),
