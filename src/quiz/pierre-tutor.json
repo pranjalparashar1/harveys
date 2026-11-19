@@ -1,0 +1,623 @@
+{
+  "format": "marco-quiz",
+  "version": 1,
+  "id": "pierre-tutor",
+  "title": "Pierre-tutor",
+  "purpose": "Rate a food cooked one way on Pierre's two sides, and give Pierre's verdict.",
+  "round": 7,
+  "steps": [
+    "texture",
+    "taste",
+    "verdict"
+  ],
+  "kinds": false,
+  "textures": [
+    {
+      "id": "crisp",
+      "label": "Crisp, crunchy"
+    },
+    {
+      "id": "creamy",
+      "label": "Soft, creamy, smooth"
+    },
+    {
+      "id": "chewy",
+      "label": "Chewy, springy"
+    },
+    {
+      "id": "juicy",
+      "label": "Juicy, moist"
+    },
+    {
+      "id": "flaky",
+      "label": "Flaky, crumbly"
+    }
+  ],
+  "levels": [
+    "None",
+    "Low",
+    "Medium",
+    "High"
+  ],
+  "tastes": [
+    {
+      "id": "salt",
+      "label": "Salt"
+    },
+    {
+      "id": "sugar",
+      "label": "Sweet"
+    },
+    {
+      "id": "fat",
+      "label": "Fat"
+    },
+    {
+      "id": "acid",
+      "label": "Acid"
+    },
+    {
+      "id": "heat",
+      "label": "Heat"
+    },
+    {
+      "id": "canvas",
+      "label": "Canvas",
+      "line": "Its flavour comes from the technique or what's added"
+    },
+    {
+      "id": "fresh",
+      "label": "Fresh",
+      "bonus": true
+    }
+  ],
+  "verdict": [
+    {
+      "value": 2,
+      "label": "Pass",
+      "line": "A real cook would make it this way."
+    },
+    {
+      "value": 1,
+      "label": "Meh",
+      "line": "Edible. Nobody asks for seconds."
+    },
+    {
+      "value": 0,
+      "label": "Fail",
+      "line": "Pierre walks out."
+    }
+  ],
+  "rated": "cooked this way the usual home way, with what the technique normally brings (a tadka brings ghee and spices, a gravy brings masala)",
+  "techniques": {
+    "boiled": "Boiled",
+    "pan_fried": "Pan-fried in a little fat",
+    "deep_fried": "Deep-fried",
+    "air_fried": "Air-fried",
+    "roasted": "Dry-roasted on a pan",
+    "toasted": "Toasted",
+    "sauteed": "Sautéed or stir-fried",
+    "scrambled": "Scrambled, bhurji-style",
+    "omelette": "As an omelette",
+    "fried_egg": "Fried, sunny side up",
+    "simmered": "Simmered in a masala gravy",
+    "tadka": "Tempered with a tadka",
+    "mashed": "Mashed",
+    "blended": "Blended into a shake",
+    "soaked": "Soaked overnight",
+    "melted": "Melted on something hot",
+    "microwaved": "Cooked in the microwave",
+    "porridge": "Cooked into a porridge",
+    "chilla": "A batter, pan-fried thin",
+    "pakora": "A batter, deep-fried"
+  },
+  "foods": [
+    {
+      "id": "eggs@scrambled",
+      "food": "eggs",
+      "technique": "scrambled",
+      "name": "Eggs, scrambled",
+      "everyday": true
+    },
+    {
+      "id": "eggs@omelette",
+      "food": "eggs",
+      "technique": "omelette",
+      "name": "Eggs, omelette",
+      "everyday": true
+    },
+    {
+      "id": "eggs@fried_egg",
+      "food": "eggs",
+      "technique": "fried_egg",
+      "name": "Eggs, fried",
+      "everyday": true
+    },
+    {
+      "id": "eggs@boiled",
+      "food": "eggs",
+      "technique": "boiled",
+      "name": "Eggs, boiled",
+      "everyday": true
+    },
+    {
+      "id": "eggs@microwaved",
+      "food": "eggs",
+      "technique": "microwaved",
+      "name": "Eggs, microwaved",
+      "everyday": true
+    },
+    {
+      "id": "paneer@pan_fried",
+      "food": "paneer",
+      "technique": "pan_fried",
+      "name": "Paneer, pan-fried",
+      "everyday": true
+    },
+    {
+      "id": "paneer@air_fried",
+      "food": "paneer",
+      "technique": "air_fried",
+      "name": "Paneer, air-fried",
+      "everyday": true
+    },
+    {
+      "id": "paneer@scrambled",
+      "food": "paneer",
+      "technique": "scrambled",
+      "name": "Paneer, scrambled",
+      "everyday": true
+    },
+    {
+      "id": "paneer@simmered",
+      "food": "paneer",
+      "technique": "simmered",
+      "name": "Paneer, in a gravy",
+      "everyday": true
+    },
+    {
+      "id": "paneer@microwaved",
+      "food": "paneer",
+      "technique": "microwaved",
+      "name": "Paneer, microwaved",
+      "everyday": true
+    },
+    {
+      "id": "tofu@pan_fried",
+      "food": "tofu",
+      "technique": "pan_fried",
+      "name": "Tofu, pan-fried",
+      "everyday": true
+    },
+    {
+      "id": "tofu@air_fried",
+      "food": "tofu",
+      "technique": "air_fried",
+      "name": "Tofu, air-fried",
+      "everyday": true
+    },
+    {
+      "id": "tofu@scrambled",
+      "food": "tofu",
+      "technique": "scrambled",
+      "name": "Tofu, scrambled",
+      "everyday": true
+    },
+    {
+      "id": "tofu@simmered",
+      "food": "tofu",
+      "technique": "simmered",
+      "name": "Tofu, in a gravy",
+      "everyday": true
+    },
+    {
+      "id": "potato@mashed",
+      "food": "potato",
+      "technique": "mashed",
+      "name": "Potato, mashed",
+      "everyday": true
+    },
+    {
+      "id": "potato@air_fried",
+      "food": "potato",
+      "technique": "air_fried",
+      "name": "Potato, air-fried",
+      "everyday": true
+    },
+    {
+      "id": "potato@pan_fried",
+      "food": "potato",
+      "technique": "pan_fried",
+      "name": "Potato, pan-fried",
+      "everyday": true
+    },
+    {
+      "id": "potato@simmered",
+      "food": "potato",
+      "technique": "simmered",
+      "name": "Potato, in a gravy",
+      "everyday": true
+    },
+    {
+      "id": "potato@microwaved",
+      "food": "potato",
+      "technique": "microwaved",
+      "name": "Potato, microwaved",
+      "everyday": true
+    },
+    {
+      "id": "mushroom@sauteed",
+      "food": "mushroom",
+      "technique": "sauteed",
+      "name": "Mushrooms, sautéed",
+      "everyday": true
+    },
+    {
+      "id": "mushroom@air_fried",
+      "food": "mushroom",
+      "technique": "air_fried",
+      "name": "Mushrooms, air-fried",
+      "everyday": true
+    },
+    {
+      "id": "mushroom@simmered",
+      "food": "mushroom",
+      "technique": "simmered",
+      "name": "Mushrooms, in a gravy",
+      "everyday": true
+    },
+    {
+      "id": "soya_chunks@simmered",
+      "food": "soya_chunks",
+      "technique": "simmered",
+      "name": "Soya chunks, in a gravy",
+      "everyday": true
+    },
+    {
+      "id": "soya_chunks@air_fried",
+      "food": "soya_chunks",
+      "technique": "air_fried",
+      "name": "Soya chunks, air-fried",
+      "everyday": true
+    },
+    {
+      "id": "soya_chunks@sauteed",
+      "food": "soya_chunks",
+      "technique": "sauteed",
+      "name": "Soya chunks, sautéed",
+      "everyday": true
+    },
+    {
+      "id": "chickpeas@simmered",
+      "food": "chickpeas",
+      "technique": "simmered",
+      "name": "Chickpeas, in a gravy",
+      "everyday": true
+    },
+    {
+      "id": "chickpeas@air_fried",
+      "food": "chickpeas",
+      "technique": "air_fried",
+      "name": "Chickpeas, air-fried",
+      "everyday": true
+    },
+    {
+      "id": "chickpeas@mashed",
+      "food": "chickpeas",
+      "technique": "mashed",
+      "name": "Chickpeas, mashed",
+      "everyday": true
+    },
+    {
+      "id": "rajma@simmered",
+      "food": "rajma",
+      "technique": "simmered",
+      "name": "Rajma, in a gravy"
+    },
+    {
+      "id": "kala_chana@simmered",
+      "food": "kala_chana",
+      "technique": "simmered",
+      "name": "Kala chana, in a gravy"
+    },
+    {
+      "id": "kala_chana@sauteed",
+      "food": "kala_chana",
+      "technique": "sauteed",
+      "name": "Kala chana, sautéed"
+    },
+    {
+      "id": "moong_dal@tadka",
+      "food": "moong_dal",
+      "technique": "tadka",
+      "name": "Moong dal, with tadka",
+      "everyday": true
+    },
+    {
+      "id": "masoor_dal@tadka",
+      "food": "masoor_dal",
+      "technique": "tadka",
+      "name": "Masoor dal, with tadka",
+      "everyday": true
+    },
+    {
+      "id": "toor_dal@tadka",
+      "food": "toor_dal",
+      "technique": "tadka",
+      "name": "Toor dal, with tadka",
+      "everyday": true
+    },
+    {
+      "id": "chana_dal@tadka",
+      "food": "chana_dal",
+      "technique": "tadka",
+      "name": "Chana dal, with tadka"
+    },
+    {
+      "id": "urad_dal@tadka",
+      "food": "urad_dal",
+      "technique": "tadka",
+      "name": "Urad dal, with tadka"
+    },
+    {
+      "id": "rice@sauteed",
+      "food": "rice",
+      "technique": "sauteed",
+      "name": "Rice, sautéed",
+      "everyday": true
+    },
+    {
+      "id": "rice@tadka",
+      "food": "rice",
+      "technique": "tadka",
+      "name": "Rice, with tadka",
+      "everyday": true
+    },
+    {
+      "id": "pasta@sauteed",
+      "food": "pasta",
+      "technique": "sauteed",
+      "name": "Pasta, sautéed",
+      "everyday": true
+    },
+    {
+      "id": "pasta@simmered",
+      "food": "pasta",
+      "technique": "simmered",
+      "name": "Pasta, in a gravy",
+      "everyday": true
+    },
+    {
+      "id": "bread@toasted",
+      "food": "bread",
+      "technique": "toasted",
+      "name": "Bread, toasted",
+      "everyday": true
+    },
+    {
+      "id": "bread@pan_fried",
+      "food": "bread",
+      "technique": "pan_fried",
+      "name": "Bread, pan-fried",
+      "everyday": true
+    },
+    {
+      "id": "bread@air_fried",
+      "food": "bread",
+      "technique": "air_fried",
+      "name": "Bread, air-fried",
+      "everyday": true
+    },
+    {
+      "id": "roti@pan_fried",
+      "food": "roti",
+      "technique": "pan_fried",
+      "name": "Roti, pan-fried"
+    },
+    {
+      "id": "roti@toasted",
+      "food": "roti",
+      "technique": "toasted",
+      "name": "Roti, toasted"
+    },
+    {
+      "id": "oats@porridge",
+      "food": "oats",
+      "technique": "porridge",
+      "name": "Oats, as porridge",
+      "everyday": true
+    },
+    {
+      "id": "oats@blended",
+      "food": "oats",
+      "technique": "blended",
+      "name": "Oats, blended",
+      "everyday": true
+    },
+    {
+      "id": "oats@soaked",
+      "food": "oats",
+      "technique": "soaked",
+      "name": "Oats, soaked",
+      "everyday": true
+    },
+    {
+      "id": "poha@sauteed",
+      "food": "poha",
+      "technique": "sauteed",
+      "name": "Poha, sautéed",
+      "everyday": true
+    },
+    {
+      "id": "whey@blended",
+      "food": "whey",
+      "technique": "blended",
+      "name": "Whey, blended",
+      "everyday": true
+    },
+    {
+      "id": "milk@blended",
+      "food": "milk",
+      "technique": "blended",
+      "name": "Milk, blended"
+    },
+    {
+      "id": "banana@blended",
+      "food": "banana",
+      "technique": "blended",
+      "name": "Banana, blended"
+    },
+    {
+      "id": "mango@blended",
+      "food": "mango",
+      "technique": "blended",
+      "name": "Mango, blended"
+    },
+    {
+      "id": "makhana@roasted",
+      "food": "makhana",
+      "technique": "roasted",
+      "name": "Makhana, roasted",
+      "everyday": true
+    },
+    {
+      "id": "makhana@air_fried",
+      "food": "makhana",
+      "technique": "air_fried",
+      "name": "Makhana, air-fried",
+      "everyday": true
+    },
+    {
+      "id": "peanuts@roasted",
+      "food": "peanuts",
+      "technique": "roasted",
+      "name": "Peanuts, roasted"
+    },
+    {
+      "id": "almonds@roasted",
+      "food": "almonds",
+      "technique": "roasted",
+      "name": "Almonds, roasted"
+    },
+    {
+      "id": "cashews@roasted",
+      "food": "cashews",
+      "technique": "roasted",
+      "name": "Cashews, roasted"
+    },
+    {
+      "id": "onion@sauteed",
+      "food": "onion",
+      "technique": "sauteed",
+      "name": "Onion, sautéed"
+    },
+    {
+      "id": "onion@deep_fried",
+      "food": "onion",
+      "technique": "deep_fried",
+      "name": "Onion, deep-fried"
+    },
+    {
+      "id": "tomato@sauteed",
+      "food": "tomato",
+      "technique": "sauteed",
+      "name": "Tomato, sautéed"
+    },
+    {
+      "id": "tomato@simmered",
+      "food": "tomato",
+      "technique": "simmered",
+      "name": "Tomato, in a gravy"
+    },
+    {
+      "id": "capsicum@sauteed",
+      "food": "capsicum",
+      "technique": "sauteed",
+      "name": "Capsicum, sautéed"
+    },
+    {
+      "id": "capsicum@air_fried",
+      "food": "capsicum",
+      "technique": "air_fried",
+      "name": "Capsicum, air-fried"
+    },
+    {
+      "id": "cabbage@sauteed",
+      "food": "cabbage",
+      "technique": "sauteed",
+      "name": "Cabbage, sautéed"
+    },
+    {
+      "id": "sweet_corn@boiled",
+      "food": "sweet_corn",
+      "technique": "boiled",
+      "name": "Sweet corn, boiled"
+    },
+    {
+      "id": "sweet_corn@sauteed",
+      "food": "sweet_corn",
+      "technique": "sauteed",
+      "name": "Sweet corn, sautéed"
+    },
+    {
+      "id": "frozen_peas@boiled",
+      "food": "frozen_peas",
+      "technique": "boiled",
+      "name": "Green peas, boiled"
+    },
+    {
+      "id": "frozen_peas@sauteed",
+      "food": "frozen_peas",
+      "technique": "sauteed",
+      "name": "Green peas, sautéed"
+    },
+    {
+      "id": "spring_onion@sauteed",
+      "food": "spring_onion",
+      "technique": "sauteed",
+      "name": "Spring onion, sautéed"
+    },
+    {
+      "id": "cheese_slices@melted",
+      "food": "cheese_slices",
+      "technique": "melted",
+      "name": "Cheese slice, melted"
+    },
+    {
+      "id": "mozzarella@melted",
+      "food": "mozzarella",
+      "technique": "melted",
+      "name": "Mozzarella, melted"
+    },
+    {
+      "id": "besan@chilla",
+      "food": "besan",
+      "technique": "chilla",
+      "name": "Besan, as chilla"
+    },
+    {
+      "id": "besan@pakora",
+      "food": "besan",
+      "technique": "pakora",
+      "name": "Besan, as pakora"
+    },
+    {
+      "id": "suji@sauteed",
+      "food": "suji",
+      "technique": "sauteed",
+      "name": "Suji, sautéed"
+    },
+    {
+      "id": "vermicelli@sauteed",
+      "food": "vermicelli",
+      "technique": "sauteed",
+      "name": "Vermicelli, sautéed"
+    },
+    {
+      "id": "vermicelli@simmered",
+      "food": "vermicelli",
+      "technique": "simmered",
+      "name": "Vermicelli, in a gravy"
+    }
+  ]
+}
