@@ -366,14 +366,19 @@ test('Pierre-tutor: pairs come from prep foods (and the tutor list), never a set
   const { PIERRE_RAW: kb } = await import('../src/brain/pierre-raw.js');
   const tutorList = quiz.tutor.map((f) => f.id);
   assert.deepEqual(stepsOf(tutor), ['texture', 'taste', 'verdict']);
-  assert.ok(tutor.foods.length >= 60);
+  assert.ok(tutor.foods.length >= 45);
+  // One food, one technique, a repeatable result (pranjal, 19 Nov): nothing whose
+  // result depends on other ingredients.
+  for (const vague of ['simmered', 'tadka', 'blended', 'porridge', 'soaked', 'pakora']) {
+    assert.ok(!tutor.foods.some((f) => f.technique === vague), `${vague} depends on what else goes in`);
+  }
   for (const f of tutor.foods) {
     assert.equal(f.id, `${f.food}@${f.technique}`);
     assert.ok(kb.prep[f.food] || tutorList.includes(f.food), `${f.food} is prep or a tutor food`);
     assert.ok(!kb.excluded.includes(f.food), `${f.food} is set aside`);
     assert.ok(tutor.techniques[f.technique], `${f.technique} is described`);
   }
-  for (const id of ['eggs@scrambled', 'paneer@microwaved', 'eggs@microwaved', 'moong_dal@tadka', 'besan@chilla']) assert.ok(tutor.foods.some((f) => f.id === id), id);
+  for (const id of ['eggs@scrambled', 'paneer@microwaved', 'eggs@microwaved', 'mushroom@sauteed', 'besan@chilla']) assert.ok(tutor.foods.some((f) => f.id === id), id);
 });
 
 test('Pierre-tutor: texture, taste, then a verdict; exported as v and ingested into tech', () => {
