@@ -1,0 +1,145 @@
+{
+  "format": "marco-quiz",
+  "version": 1,
+  "id": "pierre-trainer",
+  "title": "Pierre-trainer",
+  "purpose": "Rate raw foods on Pierre's two sides (texture and taste) and on how central they are to a meal.",
+  "round": 7,
+  "steps": [
+    "texture",
+    "taste",
+    "centre"
+  ],
+  "textures": [
+    {
+      "id": "crisp",
+      "label": "Crisp, crunchy"
+    },
+    {
+      "id": "creamy",
+      "label": "Soft, creamy, smooth"
+    },
+    {
+      "id": "chewy",
+      "label": "Chewy, springy"
+    },
+    {
+      "id": "juicy",
+      "label": "Juicy, moist"
+    },
+    {
+      "id": "flaky",
+      "label": "Flaky, crumbly"
+    }
+  ],
+  "levels": [
+    "None",
+    "Low",
+    "Medium",
+    "High"
+  ],
+  "tastes": [
+    {
+      "id": "salt",
+      "label": "Salt"
+    },
+    {
+      "id": "sugar",
+      "label": "Sweet"
+    },
+    {
+      "id": "fat",
+      "label": "Fat"
+    },
+    {
+      "id": "acid",
+      "label": "Acid"
+    },
+    {
+      "id": "heat",
+      "label": "Heat"
+    },
+    {
+      "id": "fresh",
+      "label": "Fresh",
+      "bonus": true
+    }
+  ],
+  "centre": [
+    {
+      "value": 1,
+      "label": "Accent",
+      "line": "A touch. Missed only by a chef."
+    },
+    {
+      "value": 2,
+      "label": "Support",
+      "line": "Helps a dish. Never the reason for it."
+    },
+    {
+      "value": 3,
+      "label": "Partner",
+      "line": "Can lead a simple dish, or share the plate."
+    },
+    {
+      "value": 4,
+      "label": "Centre",
+      "line": "Meals are built around it. Fine on its own."
+    },
+    {
+      "value": 5,
+      "label": "The meal",
+      "line": "Everything else is a side."
+    }
+  ],
+  "foods": [
+    {"id": "paneer", "name": "Paneer", "group": "dairy", "kitchen": true, "photo": {"wiki": "Paneer"}},
+    {"id": "eggs", "name": "Eggs", "group": "protein", "kitchen": true, "photo": {"wiki": "Egg as food"}},
+    {"id": "whey", "name": "Whey protein", "group": "protein", "kitchen": true, "photo": {"wiki": "Whey protein"}},
+    {"id": "makhana", "name": "Makhana", "group": "snack", "kitchen": true, "photo": {"search": "makhana"}},
+    {"id": "protein_bread", "name": "Protein bread", "group": "bread", "kitchen": true, "photo": {"wiki": "Whole wheat bread"}},
+    {"id": "pasta", "name": "Fusilli", "group": "grain", "kitchen": true, "photo": {"wiki": "Fusilli"}},
+    {"id": "oats", "name": "Oats", "group": "grain", "kitchen": true, "photo": {"wiki": "Rolled oats"}},
+    {"id": "banana", "name": "Banana", "group": "fruit", "kitchen": true, "photo": {"wiki": "Banana"}},
+    {"id": "milk", "name": "Milk", "group": "dairy", "kitchen": true, "photo": {"wiki": "Milk"}},
+    {"id": "curd", "name": "Curd", "group": "dairy", "kitchen": true, "photo": {"wiki": "Dahi (curd)"}},
+    {"id": "cheese_slices", "name": "Cheese slice", "group": "dairy", "kitchen": true, "photo": {"wiki": "Processed cheese"}},
+    {"id": "tofu", "name": "Tofu", "group": "protein", "kitchen": true, "photo": {"wiki": "Tofu"}},
+    {"id": "mushroom", "name": "Mushrooms", "group": "veg", "kitchen": true, "photo": {"wiki": "Agaricus bisporus"}},
+    {"id": "besan", "name": "Besan", "group": "grain", "kitchen": true, "photo": {"wiki": "Gram flour"}},
+    {"id": "poha", "name": "Poha", "group": "grain", "kitchen": true, "photo": {"wiki": "Flattened rice"}},
+    {"id": "rice", "name": "Rice", "group": "grain", "kitchen": true, "photo": {"wiki": "Basmati"}},
+    {"id": "moong_dal", "name": "Moong dal", "group": "legume", "kitchen": true, "photo": {"search": "moong dal"}},
+    {"id": "chickpeas", "name": "Chickpeas", "group": "legume", "kitchen": true, "photo": {"wiki": "Chickpea"}},
+    {"id": "soya_chunks", "name": "Soya chunks", "group": "protein", "kitchen": true, "photo": {"wiki": "Textured vegetable protein"}},
+    {"id": "cream", "name": "Fresh cream", "group": "dairy", "kitchen": true, "photo": {"wiki": "Cream"}},
+    {"id": "butter", "name": "Butter", "group": "fat", "kitchen": true, "photo": {"wiki": "Butter"}},
+    {"id": "ghee", "name": "Ghee", "group": "fat", "photo": {"wiki": "Ghee"}},
+    {"id": "potato", "name": "Potato", "group": "veg", "photo": {"wiki": "Potato"}},
+    {"id": "onion", "name": "Onion", "group": "veg", "photo": {"wiki": "Onion"}},
+    {"id": "tomato", "name": "Tomato", "group": "veg", "photo": {"wiki": "Tomato"}},
+    {"id": "spinach", "name": "Spinach", "group": "veg", "photo": {"wiki": "Spinach"}},
+    {"id": "capsicum", "name": "Capsicum", "group": "veg", "photo": {"wiki": "Bell pepper"}},
+    {"id": "cauliflower", "name": "Cauliflower", "group": "veg", "photo": {"wiki": "Cauliflower"}},
+    {"id": "frozen_peas", "name": "Green peas", "group": "veg", "photo": {"wiki": "Pea"}},
+    {"id": "sweet_corn", "name": "Sweet corn", "group": "veg", "photo": {"wiki": "Sweet corn"}},
+    {"id": "carrot", "name": "Carrot", "group": "veg", "photo": {"wiki": "Carrot"}},
+    {"id": "cucumber", "name": "Cucumber", "group": "veg", "photo": {"wiki": "Cucumber"}},
+    {"id": "sweet_potato", "name": "Sweet potato", "group": "veg", "photo": {"wiki": "Sweet potato"}},
+    {"id": "okra", "name": "Bhindi", "group": "veg", "photo": {"wiki": "Okra"}},
+    {"id": "brinjal", "name": "Brinjal", "group": "veg", "photo": {"wiki": "Eggplant"}},
+    {"id": "cabbage", "name": "Cabbage", "group": "veg", "photo": {"wiki": "Cabbage"}},
+    {"id": "broccoli", "name": "Broccoli", "group": "veg", "photo": {"wiki": "Broccoli"}},
+    {"id": "lauki", "name": "Lauki", "group": "veg", "photo": {"wiki": "Calabash"}},
+    {"id": "apple", "name": "Apple", "group": "fruit", "photo": {"wiki": "Apple"}},
+    {"id": "peanuts", "name": "Peanuts", "group": "nut", "photo": {"wiki": "Peanut"}},
+    {"id": "almonds", "name": "Almonds", "group": "nut", "photo": {"wiki": "Almond"}},
+    {"id": "peanut_butter", "name": "Peanut butter", "group": "spread", "photo": {"wiki": "Peanut butter"}},
+    {"id": "rajma", "name": "Rajma", "group": "legume", "photo": {"wiki": "Kidney bean"}},
+    {"id": "masoor_dal", "name": "Masoor dal", "group": "legume", "photo": {"search": "masoor dal red lentils"}},
+    {"id": "toor_dal", "name": "Toor dal", "group": "legume", "photo": {"search": "toor dal"}},
+    {"id": "suji", "name": "Suji", "group": "grain", "photo": {"wiki": "Semolina"}},
+    {"id": "vermicelli", "name": "Vermicelli", "group": "grain", "photo": {"wiki": "Vermicelli"}},
+    {"id": "sprouts", "name": "Moong sprouts", "group": "legume", "photo": {"wiki": "Bean sprout"}}
+  ]
+}
