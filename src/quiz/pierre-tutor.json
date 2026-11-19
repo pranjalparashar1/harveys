@@ -88,7 +88,7 @@
       "line": "Pierre walks out."
     }
   ],
-  "rated": "cooked this way the usual home way, with what the technique normally brings (a tadka brings ghee and spices, a gravy brings masala)",
+  "rated": "cooked this one way with only a little fat and salt, so the result is the same every time",
   "techniques": {
     "boiled": "Boiled",
     "pan_fried": "Pan-fried in a little fat",
@@ -96,20 +96,14 @@
     "air_fried": "Air-fried",
     "roasted": "Dry-roasted on a pan",
     "toasted": "Toasted",
-    "sauteed": "Sautéed or stir-fried",
-    "scrambled": "Scrambled, bhurji-style",
+    "sauteed": "Sautéed in a little fat, nothing else added",
+    "scrambled": "Scrambled in a little fat, nothing else added",
     "omelette": "As an omelette",
     "fried_egg": "Fried, sunny side up",
-    "simmered": "Simmered in a masala gravy",
-    "tadka": "Tempered with a tadka",
     "mashed": "Mashed",
-    "blended": "Blended into a shake",
-    "soaked": "Soaked overnight",
     "melted": "Melted on something hot",
     "microwaved": "Cooked in the microwave",
-    "porridge": "Cooked into a porridge",
-    "chilla": "A batter, pan-fried thin",
-    "pakora": "A batter, deep-fried"
+    "chilla": "Besan and water batter, pan-fried thin"
   },
   "foods": [
     {
@@ -169,13 +163,6 @@
       "everyday": true
     },
     {
-      "id": "paneer@simmered",
-      "food": "paneer",
-      "technique": "simmered",
-      "name": "Paneer, in a gravy",
-      "everyday": true
-    },
-    {
       "id": "paneer@microwaved",
       "food": "paneer",
       "technique": "microwaved",
@@ -204,13 +191,6 @@
       "everyday": true
     },
     {
-      "id": "tofu@simmered",
-      "food": "tofu",
-      "technique": "simmered",
-      "name": "Tofu, in a gravy",
-      "everyday": true
-    },
-    {
       "id": "potato@mashed",
       "food": "potato",
       "technique": "mashed",
@@ -229,13 +209,6 @@
       "food": "potato",
       "technique": "pan_fried",
       "name": "Potato, pan-fried",
-      "everyday": true
-    },
-    {
-      "id": "potato@simmered",
-      "food": "potato",
-      "technique": "simmered",
-      "name": "Potato, in a gravy",
       "everyday": true
     },
     {
@@ -260,20 +233,6 @@
       "everyday": true
     },
     {
-      "id": "mushroom@simmered",
-      "food": "mushroom",
-      "technique": "simmered",
-      "name": "Mushrooms, in a gravy",
-      "everyday": true
-    },
-    {
-      "id": "soya_chunks@simmered",
-      "food": "soya_chunks",
-      "technique": "simmered",
-      "name": "Soya chunks, in a gravy",
-      "everyday": true
-    },
-    {
       "id": "soya_chunks@air_fried",
       "food": "soya_chunks",
       "technique": "air_fried",
@@ -285,13 +244,6 @@
       "food": "soya_chunks",
       "technique": "sauteed",
       "name": "Soya chunks, sautéed",
-      "everyday": true
-    },
-    {
-      "id": "chickpeas@simmered",
-      "food": "chickpeas",
-      "technique": "simmered",
-      "name": "Chickpeas, in a gravy",
       "everyday": true
     },
     {
@@ -309,55 +261,10 @@
       "everyday": true
     },
     {
-      "id": "rajma@simmered",
-      "food": "rajma",
-      "technique": "simmered",
-      "name": "Rajma, in a gravy"
-    },
-    {
-      "id": "kala_chana@simmered",
-      "food": "kala_chana",
-      "technique": "simmered",
-      "name": "Kala chana, in a gravy"
-    },
-    {
       "id": "kala_chana@sauteed",
       "food": "kala_chana",
       "technique": "sauteed",
       "name": "Kala chana, sautéed"
-    },
-    {
-      "id": "moong_dal@tadka",
-      "food": "moong_dal",
-      "technique": "tadka",
-      "name": "Moong dal, with tadka",
-      "everyday": true
-    },
-    {
-      "id": "masoor_dal@tadka",
-      "food": "masoor_dal",
-      "technique": "tadka",
-      "name": "Masoor dal, with tadka",
-      "everyday": true
-    },
-    {
-      "id": "toor_dal@tadka",
-      "food": "toor_dal",
-      "technique": "tadka",
-      "name": "Toor dal, with tadka",
-      "everyday": true
-    },
-    {
-      "id": "chana_dal@tadka",
-      "food": "chana_dal",
-      "technique": "tadka",
-      "name": "Chana dal, with tadka"
-    },
-    {
-      "id": "urad_dal@tadka",
-      "food": "urad_dal",
-      "technique": "tadka",
-      "name": "Urad dal, with tadka"
     },
     {
       "id": "rice@sauteed",
@@ -367,24 +274,10 @@
       "everyday": true
     },
     {
-      "id": "rice@tadka",
-      "food": "rice",
-      "technique": "tadka",
-      "name": "Rice, with tadka",
-      "everyday": true
-    },
-    {
       "id": "pasta@sauteed",
       "food": "pasta",
       "technique": "sauteed",
       "name": "Pasta, sautéed",
-      "everyday": true
-    },
-    {
-      "id": "pasta@simmered",
-      "food": "pasta",
-      "technique": "simmered",
-      "name": "Pasta, in a gravy",
       "everyday": true
     },
     {
@@ -421,57 +314,11 @@
       "name": "Roti, toasted"
     },
     {
-      "id": "oats@porridge",
-      "food": "oats",
-      "technique": "porridge",
-      "name": "Oats, as porridge",
-      "everyday": true
-    },
-    {
-      "id": "oats@blended",
-      "food": "oats",
-      "technique": "blended",
-      "name": "Oats, blended",
-      "everyday": true
-    },
-    {
-      "id": "oats@soaked",
-      "food": "oats",
-      "technique": "soaked",
-      "name": "Oats, soaked",
-      "everyday": true
-    },
-    {
       "id": "poha@sauteed",
       "food": "poha",
       "technique": "sauteed",
       "name": "Poha, sautéed",
       "everyday": true
-    },
-    {
-      "id": "whey@blended",
-      "food": "whey",
-      "technique": "blended",
-      "name": "Whey, blended",
-      "everyday": true
-    },
-    {
-      "id": "milk@blended",
-      "food": "milk",
-      "technique": "blended",
-      "name": "Milk, blended"
-    },
-    {
-      "id": "banana@blended",
-      "food": "banana",
-      "technique": "blended",
-      "name": "Banana, blended"
-    },
-    {
-      "id": "mango@blended",
-      "food": "mango",
-      "technique": "blended",
-      "name": "Mango, blended"
     },
     {
       "id": "makhana@roasted",
@@ -522,12 +369,6 @@
       "food": "tomato",
       "technique": "sauteed",
       "name": "Tomato, sautéed"
-    },
-    {
-      "id": "tomato@simmered",
-      "food": "tomato",
-      "technique": "simmered",
-      "name": "Tomato, in a gravy"
     },
     {
       "id": "capsicum@sauteed",
@@ -596,28 +437,17 @@
       "name": "Besan, as chilla"
     },
     {
-      "id": "besan@pakora",
-      "food": "besan",
-      "technique": "pakora",
-      "name": "Besan, as pakora"
-    },
-    {
-      "id": "suji@sauteed",
+      "id": "suji@roasted",
       "food": "suji",
-      "technique": "sauteed",
-      "name": "Suji, sautéed"
+      "technique": "roasted",
+      "name": "Suji, roasted"
     },
     {
       "id": "vermicelli@sauteed",
       "food": "vermicelli",
       "technique": "sauteed",
       "name": "Vermicelli, sautéed"
-    },
-    {
-      "id": "vermicelli@simmered",
-      "food": "vermicelli",
-      "technique": "simmered",
-      "name": "Vermicelli, in a gravy"
     }
-  ]
+  ],
+  "rule": "One food, one technique, a repeatable result. No technique whose result depends on other ingredients (gravies, tadkas, shakes, batters with fillings)."
 }
