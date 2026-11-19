@@ -1,22 +1,20 @@
-// Pierre-trainer (1.5.0): Kiron's quiz player, for food. One raw food per
-// screen, rated in three steps: texture (0–3 each), taste (tap what's there),
+// Pierre-trainer (1.5.1): Kiron's quiz player, for food. One raw food per
+// screen, no photos, rated in three steps: texture (0–3 each), taste (tap what's there),
 // and how central it is to a meal (1–5). No right answers, no streaks, no
-// timer, no going back. Every tap toggles. "Send to Marco" hands the ratings
+// timer; Back returns to the previous screen. Every tap toggles. "Send to Marco" hands the ratings
 // over as text that scripts/ingest-pierre.mjs writes into the brain file.
 import {
   STEPS, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapPrep,
-  canAdvance, advance, roundOver, unsent, markSent, encodePayload,
+  canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload,
 } from './quiz/quiz.js';
-import { photosFor } from './quiz/photos.js';
 
-const VERSION = '1.5.0';
+const VERSION = '1.5.1';
 const KEY = 'marco.pierre.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/marco/issues/new';
 const app = document.getElementById('app');
 
 let quiz = null;
 let state = blankState();
-let photos = {};
 let dir = 0; // 1 when a new screen slides in
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -40,27 +38,6 @@ function toast(msg) {
   t.hidden = false;
   clearTimeout(toastT);
   toastT = setTimeout(() => { t.hidden = true; }, 2600);
-}
-
-// ── Photos ──────────────────────────────────────────────────────────────────
-async function fetchPhotos(ids) {
-  const got = await photosFor(ids.map(food));
-  photos = { ...photos, ...got };
-  for (const p of Object.values(got)) if (p?.src) { const im = new Image(); im.src = p.src; }
-  if (location.hash === '#play') paintPhoto();
-}
-
-function photoHtml(f, small) {
-  const p = photos[f.id];
-  const img = p?.src ? `<img src="${esc(p.src)}" alt="${esc(f.name)}" decoding="async" onload="this.parentNode.classList.add('in')">` : '';
-  const credit = p?.src && !small ? `<figcaption><a href="${esc(p.page)}" target="_blank" rel="noopener">${esc(p.author)} · ${esc(p.licence)}</a></figcaption>` : '';
-  return `<figure class="food-photo${small ? ' small' : ''}" data-photo="${esc(f.id)}"><span class="ph" aria-hidden="true">${esc(f.name[0])}</span>${img}${credit}</figure>`;
-}
-function paintPhoto() {
-  const fig = app.querySelector('[data-photo]');
-  if (!fig || fig.querySelector('img') || !photos[fig.dataset.photo]?.src) return;
-  const f = food(fig.dataset.photo);
-  fig.outerHTML = photoHtml(f, fig.classList.contains('small'));
 }
 
 // ── Screens ─────────────────────────────────────────────────────────────────
@@ -134,13 +111,13 @@ function renderPlay() {
     <div class="dots" role="img" aria-label="Food ${r.i + 1} of ${r.ids.length}">${dots}</div>
   </div></header>
   <main class="wrap play">
-    <article class="qcardp${dir > 0 && !reduceMotion() ? ' in-next' : ''}">
-      ${step === 'texture' ? photoHtml(f, false) : ''}
-      <div class="food-head">${step === 'texture' ? '' : photoHtml(f, true)}<h1 class="prompt" tabindex="-1">${esc(f.name)}</h1></div>
+    <article class="qcardp${reduceMotion() ? '' : dir > 0 ? ' in-next' : dir < 0 ? ' in-prev' : ''}">
+      <h1 class="prompt" tabindex="-1">${esc(f.name)}</h1>
       ${input}
     </article>
   </main>
   <div class="actionbar"><div class="actionbar-in">
+    ${canGoBack(state) ? `<button class="btn ghost back" data-act="back" type="button" aria-label="Back">‹</button>` : ''}
     <button class="btn primary grow${ok ? '' : ' soft'}" data-act="next" type="button" aria-disabled="${!ok}">${nextLabel}${HX}</button>
   </div></div>`;
   dir = 0;
@@ -160,14 +137,14 @@ function renderEnd() {
     <div class="cta">
       ${left ? `<button class="btn primary xl" data-act="begin" type="button">Keep going${HX}</button>` : ''}
       ${sendLink(unsent(state).length, !left)}
+      <button class="btn ghost" data-act="back" type="button">Back to ${esc(food(r.ids[r.ids.length - 1]).name)}</button>
     </div>
   </div></main>`;
 }
 
 function tile(f) {
   const a = state.answers[f.id];
-  const p = photos[f.id];
-  return `<div class="tile">${p?.src ? `<img src="${esc(p.src)}" alt="">` : `<span class="ph">${esc(f.name[0])}</span>`}<b>${esc(f.name)}</b><span class="c${a?.prep ? ' prep' : ''}">${a?.prep ? 'P' : a?.centre ?? ''}</span></div>`;
+  return `<div class="tile"><b>${esc(f.name)}</b><span class="c${a?.prep ? ' prep' : ''}">${a?.prep ? 'P' : a?.centre ?? ''}</span></div>`;
 }
 
 // ── Taps ────────────────────────────────────────────────────────────────────
@@ -189,7 +166,12 @@ app.addEventListener('click', (e) => {
   if (el.dataset.taste) return patch((d) => tapTaste(d, el.dataset.taste));
   if (el.dataset.centre) return patch((d) => tapCentre(d, Number(el.dataset.centre)));
   const act = el.dataset.act;
-  if (act === 'next') {
+  if (act === 'back') {
+    state = back(quiz, state);
+    save();
+    dir = -1;
+    if (location.hash !== '#play') location.hash = 'play'; else { render(); scrollTo(0, 0); }
+  } else if (act === 'next') {
     if (!canAdvance(state.round.step, state.round.draft)) return toast('Pick one to go on.');
     state = advance(quiz, state);
     save();
@@ -200,7 +182,6 @@ app.addEventListener('click', (e) => {
   } else if (act === 'begin') {
     state = startRound(quiz, state);
     save();
-    fetchPhotos(state.round?.ids ?? []);
     dir = 1;
     if (location.hash === '#play') { render(); scrollTo(0, 0); } else location.hash = 'play';
   } else if (act === 'resume') {
@@ -229,9 +210,5 @@ async function init() {
   quiz = validateQuiz(await res.json());
   load();
   render();
-  // Photos for this round (or the next), then the rest quietly.
-  const soon = state.round?.ids ?? quiz.foods.filter((f) => !state.answers[f.id]).slice(0, quiz.round).map((f) => f.id);
-  await fetchPhotos(soon);
-  fetchPhotos(quiz.foods.map((f) => f.id));
 }
 init().catch((e) => { app.innerHTML = `<p class="error">${esc(e.message)}</p>`; });

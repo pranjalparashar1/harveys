@@ -336,21 +336,13 @@ a.btn { text-decoration: none; }
 .wrap.play { padding-top: 20px; padding-bottom: calc(110px + env(safe-area-inset-bottom)); touch-action: pan-y pinch-zoom; }
 .qcardp { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .qcardp.in-next { animation: inr .34s cubic-bezier(.22,.8,.24,1); }
+.qcardp.in-prev { animation: inl .34s cubic-bezier(.22,.8,.24,1); }
+@keyframes inl { from { opacity: 0; transform: translate3d(-24px,0,0); } to { opacity: 1; transform: none; } }
 @keyframes inr { from { opacity: 0; transform: translate3d(24px,0,0); } to { opacity: 1; transform: none; } }
 .prompt { margin: 0; font-size: 28px; line-height: 1.2; font-weight: 800; letter-spacing: -.015em; }
 .prompt:focus { outline: none; }
-.food-head { display: flex; align-items: center; gap: 14px; }
 h2.step { margin: 6px 2px -4px; }
 h2.step.bonus { margin-top: 10px; }
-
-.food-photo { position: relative; margin: 0; aspect-ratio: 16 / 10; border-radius: 16px; overflow: hidden; background: var(--surface2); border: 1px solid var(--line); }
-.food-photo .ph { position: absolute; inset: 0; display: grid; place-items: center; font-size: 64px; font-weight: 800; color: var(--line); }
-.food-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .4s ease; }
-.food-photo.in img { opacity: 1; }
-.food-photo figcaption { position: absolute; right: 6px; bottom: 6px; max-width: calc(100% - 12px); font-size: 11px; line-height: 1.3; padding: 3px 7px; border-radius: 6px; background: rgba(0,0,0,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.food-photo figcaption a { color: rgba(250,249,245,.75); text-decoration: none; }
-.food-photo.small { flex: none; width: 64px; height: 64px; aspect-ratio: 1; border-radius: 12px; }
-.food-photo.small .ph { font-size: 26px; }
 
 .rates { display: flex; flex-direction: column; gap: 12px; }
 .rate-label { display: block; font-size: 15px; font-weight: 600; margin: 0 2px 6px; }
@@ -372,6 +364,7 @@ h2.step.bonus { margin-top: 10px; }
 .actionbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
 .actionbar-in { max-width: var(--w); margin: 0 auto; display: flex; gap: 10px; padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); }
 .actionbar .btn { min-height: 54px; font-size: 18px; border-radius: 14px; }
+.actionbar .btn.back { flex: none; min-width: 54px; padding: 0; font-size: 28px; line-height: 1; color: var(--ink); }
 .btn.grow { flex: 1; }
 .btn.soft { opacity: .45; }
 
@@ -385,10 +378,8 @@ a.btn.send.fresh:not(.primary) { border-color: var(--accent); color: var(--accen
 .endcard { display: flex; flex-direction: column; gap: 18px; padding-top: 8px; }
 .endcard .cta { display: flex; flex-direction: column; gap: 10px; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
-.tile { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--surface2); border: 1px solid var(--line); }
-.tile img { width: 100%; height: 100%; object-fit: cover; opacity: .7; }
-.tile .ph { position: absolute; inset: 0; display: grid; place-items: center; font-size: 32px; font-weight: 800; color: var(--line); }
-.tile b { position: absolute; left: 8px; bottom: 6px; right: 28px; font-size: 13px; line-height: 1.2; text-shadow: 0 1px 4px #000; }
+.tile { position: relative; min-height: 64px; border-radius: 12px; overflow: hidden; background: var(--surface2); border: 1px solid var(--line); }
+.tile b { position: absolute; left: 10px; bottom: 8px; right: 30px; font-size: 14px; line-height: 1.2; }
 .tile .c { position: absolute; right: 6px; top: 6px; width: 22px; height: 22px; border-radius: 50%; background: var(--bg); font-size: 12px; font-weight: 800; display: grid; place-items: center; }
 .toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 9; background: var(--surface2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: 15px; max-width: calc(100% - 32px); }
 

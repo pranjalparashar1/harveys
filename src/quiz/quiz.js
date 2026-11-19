@@ -1,8 +1,8 @@
 // Marco's quiz engine, after Kiron's: a quiz is a JSON file, played in short
 // rounds, one screen at a time, and progress is saved after every screen.
-// Unlike Kiron there is no right answer, so there are no streaks, no timer and
-// no going back: each food is rated in three steps (texture, taste, centre)
-// and every tap toggles. Pure logic only (no DOM), so it is tested in Node.
+// Unlike Kiron there is no right answer, so there are no streaks and no timer.
+// Each food is rated in three steps (texture, taste, centre), every tap
+// toggles, and Back steps to the previous screen, into the previous food too. Pure logic only (no DOM), so it is tested in Node.
 
 export const STEPS = ['texture', 'taste', 'centre'];
 export const HEADER = '#marco pierre-trainer v1';
@@ -19,7 +19,6 @@ export function validateQuiz(q) {
     if (ids.has(f.id)) errs.push(`food "${f.id}" is listed twice`);
     ids.add(f.id);
     if (!f.name) errs.push(`food "${f.id}" has no name`);
-    if (!f.photo || !(f.photo.wiki || f.photo.search || f.photo.file)) errs.push(`food "${f.id}" has no photo source`);
   }
   if (q.levels?.length !== 4) errs.push('levels must be the four words for 0–3');
   if (errs.length) throw new Error(errs.join('; '));
@@ -77,6 +76,22 @@ export function advance(quiz, state, now = new Date()) {
   const answers = { ...state.answers, [r.ids[r.i]]: { ...answer, at: now.toISOString() } };
   return { ...state, answers, round: { ...r, i: r.i + 1, step: 0, draft: blankDraft(quiz) } };
 }
+
+/** The previous screen: the step before, or the last step of the previous food, with its answer back in the draft. */
+export function back(quiz, state) {
+  const r = state.round;
+  if (!r) return state;
+  if (r.i < r.ids.length && r.step > 0 && !r.draft.prep) return { ...state, round: { ...r, step: r.step - 1 } };
+  if (r.i === 0) return state;
+  const i = r.i - 1;
+  const a = state.answers[r.ids[i]];
+  const blank = blankDraft(quiz);
+  const draft = !a ? blank : a.prep ? { ...blank, prep: true } : {
+    texture: { ...blank.texture, ...a.texture }, taste: { ...blank.taste, ...a.taste }, centre: a.centre ?? null, prep: false,
+  };
+  return { ...state, round: { ...r, i, step: a?.prep ? 0 : STEPS.length - 1, draft } };
+}
+export const canGoBack = (state) => !!state.round && (state.round.i > 0 || (state.round.step > 0 && !state.round.draft.prep));
 
 export const roundOver = (state) => !state.round || state.round.i >= state.round.ids.length;
 export const unsent = (state) => Object.keys(state.answers).filter((id) => !state.sent[id] || state.sent[id] < state.answers[id].at);
