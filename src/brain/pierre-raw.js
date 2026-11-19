@@ -186,6 +186,48 @@ export const PIERRE_RAW = {
       role: 'minor',
       at: '2026-11-19T15:07:44.988Z'
     },
+    cashews: {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 0,
+        juicy: 0,
+        flaky: 2
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 2,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 0
+      },
+      centre: 1,
+      role: 'minor',
+      at: '2026-11-19T17:25:31.668Z'
+    },
+    chana_dal: {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      centre: 4,
+      role: 'major',
+      at: '2026-11-19T17:12:05.786Z'
+    },
     cheese_slices: {
       texture: {
         crisp: 0,
@@ -227,6 +269,27 @@ export const PIERRE_RAW = {
       centre: 4,
       role: 'major',
       at: '2026-11-19T14:27:28.172Z'
+    },
+    coriander: {
+      texture: {
+        crisp: 2,
+        creamy: 0,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 3
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T17:24:11.735Z'
     },
     cream: {
       texture: {
@@ -333,6 +396,69 @@ export const PIERRE_RAW = {
       role: 'minor',
       at: '2026-11-19T15:55:49.746Z'
     },
+    hung_curd: {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 0,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 3,
+        acid: 3,
+        heat: 0,
+        canvas: 1,
+        fresh: 2
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T17:20:33.195Z'
+    },
+    kala_chana: {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      centre: 4,
+      role: 'major',
+      at: '2026-11-19T17:11:36.813Z'
+    },
+    lemon: {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 0,
+        juicy: 3,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 3,
+        heat: 0,
+        canvas: 0,
+        fresh: 3
+      },
+      centre: 1,
+      role: 'minor',
+      at: '2026-11-19T17:28:59.152Z'
+    },
     makhana: {
       texture: {
         crisp: 0,
@@ -353,6 +479,27 @@ export const PIERRE_RAW = {
       centre: 3,
       role: 'major',
       at: '2026-11-19T14:54:31.644Z'
+    },
+    mango: {
+      texture: {
+        crisp: 1,
+        creamy: 1,
+        chewy: 0,
+        juicy: 3,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 2,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 2
+      },
+      centre: 3,
+      role: 'major',
+      at: '2026-11-19T17:22:25.449Z'
     },
     masoor_dal: {
       texture: {
@@ -417,6 +564,27 @@ export const PIERRE_RAW = {
       role: 'major',
       at: '2026-11-19T16:45:16.000Z'
     },
+    mozzarella: {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 1,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 1,
+        sugar: 0,
+        fat: 3,
+        acid: 1,
+        heat: 0,
+        canvas: 0,
+        fresh: 1
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T17:12:47.909Z'
+    },
     mushroom: {
       texture: {
         crisp: 1,
@@ -437,6 +605,27 @@ export const PIERRE_RAW = {
       centre: 3,
       role: 'major',
       at: '2026-11-19T14:29:55.998Z'
+    },
+    noodles: {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 3,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 5,
+      role: 'major',
+      at: '2026-11-19T17:13:33.635Z'
     },
     oats: {
       texture: {
@@ -564,6 +753,27 @@ export const PIERRE_RAW = {
       role: 'minor',
       at: '2026-11-19T14:59:58.679Z'
     },
+    pomegranate: {
+      texture: {
+        crisp: 2,
+        creamy: 0,
+        chewy: 0,
+        juicy: 2,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 2,
+        fat: 0,
+        acid: 1,
+        heat: 0,
+        canvas: 0,
+        fresh: 2
+      },
+      centre: 1,
+      role: 'minor',
+      at: '2026-11-19T17:23:37.549Z'
+    },
     potato: {
       texture: {
         crisp: 0,
@@ -584,6 +794,27 @@ export const PIERRE_RAW = {
       centre: 4,
       role: 'major',
       at: '2026-11-19T15:06:52.720Z'
+    },
+    raisins: {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 2,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 2,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      centre: 1,
+      role: 'minor',
+      at: '2026-11-19T17:22:58.294Z'
     },
     rajma: {
       texture: {
@@ -627,6 +858,27 @@ export const PIERRE_RAW = {
       role: 'major',
       at: '2026-11-19T16:45:16.000Z'
     },
+    roti: {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 2,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      centre: 5,
+      role: 'major',
+      at: '2026-11-19T17:17:00.028Z'
+    },
     soya_chunks: {
       texture: {
         crisp: 0,
@@ -647,6 +899,27 @@ export const PIERRE_RAW = {
       centre: 4,
       role: 'major',
       at: '2026-11-19T14:55:38.733Z'
+    },
+    spring_onion: {
+      texture: {
+        crisp: 2,
+        creamy: 0,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 1,
+        canvas: 1,
+        fresh: 2
+      },
+      centre: 2,
+      role: 'minor',
+      at: '2026-11-19T17:24:51.653Z'
     },
     sweet_corn: {
       texture: {
@@ -731,6 +1004,48 @@ export const PIERRE_RAW = {
       centre: 4,
       role: 'major',
       at: '2026-11-19T15:55:32.103Z'
+    },
+    urad_dal: {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      centre: 4,
+      role: 'major',
+      at: '2026-11-19T17:13:05.433Z'
+    },
+    walnuts: {
+      texture: {
+        crisp: 2,
+        creamy: 0,
+        chewy: 0,
+        juicy: 0,
+        flaky: 2
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 2,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      centre: 1,
+      role: 'minor',
+      at: '2026-11-19T17:27:21.385Z'
     }
   },
   prep: {
@@ -755,11 +1070,20 @@ export const PIERRE_RAW = {
     capsicum: {
       at: '2026-11-19T16:31:19.296Z'
     },
+    cashews: {
+      at: '2026-11-19T17:25:31.668Z'
+    },
+    chana_dal: {
+      at: '2026-11-19T17:12:05.786Z'
+    },
     cheese_slices: {
       at: '2026-11-19T14:26:09.548Z'
     },
     chickpeas: {
       at: '2026-11-19T14:27:28.172Z'
+    },
+    coriander: {
+      at: '2026-11-19T17:24:11.735Z'
     },
     cucumber: {
       at: '2026-11-19T16:31:00.964Z'
@@ -773,8 +1097,17 @@ export const PIERRE_RAW = {
     ghee: {
       at: '2026-11-19T15:55:49.746Z'
     },
+    hung_curd: {
+      at: '2026-11-19T17:20:33.195Z'
+    },
+    kala_chana: {
+      at: '2026-11-19T17:11:36.813Z'
+    },
     makhana: {
       at: '2026-11-19T14:54:31.644Z'
+    },
+    mango: {
+      at: '2026-11-19T17:22:25.449Z'
     },
     masoor_dal: {
       at: '2026-11-19T15:04:25.751Z'
@@ -784,6 +1117,9 @@ export const PIERRE_RAW = {
     },
     moong_dal: {
       at: '2026-11-19T16:45:16.000Z'
+    },
+    mozzarella: {
+      at: '2026-11-19T17:12:47.909Z'
     },
     mushroom: {
       at: '2026-11-19T14:29:55.998Z'
@@ -806,6 +1142,9 @@ export const PIERRE_RAW = {
     poha: {
       at: '2026-11-19T14:26:12.531Z'
     },
+    pomegranate: {
+      at: '2026-11-19T17:23:37.549Z'
+    },
     potato: {
       at: '2026-11-19T15:06:52.720Z'
     },
@@ -815,8 +1154,14 @@ export const PIERRE_RAW = {
     rice: {
       at: '2026-11-19T16:45:16.000Z'
     },
+    roti: {
+      at: '2026-11-19T17:17:00.028Z'
+    },
     soya_chunks: {
       at: '2026-11-19T14:55:38.733Z'
+    },
+    spring_onion: {
+      at: '2026-11-19T17:24:51.653Z'
     },
     sweet_corn: {
       at: '2026-11-19T15:09:36.657Z'
@@ -830,18 +1175,49 @@ export const PIERRE_RAW = {
     toor_dal: {
       at: '2026-11-19T15:55:32.103Z'
     },
+    urad_dal: {
+      at: '2026-11-19T17:13:05.433Z'
+    },
+    walnuts: {
+      at: '2026-11-19T17:27:21.385Z'
+    },
     whey: {
       at: '2026-11-19T14:48:22.280Z'
     }
   },
   excluded: [
+    'baby_corn',
+    'beetroot',
     'brinjal',
     'broccoli',
+    'buttermilk',
     'cauliflower',
+    'cheese_spread',
+    'chia_seeds',
+    'coconut',
+    'corn_flakes',
+    'daliya',
+    'dates',
+    'grapes',
+    'green_beans',
+    'green_moong',
+    'guava',
+    'khakhra',
     'lauki',
+    'lettuce',
+    'lobia',
+    'murmura',
     'okra',
+    'orange',
+    'papaya',
+    'pumpkin',
+    'radish',
+    'roasted_chana',
+    'sabudana',
     'spinach',
     'sprouts',
-    'sweet_potato'
+    'sweet_potato',
+    'watermelon',
+    'zucchini'
   ]
 };
