@@ -4,11 +4,11 @@
 // timer; Back returns to the previous screen. Every tap toggles. "Send to Marco" hands the ratings
 // over as text that scripts/ingest-pierre.mjs writes into the brain file.
 import {
-  STEPS, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapPrep, tapRated, isRated,
+  STEPS, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapPrep, tapRated, isRated, upgradeAnswer,
   canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload,
 } from './quiz/quiz.js';
 
-const VERSION = '1.5.3';
+const VERSION = '1.6.0';
 const RENAMED = { protein_bread: 'bread' };
 const KEY = 'marco.pierre.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/marco/issues/new';
@@ -26,6 +26,7 @@ function load() {
   try { state = { ...blankState(), ...JSON.parse(localStorage.getItem(KEY)) }; } catch { state = blankState(); }
   // Foods that left the quiz (protein bread became plain bread in 1.5.2): their old
   // answers aren't sent, and a saved round asks the replacement instead.
+  for (const [id, a] of Object.entries(state.answers)) state.answers[id] = upgradeAnswer(a);
   const known = new Set(quiz.foods.map((f) => f.id));
   for (const id of Object.keys(state.answers)) if (!known.has(id)) delete state.answers[id];
   if (state.round) state.round = { ...state.round, ids: state.round.ids.map((id) => RENAMED[id] ?? id) };
@@ -88,18 +89,19 @@ function renderPlay() {
   document.title = `${f.name} · Pierre-trainer`;
   const dots = r.ids.map((_, i) => `<i class="${i < r.i ? 'past' : i === r.i ? 'now' : ''}"${i === r.i ? ` style="--p:${((r.step + 1) / STEPS.length).toFixed(3)}"` : ''}></i>`).join('');
   let input = '';
-  if (step === 'texture') {
-    input = `<h2 class="step">Texture</h2><div class="rates">` + quiz.textures.map((t) => `
-      <div class="rate"><span class="rate-label">${esc(t.label)}</span>
+  // A row of None / Low / Medium / High; `attr` says which side of Pierre it rates.
+  const rows = (list, values, attr) => `<div class="rates">` + list.map((t) => `
+      <div class="rate"><span class="rate-label">${esc(t.label)}${t.line ? `<small>${esc(t.line)}</small>` : ''}</span>
         <div class="segmented levels" role="radiogroup" aria-label="${esc(t.label)}">${quiz.levels.map((w, lv) =>
-          `<button type="button" role="radio" aria-checked="${d.texture[t.id] === lv}" data-tex="${t.id}" data-lv="${lv}">${esc(w)}</button>`).join('')}</div>
+          `<button type="button" role="radio" aria-checked="${values[t.id] === lv}" ${attr}="${t.id}" data-lv="${lv}">${esc(w)}</button>`).join('')}</div>
       </div>`).join('') + `</div>`;
+  if (step === 'texture') {
+    input = `<h2 class="step">Texture</h2>` + rows(quiz.textures, d.texture, 'data-tex');
   } else if (step === 'taste') {
     const main = quiz.tastes.filter((t) => !t.bonus);
     const bonus = quiz.tastes.filter((t) => t.bonus);
-    const opt = (t) => `<button type="button" class="opt${d.taste[t.id] ? ' sel' : ''}" data-taste="${t.id}" aria-pressed="${!!d.taste[t.id]}"><span class="k box">${d.taste[t.id] ? '✓' : ''}</span><span>${esc(t.label)}</span></button>`;
-    input = `<h2 class="step">Taste</h2><div class="opts grid2" role="group" aria-label="Taste">${main.map(opt).join('')}</div>`
-      + (bonus.length ? `<h2 class="step bonus">Bonus</h2><div class="opts grid2" role="group" aria-label="Bonus">${bonus.map(opt).join('')}</div>` : '');
+    input = `<h2 class="step">Taste</h2>` + rows(main, d.taste, 'data-taste')
+      + (bonus.length ? `<h2 class="step bonus">Bonus</h2>` + rows(bonus, d.taste, 'data-taste') : '');
   } else {
     input = `<h2 class="step">How central?</h2><div class="opts" role="radiogroup" aria-label="How central">` + quiz.centre.map((c) => `
       <button type="button" class="opt centre${d.centre === c.value ? ' sel' : ''}" role="radio" aria-checked="${d.centre === c.value}" data-centre="${c.value}">
@@ -173,7 +175,7 @@ app.addEventListener('click', (e) => {
   if (el.dataset.kind) return patch((d) => (el.dataset.kind === 'prep' ? tapPrep(d) : tapRated(d)));
   if (el.closest('.prep-dim')) return;
   if (el.dataset.tex) return patch((d) => tapTexture(d, el.dataset.tex, Number(el.dataset.lv)));
-  if (el.dataset.taste) return patch((d) => tapTaste(d, el.dataset.taste));
+  if (el.dataset.taste) return patch((d) => tapTaste(d, el.dataset.taste, Number(el.dataset.lv)));
   if (el.dataset.centre) return patch((d) => tapCentre(d, Number(el.dataset.centre)));
   const act = el.dataset.act;
   if (act === 'back') {

@@ -6,7 +6,9 @@
 //
 // Per food:
 //   texture: 0–3 each (none, low, medium, high) for crisp, creamy, chewy, juicy, flaky
-//   taste:   0/1 each for salt, sugar, fat, acid, heat, plus fresh (Pierre's bonus)
+//   taste:   0–3 each for salt, sugar, fat, acid, heat, canvas (flavour comes from
+//            technique or additions), plus fresh (Pierre's bonus). tasteAssumed: a
+//            pre-1.6 answer that only said present, read as 2.
 //   centre:  1–5 (accent, support, partner, centre, the meal)
 //   at:      when it was rated
 // prep: foods marked "part of prep, needs further processing" (soaked poha).
