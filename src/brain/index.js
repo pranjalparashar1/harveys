@@ -2,6 +2,6 @@
 export { CATALOGUE } from './catalogue.js';
 export { DEFAULT_CONFIG, PROVISIONAL } from './config.js';
 export { FOODS, EQUIPMENT, ASSUMED_BASICS, CAPABILITIES, labelFor, kindOf } from './vocabulary.js';
-export { buildInventory, matchName } from './inventory.js';
+export { buildInventory, matchName, parseItemList } from './inventory.js';
 export { rank, contextLambda, checkMeal, frictionFeatures, payoff, scoreMeal, describeMissing } from './ranker.js';
 export { validateMeal } from './validate.js';

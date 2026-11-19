@@ -16,8 +16,9 @@
 </head>
 <body>
   <main class="shell">
-    <header class="hero">
+    <header class="hero hero-row">
       <h1>Marco</h1>
+      <a class="btn link hero-link" href="train.html">Train</a>
     </header>
 
     <!-- Key: a quiet one-line row once saved -->
@@ -62,6 +63,11 @@
       <p class="mini" id="photo-status" aria-live="polite"></p>
       <button class="btn primary xl wide" id="scan" data-haptic type="button" disabled>Scan</button>
       <button class="btn link sample" id="use-demo" data-haptic type="button">Sample kitchen</button>
+      <details class="add-dish paste-list" id="paste-list">
+        <summary>Paste a list instead</summary>
+        <textarea id="paste-text" rows="5" placeholder="eggs&#10;paneer, butter, protein bread&#10;air fryer" aria-label="Kitchen items, one per line or comma-separated"></textarea>
+        <button class="btn wide" id="paste-go" data-haptic type="button">Use this list</button>
+      </details>
       <p class="error" id="scan-error" role="alert" hidden></p>
     </section>
 
@@ -108,7 +114,7 @@
     <section id="result" aria-live="polite" hidden></section>
 
     <details class="debug" id="debug">
-      <summary><span>Debug · <span id="version">1.3.4</span></span></summary>
+      <summary><span>Debug · <span id="version">1.4.0</span></span></summary>
       <div id="debug-body"></div>
       <button class="btn" id="copy-debug" type="button">Copy for Claude</button>
     </details>

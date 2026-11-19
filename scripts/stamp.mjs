@@ -27,9 +27,9 @@ function walk(dir) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const [dir, build] = process.argv.slice(2);
   if (!dir || !/^[\w.-]+$/.test(build ?? '')) throw new Error('usage: stamp.mjs <dir> <build id>');
-  const html = join(dir, 'index.html');
-  writeFileSync(html, stampHtml(readFileSync(html, 'utf8'), build));
+  const pages = readdirSync(dir).filter((n) => n.endsWith('.html')).map((n) => join(dir, n));
+  for (const html of pages) writeFileSync(html, stampHtml(readFileSync(html, 'utf8'), build));
   const js = walk(join(dir, 'src')).filter((p) => p.endsWith('.js'));
   for (const p of js) writeFileSync(p, stampJs(readFileSync(p, 'utf8'), build));
-  console.log(`stamped index.html and ${js.length} modules with v=${build}`);
+  console.log(`stamped ${pages.length} pages and ${js.length} modules with v=${build}`);
 }

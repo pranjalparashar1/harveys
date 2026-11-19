@@ -3,14 +3,14 @@
 
 import {
   CATALOGUE, DEFAULT_CONFIG, PROVISIONAL, ASSUMED_BASICS,
-  buildInventory, kindOf, labelFor, rank, describeMissing,
+  buildInventory, parseItemList, kindOf, labelFor, rank, describeMissing,
 } from './brain/index.js';
 import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, allowedModels, detectProvider, checkKey, pickModel, scanKitchen, designRecipes, AIError } from './ai/providers.js';
 import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 
-const VERSION = '1.3.4';
+const VERSION = '1.4.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -637,6 +637,16 @@ function init() {
   $('use-demo').addEventListener('click', () => {
     state.pickSource = 'inventory';
     setItems(DEMO_KITCHEN.map((i) => ({ ...i, source: 'demo' })));
+    $('step-inventory').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // A pasted list (another app's export, a note) works as the whole inventory.
+  $('paste-go').addEventListener('click', () => {
+    const items = parseItemList($('paste-text').value);
+    if (!items.length) return;
+    state.pickSource = 'inventory';
+    setItems(items.map((name) => ({ name, canonical: null, category: 'other', source: 'paste' })));
+    $('paste-list').open = false;
     $('step-inventory').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
