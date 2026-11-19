@@ -52,7 +52,7 @@ Pure ES modules: no DOM, no network, no clock, no randomness. Written to port to
 - **Friction:** tools, ingredients weighted by prep (ready < measure < peel/chop), steps, hands-on minutes (waiting time excluded), attention needed, cleanup (dishes + greasiness).
 - **λ_context:** mood (optional, neutral when absent) × late night × weekday/weekend.
 - **Weights:** `src/brain/config.js` is the only place tunable numbers live. **They are placeholders** (equal weights) until they're fitted to the meal log.
-- **Catalogue:** `src/brain/catalogue.js`, 26 seeded lazy meals with structured friction data. **Vocabulary:** `src/brain/vocabulary.js`, the ids the AI maps what it sees onto.
+- **Catalogue:** `src/brain/catalogue.js`, 16 of the simplest meals (1.3.5) with structured friction data. **Vocabulary:** `src/brain/vocabulary.js`, the ids the AI maps what it sees onto.
 
 ### Run and test locally
 
@@ -76,3 +76,7 @@ Measured on pranjal's 6 real kitchen photos (19 known items in Marco's vocabular
 - 1.3.4: 16–19 of 19. The scan prompt now asks for every item shelf by shelf, reads packet labels (a brand counts as its food), and includes food in clear bags. Marco waits 5 s, not 2.5 s, for the last photo group.
 - A nutrition gate (`nutritionProblems` in `src/brain/validate.js`, thresholds in `config.js`) rejects any meal under 8 g protein (5 g for a snack), over 45 kcal per gram of protein, or made only of fats, spices and spreads. It applies to AI recipes and the catalogue alike. It is **off by default** (`nutritionGate.enabled: false`): odd lowest-friction ideas such as "100 g butter with salt" are allowed to surface, as proof the ranker optimises friction and as possible inspiration.
 - The whey and makhana bowl is now a catalogue meal, so Marco can pick it without the AI.
+
+### Only the simplest dishes (1.3.5)
+
+Marco is named after Marco Pierre White, who gave up three Michelin stars for simple food that people actually cook. The built-in catalogue now keeps only dishes that clear a simplicity bar: no peeling or chopping, at most 2 tools, at most 5 hands-on minutes. A test enforces it, so long-prep dishes can't creep back in. 16 dishes stay and 12 were cut: aglio olio, butter omelette, egg bhurji, tawa paneer sandwich, paneer tikka, classic paneer bhurji, tofu bites, chana chaat, sprouts salad, besan chilla, moong dal khichdi and poha. The aglio olio lives on in `test/fixtures/aglio-olio.js` as the benchmark the golden tests compare the cheese toast against. AI-designed recipes are not held to the bar; the ranker still scores them on friction.

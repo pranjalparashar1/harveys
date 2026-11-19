@@ -5,6 +5,10 @@ import {
   buildInventory, matchName, rank, contextLambda,
 } from '../src/brain/index.js';
 import { DEMO_KITCHEN } from '../src/demo-kitchen.js';
+import { AGLIO_OLIO } from './fixtures/aglio-olio.js';
+
+// The catalogue plus the retired aglio olio, the benchmark the golden tests compare against.
+const DISHES = [...CATALOGUE, AGLIO_OLIO];
 
 const TARGETS = { protein: 40, calories: 800, fiber: 15 };
 const TIRED_WEEKNIGHT = { mood: 'tired', hour: 22, weekday: 2 }; // Tuesday 10 pm
@@ -13,7 +17,7 @@ const FRESH_SUNDAY = { mood: 'fresh', hour: 12, weekday: 0 };
 const positionOf = (result, id) => result.ranked.findIndex((r) => r.meal.id === id);
 
 test('golden: protein bread + cheese beats fusilli aglio olio with paneer on a tired weeknight', () => {
-  const result = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: CATALOGUE });
+  const result = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: DISHES });
   const bread = positionOf(result, 'airfryer_protein_cheese_toast');
   const pasta = positionOf(result, 'pasta_aglio_olio_paneer');
   assert.ok(bread >= 0, 'bread toast should be feasible');
@@ -22,7 +26,7 @@ test('golden: protein bread + cheese beats fusilli aglio olio with paneer on a t
 });
 
 test('golden: the bread toast explains itself as 1 tool, no chopping, 20 g protein', () => {
-  const result = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: CATALOGUE });
+  const result = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: DISHES });
   const bread = result.ranked.find((r) => r.meal.id === 'airfryer_protein_cheese_toast');
   assert.ok(bread.reasons.includes('1 tool'));
   assert.ok(bread.reasons.includes('no chopping'));
@@ -32,7 +36,7 @@ test('golden: the bread toast explains itself as 1 tool, no chopping, 20 g prote
 test('the pasta gap narrows when you are fresh on a Sunday', () => {
   const inv = buildInventory(DEMO_KITCHEN);
   const gap = (ctx) => {
-    const r = rank({ inventory: inv, targets: TARGETS, context: ctx, catalogue: CATALOGUE });
+    const r = rank({ inventory: inv, targets: TARGETS, context: ctx, catalogue: DISHES });
     const s = (id) => r.ranked.find((x) => x.meal.id === id).score;
     return s('airfryer_protein_cheese_toast') - s('pasta_aglio_olio_paneer');
   };
@@ -41,7 +45,7 @@ test('the pasta gap narrows when you are fresh on a Sunday', () => {
 
 test('missing equipment is a filter, not a weight', () => {
   const noFryer = DEMO_KITCHEN.filter((i) => i.canonical !== 'air_fryer');
-  const result = rank({ inventory: buildInventory(noFryer), targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: CATALOGUE });
+  const result = rank({ inventory: buildInventory(noFryer), targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: DISHES });
   assert.equal(positionOf(result, 'airfryer_protein_cheese_toast'), -1);
   const blocked = result.filtered.find((f) => f.meal.id === 'airfryer_protein_cheese_toast');
   assert.deepEqual(blocked.missing.equipment, ['air_fryer']);
@@ -49,13 +53,13 @@ test('missing equipment is a filter, not a weight', () => {
 
 test('a capability is met by any of its kit (gas stove instead of induction)', () => {
   const gas = DEMO_KITCHEN.map((i) => (i.canonical === 'induction' ? { name: 'Gas stove', canonical: 'gas_stove' } : i));
-  const result = rank({ inventory: buildInventory(gas), targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: CATALOGUE });
+  const result = rank({ inventory: buildInventory(gas), targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: DISHES });
   assert.ok(positionOf(result, 'pasta_aglio_olio_paneer') >= 0);
 });
 
 test('anyOf ingredients: a cheese block stands in for slices', () => {
   const inv = buildInventory(['protein bread', 'cheddar', 'air fryer']);
-  const result = rank({ inventory: inv, targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: CATALOGUE });
+  const result = rank({ inventory: inv, targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: DISHES });
   const bread = result.ranked.find((r) => r.meal.id === 'airfryer_protein_cheese_toast');
   assert.ok(bread);
   assert.ok(bread.used.ingredients.some((i) => i.id === 'cheese'));
@@ -63,13 +67,13 @@ test('anyOf ingredients: a cheese block stands in for slices', () => {
 
 test('optional ingredients never filter a meal out', () => {
   const inv = buildInventory(['protein bread', 'cheese slices', 'air fryer']); // no chilli flakes
-  const result = rank({ inventory: inv, targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: CATALOGUE });
+  const result = rank({ inventory: inv, targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: DISHES });
   assert.ok(positionOf(result, 'airfryer_protein_cheese_toast') >= 0);
 });
 
 test('a basic the user marks missing filters meals that need it', () => {
   const inv = buildInventory(DEMO_KITCHEN, { missingBasics: ['cutting_board'] });
-  const result = rank({ inventory: inv, targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: CATALOGUE });
+  const result = rank({ inventory: inv, targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: DISHES });
   assert.equal(positionOf(result, 'pasta_aglio_olio_paneer'), -1);
 });
 
@@ -82,23 +86,23 @@ test('with no mood, λ is neutral on mood and still follows the clock', () => {
   const noMood = contextLambda({ hour: 22, weekday: 2 });
   assert.deepEqual(noMood.parts.map((p) => p.name), ['late night', 'weekday']);
   assert.equal(noMood.value, contextLambda({ mood: 'okay', hour: 22, weekday: 2 }).value);
-  assert.ok(Number.isFinite(rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: { hour: 19, weekday: 3 }, catalogue: CATALOGUE }).ranked[0].score));
+  assert.ok(Number.isFinite(rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: { hour: 19, weekday: 3 }, catalogue: DISHES }).ranked[0].score));
 });
 
 test('payoff is capped: overshooting the remaining protein earns nothing extra', () => {
   const inv = buildInventory(DEMO_KITCHEN);
-  const small = rank({ inventory: inv, targets: { protein: 10, calories: 800, fiber: 15 }, context: TIRED_WEEKNIGHT, catalogue: CATALOGUE });
+  const small = rank({ inventory: inv, targets: { protein: 10, calories: 800, fiber: 15 }, context: TIRED_WEEKNIGHT, catalogue: DISHES });
   for (const r of small.ranked) assert.ok(r.payoff.parts[0].progress <= 1);
 });
 
 test('ranking is deterministic', () => {
-  const run = () => rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: CATALOGUE })
+  const run = () => rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: DISHES })
     .ranked.map((r) => `${r.meal.id}:${r.score.toFixed(6)}`);
   assert.deepEqual(run(), run());
 });
 
 test('every score is the sum of its named parts', () => {
-  const result = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: CATALOGUE });
+  const result = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: DISHES });
   for (const r of result.ranked) {
     const pay = r.payoff.parts.reduce((a, p) => a + p.value, 0);
     const fr = r.frictionParts.reduce((a, p) => a + p.value, 0);
@@ -108,14 +112,14 @@ test('every score is the sum of its named parts', () => {
 
 test('"buy X to unlock" names the single missing ingredient', () => {
   const noEggs = buildInventory(DEMO_KITCHEN);
-  const result = rank({ inventory: noEggs, targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: CATALOGUE });
+  const result = rank({ inventory: noEggs, targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: DISHES });
   const eggs = result.unlocks.find((u) => u.id === 'eggs');
   assert.ok(eggs, 'eggs should unlock something');
   assert.ok(eggs.meals.length >= 2);
 });
 
 test('snack mode only returns snacks', () => {
-  const result = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: { ...TIRED_WEEKNIGHT, kind: 'snack' }, catalogue: CATALOGUE });
+  const result = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: { ...TIRED_WEEKNIGHT, kind: 'snack' }, catalogue: DISHES });
   assert.ok(result.ranked.length > 0);
   assert.ok(result.ranked.every((r) => r.meal.kind === 'snack'));
 });
@@ -154,7 +158,18 @@ test("golden: pranjal's real kitchen (18 Nov) picks the whey and makhana bowl", 
   const inv = buildInventory(['whey', 'makhana', 'oats', 'chickpeas', 'rice', 'pasta', 'onion', 'garlic', 'tomato',
     'butter', 'oil', 'salt', 'black pepper', 'honey', 'air fryer', 'microwave', 'kitchen scale', 'frying pan', 'blender']);
   for (const context of [{ hour: 22, weekday: 2 }, { hour: 19, weekday: 3 }, { hour: 13, weekday: 0 }]) {
-    const result = rank({ inventory: inv, targets: TARGETS, context: { kind: 'meal', ...context }, catalogue: CATALOGUE });
+    const result = rank({ inventory: inv, targets: TARGETS, context: { kind: 'meal', ...context }, catalogue: DISHES });
     assert.equal(result.ranked[0].meal.id, 'whey_makhana_bowl', JSON.stringify(context));
+  }
+});
+
+test('every catalogue dish meets the simplicity bar (1.3.5)', async () => {
+  const { frictionFeatures } = await import('../src/brain/ranker.js');
+  for (const m of CATALOGUE) {
+    const used = { equipment: m.equipment, utensils: m.utensils, ingredients: m.ingredients.filter((i) => !i.optional) };
+    const f = frictionFeatures(m, used);
+    assert.equal(f.chopCount, 0, `${m.id} needs chopping`);
+    assert.ok(f.tools <= 2, `${m.id} uses ${f.tools} tools`);
+    assert.ok(f.activeMinutes <= 5, `${m.id} needs ${f.activeMinutes} hands-on minutes`);
   }
 });
