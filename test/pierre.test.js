@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  validateQuiz, blankState, startRound, queue, tapTexture, tapTaste, tapCentre, tapPrep, tapRated, upgradeAnswer,
+  validateQuiz, blankState, startRound, queue, tapTexture, tapTaste, tapCentre, tapPrep, tapRated, tapRemove, upgradeAnswer,
   canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload, decodePayload, STEPS,
 } from '../src/quiz/quiz.js';
 import { rawVector, roleOf, plateShape, partnersFor, dishProfile, partVector, mergeRatings, pullOf } from '../src/brain/ingredients.js';
@@ -18,7 +18,10 @@ test('the quiz file is valid: veg and egg foods, no spices or condiments', () =>
     assert.ok(quiz.tutor.some((f) => f.id === later));
   }
   const ids = quiz.foods.map((f) => f.id);
-  assert.ok(ids.includes('bread') && !ids.includes('protein_bread'), 'plain bread; protein bread is a macro modifier for later');
+  assert.ok(!ids.includes('protein_bread'), 'protein bread is a macro modifier for later');
+  assert.equal(quiz.edition, 2);
+  for (const id of ids) assert.ok(!quiz.done.round1.includes(id), `${id} was in round 1`);
+  for (const id of ['spinach', 'okra', 'brinjal']) assert.ok(!ids.includes(id), `${id} is set aside`);
   for (const banned of ['chicken', 'tuna', 'salt', 'turmeric', 'garam_masala', 'ketchup', 'mayo', 'oil']) assert.ok(!ids.includes(banned), banned);
   assert.deepEqual(quiz.textures.map((t) => t.id), ['crisp', 'creamy', 'chewy', 'juicy', 'flaky']);
   assert.deepEqual(quiz.tastes.map((t) => t.id), ['salt', 'sugar', 'fat', 'acid', 'heat', 'canvas', 'fresh']);
@@ -26,13 +29,14 @@ test('the quiz file is valid: veg and egg foods, no spices or condiments', () =>
   assert.throws(() => validateQuiz({ ...quiz, foods: [...quiz.foods, quiz.foods[0]] }), /twice/);
 });
 
-test('rounds take the user’s kitchen first, seven at a time, never a rated food', () => {
+test('rounds take everyday foods first, seven at a time, never a rated food', () => {
   let s = startRound(quiz, blankState(), mulberry32(1));
   assert.equal(s.round.ids.length, 7);
-  const kitchen = new Set(quiz.foods.filter((f) => f.kitchen).map((f) => f.id));
-  assert.ok(s.round.ids.every((id) => kitchen.has(id)));
-  s = { ...s, answers: { paneer: { at: 'x' } } };
-  assert.ok(!queue(quiz, s, mulberry32(2)).includes('paneer'));
+  const first = new Set(quiz.foods.filter((f) => f.kitchen || f.everyday).map((f) => f.id));
+  assert.ok(first.size >= 7);
+  assert.ok(s.round.ids.every((id) => first.has(id)));
+  s = { ...s, answers: { roti: { at: 'x' } } };
+  assert.ok(!queue(quiz, s, mulberry32(2)).includes('roti'));
 });
 
 test('every tap toggles: a second tap on the same option undoes it', () => {
@@ -194,14 +198,15 @@ test('taste is 0–3 with canvas, and pre-1.6 answers read as Medium, marked ass
   assert.equal(rawVector('paneer', kb).taste.canvas, 2);
 });
 
-test('the Send to Marco text round-trips', () => {
+test('the Send to Harvey’s text round-trips', () => {
   const answers = {
     paneer: { texture: { crisp: 0, creamy: 3, chewy: 2, juicy: 1, flaky: 0 }, taste: { salt: 0, sugar: 0, fat: 1, acid: 0, heat: 0, fresh: 0 }, centre: 4, at: '2026-11-19T12:00:00.000Z' },
     cheese_slices: { texture: { crisp: 0, creamy: 2, chewy: 1, juicy: 0, flaky: 0 }, taste: { salt: 1, sugar: 0, fat: 1, acid: 1, heat: 0, fresh: 0 }, centre: 2, at: '2026-11-19T12:01:00.000Z' },
     makhana: { texture: { crisp: 3, creamy: 0, chewy: 0, juicy: 0, flaky: 1 }, taste: { salt: 0, sugar: 0, fat: 0, acid: 0, heat: 0, fresh: 0 }, centre: 3, at: '2026-11-19T12:02:00.000Z' },
   };
   const text = encodePayload(quiz, answers);
-  assert.match(text, /^#marco pierre-trainer v2/);
+  assert.match(text, /^#harveys pierre-trainer v3/);
+  assert.ok(decodePayload(text.replace('#harveys pierre-trainer v3', '#marco pierre-trainer v2')).paneer, 'round-1 exports still read');
   assert.match(text, /paneer \| t 0\.3\.2\.1\.0 \| s 0\.0\.1\.0\.0\.0\.0 \| c 4/);
   assert.match(text, /makhana \| t 3\.0\.0\.0\.1 \| s 0\.0\.0\.0\.0\.0\.0 \| c 3/);
   const back = decodePayload('Here you go:\n```\n' + text + '\n```\n');
@@ -262,6 +267,35 @@ test('the real brain file: issue #16 ingested', async () => {
   for (const id of ['rice', 'oats', 'bread', 'pasta']) assert.equal(kb.foods[id].centre, 5, `${id} is a base`);
   for (const id of ['moong_dal', 'masoor_dal', 'toor_dal', 'rajma', 'chickpeas']) assert.equal(kb.foods[id].centre, 4, id);
   assert.ok(kb.excluded.includes('spinach') && !kb.prep.spinach, 'spinach set aside');
+});
+
+test('Remove from list: any step, skips the rest, exported as remove, ingested as excluded', () => {
+  let s = startRound(quiz, blankState(), mulberry32(4));
+  const [a, b] = s.round.ids;
+  s = { ...s, round: { ...s.round, draft: tapTexture(s.round.draft, 'crisp', 2) } };
+  s = advance(quiz, s); // to taste
+  assert.equal(s.round.step, 1);
+  s = { ...s, round: { ...s.round, draft: tapRemove(s.round.draft) } };
+  assert.ok(canAdvance(s.round.step, s.round.draft), 'a removed food can always go on');
+  s = advance(quiz, s, new Date('2026-11-20T10:00:00Z'));
+  assert.equal(s.round.i, 1, 'removing skips the remaining steps');
+  assert.deepEqual(s.answers[a], { removed: true, at: '2026-11-20T10:00:00.000Z' });
+  // Undo: tap again, and the food is rated as usual.
+  let d = tapRemove(tapRemove(s.round.draft));
+  assert.equal(d.removed, false);
+  // Back restores a removed food as removed, on its first screen.
+  const prev = back(quiz, s);
+  assert.equal(prev.round.i, 0);
+  assert.equal(prev.round.step, 0);
+  assert.equal(prev.round.draft.removed, true);
+  const text = encodePayload(quiz, s.answers);
+  assert.match(text, new RegExp(`${a} \\| remove \\| 2026-11-20`));
+  const got = decodePayload(text);
+  assert.deepEqual(got[a], { remove: true, at: '2026-11-20T10:00:00.000Z' });
+  const kb = mergeRatings({ foods: { [a]: { centre: 2 } }, prep: { [a]: {} }, excluded: ['okra'] }, got);
+  assert.ok(!kb.foods[a] && !kb.prep[a]);
+  assert.deepEqual(kb.excluded, [a, 'okra'].sort());
+  assert.ok(b);
 });
 
 test('excluded foods leave the brain and stay out on later ingests', () => {

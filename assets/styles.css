@@ -392,3 +392,8 @@ a.btn.send.fresh:not(.primary) { border-color: var(--accent); color: var(--accen
 .opt.kind small { font-size: 13px; font-weight: 400; color: var(--muted); line-height: 1.3; }
 .tile .c.second { right: 32px; }
 .rate-label small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); margin-top: 1px; }
+/* Pierre-trainer 1.7.0: "Remove from list" sits under the food's name. */
+.qcardp .btn.remove { align-self: flex-start; margin: -10px 0 0; padding: 0; min-height: 36px; font-size: 14px; }
+.qcardp .btn.remove.on { color: var(--no); font-weight: 700; }
+.tile.removed { opacity: .45; }
+.tile.removed b { text-decoration: line-through; }

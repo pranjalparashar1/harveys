@@ -1,14 +1,15 @@
-// Pierre-trainer (1.5.1): Kiron's quiz player, for food. One raw food per
+// Pierre-trainer (1.7.0, round 2): Kiron's quiz player, for food. One raw food per
 // screen, no photos, rated in three steps: texture (0–3 each), taste (tap what's there),
 // and how central it is to a meal (1–5). No right answers, no streaks, no
-// timer; Back returns to the previous screen. Every tap toggles. "Send to Marco" hands the ratings
+// timer; Back returns to the previous screen. Every tap toggles. "Remove from list" sets a
+// food aside. "Send to Harvey's" hands the ratings
 // over as text that scripts/ingest-pierre.mjs writes into the brain file.
 import {
-  STEPS, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapPrep, tapRated, isRated, upgradeAnswer,
+  STEPS, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapPrep, tapRated, tapRemove, isRated, isRemoved, upgradeAnswer,
   canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload,
 } from './quiz/quiz.js';
 
-const VERSION = '1.6.0';
+const VERSION = '1.7.0';
 const RENAMED = { protein_bread: 'bread' };
 const KEY = 'marco.pierre.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
@@ -70,7 +71,7 @@ function renderHome() {
     ${left ? `<button class="btn primary xl" data-act="${inRound ? 'resume' : 'begin'}" type="button">${inRound ? 'Keep going' : rated ? 'Next round' : 'Begin'}${HX}</button>` : ''}
     ${rated ? sendLink(toSend, !left) : ''}
     ${rated ? `<button class="btn link quiet reset" data-act="reset" type="button">Start over</button>` : ''}
-    <p class="mini center version">Marco ${VERSION} · Pierre-trainer</p>
+    <p class="mini center version">Harvey’s ${VERSION} · Pierre-trainer${quiz.edition ? ` · round ${quiz.edition}` : ''}</p>
   </main>`;
 }
 
@@ -78,7 +79,7 @@ function sendLink(toSend, primary) {
   const body = encodePayload(quiz, state.answers);
   const n = Object.keys(state.answers).length;
   const href = `${REPO_ISSUE}?${new URLSearchParams({ title: `Pierre-trainer: ${n} foods`, labels: 'pierre-trainer', body: '```\n' + body + '\n```' })}`;
-  return `<a class="btn${primary ? ' primary xl' : ''} send${toSend ? ' fresh' : ''}" data-act="send" href="${esc(href)}" target="_blank" rel="noopener">Send to Marco</a>`;
+  return `<a class="btn${primary ? ' primary xl' : ''} send${toSend ? ' fresh' : ''}" data-act="send" href="${esc(href)}" target="_blank" rel="noopener">Send to Harvey’s</a>`;
 }
 
 function renderPlay() {
@@ -108,14 +109,14 @@ function renderPlay() {
         <span class="k">${c.value}</span><span class="ct"><b>${esc(c.label)}</b><small>${esc(c.line)}</small></span>
       </button>`).join('') + `</div>`;
   }
-  if (!d.rated) input = `<div class="prep-dim" aria-hidden="true">${input}</div>`;
+  if (!d.rated || d.removed) input = `<div class="prep-dim" aria-hidden="true">${input}</div>`;
   // What the food is: rated, part of prep, or both. Set on its first screen.
-  if (step === 'texture') {
+  if (step === 'texture' && !d.removed) {
     const kind = (key, on, title, line) => `<button type="button" class="opt kind${on ? ' sel' : ''}" data-kind="${key}" aria-pressed="${on}"><span class="k box">${on ? '✓' : ''}</span><span class="ct"><b>${title}</b><small>${line}</small></span></button>`;
     input = `<div class="opts grid2 kinds" role="group" aria-label="This food is">${kind('rated', d.rated, 'Rate it', 'Texture, taste, centre')}${kind('prep', d.prep, 'Part of prep', 'Needs further processing')}</div>` + input;
   }
   const last = r.i + 1 >= r.ids.length;
-  const nextLabel = step !== 'centre' && d.rated ? 'Next' : last ? 'Finish round' : 'Next food';
+  const nextLabel = step !== 'centre' && d.rated && !d.removed ? 'Next' : last ? 'Finish round' : 'Next food';
   const ok = canAdvance(r.step, d);
   app.innerHTML = `
   <header class="top play"><div class="top-in">
@@ -125,6 +126,7 @@ function renderPlay() {
   <main class="wrap play">
     <article class="qcardp${reduceMotion() ? '' : dir > 0 ? ' in-next' : dir < 0 ? ' in-prev' : ''}">
       <h1 class="prompt" tabindex="-1">${esc(f.name)}</h1>
+      <button type="button" class="btn link quiet remove${d.removed ? ' on' : ''}" data-act="remove" aria-pressed="${d.removed}">${d.removed ? 'Removed from the list · Undo' : 'Remove from list'}</button>
       ${input}
     </article>
   </main>
@@ -156,6 +158,7 @@ function renderEnd() {
 
 function tile(f) {
   const a = state.answers[f.id];
+  if (isRemoved(a)) return `<div class="tile removed"><b>${esc(f.name)}</b><span class="c">✕</span></div>`;
   return `<div class="tile"><b>${esc(f.name)}</b>${isRated(a) ? `<span class="c">${a.centre}</span>` : ''}${a?.prep ? `<span class="c prep${isRated(a) ? ' second' : ''}">P</span>` : ''}</div>`;
 }
 
@@ -178,6 +181,7 @@ app.addEventListener('click', (e) => {
   if (el.dataset.taste) return patch((d) => tapTaste(d, el.dataset.taste, Number(el.dataset.lv)));
   if (el.dataset.centre) return patch((d) => tapCentre(d, Number(el.dataset.centre)));
   const act = el.dataset.act;
+  if (act === 'remove') return patch(tapRemove);
   if (act === 'back') {
     state = back(quiz, state);
     save();
