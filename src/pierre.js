@@ -14,7 +14,7 @@ const RENAMED = { protein_bread: 'bread' };
 // One player, two quizzes: Pierre-trainer (raw foods) and Pierre-tutor (a food cooked one way).
 const QUIZ = document.body.dataset.quiz || 'pierre-trainer';
 const KEY = QUIZ === 'pierre-tutor' ? 'harveys.tutor.v1' : 'marco.pierre.v1';
-const USABLE_MARK = { 1: '✓', 0: '✕' };
+const USABLE_MARK = { 2: '✓', 1: '→', 0: '✕' };
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
 const app = document.getElementById('app');
 
@@ -32,7 +32,7 @@ function load() {
   // Foods that left the quiz (protein bread became plain bread in 1.5.2): their old
   // answers aren't sent, and a saved round asks the replacement instead.
   for (const [id, a] of Object.entries(state.answers)) state.answers[id] = upgradeTutorAnswer(upgradeAnswer(a));
-  if (state.round?.draft && state.round.draft.usable === undefined) state.round.draft = { ...upgradeTutorAnswer(state.round.draft), usable: state.round.draft.verdict == null ? null : state.round.draft.verdict > 0 ? 1 : 0 };
+  if (state.round?.draft && state.round.draft.usable === undefined) state.round.draft = { ...upgradeTutorAnswer(state.round.draft), usable: state.round.draft.verdict == null ? null : state.round.draft.verdict > 0 ? 2 : 0 };
   const known = new Set(quiz.foods.map((f) => f.id));
   for (const id of Object.keys(state.answers)) if (!known.has(id)) delete state.answers[id];
   if (state.round) state.round = { ...state.round, ids: state.round.ids.map((id) => RENAMED[id] ?? id) };

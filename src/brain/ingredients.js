@@ -97,6 +97,9 @@ export function partnersFor(anchorId, inventoryIds, kb = PIERRE_RAW) {
 // that shifts any raw vector: { texture: { crisp: +2 }, taste: { fat: 1 } }.
 // Empty for now: no guesses until there are real ratings.
 export const TECHNIQUES = {};
+// Pierre-tutor's "Usable?": as it is (scrambled eggs), only as a step that gets
+// cooked further (boiled soya chunks → air-fried), or not at all (a veto).
+export const USABLE = { 2: 'yes', 1: 'step', 0: 'no' };
 
 export const techKey = (id, technique) => (technique ? `${id}@${technique}` : id);
 
@@ -152,8 +155,10 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
     tastes: TASTES.filter((k) => k !== 'canvas' && taste[k] > 0),
     shape: plateShape(vs.map((v) => v.id), kb),
     missing: parts.map((p) => (typeof p === 'string' ? p : p.id)).filter((id) => !rawVector(id, kb)),
-    // Cooked parts pranjal marked not usable (boiled soya chunks): a veto on the dish.
-    unusable: vs.filter((v) => v.usable === false).map((v) => techKey(v.id, v.technique)),
+    // Cooked parts pranjal marked not usable (microwaved paneer): a veto on the dish.
+    unusable: vs.filter((v) => v.usable === 'no').map((v) => techKey(v.id, v.technique)),
+    // Parts that are only a step (boiled soya chunks): fine inside a chain, not as the last technique.
+    unfinished: vs.filter((v) => v.usable === 'step').map((v) => techKey(v.id, v.technique)),
   };
 }
 
@@ -179,12 +184,12 @@ export function mergeRatings(kb, ratings, { exclude = [] } = {}) {
     if (old?.at && r.at && old.at > r.at) continue;
     // Pierre-tutor: a food cooked one way, and whether it's usable at all. Its centre is the food's own.
     if (id.includes('@')) {
-      const usable = r.usable ?? (r.verdict != null ? (r.verdict > 0 ? 1 : 0) : null);
+      const usable = r.usable ?? (r.verdict != null ? (r.verdict > 0 ? 2 : 0) : null);
       if (usable == null) continue;
       tech[id] = {
         texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(Math.round(r.texture?.[k] ?? 0), 0, 3)])),
         taste: Object.fromEntries(TASTES.map((k) => [k, clamp(Math.round(r.taste?.[k] ?? 0), 0, 3)])),
-        usable: usable > 0,
+        usable: USABLE[clamp(Math.round(usable), 0, 2)],
         ...(r.at ? { at: r.at } : {}),
       };
       continue;

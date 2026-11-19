@@ -9,9 +9,11 @@
 export const STEPS = ['texture', 'taste', 'centre'];
 export const HEADER = '#harveys pierre-trainer v3';
 // Pierre-tutor (1.8.0) rates a food cooked one way ("paneer@pan_fried") with the
-// same engine: texture, taste, then "Usable?" (yes 1 / no 0) instead of the centre.
-// A No is a veto (boiled soya chunks); a Yes says nothing about taste, which the
-// texture and taste ratings carry. 1.8.1 replaced the pass/meh/fail verdict.
+// same engine: texture, taste, then "Usable?" instead of the centre:
+//   2 as it is (scrambled eggs), 1 only as a step that gets cooked further
+//   (boiled soya chunks, then air-fried), 0 not usable (a veto).
+// Usable says nothing about taste, which the texture and taste ratings carry.
+// 1.8.1 replaced the pass/meh/fail verdict.
 export const TUTOR_HEADER = '#harveys pierre-tutor v1';
 export const stepsOf = (quiz) => quiz?.steps ?? STEPS;
 const headerOf = (quiz) => (quiz?.id === 'pierre-tutor' ? TUTOR_HEADER : HEADER);
@@ -42,18 +44,18 @@ export const blankDraft = (quiz) => ({
   texture: Object.fromEntries(quiz.textures.map((t) => [t.id, 0])),
   taste: Object.fromEntries(quiz.tastes.map((t) => [t.id, 0])),
   centre: null,
-  usable: null, // Pierre-tutor: 1 yes, 0 no (a veto)
+  usable: null, // Pierre-tutor: 2 as it is, 1 only as a step, 0 no (a veto)
   rated: true,  // rate its texture, taste and centre
   prep: false,  // part of prep, needs further processing (soaked poha, whey)
   removed: false, // take it off the list: not for now (too much work, never cooked it)
 });
 // A food is rated, part of prep, or both (paneer). An answer has ratings when it has a centre.
 export const isRated = (a) => a?.centre != null || a?.usable != null;
-/** 1.8.0 answers had a verdict (2 pass, 1 meh, 0 fail): pass and meh were usable, fail wasn't. */
+/** 1.8.0 answers had a verdict (2 pass, 1 meh, 0 fail): pass and meh are usable as they are, fail isn't usable. */
 export function upgradeTutorAnswer(a) {
   if (!a || a.verdict == null || a.usable != null) return a;
   const { verdict, ...rest } = a;
-  return { ...rest, usable: verdict > 0 ? 1 : 0 };
+  return { ...rest, usable: verdict > 0 ? 2 : 0 };
 }
 export const isRemoved = (a) => !!a?.removed;
 
@@ -95,7 +97,7 @@ export function upgradeAnswer(a) {
 export function tapCentre(draft, value) {
   return { ...draft, centre: draft.centre === value ? null : value };
 }
-/** "Usable?" for a food cooked one way: 1 yes, 0 no. Tap again to clear. */
+/** "Usable?" for a food cooked one way: 2 as it is, 1 only as a step, 0 no. Tap again to clear. */
 export function tapUsable(draft, value) {
   return { ...draft, usable: draft.usable === value ? null : value };
 }
@@ -179,7 +181,7 @@ export function encodePayload(quiz, answers, ids = Object.keys(answers)) {
     const a = { ...answers[id], at: minute(answers[id].at) };
     if (isRemoved(a)) return `${id} | remove | ${a.at}`;
     if (!isRated(a)) return `${id} | prep | ${a.at}`;
-    // Pierre-tutor: u = usable (1 yes, 0 no) in place of the centre.
+    // Pierre-tutor: u = usable (2 as it is, 1 only as a step, 0 no) in place of the centre.
     if (a.usable != null) return `${id} | t ${tex.map((k) => a.texture[k] ?? 0).join('.')} | s ${tas.map((k) => a.taste[k] ?? 0).join('.')} | u ${a.usable} | ${a.at}`;
     return `${id} | t ${tex.map((k) => a.texture[k] ?? 0).join('.')} | s ${tas.map((k) => a.taste[k] ?? 0).join('.')} | c ${a.centre}${a.prep ? ' | prep' : ''}${a.tasteAssumed ? ' | assumed' : ''} | ${a.at}`;
   });
@@ -202,8 +204,8 @@ export function decodePayload(text) {
       out[v[1]] = {
         texture: Object.fromEntries(tex.map((k, i) => [k, Number(v[2].split('.')[i] ?? 0)])),
         taste: Object.fromEntries(tas.map((k, i) => [k, Number(v[3].split('.')[i] ?? 0)])),
-        // u: usable 1/0. v (1.8.0 verdict): pass and meh were usable, fail wasn't.
-        usable: v[4] === 'u' ? Math.min(1, Number(v[5])) : Number(v[5]) > 0 ? 1 : 0,
+        // u: usable 2/1/0. v (1.8.0 verdict): pass and meh are usable as they are, fail isn't.
+        usable: v[4] === 'u' ? Number(v[5]) : Number(v[5]) > 0 ? 2 : 0,
         ...(v[6] ? { at: v[6] } : {}),
       };
       continue;

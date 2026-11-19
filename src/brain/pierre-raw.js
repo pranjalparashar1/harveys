@@ -14,7 +14,8 @@
 // prep: foods marked "part of prep, needs further processing" (soaked poha).
 //   They have no raw ratings; Pierre-tutor rates them with a technique.
 // tech: Pierre-tutor ratings of a food cooked one way ("paneer@pan_fried"): texture and
-//   taste as above, plus usable (false is a veto: nobody eats boiled soya chunks).
+//   taste as above, plus usable: 'yes' (as it is), 'step' (only cooked further, like
+//   boiled soya chunks), or 'no' (a veto).
 //   Its centre is the food's own.
 // excluded: foods set aside for now (too much work, or unfamiliar). Not trained on.
 export const PIERRE_RAW = {

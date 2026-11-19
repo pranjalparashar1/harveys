@@ -73,14 +73,19 @@
   ],
   "usable": [
     {
+      "value": 2,
+      "label": "Yes, as it is",
+      "line": "Done this way, it can go on a plate."
+    },
+    {
       "value": 1,
-      "label": "Yes",
-      "line": "A usable building block. How good it is comes from texture and taste."
+      "label": "Only as a step",
+      "line": "Not eaten like this, but cooked further. Boiled soya chunks, then air-fried."
     },
     {
       "value": 0,
       "label": "No",
-      "line": "Nobody would eat it this way. Harvey’s never suggests it."
+      "line": "Nobody would make it this way. Harvey’s never suggests it."
     }
   ],
   "rated": "cooked this one way with only a little fat and salt, so the result is the same every time",

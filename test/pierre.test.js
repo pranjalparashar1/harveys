@@ -336,16 +336,19 @@ test('dish profile: the anchor dominates texture, any part brings a taste', () =
 });
 
 test('the technique layer: a rated "food@technique" wins, an unknown technique falls back to raw', () => {
-  const kb = mergeRatings({ foods: KB.foods }, { 'paneer@fried': { texture: { crisp: 2, creamy: 2, chewy: 2 }, taste: { fat: 1, salt: 0 }, usable: 1 } });
+  const kb = mergeRatings({ foods: KB.foods }, { 'paneer@fried': { texture: { crisp: 2, creamy: 2, chewy: 2 }, taste: { fat: 1, salt: 0 }, usable: 2 } });
   assert.ok(kb.tech['paneer@fried'] && !kb.foods['paneer@fried'], 'cooked ratings live in tech');
   const fried = partVector({ id: 'paneer', technique: 'fried' }, kb);
   assert.equal(fried.source, 'rated');
   assert.equal(fried.texture.crisp, 2);
   assert.equal(fried.centre, KB.foods.paneer.centre, 'the centre is the food’s own');
-  assert.equal(fried.usable, true);
+  assert.equal(fried.usable, 'yes');
   assert.deepEqual(dishProfile([{ id: 'paneer', technique: 'fried' }, 'onion'], kb).unusable, []);
   const vetoed = mergeRatings(kb, { 'paneer@microwaved': { texture: { chewy: 3 }, taste: {}, usable: 0 } });
   assert.deepEqual(dishProfile([{ id: 'paneer', technique: 'microwaved' }, 'onion'], vetoed).unusable, ['paneer@microwaved']);
+  const step = mergeRatings(kb, { 'paneer@boiled': { texture: { creamy: 2 }, taste: {}, usable: 1 } });
+  const p2 = dishProfile([{ id: 'paneer', technique: 'boiled' }], step);
+  assert.deepEqual([p2.unusable, p2.unfinished], [[], ['paneer@boiled']], 'a step is not a veto, but not the last technique either');
   const boiled = partVector({ id: 'paneer', technique: 'boiled' }, kb);
   assert.match(boiled.source, /^raw/);
   const shifted = partVector({ id: 'paneer', technique: 'airfried' }, kb, { airfried: { texture: { crisp: 2, juicy: -1 } } });
@@ -408,11 +411,12 @@ test('Pierre-tutor: texture, taste, then Usable?; exported as u and ingested int
   const got = decodePayload(text);
   assert.equal(got[id].usable, 0);
   const kb = mergeRatings({ foods: {}, prep: {} }, got);
-  assert.equal(kb.tech[id].usable, false);
-  // 1.8.0 verdicts still read: pass and meh are usable, fail isn't.
-  assert.deepEqual(upgradeTutorAnswer({ verdict: 1, at: 'x' }), { usable: 1, at: 'x' });
+  assert.equal(kb.tech[id].usable, 'no');
+  assert.equal(mergeRatings({}, { 'soya_chunks@boiled': { texture: {}, taste: {}, usable: 1 } }).tech['soya_chunks@boiled'].usable, 'step');
+  // 1.8.0 verdicts still read: pass and meh are usable as they are, fail isn't.
+  assert.deepEqual(upgradeTutorAnswer({ verdict: 1, at: 'x' }), { usable: 2, at: 'x' });
   const old = decodePayload('#harveys pierre-tutor v1\neggs@boiled | t 0.0.0.0.0 | s 0.0.0.0.0.0.0 | v 2 | 2026-11-19T18:00Z\nsoya_chunks@boiled | t 0.0.0.0.0 | s 0.0.0.0.0.0.0 | v 0 | 2026-11-19T18:00Z');
-  assert.equal(old['eggs@boiled'].usable, 1);
+  assert.equal(old['eggs@boiled'].usable, 2);
   assert.equal(old['soya_chunks@boiled'].usable, 0);
   assert.equal(kb.tech[id].texture.crisp, 3);
   assert.ok(!kb.foods[id]);
