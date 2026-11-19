@@ -18,6 +18,7 @@ test('the quiz file is valid: veg and egg foods, no spices or condiments', () =>
     assert.ok(quiz.tutor.some((f) => f.id === later));
   }
   const ids = quiz.foods.map((f) => f.id);
+  assert.ok(ids.includes('bread') && !ids.includes('protein_bread'), 'plain bread; protein bread is a macro modifier for later');
   for (const banned of ['chicken', 'tuna', 'salt', 'turmeric', 'garam_masala', 'ketchup', 'mayo', 'oil']) assert.ok(!ids.includes(banned), banned);
   assert.deepEqual(quiz.textures.map((t) => t.id), ['crisp', 'creamy', 'chewy', 'juicy', 'flaky']);
   assert.deepEqual(quiz.tastes.map((t) => t.id), ['salt', 'sugar', 'fat', 'acid', 'heat', 'fresh']);
