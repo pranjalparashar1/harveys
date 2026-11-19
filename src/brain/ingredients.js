@@ -40,6 +40,9 @@ export function rawVector(id, kb = PIERRE_RAW) {
 export const MAJOR_FROM = 3;
 export const CO_LEAD_MARGIN = 1;
 export const MAX_LEADS = 2;
+// A 5 is a BASE (rice, pasta, oats). A plate holds one base: two 5s clash
+// (rice + pasta), but a base takes 4s (rice + dal). pranjal's rule, 19 Nov.
+export const BASE = 5;
 
 export const roleOf = (centre) => (centre >= MAJOR_FROM ? 'major' : 'minor');
 export const pullOf = (centre) => 2 ** (clamp(centre, 1, 5) - 1);
@@ -52,7 +55,7 @@ export const pullOf = (centre) => 2 ** (clamp(centre, 1, 5) - 1);
 export function plateShape(ids, kb = PIERRE_RAW) {
   const known = ids.map((id) => rawVector(id, kb)).filter(Boolean).sort((a, b) => b.centre - a.centre);
   const unknown = ids.filter((id) => !rawVector(id, kb));
-  if (!known.length) return { anchor: null, leads: [], supports: [], accents: [], unknown, meal: false, crowded: false, majors: 0 };
+  if (!known.length) return { anchor: null, leads: [], supports: [], accents: [], unknown, meal: false, crowded: false, bases: [], clash: false, majors: 0 };
   const top = known[0].centre;
   const leads = known.filter((f) => f.centre >= MAJOR_FROM && top - f.centre <= CO_LEAD_MARGIN).map((f) => f.id);
   const supports = known.filter((f) => !leads.includes(f.id) && f.centre >= 2).map((f) => f.id);
@@ -65,6 +68,8 @@ export function plateShape(ids, kb = PIERRE_RAW) {
     unknown,
     meal: top >= MAJOR_FROM,
     crowded: leads.length > MAX_LEADS,
+    bases: known.filter((f) => f.centre >= BASE).map((f) => f.id),
+    clash: known.filter((f) => f.centre >= BASE).length > 1,
     majors: known.filter((f) => roleOf(f.centre) === 'major').length,
   };
 }
@@ -81,6 +86,7 @@ export function partnersFor(anchorId, inventoryIds, kb = PIERRE_RAW) {
     .filter((id) => id !== anchorId)
     .map((id) => rawVector(id, kb))
     .filter((f) => f && f.centre >= MAJOR_FROM && Math.abs(a.centre - f.centre) <= CO_LEAD_MARGIN)
+    .filter((f) => !(a.centre >= BASE && f.centre >= BASE))
     .sort((x, y) => y.centre - x.centre)
     .map((f) => f.id);
 }
@@ -146,11 +152,15 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
  * like soaked poha), or both (paneer). Prep foods are listed in `prep`, where Pierre-tutor
  * starts; a food that is only prep has no raw ratings.
  */
-export function mergeRatings(kb, ratings) {
+export function mergeRatings(kb, ratings, { exclude = [] } = {}) {
   const foods = { ...(kb.foods ?? {}) };
   const prep = { ...(kb.prep ?? {}) };
+  // Foods set aside for now (too much work, or unfamiliar): kept out of training
+  // until pranjal brings them back. A later rating doesn't re-add them.
+  const excluded = [...new Set([...(kb.excluded ?? []), ...exclude])].sort();
+  for (const id of excluded) { delete foods[id]; delete prep[id]; }
   for (const [id, r] of Object.entries(ratings)) {
-    if (!/^[a-z][a-z0-9_@]*$/.test(id)) continue;
+    if (!/^[a-z][a-z0-9_@]*$/.test(id) || excluded.includes(id)) continue;
     const old = foods[id] ?? prep[id];
     if (old?.at && r.at && old.at > r.at) continue;
     if (r.prep) prep[id] = r.at ? { at: r.at } : {};
@@ -169,7 +179,7 @@ export function mergeRatings(kb, ratings) {
     };
   }
   const sorted = (o) => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]));
-  return { ...kb, foods: sorted(foods), prep: sorted(prep) };
+  return { ...kb, foods: sorted(foods), prep: sorted(prep), excluded };
 }
 
 function clamp(x, lo, hi) {

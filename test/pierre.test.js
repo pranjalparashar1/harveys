@@ -238,6 +238,38 @@ const KB = mergeRatings({ version: 1, foods: {} }, {
   butter: { texture: { creamy: 3 }, taste: { fat: 1, salt: 1 }, centre: 1 },
   makhana: { texture: { crisp: 3 }, taste: {}, centre: 3 },
   mushroom: { texture: { chewy: 2, juicy: 2 }, taste: {}, centre: 3 },
+  pasta: { texture: { chewy: 3 }, taste: { canvas: 3 }, centre: 5 },
+  dal: { texture: { creamy: 2 }, taste: { canvas: 2 }, centre: 4 },
+});
+
+test('bases: one 5 per plate; a base takes 4s but never another base', () => {
+  const clash = plateShape(['rice', 'pasta', 'onion'], KB);
+  assert.deepEqual(clash.bases.sort(), ['pasta', 'rice']);
+  assert.equal(clash.clash, true);
+  const dalChawal = plateShape(['rice', 'dal', 'butter'], KB);
+  assert.equal(dalChawal.clash, false);
+  assert.deepEqual(dalChawal.leads, ['rice', 'dal']);
+  assert.deepEqual(partnersFor('rice', ['pasta', 'dal', 'paneer', 'onion'], KB), ['dal', 'paneer']);
+  assert.deepEqual(partnersFor('dal', ['pasta', 'rice'], KB), ['pasta', 'rice'], 'a 4 can join either base');
+});
+
+test('the real brain file: issue #16 ingested', async () => {
+  const { PIERRE_RAW: kb } = await import('../src/brain/pierre-raw.js');
+  assert.equal(kb.foods.pasta.centre, 5);
+  assert.equal(kb.foods.cream.taste.canvas, 0);
+  assert.ok(kb.prep.eggs && !kb.foods.eggs, 'eggs are prep only');
+  assert.ok(kb.prep.paneer && kb.foods.paneer, 'paneer is rated and prep');
+  for (const id of ['rice', 'oats', 'bread', 'pasta']) assert.equal(kb.foods[id].centre, 5, `${id} is a base`);
+  for (const id of ['moong_dal', 'masoor_dal', 'toor_dal', 'rajma', 'chickpeas']) assert.equal(kb.foods[id].centre, 4, id);
+  assert.ok(kb.excluded.includes('spinach') && !kb.prep.spinach, 'spinach set aside');
+});
+
+test('excluded foods leave the brain and stay out on later ingests', () => {
+  const kb = mergeRatings({ foods: {}, prep: { spinach: {}, eggs: {} } }, {}, { exclude: ['spinach'] });
+  assert.deepEqual(Object.keys(kb.prep), ['eggs']);
+  const again = mergeRatings(kb, { spinach: { prep: true, at: '2027-01-01T00:00:00Z' } });
+  assert.ok(!again.prep.spinach);
+  assert.deepEqual(again.excluded, ['spinach']);
 });
 
 test('centrality: major from 3, co-leads within 1 of the anchor, pull doubles per step', () => {

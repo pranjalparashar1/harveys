@@ -1,5 +1,6 @@
 // Pulls a Pierre-trainer "Send to Marco" export into Marco's brain file.
 //   node scripts/ingest-pierre.mjs export.txt      (or pipe the text in)
+//   node scripts/ingest-pierre.mjs --exclude spinach,okra   (set foods aside)
 // Rewrites src/brain/pierre-raw.js. Newer ratings of the same food win.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { decodePayload } from '../src/quiz/quiz.js';
@@ -15,11 +16,13 @@ export function renderBrainFile(kb) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const text = readFileSync(process.argv[2] ?? 0, 'utf8');
-  const ratings = decodePayload(text);
+  const args = process.argv.slice(2);
+  const ex = args.indexOf('--exclude');
+  const exclude = ex >= 0 ? args.splice(ex, 2)[1].split(',').map((s) => s.trim()).filter(Boolean) : [];
+  const ratings = args[0] || !exclude.length ? decodePayload(readFileSync(args[0] ?? 0, 'utf8')) : {};
   const n = Object.keys(ratings).length;
-  if (!n) throw new Error('no ratings found in that text');
-  const kb = mergeRatings(PIERRE_RAW, ratings);
+  if (!n && !exclude.length) throw new Error('no ratings found in that text');
+  const kb = mergeRatings(PIERRE_RAW, ratings, { exclude });
   writeFileSync(FILE, renderBrainFile(kb));
   console.log(`ingested ${n} foods; the brain file now has ${Object.keys(kb.foods).length}`);
 }
