@@ -11,7 +11,9 @@
 import { PIERRE_RAW } from './pierre-raw.js';
 
 export const TEXTURES = ['crisp', 'creamy', 'chewy', 'juicy', 'flaky'];
-export const TASTES = ['salt', 'sugar', 'fat', 'acid', 'heat', 'fresh'];
+// Taste is 0–3 per element, like texture. `canvas` is the sixth dimension: how much
+// the food's flavour comes from the technique or what's added (tofu, rice: high).
+export const TASTES = ['salt', 'sugar', 'fat', 'acid', 'heat', 'canvas', 'fresh'];
 export const CENTRE_LABELS = { 1: 'accent', 2: 'support', 3: 'partner', 4: 'centre', 5: 'meal' };
 
 /** A food's raw entry in vector form, or null if it hasn't been rated. */
@@ -21,7 +23,7 @@ export function rawVector(id, kb = PIERRE_RAW) {
   return {
     id,
     texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(f.texture?.[k] ?? 0, 0, 3)])),
-    taste: Object.fromEntries(TASTES.map((k) => [k, clamp(f.taste?.[k] ?? 0, 0, 1)])),
+    taste: Object.fromEntries(TASTES.map((k) => [k, clamp(f.taste?.[k] ?? 0, 0, 3)])),
     centre: clamp(f.centre ?? 2, 1, 5),
   };
 }
@@ -105,7 +107,7 @@ export function partVector(part, kb = PIERRE_RAW, techniques = TECHNIQUES) {
     ...raw,
     technique,
     texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(raw.texture[k] + (effect.texture?.[k] ?? 0), 0, 3)])),
-    taste: Object.fromEntries(TASTES.map((k) => [k, clamp(raw.taste[k] + (effect.taste?.[k] ?? 0), 0, 1)])),
+    taste: Object.fromEntries(TASTES.map((k) => [k, clamp(raw.taste[k] + (effect.taste?.[k] ?? 0), 0, 3)])),
     source: 'technique',
   };
 }
@@ -122,12 +124,16 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
   if (!vs.length) return null;
   const total = vs.reduce((s, v) => s + pullOf(v.centre), 0);
   const texture = Object.fromEntries(TEXTURES.map((k) => [k, vs.reduce((s, v) => s + pullOf(v.centre) * v.texture[k], 0) / total]));
-  const taste = Object.fromEntries(TASTES.map((k) => [k, Math.max(...vs.map((v) => v.taste[k]))]));
+  // Flavours: the strongest any part brings. Canvas: centre-weighted, like texture
+  // (a dish anchored on tofu stays a canvas even with a little salty cheese).
+  const taste = Object.fromEntries(TASTES.map((k) => [k, k === 'canvas'
+    ? vs.reduce((s, v) => s + pullOf(v.centre) * v.taste[k], 0) / total
+    : Math.max(...vs.map((v) => v.taste[k]))]));
   return {
     texture,
     taste,
     textures: TEXTURES.filter((k) => texture[k] >= 1.5),
-    tastes: TASTES.filter((k) => taste[k] > 0),
+    tastes: TASTES.filter((k) => k !== 'canvas' && taste[k] > 0),
     shape: plateShape(vs.map((v) => v.id), kb),
     missing: parts.map((p) => (typeof p === 'string' ? p : p.id)).filter((id) => !rawVector(id, kb)),
   };
@@ -155,7 +161,8 @@ export function mergeRatings(kb, ratings) {
     }
     foods[id] = {
       texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(Math.round(r.texture?.[k] ?? 0), 0, 3)])),
-      taste: Object.fromEntries(TASTES.map((k) => [k, r.taste?.[k] ? 1 : 0])),
+      taste: Object.fromEntries(TASTES.map((k) => [k, clamp(Math.round(r.taste?.[k] ?? 0), 0, 3)])),
+      ...(r.tasteAssumed ? { tasteAssumed: true } : {}),
       centre: clamp(Math.round(r.centre ?? 2), 1, 5),
       role: roleOf(r.centre ?? 2),
       ...(r.at ? { at: r.at } : {}),

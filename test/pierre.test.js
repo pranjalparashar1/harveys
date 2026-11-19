@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  validateQuiz, blankState, startRound, queue, tapTexture, tapTaste, tapCentre, tapPrep, tapRated,
+  validateQuiz, blankState, startRound, queue, tapTexture, tapTaste, tapCentre, tapPrep, tapRated, upgradeAnswer,
   canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload, decodePayload, STEPS,
 } from '../src/quiz/quiz.js';
 import { rawVector, roleOf, plateShape, partnersFor, dishProfile, partVector, mergeRatings, pullOf } from '../src/brain/ingredients.js';
@@ -21,7 +21,7 @@ test('the quiz file is valid: veg and egg foods, no spices or condiments', () =>
   assert.ok(ids.includes('bread') && !ids.includes('protein_bread'), 'plain bread; protein bread is a macro modifier for later');
   for (const banned of ['chicken', 'tuna', 'salt', 'turmeric', 'garam_masala', 'ketchup', 'mayo', 'oil']) assert.ok(!ids.includes(banned), banned);
   assert.deepEqual(quiz.textures.map((t) => t.id), ['crisp', 'creamy', 'chewy', 'juicy', 'flaky']);
-  assert.deepEqual(quiz.tastes.map((t) => t.id), ['salt', 'sugar', 'fat', 'acid', 'heat', 'fresh']);
+  assert.deepEqual(quiz.tastes.map((t) => t.id), ['salt', 'sugar', 'fat', 'acid', 'heat', 'canvas', 'fresh']);
   assert.deepEqual(quiz.centre.map((c) => c.value), [1, 2, 3, 4, 5]);
   assert.throws(() => validateQuiz({ ...quiz, foods: [...quiz.foods, quiz.foods[0]] }), /twice/);
 });
@@ -44,9 +44,12 @@ test('every tap toggles: a second tap on the same option undoes it', () => {
   assert.equal(d.texture.creamy, 2);
   d = tapTexture(d, 'creamy', 2);
   assert.equal(d.texture.creamy, 0);
-  d = tapTaste(d, 'fat');
-  assert.equal(d.taste.fat, 1);
-  assert.equal(tapTaste(d, 'fat').taste.fat, 0);
+  d = tapTaste(d, 'fat', 3);
+  assert.equal(d.taste.fat, 3);
+  d = tapTaste(d, 'fat', 1);
+  assert.equal(d.taste.fat, 1, 'a different level replaces it');
+  assert.equal(tapTaste(d, 'fat', 1).taste.fat, 0);
+  assert.equal(tapTaste(d, 'canvas', 3).taste.canvas, 3);
   d = tapCentre(d, 4);
   assert.equal(d.centre, 4);
   assert.equal(tapCentre(d, 4).centre, null);
@@ -87,7 +90,7 @@ test('Back goes to the previous step, then into the previous food with its answe
   assert.equal(s.round.step, 0);
   assert.equal(s.round.draft.texture.chewy, 2, 'the texture is still there');
   s = advance(quiz, advance(quiz, s));
-  s = { ...s, round: { ...s.round, draft: tapCentre(tapTaste(s.round.draft, 'fat'), 4) } };
+  s = { ...s, round: { ...s.round, draft: tapCentre(tapTaste(s.round.draft, 'fat', 2), 4) } };
   s = advance(quiz, s);
   assert.equal(s.round.ids[s.round.i], second);
   s = back(quiz, s);
@@ -96,7 +99,7 @@ test('Back goes to the previous step, then into the previous food with its answe
   assert.equal(s.round.draft.centre, 4);
   s = back(quiz, s);
   assert.equal(s.round.step, 1, 'to the taste step');
-  s = { ...s, round: { ...s.round, draft: tapTaste(s.round.draft, 'salt') } };
+  s = { ...s, round: { ...s.round, draft: tapTaste(s.round.draft, 'salt', 1) } };
   s = advance(quiz, advance(quiz, s), new Date('2026-11-19T13:00:00Z'));
   assert.equal(s.answers[first].taste.salt, 1, 'the fix is saved');
   assert.equal(s.answers[first].texture.chewy, 2);
@@ -149,8 +152,8 @@ test('a food is rated, part of prep, or both, and the export and brain file carr
   };
   const text = encodePayload(quiz, answers);
   assert.match(text, /^poha \| prep \| 2026-11-19T12:00:00.000Z$/m);
-  assert.match(text, /^paneer \| t 0\.3\.0\.0\.0 \| s fat \| c 4 \| prep \| 2026-11-19T12:01:00.000Z$/m);
-  assert.match(text, /^eggs \| t 0\.2\.0\.0\.0 \| s fat \| c 3 \| 2026-11-19T12:02:00.000Z$/m);
+  assert.match(text, /^paneer \| t 0\.3\.0\.0\.0 \| s 0\.0\.1\.0\.0\.0\.0 \| c 4 \| prep \| 2026-11-19T12:01:00.000Z$/m);
+  assert.match(text, /^eggs \| t 0\.2\.0\.0\.0 \| s 0\.0\.1\.0\.0\.0\.0 \| c 3 \| 2026-11-19T12:02:00.000Z$/m);
   const backText = decodePayload(text);
   assert.deepEqual(backText.poha, { prep: true, at: '2026-11-19T12:00:00.000Z' });
   assert.equal(backText.paneer.prep, true);
@@ -165,6 +168,32 @@ test('a food is rated, part of prep, or both, and the export and brain file carr
   assert.equal(rawVector('paneer', kb).centre, 4);
 });
 
+test('taste is 0–3 with canvas, and pre-1.6 answers read as Medium, marked assumed', () => {
+  const answers = {
+    paneer: { texture: {}, taste: { fat: 2, canvas: 2 }, centre: 4, v: 2, at: '2026-11-19T13:00:00.000Z' },
+    cheese_slices: { texture: {}, taste: { fat: 3, salt: 2, acid: 1 }, centre: 2, v: 2, at: '2026-11-19T13:00:00.000Z' },
+    tofu: upgradeAnswer({ texture: {}, taste: { salt: 0, sugar: 1, fat: 0 }, centre: 3, at: '2026-11-19T12:00:00.000Z' }),
+  };
+  assert.equal(answers.tofu.taste.sugar, 2);
+  assert.equal(answers.tofu.tasteAssumed, true);
+  assert.equal(upgradeAnswer(answers.paneer), answers.paneer, 'new answers are left alone');
+  const text = encodePayload(quiz, answers);
+  assert.match(text, /^tastes salt\.sugar\.fat\.acid\.heat\.canvas\.fresh$/m);
+  assert.match(text, /^cheese_slices \| t 0\.0\.0\.0\.0 \| s 2\.0\.3\.1\.0\.0\.0 \| c 2 \| /m);
+  assert.match(text, /^tofu \| .* \| c 3 \| assumed \| /m);
+  const back = decodePayload(text);
+  assert.ok(back.cheese_slices.taste.fat > back.paneer.taste.fat, 'cheese is more fat than paneer');
+  assert.equal(back.paneer.taste.canvas, 2);
+  assert.equal(back.tofu.tasteAssumed, true);
+  // A v1 export (taste names only) still reads.
+  const v1 = decodePayload('#marco pierre-trainer v1\ntextures crisp.creamy.chewy.juicy.flaky\nbread | t 0.1.1.0.1 | s salt sugar | c 3 | 2026-11-19T12:00:00.000Z');
+  assert.deepEqual([v1.bread.taste.salt, v1.bread.taste.sugar, v1.bread.tasteAssumed], [2, 2, true]);
+  const kb = mergeRatings({ version: 1, foods: {} }, back);
+  assert.equal(kb.foods.cheese_slices.taste.fat, 3);
+  assert.equal(kb.foods.tofu.tasteAssumed, true);
+  assert.equal(rawVector('paneer', kb).taste.canvas, 2);
+});
+
 test('the Send to Marco text round-trips', () => {
   const answers = {
     paneer: { texture: { crisp: 0, creamy: 3, chewy: 2, juicy: 1, flaky: 0 }, taste: { salt: 0, sugar: 0, fat: 1, acid: 0, heat: 0, fresh: 0 }, centre: 4, at: '2026-11-19T12:00:00.000Z' },
@@ -172,15 +201,15 @@ test('the Send to Marco text round-trips', () => {
     makhana: { texture: { crisp: 3, creamy: 0, chewy: 0, juicy: 0, flaky: 1 }, taste: { salt: 0, sugar: 0, fat: 0, acid: 0, heat: 0, fresh: 0 }, centre: 3, at: '2026-11-19T12:02:00.000Z' },
   };
   const text = encodePayload(quiz, answers);
-  assert.match(text, /^#marco pierre-trainer v1/);
-  assert.match(text, /paneer \| t 0\.3\.2\.1\.0 \| s fat \| c 4/);
-  assert.match(text, /makhana \| t 3\.0\.0\.0\.1 \| s - \| c 3/);
+  assert.match(text, /^#marco pierre-trainer v2/);
+  assert.match(text, /paneer \| t 0\.3\.2\.1\.0 \| s 0\.0\.1\.0\.0\.0\.0 \| c 4/);
+  assert.match(text, /makhana \| t 3\.0\.0\.0\.1 \| s 0\.0\.0\.0\.0\.0\.0 \| c 3/);
   const back = decodePayload('Here you go:\n```\n' + text + '\n```\n');
   assert.equal(back.paneer.texture.creamy, 3);
   assert.equal(back.paneer.taste.fat, 1);
   assert.equal(back.cheese_slices.taste.acid, 1);
   assert.equal(back.makhana.centre, 3);
-  assert.deepEqual(Object.keys(back.makhana.taste), []);
+  assert.ok(Object.values(back.makhana.taste).every((v) => v === 0));
   assert.throws(() => decodePayload('hello'), /not a Pierre-trainer/);
   // A prefilled GitHub issue for every food still fits in a URL.
   const all = Object.fromEntries(quiz.foods.map((f) => [f.id, { ...answers.cheese_slices }]));

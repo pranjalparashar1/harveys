@@ -39,31 +39,13 @@
     "High"
   ],
   "tastes": [
-    {
-      "id": "salt",
-      "label": "Salt"
-    },
-    {
-      "id": "sugar",
-      "label": "Sweet"
-    },
-    {
-      "id": "fat",
-      "label": "Fat"
-    },
-    {
-      "id": "acid",
-      "label": "Acid"
-    },
-    {
-      "id": "heat",
-      "label": "Heat"
-    },
-    {
-      "id": "fresh",
-      "label": "Fresh",
-      "bonus": true
-    }
+    { "id": "salt", "label": "Salt" },
+    { "id": "sugar", "label": "Sweet" },
+    { "id": "fat", "label": "Fat" },
+    { "id": "acid", "label": "Acid" },
+    { "id": "heat", "label": "Heat" },
+    { "id": "canvas", "label": "Canvas", "line": "Its flavour comes from the technique or what's added" },
+    { "id": "fresh", "label": "Fresh", "bonus": true }
   ],
   "centre": [
     {

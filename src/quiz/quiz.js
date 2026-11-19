@@ -5,7 +5,7 @@
 // toggles, and Back steps to the previous screen, into the previous food too. Pure logic only (no DOM), so it is tested in Node.
 
 export const STEPS = ['texture', 'taste', 'centre'];
-export const HEADER = '#marco pierre-trainer v1';
+export const HEADER = '#marco pierre-trainer v2';
 
 /** Checks a quiz file and fills in defaults. Throws with every problem at once. */
 export function validateQuiz(q) {
@@ -55,8 +55,20 @@ export function tapTexture(draft, key, level) {
   const now = draft.texture[key] === level ? 0 : level;
   return { ...draft, texture: { ...draft.texture, [key]: now } };
 }
-export function tapTaste(draft, key) {
-  return { ...draft, taste: { ...draft.taste, [key]: draft.taste[key] ? 0 : 1 } };
+/** Taste level 0–3, like texture (1.6.0: cheese is more fat than paneer). Same level again turns it back to none. */
+export function tapTaste(draft, key, level) {
+  const now = draft.taste[key] === level ? 0 : level;
+  return { ...draft, taste: { ...draft.taste, [key]: now } };
+}
+
+/**
+ * Answers saved before 1.6.0 marked a taste as present (1) with no level. They read as
+ * Medium (2), and are flagged so the ingest knows the level was assumed.
+ */
+export function upgradeAnswer(a) {
+  if (!a || a.v >= 2 || !isRated(a)) return a;
+  const taste = Object.fromEntries(Object.entries(a.taste ?? {}).map(([k, v]) => [k, v ? 2 : 0]));
+  return { ...a, taste, v: 2, tasteAssumed: true };
 }
 export function tapCentre(draft, value) {
   return { ...draft, centre: draft.centre === value ? null : value };
@@ -81,7 +93,7 @@ export function advance(quiz, state, now = new Date()) {
   const d = r.draft;
   if (d.rated && r.step < STEPS.length - 1) return { ...state, round: { ...r, step: r.step + 1 } };
   const answer = d.rated
-    ? { texture: d.texture, taste: d.taste, centre: d.centre, ...(d.prep ? { prep: true } : {}) }
+    ? { texture: d.texture, taste: d.taste, centre: d.centre, v: 2, ...(d.prep ? { prep: true } : {}) }
     : { prep: true };
   const answers = { ...state.answers, [r.ids[r.i]]: { ...answer, at: now.toISOString() } };
   return { ...state, answers, round: { ...r, i: r.i + 1, step: 0, draft: blankDraft(quiz) } };
@@ -110,8 +122,10 @@ export const markSent = (state, ids, now = new Date()) => ({ ...state, sent: { .
 
 // ── "Send to Marco": a plain-text payload ───────────────────────────────────
 // One food per line, readable by a person and parsed by scripts/ingest-pierre.mjs:
-//   paneer | t 0.3.2.1.0 | s fat | c 4 | 2026-11-19T11:30:00.000Z
-// t = crisp.creamy.chewy.juicy.flaky (0–3), s = tastes present (or -), c = centre 1–5.
+//   paneer | t 0.3.2.1.0 | s 0.0.2.0.0.1.0 | c 4 | 2026-11-19T11:30:00.000Z
+// t = crisp.creamy.chewy.juicy.flaky (0–3), s = salt.sugar.fat.acid.heat.canvas.fresh
+// (0–3; the orders are in the export's "textures" and "tastes" lines), c = centre 1–5.
+// "| assumed" marks a pre-1.6 answer whose taste levels were guessed as Medium.
 // "Part of prep" adds "| prep" (paneer: rated and prep). A food that is only prep
 // has no ratings:
 //   paneer | t 0.3.2.1.0 | s fat | c 4 | prep | 2026-11-19T11:30:00.000Z
@@ -122,10 +136,9 @@ export function encodePayload(quiz, answers, ids = Object.keys(answers)) {
   const lines = ids.filter((id) => answers[id]).map((id) => {
     const a = answers[id];
     if (!isRated(a)) return `${id} | prep | ${a.at}`;
-    const s = tas.filter((k) => a.taste[k]);
-    return `${id} | t ${tex.map((k) => a.texture[k] ?? 0).join('.')} | s ${s.length ? s.join(' ') : '-'} | c ${a.centre}${a.prep ? ' | prep' : ''} | ${a.at}`;
+    return `${id} | t ${tex.map((k) => a.texture[k] ?? 0).join('.')} | s ${tas.map((k) => a.taste[k] ?? 0).join('.')} | c ${a.centre}${a.prep ? ' | prep' : ''}${a.tasteAssumed ? ' | assumed' : ''} | ${a.at}`;
   });
-  return [HEADER, `textures ${tex.join('.')}`, ...lines].join('\n');
+  return [HEADER, `textures ${tex.join('.')}`, `tastes ${tas.join('.')}`, ...lines].join('\n');
 }
 
 export function decodePayload(text) {
@@ -133,19 +146,25 @@ export function decodePayload(text) {
   if (!lines.some((l) => l.startsWith('#marco pierre-trainer'))) throw new Error('not a Pierre-trainer export');
   const texLine = lines.find((l) => l.startsWith('textures '));
   const tex = texLine ? texLine.slice(9).trim().split('.') : ['crisp', 'creamy', 'chewy', 'juicy', 'flaky'];
+  const tasLine = lines.find((l) => l.startsWith('tastes '));
+  const tas = tasLine ? tasLine.slice(7).trim().split('.') : ['salt', 'sugar', 'fat', 'acid', 'heat', 'canvas', 'fresh'];
   const out = {};
   for (const l of lines) {
     const p = /^([a-z][a-z0-9_@]*)\s*\|\s*prep(?:\s*\|\s*(\S+))?$/.exec(l);
     if (p) { out[p[1]] = { prep: true, ...(p[2] ? { at: p[2] } : {}) }; continue; }
-    const m = /^([a-z][a-z0-9_@]*)\s*\|\s*t\s+([0-3](?:\.[0-3])*)\s*\|\s*s\s+([a-z -]+?)\s*\|\s*c\s+([1-5])(\s*\|\s*prep)?(?:\s*\|\s*(\S+))?$/.exec(l);
+    const m = /^([a-z][a-z0-9_@]*)\s*\|\s*t\s+([0-3](?:\.[0-3])*)\s*\|\s*s\s+([a-z0-9 .-]+?)\s*\|\s*c\s+([1-5])(\s*\|\s*prep)?(\s*\|\s*assumed)?(?:\s*\|\s*(\S+))?$/.exec(l);
     if (!m) continue;
     const levels = m[2].split('.').map(Number);
     out[m[1]] = {
       texture: Object.fromEntries(tex.map((k, i) => [k, levels[i] ?? 0])),
-      taste: Object.fromEntries((m[3] === '-' ? [] : m[3].split(/\s+/)).map((k) => [k, 1])),
+      // v2: levels in the "tastes" order; v1 listed the tastes present, read as Medium.
+      ...(/^[0-3](\.[0-3])*$/.test(m[3])
+        ? { taste: Object.fromEntries(tas.map((k, i) => [k, Number(m[3].split('.')[i] ?? 0)])) }
+        : { taste: Object.fromEntries((m[3] === '-' ? [] : m[3].split(/\s+/)).map((k) => [k, 2])), tasteAssumed: true }),
       centre: Number(m[4]),
       ...(m[5] ? { prep: true } : {}),
-      ...(m[6] ? { at: m[6] } : {}),
+      ...(m[6] ? { tasteAssumed: true } : {}),
+      ...(m[7] ? { at: m[7] } : {}),
     };
   }
   return out;
