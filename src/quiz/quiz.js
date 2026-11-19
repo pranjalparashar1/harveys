@@ -9,16 +9,19 @@
 export const STEPS = ['texture', 'taste', 'centre'];
 export const HEADER = '#harveys pierre-trainer v3';
 // Pierre-tutor (1.8.0) rates a food cooked one way ("paneer@pan_fried") with the
-// same engine: texture, taste, then "Usable?" instead of the centre:
-//   2 as it is (scrambled eggs), 1 only as a step that gets cooked further
-//   (boiled soya chunks, then air-fried), 0 not usable (a veto).
-// Usable says nothing about taste, which the texture and taste ratings carry.
-// 1.8.1 replaced the pass/meh/fail verdict.
+// same engine: texture, taste, then how READY it is, instead of the centre (1.8.1):
+//   4 eat it as it is (salted scrambled eggs)
+//   3 needs only seasoning (paneer scrambled, no salt yet)
+//   2 needs something added (a sauce, chutney or masala)
+//   1 needs another cooking step (boiled soya chunks, then air-fried)
+//   0 inedible: a veto (microwaved paneer)
+// Readiness says nothing about taste, which the texture and taste ratings carry;
+// it feeds Marco as finishing friction.
 export const TUTOR_HEADER = '#harveys pierre-tutor v1';
 export const stepsOf = (quiz) => quiz?.steps ?? STEPS;
 const headerOf = (quiz) => (quiz?.id === 'pierre-tutor' ? TUTOR_HEADER : HEADER);
-// The last step is a pick the food can't go on without: its centre, or whether it's usable.
-const PICKS = { centre: 'centre', usable: 'usable' };
+// The last step is a pick the food can't go on without: its centre, or how ready it is.
+const PICKS = { centre: 'centre', ready: 'ready' };
 
 /** Checks a quiz file and fills in defaults. Throws with every problem at once. */
 export function validateQuiz(q) {
@@ -44,19 +47,13 @@ export const blankDraft = (quiz) => ({
   texture: Object.fromEntries(quiz.textures.map((t) => [t.id, 0])),
   taste: Object.fromEntries(quiz.tastes.map((t) => [t.id, 0])),
   centre: null,
-  usable: null, // Pierre-tutor: 2 as it is, 1 only as a step, 0 no (a veto)
+  ready: null, // Pierre-tutor: 0–4, see the top of this file
   rated: true,  // rate its texture, taste and centre
   prep: false,  // part of prep, needs further processing (soaked poha, whey)
   removed: false, // take it off the list: not for now (too much work, never cooked it)
 });
 // A food is rated, part of prep, or both (paneer). An answer has ratings when it has a centre.
-export const isRated = (a) => a?.centre != null || a?.usable != null;
-/** 1.8.0 answers had a verdict (2 pass, 1 meh, 0 fail): pass and meh are usable as they are, fail isn't usable. */
-export function upgradeTutorAnswer(a) {
-  if (!a || a.verdict == null || a.usable != null) return a;
-  const { verdict, ...rest } = a;
-  return { ...rest, usable: verdict > 0 ? 2 : 0 };
-}
+export const isRated = (a) => a?.centre != null || a?.ready != null;
 export const isRemoved = (a) => !!a?.removed;
 
 /** Foods not yet rated, the user's own kitchen (or everyday foods) first, each group shuffled. */
@@ -97,9 +94,9 @@ export function upgradeAnswer(a) {
 export function tapCentre(draft, value) {
   return { ...draft, centre: draft.centre === value ? null : value };
 }
-/** "Usable?" for a food cooked one way: 2 as it is, 1 only as a step, 0 no. Tap again to clear. */
-export function tapUsable(draft, value) {
-  return { ...draft, usable: draft.usable === value ? null : value };
+/** How ready a food cooked one way is, 0–4. Tap again to clear. */
+export function tapReady(draft, value) {
+  return { ...draft, ready: draft.ready === value ? null : value };
 }
 
 /** "Part of prep, needs further processing": flagged for Pierre-tutor, with or without ratings. */
@@ -116,7 +113,7 @@ export function tapRemove(draft) {
   return { ...draft, removed: !draft.removed };
 }
 
-/** A food needs at least one of the two, or to be removed. Texture and taste can be all-none; a rated food needs its pick (centre, or usable). */
+/** A food needs at least one of the two, or to be removed. Texture and taste can be all-none; a rated food needs its pick (centre, or readiness). */
 export const canAdvance = (step, draft, steps = STEPS) => {
   if (draft.removed) return true;
   if (!draft.rated) return draft.prep;
@@ -150,7 +147,7 @@ export function back(quiz, state) {
   const blank = blankDraft(quiz);
   const rated = !a || isRated(a);
   const draft = !a ? blank : isRemoved(a) ? { ...blank, removed: true } : {
-    texture: { ...blank.texture, ...a.texture }, taste: { ...blank.taste, ...a.taste }, centre: a.centre ?? null, usable: a.usable ?? null, rated, prep: !!a.prep,
+    texture: { ...blank.texture, ...a.texture }, taste: { ...blank.taste, ...a.taste }, centre: a.centre ?? null, ready: a.ready ?? null, rated, prep: !!a.prep,
   };
   return { ...state, round: { ...r, i, step: rated && !draft.removed ? stepsOf(quiz).length - 1 : 0, draft } };
 }
@@ -181,8 +178,8 @@ export function encodePayload(quiz, answers, ids = Object.keys(answers)) {
     const a = { ...answers[id], at: minute(answers[id].at) };
     if (isRemoved(a)) return `${id} | remove | ${a.at}`;
     if (!isRated(a)) return `${id} | prep | ${a.at}`;
-    // Pierre-tutor: u = usable (2 as it is, 1 only as a step, 0 no) in place of the centre.
-    if (a.usable != null) return `${id} | t ${tex.map((k) => a.texture[k] ?? 0).join('.')} | s ${tas.map((k) => a.taste[k] ?? 0).join('.')} | u ${a.usable} | ${a.at}`;
+    // Pierre-tutor: r = readiness 0–4 in place of the centre.
+    if (a.ready != null) return `${id} | t ${tex.map((k) => a.texture[k] ?? 0).join('.')} | s ${tas.map((k) => a.taste[k] ?? 0).join('.')} | r ${a.ready} | ${a.at}`;
     return `${id} | t ${tex.map((k) => a.texture[k] ?? 0).join('.')} | s ${tas.map((k) => a.taste[k] ?? 0).join('.')} | c ${a.centre}${a.prep ? ' | prep' : ''}${a.tasteAssumed ? ' | assumed' : ''} | ${a.at}`;
   });
   return [headerOf(quiz), `textures ${tex.join('.')}`, `tastes ${tas.join('.')}`, ...lines].join('\n');
@@ -199,14 +196,13 @@ export function decodePayload(text) {
   for (const l of lines) {
     const p = /^([a-z][a-z0-9_@]*)\s*\|\s*(prep|remove)(?:\s*\|\s*(\S+))?$/.exec(l);
     if (p) { out[p[1]] = { [p[2] === 'remove' ? 'remove' : 'prep']: true, ...(p[3] ? { at: p[3] } : {}) }; continue; }
-    const v = /^([a-z][a-z0-9_@]*)\s*\|\s*t\s+([0-3](?:\.[0-3])*)\s*\|\s*s\s+([0-3](?:\.[0-3])*)\s*\|\s*([uv])\s+([0-2])(?:\s*\|\s*(\S+))?$/.exec(l);
+    const v = /^([a-z][a-z0-9_@]*)\s*\|\s*t\s+([0-3](?:\.[0-3])*)\s*\|\s*s\s+([0-3](?:\.[0-3])*)\s*\|\s*r\s+([0-4])(?:\s*\|\s*(\S+))?$/.exec(l);
     if (v) {
       out[v[1]] = {
         texture: Object.fromEntries(tex.map((k, i) => [k, Number(v[2].split('.')[i] ?? 0)])),
         taste: Object.fromEntries(tas.map((k, i) => [k, Number(v[3].split('.')[i] ?? 0)])),
-        // u: usable 2/1/0. v (1.8.0 verdict): pass and meh are usable as they are, fail isn't.
-        usable: v[4] === 'u' ? Number(v[5]) : Number(v[5]) > 0 ? 2 : 0,
-        ...(v[6] ? { at: v[6] } : {}),
+        ready: Number(v[4]),
+        ...(v[5] ? { at: v[5] } : {}),
       };
       continue;
     }

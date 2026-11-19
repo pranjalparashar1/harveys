@@ -3,12 +3,12 @@
   "version": 1,
   "id": "pierre-tutor",
   "title": "Pierre-tutor",
-  "purpose": "Rate a food cooked one way on Pierre's two sides, and say whether it's usable at all.",
+  "purpose": "Rate a food cooked one way on Pierre's two sides, and how ready it is to eat.",
   "round": 7,
   "steps": [
     "texture",
     "taste",
-    "usable"
+    "ready"
   ],
   "kinds": false,
   "textures": [
@@ -71,20 +71,30 @@
       "bonus": true
     }
   ],
-  "usable": [
+  "ready": [
+    {
+      "value": 4,
+      "label": "Eat it as it is",
+      "line": "Salted scrambled eggs."
+    },
+    {
+      "value": 3,
+      "label": "Needs only seasoning",
+      "line": "Paneer scrambled with no salt yet."
+    },
     {
       "value": 2,
-      "label": "Yes, as it is",
-      "line": "Done this way, it can go on a plate."
+      "label": "Needs something added",
+      "line": "A sauce, a chutney or a masala."
     },
     {
       "value": 1,
-      "label": "Only as a step",
-      "line": "Not eaten like this, but cooked further. Boiled soya chunks, then air-fried."
+      "label": "Needs another cooking step",
+      "line": "Boiled soya chunks, then fried or air-fried."
     },
     {
       "value": 0,
-      "label": "No",
+      "label": "Inedible",
       "line": "Nobody would make it this way. Harvey’s never suggests it."
     }
   ],

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   validateQuiz, blankState, startRound, queue, tapTexture, tapTaste, tapCentre, tapPrep, tapRated, tapRemove, upgradeAnswer,
-  canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload, decodePayload, STEPS, stepsOf, tapUsable, upgradeTutorAnswer,
+  canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload, decodePayload, STEPS, stepsOf, tapReady,
 } from '../src/quiz/quiz.js';
 import { rawVector, roleOf, plateShape, partnersFor, dishProfile, partVector, mergeRatings, pullOf } from '../src/brain/ingredients.js';
 import { renderBrainFile } from '../scripts/ingest-pierre.mjs';
@@ -336,19 +336,20 @@ test('dish profile: the anchor dominates texture, any part brings a taste', () =
 });
 
 test('the technique layer: a rated "food@technique" wins, an unknown technique falls back to raw', () => {
-  const kb = mergeRatings({ foods: KB.foods }, { 'paneer@fried': { texture: { crisp: 2, creamy: 2, chewy: 2 }, taste: { fat: 1, salt: 0 }, usable: 2 } });
+  const kb = mergeRatings({ foods: KB.foods }, { 'paneer@fried': { texture: { crisp: 2, creamy: 2, chewy: 2 }, taste: { fat: 1, salt: 0 }, ready: 3 } });
   assert.ok(kb.tech['paneer@fried'] && !kb.foods['paneer@fried'], 'cooked ratings live in tech');
   const fried = partVector({ id: 'paneer', technique: 'fried' }, kb);
   assert.equal(fried.source, 'rated');
   assert.equal(fried.texture.crisp, 2);
   assert.equal(fried.centre, KB.foods.paneer.centre, 'the centre is the food’s own');
-  assert.equal(fried.usable, 'yes');
-  assert.deepEqual(dishProfile([{ id: 'paneer', technique: 'fried' }, 'onion'], kb).unusable, []);
-  const vetoed = mergeRatings(kb, { 'paneer@microwaved': { texture: { chewy: 3 }, taste: {}, usable: 0 } });
-  assert.deepEqual(dishProfile([{ id: 'paneer', technique: 'microwaved' }, 'onion'], vetoed).unusable, ['paneer@microwaved']);
-  const step = mergeRatings(kb, { 'paneer@boiled': { texture: { creamy: 2 }, taste: {}, usable: 1 } });
+  assert.equal(fried.ready, 3);
+  const p1 = dishProfile([{ id: 'paneer', technique: 'fried' }, 'onion'], kb);
+  assert.deepEqual([p1.inedible, p1.finish], [[], { 'paneer@fried': 'needs seasoning' }]);
+  const vetoed = mergeRatings(kb, { 'paneer@microwaved': { texture: { chewy: 3 }, taste: {}, ready: 0 } });
+  assert.deepEqual(dishProfile([{ id: 'paneer', technique: 'microwaved' }, 'onion'], vetoed).inedible, ['paneer@microwaved']);
+  const step = mergeRatings(kb, { 'paneer@boiled': { texture: { creamy: 2 }, taste: {}, ready: 1 } });
   const p2 = dishProfile([{ id: 'paneer', technique: 'boiled' }], step);
-  assert.deepEqual([p2.unusable, p2.unfinished], [[], ['paneer@boiled']], 'a step is not a veto, but not the last technique either');
+  assert.deepEqual([p2.inedible, p2.unfinished], [[], ['paneer@boiled']], 'another step is not a veto, but not the last technique either');
   const boiled = partVector({ id: 'paneer', technique: 'boiled' }, kb);
   assert.match(boiled.source, /^raw/);
   const shifted = partVector({ id: 'paneer', technique: 'airfried' }, kb, { airfried: { texture: { crisp: 2, juicy: -1 } } });
@@ -370,7 +371,8 @@ const tutor = validateQuiz(JSON.parse(readFileSync(new URL('../src/quiz/pierre-t
 test('Pierre-tutor: pairs come from prep foods (and the tutor list), never a set-aside food', async () => {
   const { PIERRE_RAW: kb } = await import('../src/brain/pierre-raw.js');
   const tutorList = quiz.tutor.map((f) => f.id);
-  assert.deepEqual(stepsOf(tutor), ['texture', 'taste', 'usable']);
+  assert.deepEqual(stepsOf(tutor), ['texture', 'taste', 'ready']);
+  assert.deepEqual(tutor.ready.map((r) => r.value), [4, 3, 2, 1, 0]);
   assert.ok(tutor.foods.length >= 45);
   // One food, one technique, a repeatable result (pranjal, 19 Nov): nothing whose
   // result depends on other ingredients.
@@ -386,7 +388,7 @@ test('Pierre-tutor: pairs come from prep foods (and the tutor list), never a set
   for (const id of ['eggs@scrambled', 'paneer@microwaved', 'eggs@microwaved', 'mushroom@sauteed', 'besan@chilla']) assert.ok(tutor.foods.some((f) => f.id === id), id);
 });
 
-test('Pierre-tutor: texture, taste, then Usable?; exported as u and ingested into tech', () => {
+test('Pierre-tutor: texture, taste, then readiness 0–4; exported as r and ingested into tech', () => {
   let s = startRound(tutor, blankState(), mulberry32(5));
   const id = s.round.ids[0];
   const steps = stepsOf(tutor);
@@ -394,30 +396,25 @@ test('Pierre-tutor: texture, taste, then Usable?; exported as u and ingested int
   s = advance(tutor, s);
   s = { ...s, round: { ...s.round, draft: tapTaste(s.round.draft, 'fat', 2) } };
   s = advance(tutor, s);
-  assert.equal(steps[s.round.step], 'usable');
-  assert.equal(canAdvance(s.round.step, s.round.draft, steps), false, 'needs a yes or no');
-  let d = tapUsable(s.round.draft, 0);
-  assert.equal(d.usable, 0);
-  assert.ok(canAdvance(s.round.step, d, steps), 'No (0) is a real answer');
-  assert.equal(tapUsable(d, 0).usable, null, 'tap again to clear');
+  assert.equal(steps[s.round.step], 'ready');
+  assert.equal(canAdvance(s.round.step, s.round.draft, steps), false, 'needs a readiness');
+  let d = tapReady(s.round.draft, 0);
+  assert.equal(d.ready, 0);
+  assert.ok(canAdvance(s.round.step, d, steps), 'Inedible (0) is a real answer');
+  assert.equal(tapReady(d, 0).ready, null, 'tap again to clear');
   s = advance(tutor, { ...s, round: { ...s.round, draft: d } }, new Date('2026-11-20T09:00:00Z'));
-  assert.deepEqual(s.answers[id], { texture: { crisp: 3, creamy: 0, chewy: 0, juicy: 0, flaky: 0 }, taste: { salt: 0, sugar: 0, fat: 2, acid: 0, heat: 0, canvas: 0, fresh: 0 }, usable: 0, v: 2, at: '2026-11-20T09:00:00.000Z' });
+  assert.deepEqual(s.answers[id], { texture: { crisp: 3, creamy: 0, chewy: 0, juicy: 0, flaky: 0 }, taste: { salt: 0, sugar: 0, fat: 2, acid: 0, heat: 0, canvas: 0, fresh: 0 }, ready: 0, v: 2, at: '2026-11-20T09:00:00.000Z' });
   const prev = back(tutor, s);
-  assert.equal(steps[prev.round.step], 'usable');
-  assert.equal(prev.round.draft.usable, 0);
+  assert.equal(steps[prev.round.step], 'ready');
+  assert.equal(prev.round.draft.ready, 0);
   const text = encodePayload(tutor, s.answers);
   assert.match(text, /^#harveys pierre-tutor v1/);
-  assert.ok(text.includes(`${id} | t 3.0.0.0.0 | s 0.0.2.0.0.0.0 | u 0 | 2026-11-20`));
+  assert.ok(text.includes(`${id} | t 3.0.0.0.0 | s 0.0.2.0.0.0.0 | r 0 | 2026-11-20`));
   const got = decodePayload(text);
-  assert.equal(got[id].usable, 0);
+  assert.equal(got[id].ready, 0);
   const kb = mergeRatings({ foods: {}, prep: {} }, got);
-  assert.equal(kb.tech[id].usable, 'no');
-  assert.equal(mergeRatings({}, { 'soya_chunks@boiled': { texture: {}, taste: {}, usable: 1 } }).tech['soya_chunks@boiled'].usable, 'step');
-  // 1.8.0 verdicts still read: pass and meh are usable as they are, fail isn't.
-  assert.deepEqual(upgradeTutorAnswer({ verdict: 1, at: 'x' }), { usable: 2, at: 'x' });
-  const old = decodePayload('#harveys pierre-tutor v1\neggs@boiled | t 0.0.0.0.0 | s 0.0.0.0.0.0.0 | v 2 | 2026-11-19T18:00Z\nsoya_chunks@boiled | t 0.0.0.0.0 | s 0.0.0.0.0.0.0 | v 0 | 2026-11-19T18:00Z');
-  assert.equal(old['eggs@boiled'].usable, 2);
-  assert.equal(old['soya_chunks@boiled'].usable, 0);
+  assert.equal(kb.tech[id].ready, 0);
+  assert.equal(mergeRatings({}, { 'soya_chunks@boiled': { texture: {}, taste: {}, ready: 1 } }).tech['soya_chunks@boiled'].ready, 1);
   assert.equal(kb.tech[id].texture.crisp, 3);
   assert.ok(!kb.foods[id]);
   // Every pair in one issue URL.

@@ -97,9 +97,15 @@ export function partnersFor(anchorId, inventoryIds, kb = PIERRE_RAW) {
 // that shifts any raw vector: { texture: { crisp: +2 }, taste: { fat: 1 } }.
 // Empty for now: no guesses until there are real ratings.
 export const TECHNIQUES = {};
-// Pierre-tutor's "Usable?": as it is (scrambled eggs), only as a step that gets
-// cooked further (boiled soya chunks → air-fried), or not at all (a veto).
-export const USABLE = { 2: 'yes', 1: 'step', 0: 'no' };
+// Pierre-tutor's readiness, 0–4: how far a food cooked one way is from the plate.
+// It's Marco's finishing friction: what's still left to do. pranjal, 19 Nov.
+export const READY = {
+  4: 'eat as is',          // salted scrambled eggs
+  3: 'needs seasoning',    // paneer scrambled, no salt yet
+  2: 'needs an addition',  // a sauce, chutney or masala
+  1: 'needs another step', // boiled soya chunks, then air-fried
+  0: 'inedible',           // microwaved paneer: a veto
+};
 
 export const techKey = (id, technique) => (technique ? `${id}@${technique}` : id);
 
@@ -114,7 +120,7 @@ export function partVector(part, kb = PIERRE_RAW, techniques = TECHNIQUES) {
       texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(t.texture?.[k] ?? 0, 0, 3)])),
       taste: Object.fromEntries(TASTES.map((k) => [k, clamp(t.taste?.[k] ?? 0, 0, 3)])),
       centre: rawVector(id, kb)?.centre ?? 3, // prep-only foods (eggs) have no centre yet
-      usable: t.usable,
+      ready: t.ready,
       source: 'rated',
     };
   }
@@ -155,10 +161,12 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
     tastes: TASTES.filter((k) => k !== 'canvas' && taste[k] > 0),
     shape: plateShape(vs.map((v) => v.id), kb),
     missing: parts.map((p) => (typeof p === 'string' ? p : p.id)).filter((id) => !rawVector(id, kb)),
-    // Cooked parts pranjal marked not usable (microwaved paneer): a veto on the dish.
-    unusable: vs.filter((v) => v.usable === 'no').map((v) => techKey(v.id, v.technique)),
-    // Parts that are only a step (boiled soya chunks): fine inside a chain, not as the last technique.
-    unfinished: vs.filter((v) => v.usable === 'step').map((v) => techKey(v.id, v.technique)),
+    // Readiness of the cooked parts: 0 is a veto on the dish (microwaved paneer); 1 needs
+    // another cooking step (fine in a chain, not as the last technique); 2–3 are what
+    // Marco still has to add. `finish` maps each part to what's left to do.
+    inedible: vs.filter((v) => v.ready === 0).map((v) => techKey(v.id, v.technique)),
+    unfinished: vs.filter((v) => v.ready === 1).map((v) => techKey(v.id, v.technique)),
+    finish: Object.fromEntries(vs.filter((v) => v.ready != null).map((v) => [techKey(v.id, v.technique), READY[v.ready]])),
   };
 }
 
@@ -182,14 +190,13 @@ export function mergeRatings(kb, ratings, { exclude = [] } = {}) {
     if (r.remove) { excluded.push(id); delete foods[id]; delete prep[id]; delete tech[id]; continue; }
     const old = foods[id] ?? prep[id] ?? tech[id];
     if (old?.at && r.at && old.at > r.at) continue;
-    // Pierre-tutor: a food cooked one way, and whether it's usable at all. Its centre is the food's own.
+    // Pierre-tutor: a food cooked one way, and how ready it is (0–4). Its centre is the food's own.
     if (id.includes('@')) {
-      const usable = r.usable ?? (r.verdict != null ? (r.verdict > 0 ? 2 : 0) : null);
-      if (usable == null) continue;
+      if (r.ready == null) continue;
       tech[id] = {
         texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(Math.round(r.texture?.[k] ?? 0), 0, 3)])),
         taste: Object.fromEntries(TASTES.map((k) => [k, clamp(Math.round(r.taste?.[k] ?? 0), 0, 3)])),
-        usable: USABLE[clamp(Math.round(usable), 0, 2)],
+        ready: clamp(Math.round(r.ready), 0, 4),
         ...(r.at ? { at: r.at } : {}),
       };
       continue;
