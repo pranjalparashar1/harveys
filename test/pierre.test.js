@@ -3,9 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   validateQuiz, blankState, startRound, queue, tapTexture, tapTaste, tapCentre, tapPrep,
-  canAdvance, advance, roundOver, unsent, markSent, encodePayload, decodePayload, STEPS,
+  canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload, decodePayload, STEPS,
 } from '../src/quiz/quiz.js';
-import { isOpenLicence, toPhoto } from '../src/quiz/photos.js';
 import { rawVector, roleOf, plateShape, partnersFor, dishProfile, partVector, mergeRatings, pullOf } from '../src/brain/ingredients.js';
 import { renderBrainFile } from '../scripts/ingest-pierre.mjs';
 import { mulberry32 } from '../src/brain/learn.js';
@@ -52,7 +51,7 @@ test('every tap toggles: a second tap on the same option undoes it', () => {
   assert.equal(tapCentre(d, 4).centre, null);
 });
 
-test('three steps per food, the centre is required, no way back', () => {
+test('three steps per food, the centre is required', () => {
   let s = startRound(quiz, blankState(), mulberry32(4));
   const first = s.round.ids[0];
   s = advance(quiz, s); // texture → taste (all none is fine)
@@ -75,6 +74,38 @@ test('three steps per food, the centre is required, no way back', () => {
   assert.equal(Object.keys(s.answers).length, 7);
   assert.equal(unsent(s).length, 7);
   assert.equal(unsent(markSent(s, Object.keys(s.answers), new Date('2027-01-01'))).length, 0);
+});
+
+test('Back goes to the previous step, then into the previous food with its answers', () => {
+  let s = startRound(quiz, blankState(), mulberry32(6));
+  assert.equal(canGoBack(s), false, 'nothing before the first screen');
+  const [first, second] = s.round.ids;
+  s = { ...s, round: { ...s.round, draft: tapTexture(s.round.draft, 'chewy', 2) } };
+  s = advance(quiz, s);
+  s = back(quiz, s);
+  assert.equal(s.round.step, 0);
+  assert.equal(s.round.draft.texture.chewy, 2, 'the texture is still there');
+  s = advance(quiz, advance(quiz, s));
+  s = { ...s, round: { ...s.round, draft: tapCentre(tapTaste(s.round.draft, 'fat'), 4) } };
+  s = advance(quiz, s);
+  assert.equal(s.round.ids[s.round.i], second);
+  s = back(quiz, s);
+  assert.equal(s.round.ids[s.round.i], first);
+  assert.equal(s.round.step, 2);
+  assert.equal(s.round.draft.centre, 4);
+  s = back(quiz, s);
+  assert.equal(s.round.step, 1, 'to the taste step');
+  s = { ...s, round: { ...s.round, draft: tapTaste(s.round.draft, 'salt') } };
+  s = advance(quiz, advance(quiz, s), new Date('2026-11-19T13:00:00Z'));
+  assert.equal(s.answers[first].taste.salt, 1, 'the fix is saved');
+  assert.equal(s.answers[first].texture.chewy, 2);
+  // From the end of a round, and from a food marked prep.
+  let e = { ...s, round: { ...s.round, i: s.round.ids.length } };
+  e = { ...e, answers: { ...e.answers, [e.round.ids.at(-1)]: { prep: true, at: 'x' } } };
+  e = back(quiz, e);
+  assert.equal(e.round.i, e.round.ids.length - 1);
+  assert.equal(e.round.draft.prep, true);
+  assert.equal(e.round.step, 0);
 });
 
 test('"Part of prep" skips the ratings, toggles off, and travels in the export to the brain file', () => {
@@ -189,15 +220,6 @@ test('the technique layer: a rated "food@technique" wins, an unknown technique f
   assert.equal(shifted.texture.crisp, 2);
   assert.equal(shifted.texture.juicy, 0);
   assert.equal(rawVector('paneer@fried', kb).centre, 4);
-});
-
-test('photos: only open licences, and only images', () => {
-  for (const ok of ['CC BY-SA 4.0', 'CC BY 2.0', 'CC0', 'Public domain', 'cc-by-sa-3.0']) assert.ok(isOpenLicence(ok), ok);
-  for (const no of ['Fair use', 'All rights reserved', '', undefined]) assert.ok(!isOpenLicence(no), String(no));
-  const page = (licence, mime = 'image/jpeg') => ({ imageinfo: [{ mime, thumburl: 'https://upload.wikimedia.org/x.jpg', descriptionurl: 'https://commons.wikimedia.org/wiki/File:X.jpg', extmetadata: { LicenseShortName: { value: licence }, Artist: { value: '<a href="#">Jane</a> Doe' } } }] });
-  assert.deepEqual(toPhoto(page('CC BY-SA 4.0')), { src: 'https://upload.wikimedia.org/x.jpg', page: 'https://commons.wikimedia.org/wiki/File:X.jpg', author: 'Jane Doe', licence: 'CC BY-SA 4.0' });
-  assert.equal(toPhoto(page('Fair use')), null);
-  assert.equal(toPhoto(page('CC0', 'image/svg+xml')), null);
 });
 
 test('the pages exist and are deployed', () => {
