@@ -47,7 +47,7 @@ export const CATALOGUE = [
     name: 'Fusilli aglio olio with air-fried paneer',
     kind: 'meal',
     form: 'bowl',
-    parts: [{ id: 'pasta', technique: 'sauteed' }, { id: 'paneer', technique: 'air_fried' }],
+    parts: [{ id: 'pasta', technique: 'sauteed' }, { id: 'paneer', technique: 'air_fried' }, { id: 'garlic', technique: 'sauteed' }],
     equipment: ['stovetop', 'pot', 'pan', 'strainer', 'air_fryer'],
     utensils: ['knife', 'cutting_board', 'spatula', 'plate'],
     ingredients: [

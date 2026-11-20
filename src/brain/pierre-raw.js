@@ -260,7 +260,8 @@ export const PIERRE_RAW = {
       centre: 4,
       role: 'major',
       at: '2026-11-19T14:27:28.172Z',
-      class: 'dense_starchy'
+      class: 'dense_starchy',
+      cookFirst: true
     },
     coriander: {
       texture: {
@@ -374,7 +375,8 @@ export const PIERRE_RAW = {
         'urad_dal',
         'chana_dal'
       ],
-      class: 'dense_starchy'
+      class: 'dense_starchy',
+      cookFirst: true
     },
     frozen_peas: {
       texture: {
@@ -395,7 +397,30 @@ export const PIERRE_RAW = {
       },
       centre: 2,
       role: 'minor',
-      at: '2026-11-19T16:45:16.000Z'
+      at: '2026-11-19T16:45:16.000Z',
+      cookFirst: true
+    },
+    garlic: {
+      texture: {
+        crisp: 2,
+        creamy: 0,
+        chewy: 0,
+        juicy: 1
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 3,
+        canvas: 0,
+        fresh: 1
+      },
+      centre: 1,
+      role: 'minor',
+      at: '2026-11-20T16:55Z',
+      vetoUncooked: true,
+      estimate: 'Claude 20 Nov, at your request; rate it to replace'
     },
     ghee: {
       texture: {
@@ -459,7 +484,8 @@ export const PIERRE_RAW = {
       centre: 4,
       role: 'major',
       at: '2026-11-19T17:11:36.813Z',
-      class: 'dense_starchy'
+      class: 'dense_starchy',
+      cookFirst: true
     },
     lemon: {
       texture: {
@@ -565,7 +591,8 @@ export const PIERRE_RAW = {
       centre: 3,
       role: 'major',
       at: '2026-11-19T14:29:55.998Z',
-      class: 'watery_veg'
+      class: 'watery_veg',
+      cookFirst: true
     },
     noodles: {
       texture: {
@@ -587,7 +614,8 @@ export const PIERRE_RAW = {
       centre: 5,
       role: 'major',
       at: '2026-11-19T17:13:33.635Z',
-      class: 'dense_starchy'
+      class: 'dense_starchy',
+      cookFirst: true
     },
     oats: {
       texture: {
@@ -609,7 +637,8 @@ export const PIERRE_RAW = {
       centre: 5,
       role: 'major',
       at: '2026-11-19T16:45:16.000Z',
-      class: 'dense_starchy'
+      class: 'dense_starchy',
+      cookFirst: true
     },
     onion: {
       texture: {
@@ -675,7 +704,8 @@ export const PIERRE_RAW = {
       centre: 5,
       role: 'major',
       at: '2026-11-19T14:22:04.035Z',
-      class: 'dense_starchy'
+      class: 'dense_starchy',
+      cookFirst: true
     },
     peanut_butter: {
       texture: {
@@ -760,7 +790,8 @@ export const PIERRE_RAW = {
       centre: 4,
       role: 'major',
       at: '2026-11-19T15:06:52.720Z',
-      class: 'dense_starchy'
+      class: 'dense_starchy',
+      cookFirst: true
     },
     raisins: {
       texture: {
@@ -803,7 +834,8 @@ export const PIERRE_RAW = {
       centre: 4,
       role: 'major',
       at: '2026-11-19T16:45:16.000Z',
-      class: 'dense_starchy'
+      class: 'dense_starchy',
+      cookFirst: true
     },
     rice: {
       texture: {
@@ -825,7 +857,8 @@ export const PIERRE_RAW = {
       centre: 5,
       role: 'major',
       at: '2026-11-19T16:45:16.000Z',
-      class: 'dense_starchy'
+      class: 'dense_starchy',
+      cookFirst: true
     },
     roti: {
       texture: {
@@ -869,7 +902,8 @@ export const PIERRE_RAW = {
       centre: 4,
       role: 'major',
       at: '2026-11-19T14:55:38.733Z',
-      class: 'dense_starchy'
+      class: 'dense_starchy',
+      cookFirst: true
     },
     spring_onion: {
       texture: {
@@ -912,7 +946,8 @@ export const PIERRE_RAW = {
       },
       centre: 2,
       role: 'minor',
-      at: '2026-11-19T15:09:36.657Z'
+      at: '2026-11-19T15:09:36.657Z',
+      cookFirst: true
     },
     tomato: {
       texture: {
@@ -1042,7 +1077,9 @@ export const PIERRE_RAW = {
       at: '2026-11-19T14:59:58.679Z'
     },
     poha: {
-      at: '2026-11-19T14:26:12.531Z'
+      at: '2026-11-19T14:26:12.531Z',
+      cookFirst: true,
+      centre: 5
     },
     pomegranate: {
       at: '2026-11-19T17:23:37.549Z'
@@ -1449,6 +1486,26 @@ export const PIERRE_RAW = {
       },
       distance: 2,
       at: '2026-11-20T06:50Z'
+    },
+    'garlic@sauteed': {
+      texture: {
+        crisp: 1,
+        creamy: 1,
+        chewy: 0,
+        juicy: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 1,
+        acid: 0,
+        heat: 1,
+        canvas: 0,
+        fresh: 0
+      },
+      distance: 0,
+      at: '2026-11-20T16:55Z',
+      estimate: 'Claude 20 Nov, at your request; distance 0 is yours'
     },
     'kala_chana@sauteed': {
       texture: {

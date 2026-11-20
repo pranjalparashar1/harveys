@@ -46,8 +46,12 @@ export const DEFAULT_CONFIG = Object.freeze({
   // Pierre's floor (v2 Step 3). PROVISIONAL: not fitted; Step 4 refits it from the
   // 30-dish blind benchmark. A dish clears it with one flavour beyond the assumed salt
   // and sugar at Medium (2) or above, and one texture at Medium or above.
+  // Step 4b: a part's own sugar counts too, but fat and sugar only clear it together or with
+  // acid, heat or fresh (you called 8 fat-only dishes bland). The numbers stay where the
+  // benchmark refit left them.
   pierreFloor: Object.freeze({
-    flavours: Object.freeze(['fat', 'acid', 'heat', 'fresh']),
+    flavours: Object.freeze(['fat', 'acid', 'heat', 'fresh', 'sugar']),
+    notAlone: Object.freeze(['fat', 'sugar']),
     flavourMin: 2,
     texturesMin: 1,
   }),

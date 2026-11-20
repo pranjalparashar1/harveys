@@ -4,6 +4,8 @@
 //   node scripts/ingest-pierre.mjs --centre whey=4,eggs=3    (centre of a prep-only food)
 //   node scripts/ingest-pierre.mjs --merge dal=moong_dal+toor_dal   (several foods become one)
 //   node scripts/ingest-pierre.mjs --class dense_starchy=paneer+bread   (food class, Step 3)
+//   node scripts/ingest-pierre.mjs --cook-first oats,pasta   (never eaten as it comes, Step 4b)
+//   node scripts/ingest-pierre.mjs --veto-uncooked garlic   (raw, vetoes a dish with nothing cooked)
 // A retest export is refused: compare it with scripts/retest-report.mjs instead.
 // Rewrites src/brain/pierre-raw.js. Newer ratings of the same food win.
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -29,13 +31,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const merges = me >= 0 ? Object.fromEntries(args.splice(me, 2)[1].split(',').map((s) => s.trim().split('=')).map(([k, v]) => [k, v.split('+')])) : {};
   const cl = args.indexOf('--class');
   const classes = cl >= 0 ? Object.fromEntries(args.splice(cl, 2)[1].split(',').map((s) => s.trim().split('=')).map(([k, v]) => [k, v.split('+')])) : {};
-  const flagsOnly = exclude.length || Object.keys(centres).length || Object.keys(merges).length || Object.keys(classes).length;
+  const cf = args.indexOf('--cook-first');
+  const cookFirst = cf >= 0 ? args.splice(cf, 2)[1].split(',').map((s) => s.trim()).filter(Boolean) : [];
+  const vu = args.indexOf('--veto-uncooked');
+  const vetoUncooked = vu >= 0 ? args.splice(vu, 2)[1].split(',').map((s) => s.trim()).filter(Boolean) : [];
+  const flagsOnly = vetoUncooked.length || cookFirst.length || exclude.length || Object.keys(centres).length || Object.keys(merges).length || Object.keys(classes).length;
   const text = args[0] || !flagsOnly ? readFileSync(args[0] ?? 0, 'utf8') : '';
   if (text && isRetest(text)) throw new Error('that is a retest export: run scripts/retest-report.mjs on it; retests never change the brain');
   const ratings = text ? decodePayload(text) : {};
   const n = Object.keys(ratings).length;
   if (!n && !flagsOnly) throw new Error('no ratings found in that text');
-  const kb = mergeRatings(PIERRE_RAW, ratings, { exclude, centres, merges, classes });
+  const kb = mergeRatings(PIERRE_RAW, ratings, { exclude, centres, merges, classes, cookFirst, vetoUncooked });
   writeFileSync(FILE, renderBrainFile(kb));
   console.log(`ingested ${n} foods; the brain file now has ${Object.keys(kb.foods).length}`);
 }

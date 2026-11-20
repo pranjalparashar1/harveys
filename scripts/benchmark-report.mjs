@@ -14,8 +14,10 @@ import { TABLE_KITCHEN } from './pierre-tiers.mjs';
 const toPart = (k) => { const [id, technique] = k.split('@'); return technique ? { id, technique } : { id }; };
 const tierOf = (k, kb = PIERRE_RAW, floor = DEFAULT_CONFIG.pierreFloor) => pierreTier(k.parts.map(toPart), k.form, { modifiers: k.modifiers, inventory: TABLE_KITCHEN, kb, floor });
 // Pierre's reasons as dimensions, comparable with yours.
-export const whyDims = (why) => [...new Set(why.map((w) => (w.startsWith('vetoed') ? 'cooking'
-  : w.startsWith('no texture') ? 'texture'
+export const whyDims = (why) => [...new Set(why.map((w) => (w.startsWith('vetoed') || w.startsWith('raw') ? 'cooking'
+  : w.startsWith('clash') ? 'clash'
+  : w.startsWith('no texture') || w.startsWith('one texture') ? 'texture'
+  : w.startsWith('only ') ? 'bland'
   : w.startsWith('no fat') || w.startsWith('no ') && w.includes('at Medium') ? 'bland'
   : w.includes("doesn't fit") || w.startsWith('needs another') ? 'cooking'
   : w.startsWith('no anchor') || w.startsWith('no base') || w.includes('has no') ? 'meal' : 'other')))];
@@ -47,10 +49,18 @@ const mergeFlaky = (kb) => {
   return c;
 };
 
+// The key stores Pierre's tier when the sheet was made ("before"). Each run re-scores the same
+// dishes with the brain as it is now, so a change to Pierre shows up as before → now.
+const rescore = (k) => {
+  const t = tierOf(k);
+  return { ...k, before: k.computed, beforeWhy: k.why, computed: t.computed, why: t.why, upgrade: t.upgrade?.add ?? null, unrated: t.profile?.unscored ?? [] };
+};
+
 export function report(keys, { answers, tiers }, retest = {}) {
+  keys = keys.map(rescore);
   const rated = keys.filter((k) => answers[k.id]);
   const { best, grid } = refitFloor(rated, answers);
-  const floor = { ...DEFAULT_CONFIG.pierreFloor, flavourMin: best.flavourMin, texturesMin: best.texturesMin };
+  const floor = DEFAULT_CONFIG.pierreFloor; // fixes and flags use the floor as it stands
   const out = [];
   const say = (s = '') => out.push(s);
   say(`# Pierre benchmark, ${new Date().toISOString().slice(0, 10)}`);
@@ -64,15 +74,16 @@ export function report(keys, { answers, tiers }, retest = {}) {
   for (const r of TIER_IDS) say(`| **${r}** | ${TIER_IDS.map((c) => m[r][c]).join(' | ')} |`);
   say();
   const miss = rated.filter((k) => low(answers[k.id].tier) && up(k.computed));
-  say(`**Acceptance (your veto or floor never comes out pass or crave): ${miss.length ? `FAILS on ${miss.length}` : 'met'}.**`);
+  const missBefore = rated.filter((k) => low(answers[k.id].tier) && up(k.before));
+  say(`**Acceptance (your veto or floor never comes out pass or crave): ${miss.length ? `FAILS on ${miss.length}` : 'met'}** (when the sheet was made: ${missBefore.length ? `fails on ${missBefore.length}` : 'met'}). Same tier as you: ${rated.filter((k) => k.computed === answers[k.id].tier).length}/${rated.length} now, ${rated.filter((k) => k.before === answers[k.id].tier).length}/${rated.length} before.`);
   say();
   say('## Every dish');
   say();
-  say('| Dish | Source | You | Pierre | Pierre\'s reason | Your reason | Couvert |');
-  say('|---|---|---|---|---|---|---|');
+  say('| Dish | Source | You | Before | Pierre now | Pierre\'s reason | Your reason | Couvert |');
+  say('|---|---|---|---|---|---|---|---|');
   for (const k of rated) {
     const a = answers[k.id];
-    say(`| ${k.name} | ${k.source} | **${a.tier}** | ${k.computed}${a.tier === k.computed ? '' : ' ✗'} | ${k.why.join('; ') || '–'}${k.unrated.length ? ` (unrated: ${k.unrated.join(', ')})` : ''} | ${a.reasons.join(', ') || '–'} | ${k.couvert ?? '–'} |`);
+    say(`| ${k.name} | ${k.source} | **${a.tier}** | ${k.before} | ${k.computed}${a.tier === k.computed ? '' : ' ✗'} | ${k.why.join('; ') || '–'}${k.unrated.length ? ` (unrated: ${k.unrated.join(', ')})` : ''} | ${a.reasons.join(', ') || '–'} | ${k.couvert ?? '–'} |`);
   }
   say();
   const fixed = rated.filter((k) => answers[k.id].fix);
@@ -81,14 +92,19 @@ export function report(keys, { answers, tiers }, retest = {}) {
     say();
     say("What you'd change to rescue a veto or floor, and what Pierre computes for the fixed dish. Pierre's own upgrade only ever adds a spice or a small food, so a cooking change it can't suggest is a gap in the upgrade search.");
     say();
-    say("| Dish | You | Your fix | Fixed, you | Fixed, Pierre | Pierre's own upgrade |");
+    say("| Dish | You | Your fix | Fixed, you | Fixed, Pierre now | Pierre's own upgrade |");
     say('|---|---|---|---|---|---|');
+    const fixRows = [];
     for (const k of fixed) {
       const items = [...k.parts.map(toPart), ...k.modifiers.map((id) => ({ id, mod: true }))];
       const after = applyFix(items, answers[k.id].fix.line);
       const t = tierOf({ ...k, parts: after.filter((x) => !x.mod).map((x) => (x.technique ? `${x.id}@${x.technique}` : x.id)), modifiers: after.filter((x) => x.mod).map((x) => x.id) }, PIERRE_RAW, floor);
+      fixRows.push({ you: answers[k.id].fix.tier, pierre: t.computed });
       say(`| ${k.name} | ${answers[k.id].tier} | ${answers[k.id].fix.line} | **${answers[k.id].fix.tier}** | ${t.computed}${t.computed === answers[k.id].fix.tier ? '' : ' ✗'} | ${k.upgrade ? `+ ${k.upgrade}` : '–'} |`);
     }
+    say();
+    const fm = fixRows.filter((r) => low(r.you) && up(r.pierre)).length;
+    say(`Fixed dishes: ${fixRows.filter((r) => r.you === r.pierre).length}/${fixRows.length} same tier as you; ${fm} you rated floor that Pierre passes.`);
     say();
   }
   say('## Per-dimension disagreement');
@@ -143,7 +159,7 @@ export function report(keys, { answers, tiers }, retest = {}) {
     const ds = withIds(ids);
     if (!ds.length) return say(`- ${label}: no dish in the 30 has ${ids.join(' or ')}.`);
     say(`- ${label}:`);
-    for (const k of ds) say(`  - ${k.name}: you **${answers[k.id].tier}**, Pierre (refit floor) ${tierOf(k, PIERRE_RAW, floor).computed}, with the alternative ${tierOf(k, kb2, floor).computed}.`);
+    for (const k of ds) say(`  - ${k.name}: you **${answers[k.id].tier}**, Pierre now ${tierOf(k, PIERRE_RAW, floor).computed}, with the alternative ${tierOf(k, kb2, floor).computed}.`);
   };
   flagRows(['milk'], swap(['milk']), 'Milk retest drift (juicy 2→0, canvas 3→1): alternative = your 20 Nov retest ratings');
   flagRows(['cheese_slices'], swap(['cheese_slices']), 'Cheese-slice retest drift (fat 3→0): alternative = your 20 Nov retest ratings');

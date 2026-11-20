@@ -4,7 +4,7 @@
 // the clipboard).
 import { encodeBench } from './quiz/bench.js';
 
-const VERSION = '1.12.2';
+const VERSION = '1.13.0';
 const KEY = 'harveys.bench.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
 const app = document.getElementById('app');
