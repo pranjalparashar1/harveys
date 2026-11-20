@@ -98,7 +98,7 @@
       "line": "Nobody would make it this way. Harvey’s never suggests it."
     }
   ],
-  "rated": "cooked this one way with only a little fat and salt, so the result is the same every time",
+  "rated": "cooked this one way in a little fat, with no salt or seasoning: \"How ready?\" says what it still needs",
   "techniques": {
     "boiled": "Boiled",
     "pan_fried": "Pan-fried in a little fat",
@@ -106,9 +106,9 @@
     "air_fried": "Air-fried",
     "roasted": "Dry-roasted on a pan",
     "toasted": "Toasted",
-    "sauteed": "Sautéed in a little fat, nothing else added",
-    "scrambled": "Scrambled in a little fat, nothing else added",
-    "omelette": "As an omelette",
+    "sauteed": "Sautéed in a little fat, no salt, nothing else added",
+    "scrambled": "Scrambled in a little fat, no salt, nothing else added",
+    "omelette": "Beaten eggs cooked flat in a little fat, no salt",
     "fried_egg": "Fried, sunny side up",
     "mashed": "Mashed",
     "melted": "Melted on something hot",
