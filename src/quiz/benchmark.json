@@ -51,156 +51,670 @@
       "label": "Not a meal"
     }
   ],
+  "techniques": [
+    {
+      "id": "sauteed",
+      "label": "sautéed"
+    },
+    {
+      "id": "air_fried",
+      "label": "air-fried"
+    },
+    {
+      "id": "pan_fried",
+      "label": "pan-fried"
+    },
+    {
+      "id": "toasted",
+      "label": "toasted"
+    },
+    {
+      "id": "roasted",
+      "label": "roasted"
+    },
+    {
+      "id": "boiled",
+      "label": "boiled"
+    },
+    {
+      "id": "microwaved",
+      "label": "microwaved"
+    },
+    {
+      "id": "melted",
+      "label": "melted"
+    },
+    {
+      "id": "mashed",
+      "label": "mashed"
+    }
+  ],
   "dishes": [
     {
       "id": "combo_9",
       "name": "Oats, tomato, potato (microwaved), butter, garlic",
-      "parts": "Oats, tomato, potato (microwaved), butter, garlic"
+      "parts": "Oats, tomato, potato (microwaved), butter, garlic",
+      "items": [
+        {
+          "id": "oats"
+        },
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "potato",
+          "technique": "microwaved"
+        },
+        {
+          "id": "butter"
+        },
+        {
+          "id": "garlic",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "microwave_whey_oats",
       "name": "Microwave protein oats",
-      "parts": "Oats (microwaved), milk, whey, banana"
+      "parts": "Oats (microwaved), milk, whey, banana",
+      "items": [
+        {
+          "id": "oats",
+          "technique": "microwaved"
+        },
+        {
+          "id": "milk"
+        },
+        {
+          "id": "whey"
+        },
+        {
+          "id": "banana"
+        }
+      ]
     },
     {
       "id": "combo_8",
       "name": "Bread, tomato, paneer, salt, garlic",
-      "parts": "Bread, tomato, paneer, salt, garlic"
+      "parts": "Bread, tomato, paneer, salt, garlic",
+      "items": [
+        {
+          "id": "bread"
+        },
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "paneer"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "garlic",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "hack_banana_pb_walnut",
       "name": "Banana with peanut butter and walnuts",
-      "parts": "Banana, peanut butter, walnuts"
+      "parts": "Banana, peanut butter, walnuts",
+      "items": [
+        {
+          "id": "banana"
+        },
+        {
+          "id": "peanut_butter"
+        },
+        {
+          "id": "walnuts"
+        }
+      ]
     },
     {
       "id": "combo_6",
       "name": "Bread, tomato, onion, paneer, salt",
-      "parts": "Bread, tomato, onion, paneer, salt"
+      "parts": "Bread, tomato, onion, paneer, salt",
+      "items": [
+        {
+          "id": "bread"
+        },
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "onion"
+        },
+        {
+          "id": "paneer"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "hack_overnight_oats",
       "name": "Raw oats soaked in milk with whey",
-      "parts": "Oats, milk, whey"
+      "parts": "Oats, milk, whey",
+      "items": [
+        {
+          "id": "oats"
+        },
+        {
+          "id": "milk"
+        },
+        {
+          "id": "whey"
+        }
+      ]
     },
     {
       "id": "tawa_paneer_cheese_sandwich",
       "name": "Tawa paneer cheese sandwich",
-      "parts": "Bread (pan-fried), paneer, cheese slices (melted), butter, salt"
+      "parts": "Bread (pan-fried), paneer, cheese slices (melted), butter, salt",
+      "items": [
+        {
+          "id": "bread",
+          "technique": "pan_fried"
+        },
+        {
+          "id": "paneer"
+        },
+        {
+          "id": "cheese_slices",
+          "technique": "melted"
+        },
+        {
+          "id": "butter"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "airfryer_paneer_tikka",
       "name": "Air-fryer paneer tikka",
-      "parts": "Paneer (air-fried), curd, capsicum (air-fried), salt"
+      "parts": "Paneer (air-fried), curd, capsicum (air-fried), salt",
+      "items": [
+        {
+          "id": "paneer",
+          "technique": "air_fried"
+        },
+        {
+          "id": "curd"
+        },
+        {
+          "id": "capsicum",
+          "technique": "air_fried"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "chana_chaat",
       "name": "Chana chaat",
-      "parts": "Chickpeas, onion, tomato, lemon, chaat masala"
+      "parts": "Chickpeas, onion, tomato, lemon, chaat masala",
+      "items": [
+        {
+          "id": "chickpeas"
+        },
+        {
+          "id": "onion"
+        },
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "lemon"
+        },
+        {
+          "id": "chaat_masala",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "hack_micro_paneer",
       "name": "Microwaved paneer cubes, salt and pepper",
-      "parts": "Paneer (microwaved), salt, black pepper"
+      "parts": "Paneer (microwaved), salt, black pepper",
+      "items": [
+        {
+          "id": "paneer",
+          "technique": "microwaved"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "combo_1",
       "name": "Tomato, onion, pasta, eggs (fried), salt",
-      "parts": "Tomato, onion, pasta, eggs (fried), salt"
+      "parts": "Tomato, onion, pasta, eggs (fried), salt",
+      "items": [
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "onion"
+        },
+        {
+          "id": "pasta"
+        },
+        {
+          "id": "eggs",
+          "technique": "fried_egg"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "hack_whey_water",
       "name": "Whey shaken with water",
-      "parts": "Whey (shaken with water)"
+      "parts": "Whey (shaken with water)",
+      "items": [
+        {
+          "id": "whey",
+          "technique": "shake_water"
+        }
+      ]
     },
     {
       "id": "boiled_eggs",
       "name": "Boiled eggs with salt and pepper",
-      "parts": "Eggs (boiled), salt, black pepper"
+      "parts": "Eggs (boiled), salt, black pepper",
+      "items": [
+        {
+          "id": "eggs",
+          "technique": "boiled"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "airfryer_protein_cheese_toast",
       "name": "Air-fryer protein bread cheese toast",
-      "parts": "Bread (air-fried), cheese slices (melted), chilli flakes"
+      "parts": "Bread (air-fried), cheese slices (melted), chilli flakes",
+      "items": [
+        {
+          "id": "bread",
+          "technique": "air_fried"
+        },
+        {
+          "id": "cheese_slices",
+          "technique": "melted"
+        },
+        {
+          "id": "chilli_flakes",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "combo_4",
       "name": "Tomato, onion (deep-fried), noodles, salt, garlic",
-      "parts": "Tomato, onion (deep-fried), noodles, salt, garlic"
+      "parts": "Tomato, onion (deep-fried), noodles, salt, garlic",
+      "items": [
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "onion",
+          "technique": "deep_fried"
+        },
+        {
+          "id": "noodles"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "garlic",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "sprouts_salad",
       "name": "Moong sprouts salad",
-      "parts": "Sprouts, tomato, onion, lemon, salt"
+      "parts": "Sprouts, tomato, onion, lemon, salt",
+      "items": [
+        {
+          "id": "sprouts"
+        },
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "onion"
+        },
+        {
+          "id": "lemon"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "hack_egg_hung_curd",
       "name": "Boiled eggs mashed into hung curd",
-      "parts": "Eggs (boiled), hung curd, salt, black pepper"
+      "parts": "Eggs (boiled), hung curd, salt, black pepper",
+      "items": [
+        {
+          "id": "eggs",
+          "technique": "boiled"
+        },
+        {
+          "id": "hung_curd"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "combo_3",
       "name": "Bread, tomato, onion (deep-fried), potato, salt",
-      "parts": "Bread, tomato, onion (deep-fried), potato, salt"
+      "parts": "Bread, tomato, onion (deep-fried), potato, salt",
+      "items": [
+        {
+          "id": "bread"
+        },
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "onion",
+          "technique": "deep_fried"
+        },
+        {
+          "id": "potato"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "paneer_cheese_sandwich",
       "name": "Paneer cheese grilled sandwich",
-      "parts": "Bread (toasted), paneer, cheese slices (melted), salt, chaat masala"
+      "parts": "Bread (toasted), paneer, cheese slices (melted), salt, chaat masala",
+      "items": [
+        {
+          "id": "bread",
+          "technique": "toasted"
+        },
+        {
+          "id": "paneer"
+        },
+        {
+          "id": "cheese_slices",
+          "technique": "melted"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "chaat_masala",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "combo_5",
       "name": "Tomato, onion, paneer (pan-fried), salt",
-      "parts": "Tomato, onion, paneer (pan-fried), salt"
+      "parts": "Tomato, onion, paneer (pan-fried), salt",
+      "items": [
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "onion"
+        },
+        {
+          "id": "paneer",
+          "technique": "pan_fried"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "poha",
       "name": "Kanda poha with peanuts",
-      "parts": "Poha (sauteed), onion (sauteed), peanuts (roasted), oil, salt"
+      "parts": "Poha (sautéed), onion (sautéed), peanuts (roasted), oil, salt",
+      "items": [
+        {
+          "id": "poha",
+          "technique": "sauteed"
+        },
+        {
+          "id": "onion",
+          "technique": "sauteed"
+        },
+        {
+          "id": "peanuts",
+          "technique": "roasted"
+        },
+        {
+          "id": "oil",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "combo_7",
       "name": "Tomato, pasta, eggs (fried), salt, garlic",
-      "parts": "Tomato, pasta, eggs (fried), salt, garlic"
+      "parts": "Tomato, pasta, eggs (fried), salt, garlic",
+      "items": [
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "pasta"
+        },
+        {
+          "id": "eggs",
+          "technique": "fried_egg"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "garlic",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "combo_2",
       "name": "Tomato, noodles, eggs (fried), salt, garlic",
-      "parts": "Tomato, noodles, eggs (fried), salt, garlic"
+      "parts": "Tomato, noodles, eggs (fried), salt, garlic",
+      "items": [
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "noodles"
+        },
+        {
+          "id": "eggs",
+          "technique": "fried_egg"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "garlic",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "hack_soya_air",
       "name": "Air-fried soya chunks with chaat masala",
-      "parts": "Soya chunks (air-fried), chaat masala"
+      "parts": "Soya chunks (air-fried), chaat masala",
+      "items": [
+        {
+          "id": "soya_chunks",
+          "technique": "air_fried"
+        },
+        {
+          "id": "chaat_masala",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "pb_protein_toast",
       "name": "Peanut butter protein toast",
-      "parts": "Bread, peanut butter, banana"
+      "parts": "Bread, peanut butter, banana",
+      "items": [
+        {
+          "id": "bread"
+        },
+        {
+          "id": "peanut_butter"
+        },
+        {
+          "id": "banana"
+        }
+      ]
     },
     {
       "id": "combo_10",
       "name": "Bread, tomato, paneer, butter, garlic",
-      "parts": "Bread, tomato, paneer, butter, garlic"
+      "parts": "Bread, tomato, paneer, butter, garlic",
+      "items": [
+        {
+          "id": "bread"
+        },
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "paneer"
+        },
+        {
+          "id": "butter"
+        },
+        {
+          "id": "garlic",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "hack_kala_chana",
       "name": "Sautéed kala chana with onion and lemon",
-      "parts": "Kala chana (sauteed), onion, lemon, salt, chaat masala"
+      "parts": "Kala chana (sautéed), onion, lemon, salt, chaat masala",
+      "items": [
+        {
+          "id": "kala_chana",
+          "technique": "sauteed"
+        },
+        {
+          "id": "onion"
+        },
+        {
+          "id": "lemon"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "chaat_masala",
+          "mod": true
+        }
+      ]
     },
     {
       "id": "whey_milk_shake",
       "name": "Whey shake with milk",
-      "parts": "Whey (shaken with milk)"
+      "parts": "Whey (shaken with milk)",
+      "items": [
+        {
+          "id": "whey",
+          "technique": "shake_milk"
+        }
+      ]
     },
     {
       "id": "hack_curd_whey",
       "name": "Curd with a scoop of whey stirred in",
-      "parts": "Curd, whey"
+      "parts": "Curd, whey",
+      "items": [
+        {
+          "id": "curd"
+        },
+        {
+          "id": "whey"
+        }
+      ]
     },
     {
       "id": "curd_whey_bowl",
       "name": "Curd and whey protein bowl",
-      "parts": "Curd, whey, banana, honey"
+      "parts": "Curd, whey, banana, honey",
+      "items": [
+        {
+          "id": "curd"
+        },
+        {
+          "id": "whey"
+        },
+        {
+          "id": "banana"
+        },
+        {
+          "id": "honey",
+          "mod": true
+        }
+      ]
     }
   ]
 }

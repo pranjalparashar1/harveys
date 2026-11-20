@@ -4,7 +4,7 @@
 // the clipboard).
 import { encodeBench } from './quiz/bench.js';
 
-const VERSION = '1.12.0';
+const VERSION = '1.12.1';
 const KEY = 'harveys.bench.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
 const app = document.getElementById('app');
@@ -51,6 +51,7 @@ function render() {
         const on = (a.reasons ?? []).includes(r.id);
         return `<button type="button" class="chip toggle" role="checkbox" aria-checked="${on}" data-reason="${r.id}">${esc(r.label)}</button>`;
       }).join('')}</div>` : ''}
+      ${low ? fixBlock(d, a) : ''}
       <p class="mini">A food with no cooking named comes as it is.</p>
     </article>
   </main>
@@ -58,6 +59,22 @@ function render() {
     ${state.i > 0 ? '<button class="btn ghost back" data-act="back" type="button" aria-label="Back">‹</button>' : ''}
     <button class="btn primary grow${a.tier ? '' : ' soft'}" data-act="next" type="button" aria-disabled="${!a.tier}">${state.i + 1 === n ? 'Finish' : 'Next dish'}</button>
   </div></div>`;
+}
+
+// "Fix it": change any part's cooking, or drop it, then say what the fixed dish reaches.
+function fixBlock(d, a) {
+  const ch = a.fix?.changes ?? {};
+  const label = (id) => id.replace(/_/g, ' ');
+  const rows = d.items.map((it, i) => {
+    const v = ch[i] ?? it.technique ?? '';
+    const opts = [['', 'as it is'], ...sheet.techniques.map((t) => [t.id, t.label]), ['drop', 'drop it']];
+    if (it.technique && !sheet.techniques.some((t) => t.id === it.technique)) opts.splice(1, 0, [it.technique, label(it.technique)]);
+    return `<label class="fixrow"><span>${esc(label(it.id))}</span><select data-fix="${i}">${opts.map(([id, l]) => `<option value="${id}"${v === id ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
+  }).join('');
+  const changed = Object.keys(ch).length > 0;
+  return `<h2 class="step">Fix it <small class="mini">optional</small></h2>
+    <div class="fix">${rows}</div>
+    ${changed ? `<h2 class="step">Fixed, it would be</h2><div class="chips">${sheet.tiers.map((t) => `<button type="button" class="chip toggle" role="radio" aria-checked="${a.fix?.tier === t.id}" data-fixtier="${t.id}">${esc(t.label)}</button>`).join('')}</div>` : ''}`;
 }
 
 function renderEnd() {
@@ -84,13 +101,17 @@ function renderEnd() {
 
 let armed = 0;
 app.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-tier],[data-reason],[data-tiers],[data-act]');
+  const el = e.target.closest('[data-tier],[data-reason],[data-fixtier],[data-tiers],[data-act]');
   if (!el) return;
   const d = sheet.dishes[state.i];
   if (el.dataset.tier) {
     const a = state.answers[d.id] ?? {};
     const keep = el.dataset.tier === 'veto' || el.dataset.tier === 'floor';
-    state.answers[d.id] = { tier: el.dataset.tier, reasons: keep ? (a.reasons ?? []) : [], at: new Date().toISOString() };
+    state.answers[d.id] = { tier: el.dataset.tier, reasons: keep ? (a.reasons ?? []) : [], ...(keep && a.fix ? { fix: a.fix } : {}), at: new Date().toISOString() };
+  } else if (el.dataset.fixtier) {
+    const a = state.answers[d.id];
+    a.fix = { ...a.fix, tier: a.fix?.tier === el.dataset.fixtier ? null : el.dataset.fixtier };
+    a.at = new Date().toISOString();
   } else if (el.dataset.reason) {
     const a = state.answers[d.id];
     const r = el.dataset.reason;
@@ -117,6 +138,22 @@ app.addEventListener('click', (e) => {
     scrollTo(0, 0);
     return;
   }
+  save();
+  const y = scrollY;
+  render();
+  scrollTo(0, y);
+});
+
+app.addEventListener('change', (e) => {
+  const sel = e.target.closest('[data-fix]');
+  if (!sel) return;
+  const d = sheet.dishes[state.i];
+  const a = state.answers[d.id];
+  const i = Number(sel.dataset.fix);
+  const changes = { ...(a.fix?.changes ?? {}) };
+  if (sel.value === (d.items[i].technique ?? '')) delete changes[i]; else changes[i] = sel.value;
+  a.fix = Object.keys(changes).length ? { ...a.fix, changes } : undefined;
+  a.at = new Date().toISOString();
   save();
   const y = scrollY;
   render();
