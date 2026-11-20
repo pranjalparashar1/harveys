@@ -180,27 +180,6 @@
       "everyday": true
     },
     {
-      "id": "tofu@pan_fried",
-      "food": "tofu",
-      "technique": "pan_fried",
-      "name": "Tofu, pan-fried",
-      "everyday": true
-    },
-    {
-      "id": "tofu@air_fried",
-      "food": "tofu",
-      "technique": "air_fried",
-      "name": "Tofu, air-fried",
-      "everyday": true
-    },
-    {
-      "id": "tofu@scrambled",
-      "food": "tofu",
-      "technique": "scrambled",
-      "name": "Tofu, scrambled",
-      "everyday": true
-    },
-    {
       "id": "potato@mashed",
       "food": "potato",
       "technique": "mashed",
