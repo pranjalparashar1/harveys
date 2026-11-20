@@ -142,18 +142,6 @@
       "everyday": true
     },
     {
-      "id": "chana_dal",
-      "name": "Chana dal",
-      "group": "legume",
-      "everyday": true
-    },
-    {
-      "id": "urad_dal",
-      "name": "Urad dal",
-      "group": "legume",
-      "everyday": true
-    },
-    {
       "id": "kala_chana",
       "name": "Kala chana",
       "group": "legume",
@@ -356,7 +344,7 @@
       "mushroom",
       "poha",
       "rice",
-      "moong_dal",
+      "dal",
       "chickpeas",
       "soya_chunks",
       "cream",
@@ -383,8 +371,6 @@
       "almonds",
       "peanut_butter",
       "rajma",
-      "masoor_dal",
-      "toor_dal",
       "sprouts"
     ]
   }

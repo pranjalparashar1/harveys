@@ -495,7 +495,7 @@ export const CATALOGUE = [
     utensils: ['spatula', 'bowl'],
     ingredients: [
       { id: 'rice', amount: '40 g', prep: 'wash' },
-      { id: 'moong_dal', amount: '40 g', prep: 'wash' },
+      { id: 'dal', amount: '40 g (moong is classic)', prep: 'wash' },
       { id: 'ghee', amount: '1 tsp', prep: 'measure' },
       { id: 'salt', amount: 'to taste', prep: 'measure' },
       { id: 'turmeric', amount: 'a pinch', prep: 'measure', optional: true },
