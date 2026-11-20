@@ -4,11 +4,13 @@
 //
 // Three layers, bottom to top:
 //   1. raw     what a food is on its own        (Pierre-trainer, src/brain/pierre-raw.js)
-//   2. tech    what a technique does to it      (Pierre-tutor, later: "fried paneer")
-//   3. dish    a plate built from parts         (dishProfile, plateShape)
+//   2. tech    what a technique does to it      (Pierre-tutor rows, then the class prior)
+//   3. dish    a plate built from parts in a form (dishProfile, pierreTier)
 // A dish is scored from its parts, so Pierre can judge any dish, including
 // wacky AI ones, as long as it knows the parts.
 import { PIERRE_RAW } from './pierre-raw.js';
+import { TECHNIQUE_PRIOR } from './technique-prior.js';
+import { DEFAULT_CONFIG } from './config.js';
 
 export const TEXTURES = ['crisp', 'creamy', 'chewy', 'juicy', 'flaky'];
 // Taste is 0–3 per element, like texture. `canvas` is the sixth dimension: how much
@@ -91,12 +93,14 @@ export function partnersFor(anchorId, inventoryIds, kb = PIERRE_RAW) {
     .map((f) => f.id);
 }
 
-// ── Techniques (Pierre-tutor fills these) ───────────────────────────────────
-// A technique either has a rating of its own for a specific food ("paneer@pan_fried",
-// rated in Pierre-tutor and kept in the brain file's `tech`), or a general effect
-// that shifts any raw vector: { texture: { crisp: +2 }, taste: { fat: 1 } }.
-// Empty for now: no guesses until there are real ratings.
-export const TECHNIQUES = {};
+// ── Techniques ──────────────────────────────────────────────────────────────
+// A food cooked one way resolves, in order (v2 Step 3):
+//   1. its rated row ("paneer@pan_fried", from Pierre-tutor, in the brain file's `tech`)
+//   2. the class prior: the mean effect of that technique on rated foods of the same
+//      class (dense_starchy, watery_veg), derived by scripts/derive-prior.mjs, PROVISIONAL
+//   3. the raw vector
+// A dish verdict from pranjal beats all three, in pierreTier().
+export const TECHNIQUES = TECHNIQUE_PRIOR;
 // Pierre-tutor's distance, 0–3: how many steps a food cooked one way (unsalted) is
 // from done, where done leaves only context or assembly. A veto has no distance.
 // It's Marco's finishing friction: what's still left to do. pranjal, 20 Nov.
@@ -109,18 +113,26 @@ export const DISTANCE = {
 const READY_TO_DISTANCE = { 4: 0, 3: 1, 2: 2, 1: 3 }; // v1 readiness; 0 was the veto
 
 export const techKey = (id, technique) => (technique ? `${id}@${technique}` : id);
+/** A food's centre: its raw rating, else the one given to a prep-only food (eggs 4, whey 3). */
+export const centreOf = (id, kb = PIERRE_RAW) => kb.foods?.[id]?.centre ?? kb.prep?.[id]?.centre ?? null;
 
-/** The vector for one part of a dish: a food, optionally cooked a certain way. */
+/**
+ * The vector for one part of a dish: a food, optionally cooked a certain way.
+ * `state` is 'raw' (cold, as it is) or '@technique' (cooked, hot). `source` says
+ * which layer answered: rated, prior or raw.
+ */
 export function partVector(part, kb = PIERRE_RAW, techniques = TECHNIQUES) {
   const { id, technique } = typeof part === 'string' ? { id: part } : part;
+  const state = technique ? `@${technique}` : 'raw';
   const t = technique ? kb.tech?.[techKey(id, technique)] : null;
   if (t) {
     return {
       id,
       technique,
+      state,
       texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(t.texture?.[k] ?? 0, 0, 3)])),
       taste: Object.fromEntries(TASTES.map((k) => [k, clamp(t.taste?.[k] ?? 0, 0, 3)])),
-      centre: rawVector(id, kb)?.centre ?? kb.prep?.[id]?.centre ?? 3, // prep-only foods (eggs, whey) carry theirs on the prep entry
+      centre: centreOf(id, kb), // null for a prep-only food with no centre yet (besan, poha)
       distance: t.distance ?? null,
       veto: !!t.veto,
       source: 'rated',
@@ -128,41 +140,115 @@ export function partVector(part, kb = PIERRE_RAW, techniques = TECHNIQUES) {
   }
   const raw = rawVector(id, kb);
   if (!raw) return null;
-  const effect = technique ? techniques[technique] : null;
-  if (!effect) return { ...raw, technique: technique ?? null, source: technique ? 'raw (technique not learned yet)' : 'raw' };
+  const cls = kb.foods[id].class;
+  const effect = technique ? (techniques[technique]?.[cls] ?? null) : null;
+  if (!effect) return { ...raw, technique: technique ?? null, state, distance: null, veto: false, source: 'raw' };
   return {
     ...raw,
     technique,
+    state,
     texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(raw.texture[k] + (effect.texture?.[k] ?? 0), 0, 3)])),
     taste: Object.fromEntries(TASTES.map((k) => [k, clamp(raw.taste[k] + (effect.taste?.[k] ?? 0), 0, 3)])),
-    source: 'technique',
+    distance: effect.distance ?? null,
+    veto: false,
+    source: 'prior',
+    provisional: true,
   };
 }
 
+// ── Modifiers (Step 3) ──────────────────────────────────────────────────────
+// Salt and sugar are assumed present at dish level: you season to taste, so a dish
+// never fails for lacking them. Salt and heat stay dish dimensions, fed by modifiers.
+// PROVISIONAL: a modifier brings its dimension at Medium (2), the same reading the
+// quiz gives a taste that was only marked present (tasteAssumed). Step 4 calibrates.
+export const ASSUMED_TASTES = ['salt', 'sugar'];
+export const PRESENT = 2;
+export const MODIFIERS = {
+  salt: { salt: PRESENT },
+  sugar: { sugar: PRESENT },
+  honey: { sugar: PRESENT },
+  oil: { fat: PRESENT },
+  black_pepper: { heat: PRESENT },
+  chilli_flakes: { heat: PRESENT },
+  red_chilli_powder: { heat: PRESENT },
+  green_chilli: { heat: PRESENT },
+  chaat_masala: { salt: PRESENT, acid: PRESENT },
+};
+
+// ── Forms (Step 3) ──────────────────────────────────────────────────────────
+// The grammar a dish declares. Each form names its slots and the states a slot takes:
+// 'raw', 'cooked' (any @technique) or a specific '@technique'. A part's slot is its own
+// `slot`, else from its centre: 5 base, the highest 3+ anchor (a base anchors when
+// nothing else can), 1 modifier, the rest add-ons. `need` slots must be filled.
+// An unknown form takes the `open` path: scored with no slot rules, labelled untested.
+const ANY = ['raw', 'cooked'];
+export const FORMS = {
+  shake: { slots: { anchor: { need: true, states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } } },
+  bowl: { slots: { base: { states: ['cooked'] }, anchor: { need: true, states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } } },
+  toast: { slots: { base: { need: true, states: ANY }, anchor: { need: true, states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } } },
+  sandwich: { slots: { base: { need: true, states: ANY }, anchor: { need: true, states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } } },
+  mash: { slots: { anchor: { need: true, states: ['@mashed', 'cooked'] }, addOn: { states: ANY }, modifier: { states: ANY } } },
+  bhurji: { slots: { anchor: { need: true, states: ['cooked'] }, addOn: { states: ANY }, modifier: { states: ANY } } },
+  griddle: { slots: { base: { states: ['cooked'] }, anchor: { need: true, states: ['cooked'] }, addOn: { states: ANY }, modifier: { states: ANY } } },
+  'one-pot': { slots: { base: { states: ['cooked'] }, anchor: { need: true, states: ['cooked'] }, addOn: { states: ANY }, modifier: { states: ANY } } },
+};
+export const OPEN_FORM = { slots: { anchor: { need: true, states: ANY }, base: { states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } }, untested: true };
+const stateFits = (state, states) => states.includes(state) || (state !== 'raw' && states.includes('cooked'));
+
+/** Puts each part in a slot of the form. Parts are { id, technique?, slot? }. */
+export function slotParts(parts, kb = PIERRE_RAW) {
+  const ps = parts.map((p) => (typeof p === 'string' ? { id: p } : p)).map((p) => ({ ...p, centre: centreOf(p.id, kb), state: p.technique ? `@${p.technique}` : 'raw' }));
+  const slotted = ps.map((p) => ({ ...p, slot: p.slot ?? (p.centre >= BASE ? 'base' : p.centre === 1 ? 'modifier' : null) }));
+  if (!slotted.some((p) => p.slot === 'anchor')) {
+    const pick = slotted.filter((p) => !p.slot && p.centre >= MAJOR_FROM).sort((a, b) => b.centre - a.centre)[0];
+    const base = slotted.find((p) => p.slot === 'base');
+    if (pick) pick.slot = 'anchor';
+    else if (base) base.anchors = true; // the base is the meal (rice, toast): it fills both slots
+  }
+  return slotted.map((p) => ({ ...p, slot: p.slot ?? 'addOn' }));
+}
+
+/** Largest number of textures at Medium or above that come from different parts. */
+function contrastOf(vs) {
+  const edges = vs.map((v) => TEXTURES.filter((k) => v.texture[k] >= 2));
+  const owner = {};
+  const augment = (i, seen) => edges[i].some((k) => {
+    if (seen.has(k)) return false;
+    seen.add(k);
+    if (owner[k] == null || augment(owner[k], seen)) { owner[k] = i; return true; }
+    return false;
+  });
+  return vs.reduce((n, _, i) => n + (augment(i, new Set()) ? 1 : 0), 0);
+}
+
 /**
- * What a dish tastes and feels like, from its parts. Texture is the
- * centre-weighted mean (the anchor dominates); taste is what any part brings.
- * `textures` counts distinct textures at medium or above, the left side of
- * Pierre's Couvert. Spoons aren't computed here: their weights come from real
- * verdicts, not guesses.
+ * What a dish tastes and feels like, from its parts and modifiers (ids like 'salt').
+ * Texture: the max over parts that are a real share of the bite (centre ≥ 2), so a
+ * garnish can't claim one; `contrast` counts textures at Medium+ from different parts.
+ * Flavours: the strongest any part or modifier brings; salt and sugar assumed present.
+ * Canvas: centre-weighted (a dish anchored on paneer stays a canvas).
  */
-export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
+export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES, modifiers = []) {
   const vs = parts.map((p) => partVector(p, kb, techniques)).filter(Boolean);
   if (!vs.length) return null;
-  const total = vs.reduce((s, v) => s + pullOf(v.centre), 0);
-  const texture = Object.fromEntries(TEXTURES.map((k) => [k, vs.reduce((s, v) => s + pullOf(v.centre) * v.texture[k], 0) / total]));
-  // Flavours: the strongest any part brings. Canvas: centre-weighted, like texture
-  // (a dish anchored on tofu stays a canvas even with a little salty cheese).
+  const bite = vs.filter((v) => v.centre == null || v.centre >= 2);
+  const texture = Object.fromEntries(TEXTURES.map((k) => [k, Math.max(0, ...bite.map((v) => v.texture[k]))]));
+  const total = vs.reduce((s, v) => s + pullOf(v.centre ?? 1), 0);
+  const mods = modifiers.map((id) => MODIFIERS[id]).filter(Boolean);
   const taste = Object.fromEntries(TASTES.map((k) => [k, k === 'canvas'
-    ? vs.reduce((s, v) => s + pullOf(v.centre) * v.taste[k], 0) / total
-    : Math.max(...vs.map((v) => v.taste[k]))]));
+    ? vs.reduce((s, v) => s + pullOf(v.centre ?? 1) * v.taste[k], 0) / total
+    : Math.max(ASSUMED_TASTES.includes(k) ? PRESENT : 0, ...vs.map((v) => v.taste[k]), ...mods.map((m) => m[k] ?? 0))]));
   return {
     texture,
     taste,
-    textures: TEXTURES.filter((k) => texture[k] >= 1.5),
+    textures: TEXTURES.filter((k) => texture[k] >= 2),
+    contrast: contrastOf(bite),
     tastes: TASTES.filter((k) => k !== 'canvas' && taste[k] > 0),
+    assumed: ASSUMED_TASTES,
     shape: plateShape(vs.map((v) => v.id), kb),
-    missing: parts.map((p) => (typeof p === 'string' ? p : p.id)).filter((id) => !rawVector(id, kb)),
+    missing: parts.map((p) => (typeof p === 'string' ? p : p.id)).filter((id) => !rawVector(id, kb) && !(kb.prep?.[id])),
+    unscored: parts.map((p) => (typeof p === 'string' ? { id: p } : p)).filter((p) => !partVector(p, kb, techniques)).map((p) => techKey(p.id, p.technique)),
+    provisional: vs.filter((v) => v.source === 'prior').map((v) => techKey(v.id, v.technique)),
     // Distance of the cooked parts: a veto rules the dish out (microwaved eggs); 3 needs
     // another cooking step (fine in a chain, not as the last technique); 0–2 are what
     // Marco still has to add. `finish` maps each part to what's left to do.
@@ -170,6 +256,75 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
     unfinished: vs.filter((v) => v.distance === 3).map((v) => techKey(v.id, v.technique)),
     finish: Object.fromEntries(vs.filter((v) => v.distance != null).map((v) => [techKey(v.id, v.technique), DISTANCE[v.distance]])),
   };
+}
+
+// ── Pierre's tier (Step 3) ──────────────────────────────────────────────────
+export const TIERS = ['veto', 'floor', 'pass', 'crave'];
+/** pranjal's verdict on a dish as a tier: `tier` if given, else fail → veto, meh → floor, pass → pass. */
+export const verdictTier = (seed) => seed?.tier ?? { fail: 'veto', meh: 'floor', pass: 'pass' }[seed?.verdict] ?? null;
+
+function belowFloor(p, floor) {
+  const why = [];
+  if (!floor.flavours.some((k) => p.taste[k] >= floor.flavourMin)) why.push(`no ${floor.flavours.join(', ')} at Medium or above`);
+  if (p.textures.length < floor.texturesMin) why.push('no texture at Medium or above');
+  return why;
+}
+
+/**
+ * Pierre's verdict on a dish: veto | floor | pass | crave.
+ *   veto   a part is vetoed (microwaved eggs), or pranjal's verdict is fail
+ *   floor  no anchor (100 g butter with salt), a part in a state the form doesn't take
+ *          (raw oats as a bowl's base), a part that needs another cooking step, or below
+ *          the PROVISIONAL taste/texture floor; `upgrade` names the cheapest modifier in
+ *          the kitchen that lifts it (+ chaat masala, + butter)
+ *   pass   clears the floor
+ *   crave  only from pranjal (a crave verdict, later repeat "Cooked this"); never computed
+ * opts: { modifiers: ids in the dish, inventory: ids in the kitchen, verdict: a PIERRE_SEED entry }.
+ * `computed` is the tier before the verdict, so the two can be compared.
+ */
+export function pierreTier(parts, form, { modifiers = [], inventory = [], verdict = null, kb = PIERRE_RAW, techniques = TECHNIQUES, floor = DEFAULT_CONFIG.pierreFloor } = {}) {
+  const grammar = FORMS[form] ?? OPEN_FORM;
+  const p = dishProfile(parts, kb, techniques, modifiers);
+  const slotted = slotParts(parts, kb);
+  const why = [];
+  let computed;
+  if (p?.inedible.length) { computed = 'veto'; why.push(`vetoed: ${p.inedible.join(', ')}`); } else {
+    for (const [slot, rule] of Object.entries(grammar.slots)) {
+      const inSlot = slotted.filter((x) => x.slot === slot);
+      if (rule.need && !inSlot.length && !(slot === 'anchor' && slotted.some((x) => x.anchors))) {
+        const unrated = slotted.filter((x) => x.centre == null).map((x) => x.id);
+        why.push(slot === 'anchor' && unrated.length ? `no anchor (no centre rated for ${unrated.join(', ')})` : `no ${slot}`);
+      }
+      for (const x of inSlot) if (!stateFits(x.state, rule.states)) why.push(`${techKey(x.id, x.technique)} doesn't fit a ${form}'s ${slot}`);
+    }
+    for (const x of slotted) if (!grammar.slots[x.slot]) why.push(`a ${form} has no ${x.slot}`);
+    if (p?.unfinished.length) why.push(`needs another cooking step: ${p.unfinished.join(', ')}`);
+    if (!p) why.push('no rated parts');
+    else why.push(...belowFloor(p, floor));
+    computed = why.length ? 'floor' : 'pass';
+  }
+  let upgrade = null;
+  if (computed === 'floor' && p && why.length === belowFloor(p, floor).length) {
+    // Only a taste/texture shortfall can be lifted by adding something.
+    const has = new Set([...modifiers, ...parts.map((x) => (typeof x === 'string' ? x : x.id))]);
+    const lifts = (extraParts, extraMods) => {
+      const q = dishProfile([...parts, ...extraParts], kb, techniques, [...modifiers, ...extraMods]);
+      return q && !belowFloor(q, floor).length;
+    };
+    // Cheapest first: a spice or condiment shaken in, then a rated minor food spooned on.
+    // An upgrade keeps the dish's side: a sweet dish (a part at sugar 2+) takes only sweet
+    // additions, a savoury one only the rest. Oil is a cooking medium, never an add-on.
+    const sweet = (taste) => (taste?.sugar ?? 0) >= 2;
+    const dishSweet = parts.some((x) => sweet(partVector(x, kb, techniques)?.taste));
+    const sameSide = (taste) => sweet(taste) === dishSweet;
+    const spices = inventory.filter((id) => MODIFIERS[id] && id !== 'oil' && !has.has(id) && sameSide(MODIFIERS[id]) && lifts([], [id]));
+    const foods = inventory.filter((id) => !has.has(id) && !MODIFIERS[id] && (kb.foods?.[id]?.centre ?? 9) <= 2 && sameSide(kb.foods[id].taste) && lifts([id], [])).sort((a, b) => kb.foods[a].centre - kb.foods[b].centre);
+    const all = [...spices, ...foods];
+    if (all.length) upgrade = { add: all[0], options: all };
+  }
+  const mine = verdictTier(verdict);
+  const tier = mine ?? computed;
+  return { tier, computed, source: mine ? 'verdict' : 'computed', why, upgrade, untested: !!grammar.untested, profile: p };
 }
 
 // ── Ratings in, brain file out ──────────────────────────────────────────────
@@ -183,7 +338,7 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
 // merges: { dal: ['moong_dal', …] } folds foods pranjal calls one food into one id (20 Nov:
 // "all dals are one food"). Each dimension takes the members' most common rating; the old ids
 // stay as aliases, so a later rating of moong_dal lands on dal.
-export function mergeRatings(kb, ratings, { exclude = [], centres = {}, merges = {} } = {}) {
+export function mergeRatings(kb, ratings, { exclude = [], centres = {}, merges = {}, classes = {} } = {}) {
   const aliases = { ...(kb.aliases ?? {}) };
   for (const [to, from] of Object.entries(merges)) for (const id of from) if (id !== to) aliases[id] = to;
   ratings = Object.fromEntries(Object.entries(ratings).map(([id, r]) => [aliases[id] ?? id, r]));
@@ -220,7 +375,9 @@ export function mergeRatings(kb, ratings, { exclude = [], centres = {}, merges =
     }
     foods[id] = {
       texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(Math.round(r.texture?.[k] ?? 0), 0, 3)])),
-      taste: Object.fromEntries(TASTES.map((k) => [k, clamp(Math.round(r.taste?.[k] ?? 0), 0, 3)])),
+      // A rating without salt or heat (the quiz stopped asking them, Step 3) keeps the old value.
+      taste: Object.fromEntries(TASTES.map((k) => [k, clamp(Math.round(r.taste?.[k] ?? foods[id]?.taste?.[k] ?? 0), 0, 3)])),
+      ...(foods[id]?.class ? { class: foods[id].class } : {}),
       ...(r.tasteAssumed ? { tasteAssumed: true } : {}),
       centre: clamp(Math.round(r.centre ?? 2), 1, 5),
       role: roleOf(r.centre ?? 2),
@@ -244,6 +401,12 @@ export function mergeRatings(kb, ratings, { exclude = [], centres = {}, merges =
     const preps = from.map((id) => prep[id]).filter(Boolean);
     if (preps.length) prep[to] = { at: preps.map((x) => x.at).filter(Boolean).sort().at(-1) };
     for (const id of from) if (id !== to) { delete foods[id]; delete prep[id]; }
+  }
+  // classes: { dense_starchy: ['paneer', …] } (Step 3): which food class a food's cooked
+  // forms follow when it has no rated row. A label, not a rating; the prior is derived from it.
+  for (const [cls, ids] of Object.entries(classes)) for (const id of ids) {
+    if (!foods[id]) throw new Error(`${id} has no raw rating, so it can't take a class`);
+    foods[id] = { ...foods[id], class: cls };
   }
   for (const [id, c] of Object.entries(centres)) {
     if (!prep[id]) throw new Error(`${id} is not a prep-only food; rate its centre in the quiz`);

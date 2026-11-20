@@ -24,7 +24,7 @@ test('the quiz file is valid: veg and egg foods, no spices or condiments', () =>
   for (const id of ['spinach', 'okra', 'brinjal']) assert.ok(!ids.includes(id), `${id} is set aside`);
   for (const banned of ['chicken', 'tuna', 'tofu', 'salt', 'turmeric', 'garam_masala', 'ketchup', 'mayo', 'oil']) assert.ok(!ids.includes(banned), banned);
   assert.deepEqual(quiz.textures.map((t) => t.id), ['crisp', 'creamy', 'chewy', 'juicy', 'flaky']);
-  assert.deepEqual(quiz.tastes.map((t) => t.id), ['salt', 'sugar', 'fat', 'acid', 'heat', 'canvas', 'fresh']);
+  assert.deepEqual(quiz.tastes.map((t) => t.id), ['sugar', 'fat', 'acid', 'canvas', 'fresh'], 'salt and heat are dish-level now (Step 3)');
   assert.deepEqual(quiz.centre.map((c) => c.value), [1, 2, 3, 4, 5]);
   assert.throws(() => validateQuiz({ ...quiz, foods: [...quiz.foods, quiz.foods[0]] }), /twice/);
 });
@@ -156,8 +156,8 @@ test('a food is rated, part of prep, or both, and the export and brain file carr
   };
   const text = encodePayload(quiz, answers);
   assert.match(text, /^poha \| prep \| 2026-11-19T12:00Z$/m);
-  assert.match(text, /^paneer \| t 0\.3\.0\.0\.0 \| s 0\.0\.1\.0\.0\.0\.0 \| c 4 \| prep \| 2026-11-19T12:01Z$/m);
-  assert.match(text, /^eggs \| t 0\.2\.0\.0\.0 \| s 0\.0\.1\.0\.0\.0\.0 \| c 3 \| 2026-11-19T12:02Z$/m);
+  assert.match(text, /^paneer \| t 0\.3\.0\.0\.0 \| s 0\.1\.0\.0\.0 \| c 4 \| prep \| 2026-11-19T12:01Z$/m);
+  assert.match(text, /^eggs \| t 0\.2\.0\.0\.0 \| s 0\.1\.0\.0\.0 \| c 3 \| 2026-11-19T12:02Z$/m);
   const backText = decodePayload(text);
   assert.deepEqual(backText.poha, { prep: true, at: '2026-11-19T12:00Z' });
   assert.equal(backText.paneer.prep, true);
@@ -182,8 +182,8 @@ test('taste is 0–3 with canvas, and pre-1.6 answers read as Medium, marked ass
   assert.equal(answers.tofu.tasteAssumed, true);
   assert.equal(upgradeAnswer(answers.paneer), answers.paneer, 'new answers are left alone');
   const text = encodePayload(quiz, answers);
-  assert.match(text, /^tastes salt\.sugar\.fat\.acid\.heat\.canvas\.fresh$/m);
-  assert.match(text, /^cheese_slices \| t 0\.0\.0\.0\.0 \| s 2\.0\.3\.1\.0\.0\.0 \| c 2 \| /m);
+  assert.match(text, /^tastes sugar\.fat\.acid\.canvas\.fresh$/m);
+  assert.match(text, /^cheese_slices \| t 0\.0\.0\.0\.0 \| s 0\.3\.1\.0\.0 \| c 2 \| /m);
   assert.match(text, /^tofu \| .* \| c 3 \| assumed \| /m);
   const back = decodePayload(text);
   assert.ok(back.cheese_slices.taste.fat > back.paneer.taste.fat, 'cheese is more fat than paneer');
@@ -207,8 +207,8 @@ test('the Send to Harvey’s text round-trips', () => {
   const text = encodePayload(quiz, answers);
   assert.match(text, /^#harveys pierre-trainer v3/);
   assert.ok(decodePayload(text.replace('#harveys pierre-trainer v3', '#marco pierre-trainer v2')).paneer, 'round-1 exports still read');
-  assert.match(text, /paneer \| t 0\.3\.2\.1\.0 \| s 0\.0\.1\.0\.0\.0\.0 \| c 4/);
-  assert.match(text, /makhana \| t 3\.0\.0\.0\.1 \| s 0\.0\.0\.0\.0\.0\.0 \| c 3/);
+  assert.match(text, /paneer \| t 0\.3\.2\.1\.0 \| s 0\.1\.0\.0\.0 \| c 4/);
+  assert.match(text, /makhana \| t 3\.0\.0\.0\.1 \| s 0\.0\.0\.0\.0 \| c 3/);
   const back = decodePayload('Here you go:\n```\n' + text + '\n```\n');
   assert.equal(back.paneer.texture.creamy, 3);
   assert.equal(back.paneer.taste.fat, 1);
@@ -325,13 +325,16 @@ test('centrality: major from 3, co-leads within 1 of the anchor, pull doubles pe
   assert.deepEqual(partnersFor('paneer', ['eggs', 'onion', 'rice', 'butter', 'mushroom'], KB), ['rice', 'eggs', 'mushroom']);
 });
 
-test('dish profile: the anchor dominates texture, any part brings a taste', () => {
+test('dish profile: texture is the max over parts with centre 2+, contrast counts different parts', () => {
   const p = dishProfile(['paneer', 'butter', 'onion'], KB);
-  assert.ok(p.texture.creamy > 2.2);
-  assert.ok(p.texture.crisp < 0.5, 'a little onion does not make paneer crunchy');
-  assert.equal(p.taste.salt, 1, 'butter salts the dish');
-  assert.equal(p.taste.fresh, 1);
-  assert.deepEqual(p.textures, ['creamy']);
+  assert.equal(p.texture.creamy, 3, 'paneer brings creamy');
+  assert.equal(p.texture.crisp, 2, 'onion (centre 2) is a real share of the bite');
+  assert.equal(p.contrast, 2, 'creamy from paneer, crisp from onion');
+  assert.equal(dishProfile(['rice', 'butter'], KB).texture.creamy, 1, 'an accent (centre 1) claims no texture');
+  assert.equal(dishProfile(['onion'], KB).contrast, 1, 'one part crisp and juicy is not a contrast');
+  assert.equal(p.taste.salt, 2, 'butter salts the dish');
+  assert.equal(dishProfile(['paneer'], KB).taste.salt, 2, 'salt is assumed present');
+  assert.equal(dishProfile(['paneer'], KB, undefined, ['chilli_flakes']).taste.heat, 2, 'heat comes from modifiers');
   assert.deepEqual(dishProfile(['paneer', 'saffron'], KB).missing, ['saffron']);
 });
 
@@ -351,8 +354,10 @@ test('the technique layer: a rated "food@technique" wins, an unknown technique f
   const p2 = dishProfile([{ id: 'paneer', technique: 'boiled' }], step);
   assert.deepEqual([p2.inedible, p2.unfinished], [[], ['paneer@boiled']], 'another step is not a veto, but not the last technique either');
   const boiled = partVector({ id: 'paneer', technique: 'boiled' }, kb);
-  assert.match(boiled.source, /^raw/);
-  const shifted = partVector({ id: 'paneer', technique: 'airfried' }, kb, { airfried: { texture: { crisp: 2, juicy: -1 } } });
+  assert.deepEqual([boiled.source, boiled.state], ['raw', '@boiled']);
+  assert.equal(partVector('paneer', kb).state, 'raw');
+  const shifted = partVector({ id: 'paneer', technique: 'airfried' }, mergeRatings(kb, {}, { classes: { dense_starchy: ['paneer'] } }), { airfried: { dense_starchy: { texture: { crisp: 2, juicy: -1 } } } });
+  assert.equal(shifted.source, 'prior');
   assert.equal(shifted.texture.crisp, 2);
   assert.equal(shifted.texture.juicy, 0);
 });

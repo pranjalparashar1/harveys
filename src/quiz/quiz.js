@@ -48,8 +48,12 @@ export function validateQuiz(q) {
   }
   if (q.levels?.length !== 4) errs.push('levels must be the four words for 0–3');
   if (errs.length) throw new Error(errs.join('; '));
-  return { round: 7, ...q };
+  // v2 Step 3: salt and heat are dish dimensions fed by modifiers (salt, chilli), so the
+  // quiz stops asking them per raw food. Pierre-tutor still rates them for cooked foods.
+  const tastes = steps.includes('centre') ? q.tastes.filter((t) => !DISH_LEVEL_TASTES.includes(t.id)) : q.tastes;
+  return { round: 7, ...q, tastes };
 }
+export const DISH_LEVEL_TASTES = ['salt', 'heat'];
 
 export const blankState = () => ({ answers: {}, round: null, sent: {} });
 export const blankDraft = (quiz) => ({
