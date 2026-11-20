@@ -4,8 +4,10 @@
 // the clipboard).
 import { encodeBench } from './quiz/bench.js';
 
-const VERSION = '1.13.0';
-const KEY = 'harveys.bench.v1';
+const VERSION = '1.13.1';
+// ?sheet=holdout opens the Step 4c holdout sheet; each sheet keeps its own answers.
+const SHEET = new URLSearchParams(location.search).get('sheet') === 'holdout' ? 'holdout' : 'benchmark';
+const KEY = SHEET === 'holdout' ? 'harveys.holdout.v1' : 'harveys.bench.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
 const app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -161,7 +163,7 @@ app.addEventListener('change', (e) => {
 });
 
 async function init() {
-  const res = await fetch(new URL(`./quiz/benchmark.json${new URL(import.meta.url).search}`, import.meta.url));
+  const res = await fetch(new URL(`./quiz/${SHEET}.json${new URL(import.meta.url).search}`, import.meta.url));
   sheet = await res.json();
   load();
   state.i = Math.min(state.i, sheet.dishes.length);
