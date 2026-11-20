@@ -12,7 +12,7 @@ import { mulberry32 } from '../src/brain/learn.js';
 const quiz = validateQuiz(JSON.parse(readFileSync(new URL('../src/quiz/pierre-trainer.json', import.meta.url), 'utf8')));
 
 test('the quiz file is valid: veg and egg foods, no spices or condiments', () => {
-  assert.ok(quiz.foods.length >= 40);
+  assert.ok(quiz.foods.length >= 35); // 38 since the dals became one food (20 Nov)
   for (const later of ['besan', 'suji', 'vermicelli']) {
     assert.ok(!quiz.foods.some((f) => f.id === later), `${later} waits for Pierre-tutor`);
     assert.ok(quiz.tutor.some((f) => f.id === later));
@@ -265,7 +265,7 @@ test('the real brain file: issue #16 ingested', async () => {
   assert.ok(kb.prep.eggs && !kb.foods.eggs, 'eggs are prep only');
   assert.ok(kb.prep.paneer && kb.foods.paneer, 'paneer is rated and prep');
   for (const id of ['rice', 'oats', 'bread', 'pasta']) assert.equal(kb.foods[id].centre, 5, `${id} is a base`);
-  for (const id of ['moong_dal', 'masoor_dal', 'toor_dal', 'rajma', 'chickpeas']) assert.equal(kb.foods[id].centre, 4, id);
+  for (const id of ['dal', 'rajma', 'chickpeas']) assert.equal(kb.foods[id].centre, 4, id);
   assert.ok(kb.excluded.includes('spinach') && !kb.prep.spinach, 'spinach set aside');
 });
 
@@ -492,4 +492,19 @@ test('Step 2: whey and eggs have a centre, and the three dish tiers are seeded',
     assert.equal(PIERRE_SEED[id].tier, tier, id);
     assert.equal(PIERRE_SEED[id].verdict, asVerdict[tier], id);
   }
+});
+
+test('all dals are one food, "dal"; chole, rajma and chana stay separate (pranjal, 20 Nov)', async () => {
+  const { PIERRE_RAW: kb } = await import('../src/brain/pierre-raw.js');
+  const { FOODS } = await import('../src/brain/vocabulary.js');
+  for (const id of ['moong_dal', 'masoor_dal', 'toor_dal', 'urad_dal', 'chana_dal']) {
+    assert.ok(!kb.foods[id] && !kb.prep[id] && !FOODS[id], `${id} is gone`);
+    assert.equal(kb.aliases[id], 'dal');
+  }
+  assert.equal(kb.foods.dal.centre, 4);
+  for (const id of ['rajma', 'chickpeas', 'kala_chana']) assert.ok(kb.foods[id], `${id} stays`);
+  // A later rating under an old id lands on dal.
+  const later = mergeRatings(kb, { toor_dal: { texture: { creamy: 3 }, taste: {}, centre: 4, at: '2026-11-21T10:00:00.000Z' } });
+  assert.equal(later.foods.dal.texture.creamy, 3);
+  assert.ok(!later.foods.toor_dal);
 });

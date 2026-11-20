@@ -44,7 +44,8 @@ export const FOODS = {
   rice: { label: 'Rice', group: 'grain', synonyms: ['rice', 'basmati', 'basmati rice'] },
   poha: { label: 'Poha', group: 'grain', synonyms: ['poha', 'flattened rice', 'beaten rice'] },
   besan: { label: 'Besan', group: 'grain', synonyms: ['besan', 'gram flour', 'chickpea flour'] },
-  moong_dal: { label: 'Moong dal', group: 'grain', synonyms: ['moong dal', 'yellow moong dal', 'split moong'] },
+  // One food since 20 Nov (pranjal): the differences between dals are negligible. Chole, rajma, chana stay separate.
+  dal: { label: 'Dal', group: 'grain', synonyms: ['dal', 'daal', 'moong dal', 'yellow moong dal', 'split moong', 'masoor dal', 'toor dal', 'arhar dal', 'urad dal', 'chana dal'] },
   chickpeas: { label: 'Chickpeas (boiled or canned)', group: 'protein', synonyms: ['chickpeas', 'chole', 'kabuli chana', 'canned chickpeas', 'boiled chana'] },
   sprouts: { label: 'Moong sprouts', group: 'protein', synonyms: ['sprouts', 'moong sprouts', 'sprouted moong'] },
   tortilla: { label: 'Wraps / roti', group: 'bread', synonyms: ['tortilla', 'wrap', 'wraps', 'roti', 'chapati'] },

@@ -180,7 +180,13 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
  * starts; a food that is only prep has no raw ratings.
  */
 // centres: { whey: 4 } gives a prep-only food its centre 1–5 (Step 2), kept on its prep entry.
-export function mergeRatings(kb, ratings, { exclude = [], centres = {} } = {}) {
+// merges: { dal: ['moong_dal', …] } folds foods pranjal calls one food into one id (20 Nov:
+// "all dals are one food"). Each dimension takes the members' most common rating; the old ids
+// stay as aliases, so a later rating of moong_dal lands on dal.
+export function mergeRatings(kb, ratings, { exclude = [], centres = {}, merges = {} } = {}) {
+  const aliases = { ...(kb.aliases ?? {}) };
+  for (const [to, from] of Object.entries(merges)) for (const id of from) if (id !== to) aliases[id] = to;
+  ratings = Object.fromEntries(Object.entries(ratings).map(([id, r]) => [aliases[id] ?? id, r]));
   const foods = { ...(kb.foods ?? {}) };
   const prep = { ...(kb.prep ?? {}) };
   const tech = { ...(kb.tech ?? {}) };
@@ -221,12 +227,30 @@ export function mergeRatings(kb, ratings, { exclude = [], centres = {} } = {}) {
       ...(r.at ? { at: r.at } : {}),
     };
   }
+  for (const [to, from] of Object.entries(merges)) {
+    const rated = from.map((id) => foods[id]).filter(Boolean);
+    if (rated.length) {
+      const mode = (vals) => { const n = {}; for (const v of vals) n[v] = (n[v] ?? 0) + 1; return Number(Object.keys(n).sort((a, b) => n[b] - n[a] || a - b)[0]); };
+      const centre = mode(rated.map((f) => f.centre));
+      foods[to] = {
+        texture: Object.fromEntries(TEXTURES.map((k) => [k, mode(rated.map((f) => f.texture[k]))])),
+        taste: Object.fromEntries(TASTES.map((k) => [k, mode(rated.map((f) => f.taste[k]))])),
+        centre,
+        role: roleOf(centre),
+        at: rated.map((f) => f.at).filter(Boolean).sort().at(-1),
+        mergedFrom: from,
+      };
+    }
+    const preps = from.map((id) => prep[id]).filter(Boolean);
+    if (preps.length) prep[to] = { at: preps.map((x) => x.at).filter(Boolean).sort().at(-1) };
+    for (const id of from) if (id !== to) { delete foods[id]; delete prep[id]; }
+  }
   for (const [id, c] of Object.entries(centres)) {
     if (!prep[id]) throw new Error(`${id} is not a prep-only food; rate its centre in the quiz`);
     prep[id] = { ...prep[id], centre: clamp(Math.round(c), 1, 5) };
   }
   const sorted = (o) => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]));
-  return { ...kb, foods: sorted(foods), prep: sorted(prep), ...(Object.keys(tech).length ? { tech: sorted(tech) } : {}), excluded: [...new Set(excluded)].sort() };
+  return { ...kb, foods: sorted(foods), prep: sorted(prep), ...(Object.keys(aliases).length ? { aliases: sorted(aliases) } : {}), ...(Object.keys(tech).length ? { tech: sorted(tech) } : {}), excluded: [...new Set(excluded)].sort() };
 }
 
 function clamp(x, lo, hi) {

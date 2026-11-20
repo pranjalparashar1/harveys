@@ -213,27 +213,6 @@ export const PIERRE_RAW = {
       role: 'minor',
       at: '2026-11-19T17:25:31.668Z'
     },
-    chana_dal: {
-      texture: {
-        crisp: 0,
-        creamy: 2,
-        chewy: 0,
-        juicy: 0,
-        flaky: 0
-      },
-      taste: {
-        salt: 0,
-        sugar: 1,
-        fat: 0,
-        acid: 0,
-        heat: 0,
-        canvas: 2,
-        fresh: 0
-      },
-      centre: 4,
-      role: 'major',
-      at: '2026-11-19T17:12:05.786Z'
-    },
     cheese_slices: {
       texture: {
         crisp: 0,
@@ -359,6 +338,34 @@ export const PIERRE_RAW = {
       centre: 2,
       role: 'minor',
       at: '2026-11-19T16:45:16.000Z'
+    },
+    dal: {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      centre: 4,
+      role: 'major',
+      at: '2026-11-19T17:13:05.433Z',
+      mergedFrom: [
+        'moong_dal',
+        'masoor_dal',
+        'toor_dal',
+        'urad_dal',
+        'chana_dal'
+      ]
     },
     frozen_peas: {
       texture: {
@@ -486,27 +493,6 @@ export const PIERRE_RAW = {
       role: 'major',
       at: '2026-11-19T17:22:25.449Z'
     },
-    masoor_dal: {
-      texture: {
-        crisp: 0,
-        creamy: 1,
-        chewy: 1,
-        juicy: 0,
-        flaky: 0
-      },
-      taste: {
-        salt: 0,
-        sugar: 0,
-        fat: 0,
-        acid: 0,
-        heat: 0,
-        canvas: 3,
-        fresh: 0
-      },
-      centre: 4,
-      role: 'major',
-      at: '2026-11-19T15:04:25.751Z'
-    },
     milk: {
       texture: {
         crisp: 0,
@@ -527,27 +513,6 @@ export const PIERRE_RAW = {
       centre: 2,
       role: 'minor',
       at: '2026-11-19T14:51:03.325Z'
-    },
-    moong_dal: {
-      texture: {
-        crisp: 0,
-        creamy: 2,
-        chewy: 0,
-        juicy: 0,
-        flaky: 0
-      },
-      taste: {
-        salt: 0,
-        sugar: 1,
-        fat: 0,
-        acid: 0,
-        heat: 0,
-        canvas: 2,
-        fresh: 0
-      },
-      centre: 4,
-      role: 'major',
-      at: '2026-11-19T16:45:16.000Z'
     },
     mozzarella: {
       texture: {
@@ -948,48 +913,6 @@ export const PIERRE_RAW = {
       role: 'minor',
       at: '2026-11-19T16:45:16.000Z'
     },
-    toor_dal: {
-      texture: {
-        crisp: 0,
-        creamy: 2,
-        chewy: 0,
-        juicy: 0,
-        flaky: 0
-      },
-      taste: {
-        salt: 0,
-        sugar: 1,
-        fat: 0,
-        acid: 0,
-        heat: 0,
-        canvas: 2,
-        fresh: 0
-      },
-      centre: 4,
-      role: 'major',
-      at: '2026-11-19T15:55:32.103Z'
-    },
-    urad_dal: {
-      texture: {
-        crisp: 0,
-        creamy: 2,
-        chewy: 1,
-        juicy: 0,
-        flaky: 0
-      },
-      taste: {
-        salt: 0,
-        sugar: 1,
-        fat: 0,
-        acid: 0,
-        heat: 0,
-        canvas: 2,
-        fresh: 0
-      },
-      centre: 4,
-      role: 'major',
-      at: '2026-11-19T17:13:05.433Z'
-    },
     walnuts: {
       texture: {
         crisp: 2,
@@ -1037,9 +960,6 @@ export const PIERRE_RAW = {
     cashews: {
       at: '2026-11-19T17:25:31.668Z'
     },
-    chana_dal: {
-      at: '2026-11-19T17:12:05.786Z'
-    },
     cheese_slices: {
       at: '2026-11-19T14:26:09.548Z'
     },
@@ -1051,6 +971,9 @@ export const PIERRE_RAW = {
     },
     cucumber: {
       at: '2026-11-19T16:31:00.964Z'
+    },
+    dal: {
+      at: '2026-11-19T17:13:05.433Z'
     },
     eggs: {
       at: '2026-11-19T14:58:09.969Z',
@@ -1071,14 +994,8 @@ export const PIERRE_RAW = {
     mango: {
       at: '2026-11-19T17:22:25.449Z'
     },
-    masoor_dal: {
-      at: '2026-11-19T15:04:25.751Z'
-    },
     milk: {
       at: '2026-11-19T14:51:03.325Z'
-    },
-    moong_dal: {
-      at: '2026-11-19T16:45:16.000Z'
     },
     mozzarella: {
       at: '2026-11-19T17:12:47.909Z'
@@ -1130,12 +1047,6 @@ export const PIERRE_RAW = {
     },
     tomato: {
       at: '2026-11-19T16:45:16.000Z'
-    },
-    toor_dal: {
-      at: '2026-11-19T15:55:32.103Z'
-    },
-    urad_dal: {
-      at: '2026-11-19T17:13:05.433Z'
     },
     walnuts: {
       at: '2026-11-19T17:27:21.385Z'
@@ -1976,5 +1887,12 @@ export const PIERRE_RAW = {
       distance: 1,
       at: '2026-11-20T06:45Z'
     }
+  },
+  aliases: {
+    chana_dal: 'dal',
+    masoor_dal: 'dal',
+    moong_dal: 'dal',
+    toor_dal: 'dal',
+    urad_dal: 'dal'
   }
 };
