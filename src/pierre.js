@@ -242,11 +242,12 @@ document.addEventListener('click', (e) => {
 async function init() {
   const res = await fetch(new URL(`./quiz/${QUIZ}.json${new URL(import.meta.url).search}`, import.meta.url));
   quiz = validateQuiz(await res.json());
-  // Pierre-tutor asks only pairs the brain doesn't hold yet (1.10.1): answers saved on
+  // Pierre-tutor asks only pairs the brain doesn't hold or set aside yet (1.10.1): answers saved on
   // another phone or browser, or cleared, don't bring back pairs already ingested.
   if (QUIZ === 'pierre-tutor') {
     const { PIERRE_RAW } = await import('./brain/pierre-raw.js');
-    quiz = { ...quiz, foods: quiz.foods.filter((f) => !PIERRE_RAW.tech?.[f.id]) };
+    const done = new Set([...Object.keys(PIERRE_RAW.tech ?? {}), ...(PIERRE_RAW.excluded ?? [])]);
+    quiz = { ...quiz, foods: quiz.foods.filter((f) => !done.has(f.id)) };
   }
   steps = stepsOf(quiz);
   load();
