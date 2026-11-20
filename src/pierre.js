@@ -5,7 +5,7 @@
 // food aside. "Send to Harvey's" hands the ratings
 // over as text that scripts/ingest-pierre.mjs writes into the brain file.
 import {
-  stepsOf, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapReady, tapPrep, tapRated, tapRemove, isRated, isRemoved, upgradeAnswer,
+  stepsOf, validateQuiz, blankState, startRound, tapTexture, tapTaste, tapCentre, tapDistance, tapPrep, tapRated, tapRemove, isRated, isRemoved, upgradeAnswer,
   canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload,
 } from './quiz/quiz.js';
 
@@ -108,9 +108,9 @@ function renderPlay() {
     const bonus = quiz.tastes.filter((t) => t.bonus);
     input = `<h2 class="step">Taste</h2>` + rows(main, d.taste, 'data-taste')
       + (bonus.length ? `<h2 class="step bonus">Bonus</h2>` + rows(bonus, d.taste, 'data-taste') : '');
-  } else if (step === 'ready') {
-    input = `<h2 class="step">How ready?</h2><div class="opts" role="radiogroup" aria-label="How ready">` + quiz.ready.map((c) => `
-      <button type="button" class="opt centre ready${d.ready === c.value ? ' sel' : ''}" role="radio" aria-checked="${d.ready === c.value}" data-ready="${c.value}">
+  } else if (step === 'distance') {
+    input = `<h2 class="step">How far from done?</h2><div class="opts" role="radiogroup" aria-label="How far from done">` + quiz.distance.map((c) => `
+      <button type="button" class="opt centre ready${d.distance === c.value ? ' sel' : ''}" role="radio" aria-checked="${d.distance === c.value}" data-distance="${c.value}">
         <span class="k">${c.value}</span><span class="ct"><b>${esc(c.label)}</b><small>${esc(c.line)}</small></span>
       </button>`).join('') + `</div>`;
   } else {
@@ -176,7 +176,7 @@ function renderEnd() {
 function tile(f) {
   const a = state.answers[f.id];
   if (isRemoved(a)) return `<div class="tile removed"><b>${esc(f.name)}</b><span class="c">✕</span></div>`;
-  return `<div class="tile"><b>${esc(f.name)}</b>${isRated(a) ? `<span class="c">${a.ready != null ? a.ready : a.centre}</span>` : ''}${a?.prep ? `<span class="c prep${isRated(a) ? ' second' : ''}">P</span>` : ''}</div>`;
+  return `<div class="tile"><b>${esc(f.name)}</b>${isRated(a) ? `<span class="c">${a.distance != null ? a.distance : a.centre}</span>` : ''}${a?.prep ? `<span class="c prep${isRated(a) ? ' second' : ''}">P</span>` : ''}</div>`;
 }
 
 // ── Taps ────────────────────────────────────────────────────────────────────
@@ -190,14 +190,14 @@ function patch(fn) {
 
 let armed = 0;
 app.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-tex],[data-taste],[data-centre],[data-ready],[data-kind],[data-act]');
+  const el = e.target.closest('[data-tex],[data-taste],[data-centre],[data-distance],[data-kind],[data-act]');
   if (!el) return;
   if (el.dataset.kind) return patch((d) => (el.dataset.kind === 'prep' ? tapPrep(d) : tapRated(d)));
   if (el.closest('.prep-dim')) return;
   if (el.dataset.tex) return patch((d) => tapTexture(d, el.dataset.tex, Number(el.dataset.lv)));
   if (el.dataset.taste) return patch((d) => tapTaste(d, el.dataset.taste, Number(el.dataset.lv)));
   if (el.dataset.centre) return patch((d) => tapCentre(d, Number(el.dataset.centre)));
-  if (el.dataset.ready) return patch((d) => tapReady(d, Number(el.dataset.ready)));
+  if (el.dataset.distance) return patch((d) => tapDistance(d, el.dataset.distance === 'x' ? 'x' : Number(el.dataset.distance)));
   const act = el.dataset.act;
   if (act === 'remove') return patch(tapRemove);
   if (act === 'back') {

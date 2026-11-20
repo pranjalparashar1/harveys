@@ -3,12 +3,12 @@
   "version": 1,
   "id": "pierre-tutor",
   "title": "Pierre-tutor",
-  "purpose": "Rate a food cooked one way on Pierre's two sides, and how ready it is to eat.",
+  "purpose": "Rate a food cooked one way on Pierre's two sides, and how far it is from done.",
   "round": 7,
   "steps": [
     "texture",
     "taste",
-    "ready"
+    "distance"
   ],
   "kinds": false,
   "textures": [
@@ -71,34 +71,34 @@
       "bonus": true
     }
   ],
-  "ready": [
+  "distance": [
     {
-      "value": 4,
-      "label": "Eat it as it is",
-      "line": "Salted scrambled eggs."
-    },
-    {
-      "value": 3,
-      "label": "Needs only seasoning",
-      "line": "Paneer scrambled with no salt yet."
-    },
-    {
-      "value": 2,
-      "label": "Needs something added",
-      "line": "A sauce, a chutney or a masala."
+      "value": 0,
+      "label": "Done",
+      "line": "Only assembly left: a melted cheese slice, fried onion as a garnish."
     },
     {
       "value": 1,
-      "label": "Needs another cooking step",
-      "line": "Boiled soya chunks, then fried or air-fried."
+      "label": "One finishing step",
+      "line": "Salt, butter or a spread: toasted bread, pan-fried paneer."
     },
     {
-      "value": 0,
-      "label": "Inedible",
+      "value": 2,
+      "label": "Goes into something",
+      "line": "A sauce, tadka or masala: sautéed pasta, sautéed onion."
+    },
+    {
+      "value": 3,
+      "label": "Another cooking step",
+      "line": "Roasted suji, then upma."
+    },
+    {
+      "value": "x",
+      "label": "Never",
       "line": "Nobody would make it this way. Harvey’s never suggests it."
     }
   ],
-  "rated": "cooked this one way in a little fat, with no salt or seasoning: \"How ready?\" says what it still needs",
+  "rated": "cooked this one way in a little fat, with no salt or seasoning: \"How far from done?\" counts the steps it still needs",
   "techniques": {
     "boiled": "Boiled",
     "pan_fried": "Pan-fried in a little fat",
@@ -177,27 +177,6 @@
       "food": "paneer",
       "technique": "microwaved",
       "name": "Paneer, microwaved",
-      "everyday": true
-    },
-    {
-      "id": "tofu@pan_fried",
-      "food": "tofu",
-      "technique": "pan_fried",
-      "name": "Tofu, pan-fried",
-      "everyday": true
-    },
-    {
-      "id": "tofu@air_fried",
-      "food": "tofu",
-      "technique": "air_fried",
-      "name": "Tofu, air-fried",
-      "everyday": true
-    },
-    {
-      "id": "tofu@scrambled",
-      "food": "tofu",
-      "technique": "scrambled",
-      "name": "Tofu, scrambled",
       "everyday": true
     },
     {
