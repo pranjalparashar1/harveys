@@ -946,27 +946,6 @@ export const PIERRE_RAW = {
       role: 'minor',
       at: '2026-11-19T15:09:36.657Z'
     },
-    tofu: {
-      texture: {
-        crisp: 0,
-        creamy: 1,
-        chewy: 2,
-        juicy: 0,
-        flaky: 1
-      },
-      taste: {
-        salt: 0,
-        sugar: 0,
-        fat: 0,
-        acid: 0,
-        heat: 0,
-        canvas: 3,
-        fresh: 0
-      },
-      centre: 3,
-      role: 'major',
-      at: '2026-11-19T14:22:28.361Z'
-    },
     tomato: {
       texture: {
         crisp: 2,
@@ -1170,9 +1149,6 @@ export const PIERRE_RAW = {
     sweet_corn: {
       at: '2026-11-19T15:09:36.657Z'
     },
-    tofu: {
-      at: '2026-11-19T14:22:28.361Z'
-    },
     tomato: {
       at: '2026-11-19T16:45:16.000Z'
     },
@@ -1229,6 +1205,7 @@ export const PIERRE_RAW = {
     'sprouts',
     'sweet_corn@sauteed',
     'sweet_potato',
+    'tofu',
     'tofu@air_fried',
     'tofu@pan_fried',
     'tofu@scrambled',
