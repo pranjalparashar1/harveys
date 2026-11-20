@@ -437,3 +437,59 @@ test('makhana is set aside from Pierre (pranjal, 20 Nov), but the whey bowl stay
   assert.ok(!tutor.foods.some((f) => f.food === 'makhana'));
   assert.ok(CATALOGUE.some((m) => m.id === 'whey_makhana_bowl'));
 });
+
+// ── v2 Step 2: the rating pass ──────────────────────────────────────────────
+test('Step 2: the tutor asks whey as a shake (water, milk) and as a pancake', () => {
+  for (const id of ['whey@shake_water', 'whey@shake_milk', 'whey@pancake']) assert.ok(tutor.foods.some((f) => f.id === id), id);
+});
+
+test('Step 2: the retest is blind, 12 foods with tomato and milk, anchors never retested', async () => {
+  const { PIERRE_RAW: kb } = await import('../src/brain/pierre-raw.js');
+  const raw = readFileSync(new URL('../src/quiz/pierre-retest.json', import.meta.url), 'utf8');
+  const q = validateQuiz(JSON.parse(raw));
+  const ids = q.foods.map((f) => f.id);
+  assert.equal(ids.length, 12);
+  for (const id of ['tomato', 'milk']) assert.ok(ids.includes(id), id);
+  for (const id of ids) assert.ok(kb.foods[id]?.at.startsWith('2026-11-19'), `${id} was rated on 19 Nov`);
+  const anchors = [...q.textures, ...q.tastes].map((t) => t.line).join(' ') + q.centre.map((c) => c.line).join(' ');
+  for (const f of q.foods) assert.ok(!anchors.includes(`: ${f.name} `) && !anchors.includes(`Like ${f.name}.`), `${f.id} is not its own anchor`);
+  assert.ok(!/"(texture|taste|centre)"\s*:\s*\{/.test(raw), 'no old ratings in the file');
+  assert.match(readFileSync(new URL('../retest.html', import.meta.url), 'utf8'), /data-quiz="pierre-retest"[^]*src\/pierre\.js/);
+  assert.match(readFileSync(new URL('../.github/workflows/pages.yml', import.meta.url), 'utf8'), /retest\.html/);
+});
+
+test('Step 2: a retest export is reported, never ingested', async () => {
+  const { isRetest } = await import('../src/quiz/quiz.js');
+  const { retestReport } = await import('../scripts/retest-report.mjs');
+  const q = validateQuiz(JSON.parse(readFileSync(new URL('../src/quiz/pierre-retest.json', import.meta.url), 'utf8')));
+  const kb = { foods: { tomato: { texture: { crisp: 2, creamy: 0, chewy: 0, juicy: 2, flaky: 0 }, taste: { salt: 0, sugar: 1, fat: 0, acid: 2, heat: 0, canvas: 0, fresh: 2 }, centre: 2 } } };
+  const text = encodePayload(q, { tomato: { texture: { crisp: 0, juicy: 3 }, taste: { acid: 2, fresh: 2, sugar: 1 }, centre: 2, at: '2026-11-21T10:00:00.000Z' } });
+  assert.ok(isRetest(text));
+  const { moved, rows } = retestReport(decodePayload(text), kb);
+  assert.deepEqual(moved.map((d) => d.dim), ['texture.crisp']);
+  assert.equal(rows[0].off1, 1);
+});
+
+test('Step 2: a prep-only food gets its centre on the prep entry, and its tutor rows use it', () => {
+  const kb = mergeRatings({ foods: {}, prep: { whey: { at: '2026-11-19T14:48:22.280Z' } }, tech: { 'whey@shake_water': { texture: { creamy: 2 }, taste: {}, distance: 0 } } }, {}, { centres: { whey: 4 } });
+  assert.equal(kb.prep.whey.centre, 4);
+  const v = partVector({ id: 'whey', technique: 'shake_water' }, kb);
+  assert.equal(v.source, 'rated');
+  assert.equal(v.centre, 4);
+  // A later prep answer keeps the centre.
+  assert.equal(mergeRatings(kb, { whey: { prep: true, at: '2026-11-22T10:00:00.000Z' } }).prep.whey.centre, 4);
+  assert.throws(() => mergeRatings(kb, {}, { centres: { tomato: 3 } }), /not a prep-only food/);
+});
+
+test('Step 2: whey and eggs have a centre, and the three dish tiers are seeded', async () => {
+  const { PIERRE_RAW: kb } = await import('../src/brain/pierre-raw.js');
+  const { PIERRE_SEED } = await import('../src/brain/train-data.js');
+  assert.equal(kb.prep.whey.centre, 3);
+  assert.equal(kb.prep.eggs.centre, 4);
+  const tiers = { microwave_paneer_bhurji: 'floor', paneer_wrap: 'pass', whey_makhana_bowl: 'floor' };
+  const asVerdict = { veto: 'fail', floor: 'meh', pass: 'pass', crave: 'pass' };
+  for (const [id, tier] of Object.entries(tiers)) {
+    assert.equal(PIERRE_SEED[id].tier, tier, id);
+    assert.equal(PIERRE_SEED[id].verdict, asVerdict[tier], id);
+  }
+});

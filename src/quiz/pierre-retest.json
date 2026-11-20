@@ -1,0 +1,164 @@
+{
+  "format": "marco-quiz",
+  "version": 1,
+  "id": "pierre-retest",
+  "title": "Pierre retest",
+  "purpose": "Blind re-rating of 12 raw foods against fixed anchors, to see how steady the 19 Nov ratings are.",
+  "round": 12,
+  "steps": [
+    "texture",
+    "taste",
+    "centre"
+  ],
+  "kinds": false,
+  "seed": 20261120,
+  "textures": [
+    {
+      "id": "crisp",
+      "label": "Crisp, crunchy",
+      "line": "None: Rajma · Low: Mango · Medium: Almonds · High: Cucumber"
+    },
+    {
+      "id": "creamy",
+      "label": "Soft, creamy, smooth",
+      "line": "None: Roti · Low: Mango · Medium: Chana dal · High: Mozzarella"
+    },
+    {
+      "id": "chewy",
+      "label": "Chewy, springy",
+      "line": "None: Peanut butter · Low: Masoor dal · Medium: Mushroom · High: Soya chunks"
+    },
+    {
+      "id": "juicy",
+      "label": "Juicy, moist",
+      "line": "None: Bread · Low: Raisins · Medium: Pomegranate · High: Lemon"
+    },
+    {
+      "id": "flaky",
+      "label": "Flaky, crumbly",
+      "line": "None: Pasta · Low: Paneer · Medium: Cashews · High: –"
+    }
+  ],
+  "levels": [
+    "None",
+    "Low",
+    "Medium",
+    "High"
+  ],
+  "tastes": [
+    {
+      "id": "salt",
+      "label": "Salt",
+      "line": "None: Roti · Low: Mozzarella · Medium: Butter · High: –"
+    },
+    {
+      "id": "sugar",
+      "label": "Sweet",
+      "line": "None: Cream · Low: Rajma · Medium: Pomegranate · High: Peanut butter"
+    },
+    {
+      "id": "fat",
+      "label": "Fat",
+      "line": "None: Bread · Low: – · Medium: Curd · High: Hung curd"
+    },
+    {
+      "id": "acid",
+      "label": "Acid",
+      "line": "None: Spring onion · Low: Mozzarella · Medium: – · High: Lemon"
+    },
+    {
+      "id": "heat",
+      "label": "Heat",
+      "line": "None: Cream · Low: Capsicum · Medium: Onion · High: –"
+    },
+    {
+      "id": "canvas",
+      "label": "Canvas",
+      "line": "Its flavour comes from the technique or what's added. None: Peanut butter · Low: Spring onion · Medium: Chana dal · High: Pasta"
+    },
+    {
+      "id": "fresh",
+      "label": "Fresh",
+      "bonus": true,
+      "line": "None: Urad dal · Low: Capsicum · Medium: Carrot · High: Curd"
+    }
+  ],
+  "centre": [
+    {
+      "value": 1,
+      "label": "Accent",
+      "line": "A touch. Missed only by a chef. Like Butter."
+    },
+    {
+      "value": 2,
+      "label": "Support",
+      "line": "Helps a dish. Never the reason for it. Like Peanut butter."
+    },
+    {
+      "value": 3,
+      "label": "Partner",
+      "line": "Can lead a simple dish, or share the plate. Like Mango."
+    },
+    {
+      "value": 4,
+      "label": "Centre",
+      "line": "Meals are built around it. Fine on its own. Like Rajma."
+    },
+    {
+      "value": 5,
+      "label": "The meal",
+      "line": "Everything else is a side. Like Rice."
+    }
+  ],
+  "rated": "as you would plainly eat it: rice, dal and pasta cooked plain",
+  "foods": [
+    {
+      "id": "kala_chana",
+      "name": "Kala chana"
+    },
+    {
+      "id": "cabbage",
+      "name": "Cabbage"
+    },
+    {
+      "id": "banana",
+      "name": "Banana"
+    },
+    {
+      "id": "cheese_slices",
+      "name": "Cheese slices"
+    },
+    {
+      "id": "sweet_corn",
+      "name": "Sweet corn"
+    },
+    {
+      "id": "coriander",
+      "name": "Coriander"
+    },
+    {
+      "id": "toor_dal",
+      "name": "Toor dal"
+    },
+    {
+      "id": "frozen_peas",
+      "name": "Frozen peas"
+    },
+    {
+      "id": "potato",
+      "name": "Potato"
+    },
+    {
+      "id": "peanuts",
+      "name": "Peanuts"
+    },
+    {
+      "id": "tomato",
+      "name": "Tomato"
+    },
+    {
+      "id": "milk",
+      "name": "Milk"
+    }
+  ]
+}

@@ -12,7 +12,8 @@
 //   centre:  1–5 (accent, support, partner, centre, the meal)
 //   at:      when it was rated
 // prep: foods marked "part of prep, needs further processing" (soaked poha).
-//   They have no raw ratings; Pierre-tutor rates them with a technique.
+//   They have no raw ratings; Pierre-tutor rates them with a technique. centre: 1–5,
+//   given directly (Step 2, via --centre), used by their tutor rows.
 // tech: Pierre-tutor ratings of a food cooked one way ("paneer@pan_fried"), unsalted:
 //   texture and taste as above, plus distance 0–3, the steps left until done (only
 //   assembly left): 0 done, 1 one finishing step (salt, butter), 2 goes into a sauce,
@@ -1052,7 +1053,8 @@ export const PIERRE_RAW = {
       at: '2026-11-19T16:31:00.964Z'
     },
     eggs: {
-      at: '2026-11-19T14:58:09.969Z'
+      at: '2026-11-19T14:58:09.969Z',
+      centre: 4
     },
     frozen_peas: {
       at: '2026-11-19T16:45:16.000Z'
@@ -1139,7 +1141,8 @@ export const PIERRE_RAW = {
       at: '2026-11-19T17:27:21.385Z'
     },
     whey: {
-      at: '2026-11-19T14:48:22.280Z'
+      at: '2026-11-19T14:48:22.280Z',
+      centre: 3
     }
   },
   excluded: [

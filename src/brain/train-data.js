@@ -5,11 +5,16 @@
  * doesn't start from nothing. Every one can be changed on the page.
  */
 export const PIERRE_SEED = {
-  microwave_paneer_bhurji: { verdict: 'meh', why: 'Fine idea, but microwaved paneer sounds sad' },
+// v2 Step 2 (pranjal, 20 Nov): `tier` is veto | floor | pass | crave (Step 3's Pierre).
+// `verdict` stays fail | meh | pass for train.js: veto→fail, floor→meh, pass/crave→pass.
+  microwave_paneer_bhurji: { verdict: 'meh', tier: 'floor', why: 'Floor: acceptable, not more' },
   mug_omelette: { verdict: 'fail', why: 'Tastes bad and smells up the microwave; a pan is one more step' },
   airfryer_egg_in_toast: { verdict: 'meh', why: 'Slightly messy' },
   soya_chunk_curd_bowl: { verdict: 'fail', why: 'Boiled soya chunks taste horrible' },
-  paneer_wrap: { verdict: 'fail', why: 'Microwaved paneer tastes horrible; wraps aren’t a home staple' },
+  // pranjal: "obviously a pass", but it's assembly of a wrap and paneer cooked some way;
+  // hard to judge a dish of 2–3 layers of assembly without knowing its friction.
+  paneer_wrap: { verdict: 'pass', tier: 'pass', why: 'Pass, though it’s an assembly of wrap and paneer whose cooking isn’t clear' },
+  whey_makhana_bowl: { verdict: 'meh', tier: 'floor', why: 'Floor: barely acceptable' },
   plain_omelette: { verdict: 'pass', why: 'Easy, and good' },
   egg_bhurji: { verdict: 'pass', why: 'Easy, and good' },
   stovetop_paneer_bhurji: { verdict: 'pass', why: 'Easy, and good' },

@@ -120,7 +120,7 @@ export function partVector(part, kb = PIERRE_RAW, techniques = TECHNIQUES) {
       technique,
       texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(t.texture?.[k] ?? 0, 0, 3)])),
       taste: Object.fromEntries(TASTES.map((k) => [k, clamp(t.taste?.[k] ?? 0, 0, 3)])),
-      centre: rawVector(id, kb)?.centre ?? 3, // prep-only foods (eggs) have no centre yet
+      centre: rawVector(id, kb)?.centre ?? kb.prep?.[id]?.centre ?? 3, // prep-only foods (eggs, whey) carry theirs on the prep entry
       distance: t.distance ?? null,
       veto: !!t.veto,
       source: 'rated',
@@ -179,7 +179,8 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
  * like soaked poha), or both (paneer). Prep foods are listed in `prep`, where Pierre-tutor
  * starts; a food that is only prep has no raw ratings.
  */
-export function mergeRatings(kb, ratings, { exclude = [] } = {}) {
+// centres: { whey: 4 } gives a prep-only food its centre 1–5 (Step 2), kept on its prep entry.
+export function mergeRatings(kb, ratings, { exclude = [], centres = {} } = {}) {
   const foods = { ...(kb.foods ?? {}) };
   const prep = { ...(kb.prep ?? {}) };
   const tech = { ...(kb.tech ?? {}) };
@@ -205,7 +206,7 @@ export function mergeRatings(kb, ratings, { exclude = [] } = {}) {
       };
       continue;
     }
-    if (r.prep) prep[id] = r.at ? { at: r.at } : {};
+    if (r.prep) prep[id] = { ...(prep[id]?.centre ? { centre: prep[id].centre } : {}), ...(r.at ? { at: r.at } : {}) };
     else delete prep[id];
     if (r.centre == null) {
       delete foods[id];
@@ -219,6 +220,10 @@ export function mergeRatings(kb, ratings, { exclude = [] } = {}) {
       role: roleOf(r.centre ?? 2),
       ...(r.at ? { at: r.at } : {}),
     };
+  }
+  for (const [id, c] of Object.entries(centres)) {
+    if (!prep[id]) throw new Error(`${id} is not a prep-only food; rate its centre in the quiz`);
+    prep[id] = { ...prep[id], centre: clamp(Math.round(c), 1, 5) };
   }
   const sorted = (o) => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]));
   return { ...kb, foods: sorted(foods), prep: sorted(prep), ...(Object.keys(tech).length ? { tech: sorted(tech) } : {}), excluded: [...new Set(excluded)].sort() };

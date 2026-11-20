@@ -1,9 +1,11 @@
 // Pulls a Pierre-trainer "Send to Marco" export into Marco's brain file.
 //   node scripts/ingest-pierre.mjs export.txt      (or pipe the text in)
 //   node scripts/ingest-pierre.mjs --exclude spinach,okra   (set foods aside)
+//   node scripts/ingest-pierre.mjs --centre whey=4,eggs=3    (centre of a prep-only food)
+// A retest export is refused: compare it with scripts/retest-report.mjs instead.
 // Rewrites src/brain/pierre-raw.js. Newer ratings of the same food win.
 import { readFileSync, writeFileSync } from 'node:fs';
-import { decodePayload } from '../src/quiz/quiz.js';
+import { decodePayload, isRetest } from '../src/quiz/quiz.js';
 import { mergeRatings } from '../src/brain/ingredients.js';
 import { PIERRE_RAW } from '../src/brain/pierre-raw.js';
 
@@ -19,10 +21,15 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
   const ex = args.indexOf('--exclude');
   const exclude = ex >= 0 ? args.splice(ex, 2)[1].split(',').map((s) => s.trim()).filter(Boolean) : [];
-  const ratings = args[0] || !exclude.length ? decodePayload(readFileSync(args[0] ?? 0, 'utf8')) : {};
+  const ce = args.indexOf('--centre');
+  const centres = ce >= 0 ? Object.fromEntries(args.splice(ce, 2)[1].split(',').map((s) => s.trim().split('=')).map(([k, v]) => [k, Number(v)])) : {};
+  const flagsOnly = exclude.length || Object.keys(centres).length;
+  const text = args[0] || !flagsOnly ? readFileSync(args[0] ?? 0, 'utf8') : '';
+  if (text && isRetest(text)) throw new Error('that is a retest export: run scripts/retest-report.mjs on it; retests never change the brain');
+  const ratings = text ? decodePayload(text) : {};
   const n = Object.keys(ratings).length;
-  if (!n && !exclude.length) throw new Error('no ratings found in that text');
-  const kb = mergeRatings(PIERRE_RAW, ratings, { exclude });
+  if (!n && !flagsOnly) throw new Error('no ratings found in that text');
+  const kb = mergeRatings(PIERRE_RAW, ratings, { exclude, centres });
   writeFileSync(FILE, renderBrainFile(kb));
   console.log(`ingested ${n} foods; the brain file now has ${Object.keys(kb.foods).length}`);
 }
