@@ -51,7 +51,8 @@ export function parseCombo(name) {
 }
 
 const words = (id) => id.replace(/_/g, ' ');
-const TECH_WORD = { air_fried: 'air-fried', pan_fried: 'pan-fried', deep_fried: 'deep-fried', fried_egg: 'fried', shake_water: 'shaken with water', shake_milk: 'shaken with milk', pressure_cooked: 'pressure-cooked' };
+const TECH_WORD = { sauteed: 'sautéed', air_fried: 'air-fried', pan_fried: 'pan-fried', deep_fried: 'deep-fried', fried_egg: 'fried', shake_water: 'shaken with water', shake_milk: 'shaken with milk', pressure_cooked: 'pressure-cooked' };
+export const FIX_TECHNIQUES = ['sauteed', 'air_fried', 'pan_fried', 'toasted', 'roasted', 'boiled', 'microwaved', 'melted', 'mashed'];
 export const partLabel = (p) => (p.technique ? `${words(p.id)} (${TECH_WORD[p.technique] ?? words(p.technique)})` : words(p.id));
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -101,7 +102,13 @@ export function buildBenchmark(absurdRows, seed = SEED) {
       { id: 'cooking', label: 'Cooked wrong / raw' },
       { id: 'meal', label: 'Not a meal' },
     ],
-    dishes: dishes.map((d) => ({ id: d.id, name: d.name, parts: cap([...d.parts.map(partLabel), ...d.modifiers.map(words)].join(', ')) })),
+    // "Fix it" (pranjal, 20 Nov): after a veto or floor, change any part's cooking or drop it,
+    // and say what the fixed dish would reach. Ids and cooking only, still no scores.
+    techniques: FIX_TECHNIQUES.map((id) => ({ id, label: TECH_WORD[id] ?? words(id) })),
+    dishes: dishes.map((d) => ({
+      id: d.id, name: d.name, parts: cap([...d.parts.map(partLabel), ...d.modifiers.map(words)].join(', ')),
+      items: [...d.parts.map((p) => ({ id: p.id, ...(p.technique ? { technique: p.technique } : {}) })), ...d.modifiers.map((id) => ({ id, mod: true }))],
+    })),
   };
   return { sheet, key };
 }

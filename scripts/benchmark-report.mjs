@@ -4,7 +4,7 @@
 // settles, and the open flags (milk and cheese-slice retest drift, the almond/walnut crunch).
 //   node scripts/benchmark-report.mjs key.json answers.txt [retest.txt] > benchmark.md
 import { readFileSync } from 'node:fs';
-import { decodeBench, TIER_IDS } from '../src/quiz/bench.js';
+import { decodeBench, applyFix, TIER_IDS } from '../src/quiz/bench.js';
 import { decodePayload } from '../src/quiz/quiz.js';
 import { PIERRE_RAW } from '../src/brain/pierre-raw.js';
 import { pierreTier, TEXTURES } from '../src/brain/ingredients.js';
@@ -75,6 +75,22 @@ export function report(keys, { answers, tiers }, retest = {}) {
     say(`| ${k.name} | ${k.source} | **${a.tier}** | ${k.computed}${a.tier === k.computed ? '' : ' ✗'} | ${k.why.join('; ') || '–'}${k.unrated.length ? ` (unrated: ${k.unrated.join(', ')})` : ''} | ${a.reasons.join(', ') || '–'} | ${k.couvert ?? '–'} |`);
   }
   say();
+  const fixed = rated.filter((k) => answers[k.id].fix);
+  if (fixed.length) {
+    say('## Your fixes');
+    say();
+    say("What you'd change to rescue a veto or floor, and what Pierre computes for the fixed dish. Pierre's own upgrade only ever adds a spice or a small food, so a cooking change it can't suggest is a gap in the upgrade search.");
+    say();
+    say("| Dish | You | Your fix | Fixed, you | Fixed, Pierre | Pierre's own upgrade |");
+    say('|---|---|---|---|---|---|');
+    for (const k of fixed) {
+      const items = [...k.parts.map(toPart), ...k.modifiers.map((id) => ({ id, mod: true }))];
+      const after = applyFix(items, answers[k.id].fix.line);
+      const t = tierOf({ ...k, parts: after.filter((x) => !x.mod).map((x) => (x.technique ? `${x.id}@${x.technique}` : x.id)), modifiers: after.filter((x) => x.mod).map((x) => x.id) }, PIERRE_RAW, floor);
+      say(`| ${k.name} | ${answers[k.id].tier} | ${answers[k.id].fix.line} | **${answers[k.id].fix.tier}** | ${t.computed}${t.computed === answers[k.id].fix.tier ? '' : ' ✗'} | ${k.upgrade ? `+ ${k.upgrade}` : '–'} |`);
+    }
+    say();
+  }
   say('## Per-dimension disagreement');
   say();
   say('A dimension you named on a dish Pierre passed is something Pierre is blind to. One Pierre named on a dish you passed is a rule that is too strict.');
@@ -116,6 +132,7 @@ export function report(keys, { answers, tiers }, retest = {}) {
   say();
   say('## Open flags');
   say();
+  say('- The sheet named no cooking state or arrangement for the absurd combos (a part with no cooking was "as it comes"), and you asked how one was arranged while rating. Their ratings carry that ambiguity; the brain has no arrangement either.');
   const withIds = (ids) => rated.filter((k) => k.parts.some((p) => ids.includes(p.split('@')[0])));
   const swap = (ids) => {
     const c = structuredClone(PIERRE_RAW);
