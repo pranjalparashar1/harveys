@@ -9,7 +9,7 @@ import {
   canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload,
 } from './quiz/quiz.js';
 
-const VERSION = '1.10.0';
+const VERSION = '1.10.1';
 const RENAMED = { protein_bread: 'bread' };
 // One player, two quizzes: Pierre-trainer (raw foods) and Pierre-tutor (a food cooked one way).
 const QUIZ = document.body.dataset.quiz || 'pierre-trainer';
@@ -242,6 +242,12 @@ document.addEventListener('click', (e) => {
 async function init() {
   const res = await fetch(new URL(`./quiz/${QUIZ}.json${new URL(import.meta.url).search}`, import.meta.url));
   quiz = validateQuiz(await res.json());
+  // Pierre-tutor asks only pairs the brain doesn't hold yet (1.10.1): answers saved on
+  // another phone or browser, or cleared, don't bring back pairs already ingested.
+  if (QUIZ === 'pierre-tutor') {
+    const { PIERRE_RAW } = await import('./brain/pierre-raw.js');
+    quiz = { ...quiz, foods: quiz.foods.filter((f) => !PIERRE_RAW.tech?.[f.id]) };
+  }
   steps = stepsOf(quiz);
   load();
   render();
