@@ -1195,13 +1195,16 @@ export const PIERRE_RAW = {
     'brinjal',
     'broccoli',
     'buttermilk',
+    'cashews@roasted',
     'cauliflower',
     'cheese_spread',
     'chia_seeds',
+    'chickpeas@air_fried',
     'coconut',
     'corn_flakes',
     'daliya',
     'dates',
+    'frozen_peas@sauteed',
     'grapes',
     'green_beans',
     'green_moong',
@@ -1210,18 +1213,829 @@ export const PIERRE_RAW = {
     'lauki',
     'lettuce',
     'lobia',
+    'makhana@roasted',
     'murmura',
     'okra',
     'orange',
     'papaya',
+    'potato@mashed',
     'pumpkin',
     'radish',
     'roasted_chana',
+    'roti@pan_fried',
+    'roti@toasted',
     'sabudana',
     'spinach',
     'sprouts',
+    'sweet_corn@sauteed',
     'sweet_potato',
+    'tofu@air_fried',
+    'tofu@pan_fried',
+    'tofu@scrambled',
+    'vermicelli@sauteed',
     'watermelon',
     'zucchini'
-  ]
+  ],
+  tech: {
+    'almonds@roasted': {
+      texture: {
+        crisp: 3,
+        creamy: 1,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 2,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:47Z'
+    },
+    'besan@chilla': {
+      texture: {
+        crisp: 1,
+        creamy: 1,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:50Z'
+    },
+    'bread@air_fried': {
+      texture: {
+        crisp: 3,
+        creamy: 0,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:38Z'
+    },
+    'bread@pan_fried': {
+      texture: {
+        crisp: 1,
+        creamy: 0,
+        chewy: 2,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:35Z'
+    },
+    'bread@toasted': {
+      texture: {
+        crisp: 3,
+        creamy: 0,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T06:36Z'
+    },
+    'cabbage@sauteed': {
+      texture: {
+        crisp: 1,
+        creamy: 1,
+        chewy: 1,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T06:49Z'
+    },
+    'capsicum@air_fried': {
+      texture: {
+        crisp: 1,
+        creamy: 1,
+        chewy: 1,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 1,
+        canvas: 1,
+        fresh: 1
+      },
+      ready: 2,
+      at: '2026-11-20T06:42Z'
+    },
+    'capsicum@sauteed': {
+      texture: {
+        crisp: 1,
+        creamy: 1,
+        chewy: 1,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 1,
+        acid: 0,
+        heat: 1,
+        canvas: 2,
+        fresh: 1
+      },
+      ready: 3,
+      at: '2026-11-20T06:48Z'
+    },
+    'cheese_slices@melted': {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 2,
+        sugar: 0,
+        fat: 3,
+        acid: 1,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:45Z'
+    },
+    'chickpeas@mashed': {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 1,
+        juicy: 1,
+        flaky: 1
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T06:39Z'
+    },
+    'eggs@boiled': {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T05:57Z'
+    },
+    'eggs@fried_egg': {
+      texture: {
+        crisp: 1,
+        creamy: 2,
+        chewy: 1,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 2,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:38Z'
+    },
+    'eggs@microwaved': {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 3,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 0,
+      at: '2026-11-20T06:32Z'
+    },
+    'eggs@omelette': {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 2,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:35Z'
+    },
+    'eggs@scrambled': {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 2,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:37Z'
+    },
+    'frozen_peas@boiled': {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 0,
+        juicy: 2,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T06:50Z'
+    },
+    'kala_chana@sauteed': {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 1,
+        juicy: 0,
+        flaky: 1
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T06:44Z'
+    },
+    'makhana@air_fried': {
+      texture: {
+        crisp: 2,
+        creamy: 0,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:37Z'
+    },
+    'mozzarella@melted': {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 3,
+        acid: 1,
+        heat: 0,
+        canvas: 1,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:44Z'
+    },
+    'mushroom@air_fried': {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 3,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T06:05Z'
+    },
+    'mushroom@sauteed': {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 2,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T06:41Z'
+    },
+    'onion@deep_fried': {
+      texture: {
+        crisp: 3,
+        creamy: 0,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 2,
+        fat: 3,
+        acid: 0,
+        heat: 1,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:47Z'
+    },
+    'onion@sauteed': {
+      texture: {
+        crisp: 1,
+        creamy: 1,
+        chewy: 0,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 2,
+        fat: 1,
+        acid: 0,
+        heat: 1,
+        canvas: 2,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T06:49Z'
+    },
+    'paneer@air_fried': {
+      texture: {
+        crisp: 2,
+        creamy: 1,
+        chewy: 1,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 2,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:40Z'
+    },
+    'paneer@microwaved': {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 1,
+        juicy: 1,
+        flaky: 1
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 2,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:37Z'
+    },
+    'paneer@pan_fried': {
+      texture: {
+        crisp: 2,
+        creamy: 1,
+        chewy: 2,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 2,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T06:40Z'
+    },
+    'paneer@scrambled': {
+      texture: {
+        crisp: 0,
+        creamy: 2,
+        chewy: 1,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 2,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:41Z'
+    },
+    'pasta@sauteed': {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 3,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T06:39Z'
+    },
+    'peanuts@roasted': {
+      texture: {
+        crisp: 2,
+        creamy: 0,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 2,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:42Z'
+    },
+    'poha@sauteed': {
+      texture: {
+        crisp: 1,
+        creamy: 0,
+        chewy: 1,
+        juicy: 0,
+        flaky: 1
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T05:57Z'
+    },
+    'potato@air_fried': {
+      texture: {
+        crisp: 2,
+        creamy: 1,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T05:58Z'
+    },
+    'potato@microwaved': {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 2,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T05:12Z'
+    },
+    'potato@pan_fried': {
+      texture: {
+        crisp: 2,
+        creamy: 1,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 2,
+        fresh: 0
+      },
+      ready: 3,
+      at: '2026-11-20T06:31Z'
+    },
+    'rice@sauteed': {
+      texture: {
+        crisp: 1,
+        creamy: 1,
+        chewy: 1,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T06:32Z'
+    },
+    'soya_chunks@air_fried': {
+      texture: {
+        crisp: 1,
+        creamy: 0,
+        chewy: 3,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T06:38Z'
+    },
+    'soya_chunks@sauteed': {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 3,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 2,
+      at: '2026-11-20T06:36Z'
+    },
+    'spring_onion@sauteed': {
+      texture: {
+        crisp: 1,
+        creamy: 1,
+        chewy: 1,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 1,
+        acid: 0,
+        heat: 1,
+        canvas: 1,
+        fresh: 1
+      },
+      ready: 3,
+      at: '2026-11-20T06:45Z'
+    },
+    'suji@roasted': {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      ready: 1,
+      at: '2026-11-20T06:48Z'
+    },
+    'sweet_corn@boiled': {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 1,
+        juicy: 2,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 2,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 1
+      },
+      ready: 2,
+      at: '2026-11-20T06:48Z'
+    },
+    'tomato@sauteed': {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 1,
+        juicy: 2,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 1,
+        acid: 2,
+        heat: 0,
+        canvas: 1,
+        fresh: 1
+      },
+      ready: 3,
+      at: '2026-11-20T06:45Z'
+    }
+  }
 };
