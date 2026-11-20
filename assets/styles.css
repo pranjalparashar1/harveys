@@ -404,3 +404,6 @@ a.btn.send.fresh:not(.primary) { border-color: var(--accent); color: var(--accen
 .fixrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 4px 4px 4px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .fixrow span { text-transform: capitalize; }
 .fixrow select { font: 500 16px var(--font); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; min-height: 36px; padding: 0 8px; max-width: 55%; }
+/* Benchmark chips (1.12.2): a picked reason or fixed tier is filled, not just outlined */
+body.quiz .chip.toggle[aria-checked=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+body.quiz .chip.toggle[aria-checked=true]::before { content: "✓ "; }
