@@ -480,3 +480,16 @@ test('Step 2: a prep-only food gets its centre on the prep entry, and its tutor 
   assert.equal(mergeRatings(kb, { whey: { prep: true, at: '2026-11-22T10:00:00.000Z' } }).prep.whey.centre, 4);
   assert.throws(() => mergeRatings(kb, {}, { centres: { tomato: 3 } }), /not a prep-only food/);
 });
+
+test('Step 2: whey and eggs have a centre, and the three dish tiers are seeded', async () => {
+  const { PIERRE_RAW: kb } = await import('../src/brain/pierre-raw.js');
+  const { PIERRE_SEED } = await import('../src/brain/train-data.js');
+  assert.equal(kb.prep.whey.centre, 3);
+  assert.equal(kb.prep.eggs.centre, 4);
+  const tiers = { microwave_paneer_bhurji: 'floor', paneer_wrap: 'pass', whey_makhana_bowl: 'floor' };
+  const asVerdict = { veto: 'fail', floor: 'meh', pass: 'pass', crave: 'pass' };
+  for (const [id, tier] of Object.entries(tiers)) {
+    assert.equal(PIERRE_SEED[id].tier, tier, id);
+    assert.equal(PIERRE_SEED[id].verdict, asVerdict[tier], id);
+  }
+});
