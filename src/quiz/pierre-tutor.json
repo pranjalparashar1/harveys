@@ -113,7 +113,10 @@
     "mashed": "Mashed",
     "melted": "Melted on something hot",
     "microwaved": "Cooked from raw in the microwave",
-    "chilla": "Besan and water batter, pan-fried thin"
+    "chilla": "Besan and water batter, pan-fried thin",
+    "shake_water": "Shaken with water, nothing else added",
+    "shake_milk": "Shaken with milk, nothing else added",
+    "pancake": "Made into a protein pancake, pan-fried"
   },
   "foods": [
     {
@@ -422,6 +425,27 @@
       "food": "vermicelli",
       "technique": "sauteed",
       "name": "Vermicelli, sautéed"
+    },
+    {
+      "id": "whey@shake_water",
+      "food": "whey",
+      "technique": "shake_water",
+      "name": "Whey, shaken with water",
+      "everyday": true
+    },
+    {
+      "id": "whey@shake_milk",
+      "food": "whey",
+      "technique": "shake_milk",
+      "name": "Whey, shaken with milk",
+      "everyday": true
+    },
+    {
+      "id": "whey@pancake",
+      "food": "whey",
+      "technique": "pancake",
+      "name": "Whey, as a pancake",
+      "everyday": true
     }
   ],
   "rule": "One food, one technique, a repeatable result. No technique whose result depends on other ingredients (gravies, tadkas, shakes, batters with fillings)."

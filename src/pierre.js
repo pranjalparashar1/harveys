@@ -9,12 +9,12 @@ import {
   canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload,
 } from './quiz/quiz.js';
 
-const VERSION = '1.9.0';
+const VERSION = '1.10.0';
 const RENAMED = { protein_bread: 'bread' };
 // One player, two quizzes: Pierre-trainer (raw foods) and Pierre-tutor (a food cooked one way).
 const QUIZ = document.body.dataset.quiz || 'pierre-trainer';
 // The tutor starts fresh with readiness (1.8.1): earlier tutor answers aren't carried over.
-const KEY = QUIZ === 'pierre-tutor' ? 'harveys.tutor.v2' : 'marco.pierre.v1';
+const KEY = { 'pierre-tutor': 'harveys.tutor.v2', 'pierre-retest': 'harveys.retest.v1' }[QUIZ] ?? 'marco.pierre.v1';
 
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
 const app = document.getElementById('app');

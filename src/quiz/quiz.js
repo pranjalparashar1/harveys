@@ -22,10 +22,13 @@ export const HEADER = '#harveys pierre-trainer v3';
 // it feeds Marco as finishing friction. v1 exports had readiness "r 4–0", read as
 // distance 0–3 and x (r4→0, r3→1, r2→2, r1→3, r0→x).
 export const TUTOR_HEADER = '#harveys pierre-tutor v2';
+// The Step 2 retest (v2 plan): a blind re-rating, compared by scripts/retest-report.mjs and never ingested.
+export const RETEST_HEADER = '#harveys pierre-retest v1';
 export const VETO = 'x';
 export const distanceFromReady = (r) => (r === 0 ? VETO : 4 - r);
 export const stepsOf = (quiz) => quiz?.steps ?? STEPS;
-const headerOf = (quiz) => (quiz?.id === 'pierre-tutor' ? TUTOR_HEADER : HEADER);
+const headerOf = (quiz) => ({ 'pierre-tutor': TUTOR_HEADER, 'pierre-retest': RETEST_HEADER }[quiz?.id] ?? HEADER);
+export const isRetest = (text) => String(text).includes(RETEST_HEADER.split(' v')[0]);
 // The last step is a pick the food can't go on without: its centre, or its distance.
 const PICKS = { centre: 'centre', distance: 'distance' };
 
@@ -193,7 +196,7 @@ export function encodePayload(quiz, answers, ids = Object.keys(answers)) {
 
 export function decodePayload(text) {
   const lines = String(text).replace(/\r/g, '').split('\n').map((l) => l.trim());
-  if (!lines.some((l) => /^#(marco|harveys) pierre-(trainer|tutor)/.test(l))) throw new Error('not a Pierre-trainer export');
+  if (!lines.some((l) => /^#(marco|harveys) pierre-(trainer|tutor|retest)/.test(l))) throw new Error('not a Pierre-trainer export');
   const texLine = lines.find((l) => l.startsWith('textures '));
   const tex = texLine ? texLine.slice(9).trim().split('.') : ['crisp', 'creamy', 'chewy', 'juicy', 'flaky'];
   const tasLine = lines.find((l) => l.startsWith('tastes '));
