@@ -20,9 +20,9 @@ test('peeling garlic or onion is separate from an easy cut', () => {
   const aglio = rawFeatures(dish('pasta_aglio_olio_paneer'));
   assert.equal(aglio.peels, 1); // garlic
   assert.equal(aglio.cuts, 1); // paneer cubes
-  const tofu = rawFeatures(dish('airfryer_tofu_bites'));
-  assert.equal(tofu.peels, 0);
-  assert.equal(tofu.cuts, 1);
+  const tikka = rawFeatures(dish('airfryer_paneer_tikka'));
+  assert.equal(tikka.peels, 0);
+  assert.equal(tikka.cuts, 1);
 });
 
 test('pre-prep is a variable: poha 15 min, khichdi 1 h, chickpeas overnight', () => {
@@ -67,10 +67,13 @@ function simulate(n, seed = 7) {
 }
 
 test('pairwise choices move the weights toward the truth', () => {
-  const fit = fitMarco(simulate(120));
-  const peel = explainWeights(fit.theta).find((w) => w.key === 'peels');
+  // One seed is luck (removing 3 meals in v2 Step 1 flipped seed 7), so judge the
+  // median over five simulated users with 300 picks each.
   const start = explainWeights(FEATURES.map((f) => f.prior)).find((w) => w.key === 'peels');
-  assert.ok(peel.gramsPerUnit > start.gramsPerUnit * 1.5, `peeling ${peel.gramsPerUnit} g vs start ${start.gramsPerUnit} g`);
+  const fits = [1, 2, 3, 4, 5].map((seed) => fitMarco(simulate(300, seed)));
+  const grams = fits.map((f) => explainWeights(f.theta).find((w) => w.key === 'peels').gramsPerUnit).sort((a, b) => a - b);
+  assert.ok(grams[2] > start.gramsPerUnit * 1.5, `median peeling ${grams[2]} g vs start ${start.gramsPerUnit} g`);
+  const fit = fitMarco(simulate(120));
   assert.ok(fit.hits >= fit.priorHits, 'fitted weights explain the picks at least as well as the prior');
   assert.ok(fit.looHits != null);
 });

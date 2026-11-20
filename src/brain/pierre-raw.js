@@ -464,27 +464,6 @@ export const PIERRE_RAW = {
       role: 'minor',
       at: '2026-11-19T17:28:59.152Z'
     },
-    makhana: {
-      texture: {
-        crisp: 0,
-        creamy: 0,
-        chewy: 3,
-        juicy: 0,
-        flaky: 0
-      },
-      taste: {
-        salt: 0,
-        sugar: 0,
-        fat: 0,
-        acid: 0,
-        heat: 0,
-        canvas: 3,
-        fresh: 0
-      },
-      centre: 3,
-      role: 'major',
-      at: '2026-11-19T14:54:31.644Z'
-    },
     mango: {
       texture: {
         crisp: 1,
@@ -1087,9 +1066,6 @@ export const PIERRE_RAW = {
     kala_chana: {
       at: '2026-11-19T17:11:36.813Z'
     },
-    makhana: {
-      at: '2026-11-19T14:54:31.644Z'
-    },
     mango: {
       at: '2026-11-19T17:22:25.449Z'
     },
@@ -1190,6 +1166,8 @@ export const PIERRE_RAW = {
     'lauki',
     'lettuce',
     'lobia',
+    'makhana',
+    'makhana@air_fried',
     'makhana@roasted',
     'murmura',
     'okra',
@@ -1554,26 +1532,6 @@ export const PIERRE_RAW = {
       },
       distance: 1,
       at: '2026-11-20T06:44Z'
-    },
-    'makhana@air_fried': {
-      texture: {
-        crisp: 2,
-        creamy: 0,
-        chewy: 1,
-        juicy: 0,
-        flaky: 0
-      },
-      taste: {
-        salt: 0,
-        sugar: 0,
-        fat: 0,
-        acid: 0,
-        heat: 0,
-        canvas: 3,
-        fresh: 0
-      },
-      distance: 1,
-      at: '2026-11-20T06:37Z'
     },
     'mozzarella@melted': {
       texture: {

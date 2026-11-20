@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CATALOGUE, DEFAULT_CONFIG, FOODS, EQUIPMENT, ASSUMED_BASICS, CAPABILITIES,
+  CATALOGUE, DEFAULT_CONFIG, FOODS, PREP_KINDS, EQUIPMENT, ASSUMED_BASICS, CAPABILITIES, inDiet, scoreMeal, checkMeal, validateMeal,
   buildInventory, matchName, rank, contextLambda,
 } from '../src/brain/index.js';
 import { DEMO_KITCHEN } from '../src/demo-kitchen.js';
@@ -142,7 +142,7 @@ test('catalogue only uses known ids and valid prep kinds', () => {
     for (const u of meal.utensils) assert.ok(ASSUMED_BASICS[u], `${meal.id}: unknown utensil ${u}`);
     for (const ing of meal.ingredients) {
       for (const id of ing.anyOf ?? [ing.id]) assert.ok(FOODS[id], `${meal.id}: unknown food ${id}`);
-      assert.ok(ing.prep in DEFAULT_CONFIG.prepWeights, `${meal.id}: unknown prep ${ing.prep}`);
+      assert.ok(PREP_KINDS.includes(ing.prep), `${meal.id}: unknown prep ${ing.prep}`);
     }
     assert.ok(['meal', 'snack'].includes(meal.kind));
   }
@@ -157,4 +157,62 @@ test("golden: pranjal's real kitchen (18 Nov) picks the whey and makhana bowl", 
     const result = rank({ inventory: inv, targets: TARGETS, context: { kind: 'meal', ...context }, catalogue: CATALOGUE });
     assert.equal(result.ranked[0].meal.id, 'whey_makhana_bowl', JSON.stringify(context));
   }
+});
+
+// ── v2 Step 1: diet and Friction v2 in the live ranker ──────────────────────
+
+test('every catalogue meal is vegetarian plus eggs, and tofu is gone', () => {
+  for (const meal of CATALOGUE) {
+    assert.ok(inDiet(meal), meal.id);
+    for (const ing of meal.ingredients) assert.ok(!(ing.anyOf ?? [ing.id]).includes('tofu'), meal.id);
+  }
+  for (const id of ['chicken', 'tuna', 'tofu']) assert.equal(FOODS[id], undefined, id);
+});
+
+test('a kitchen with chicken, tuna and tofu never gets a meal using them', () => {
+  const inv = buildInventory([...DEMO_KITCHEN, 'chicken breast', 'canned tuna', 'tofu']);
+  for (const id of ['chicken', 'tuna', 'tofu']) assert.ok(!inv.have.has(id), `${id} should not map to an id`);
+  // Even a meal that reached the ranker some other way is dropped.
+  const sneaky = { ...CATALOGUE[0], id: 'sneaky_chicken', ingredients: [{ id: 'chicken', amount: '1', prep: 'ready' }] };
+  const result = rank({ inventory: { ...inv, have: new Set([...inv.have, 'chicken']) }, targets: TARGETS, context: TIRED_WEEKNIGHT, catalogue: [...CATALOGUE, sneaky] });
+  assert.ok(!result.ranked.some((r) => r.meal.id === 'sneaky_chicken'));
+  assert.ok(!result.filtered.some((f) => f.meal.id === 'sneaky_chicken'), 'not even offered as "buy X to unlock"');
+});
+
+test('Friction v2: the stove is not a tool on top of its pan; peels and cuts are apart', () => {
+  const inv = buildInventory(['induction', 'pot', 'pan', 'strainer', 'air fryer', 'pasta', 'paneer', 'garlic', 'oil', 'salt']);
+  const meal = CATALOGUE.find((m) => m.id === 'pasta_aglio_olio_paneer');
+  const used = checkMeal(meal, inv);
+  assert.ok(used.ok);
+  assert.ok(used.equipment.includes('induction'));
+  const { raw, frictionParts } = scoreMeal(meal, used, TARGETS, contextLambda({}));
+  const kit = used.equipment.filter((e) => e !== 'induction').length + used.utensils.filter((u) => !['plate', 'spoon', 'fork', 'mug'].includes(u)).length;
+  assert.equal(raw.tools, kit, 'induction is not counted');
+  assert.equal(raw.peels, 1); // garlic
+  assert.equal(raw.cuts, 1); // paneer cubes
+  assert.deepEqual(frictionParts.map((p) => p.name), ['tools', 'handsOn', 'waiting', 'prePrep', 'peels', 'cuts', 'steps', 'attention', 'cleanup']);
+  for (const p of frictionParts) assert.ok(p.value >= 0, `${p.name} adds friction`);
+});
+
+test('Friction v2: overnight soaking costs more than none, and is not capped away', () => {
+  const inv = buildInventory(['chickpeas', 'onion', 'tomato', 'lemon', 'chaat masala']);
+  const meal = CATALOGUE.find((m) => m.id === 'chana_chaat');
+  const used = checkMeal(meal, inv);
+  assert.ok(used.ok);
+  const soak = scoreMeal(meal, used, TARGETS, contextLambda({})).frictionParts.find((p) => p.name === 'prePrep');
+  const none = scoreMeal({ ...meal, prePrep: undefined }, used, TARGETS, contextLambda({})).frictionParts.find((p) => p.name === 'prePrep');
+  assert.ok(soak.value > none.value);
+  assert.ok(soak.normalised > 1, 'overnight is 5 units on a scale of 1, not clamped');
+});
+
+test('AI recipes still validate with the new prep kinds, and get a knife for a cut', () => {
+  const r = validateMeal({
+    name: 'Paneer cubes with chaat masala', kind: 'meal', equipment: [], utensils: ['plate'],
+    ingredients: [{ id: 'paneer', amount: '150 g', prep: 'cut' }, { id: 'chaat_masala', amount: '1 tsp', prep: 'measure' }],
+    steps: [{ text: 'Cube and sprinkle.', active: 2 }], attention: 0, cleanup: { dishes: 1, greasy: 0 },
+    macros: { protein: 27, kcal: 400, fiber: 0 },
+  });
+  assert.ok(r.ok, r.errors.join('; '));
+  assert.equal(r.meal.ingredients[0].prep, 'cut');
+  assert.ok(r.meal.utensils.includes('knife'));
 });

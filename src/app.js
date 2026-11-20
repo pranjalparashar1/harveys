@@ -10,7 +10,7 @@ import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 
-const VERSION = '1.8.1';
+const VERSION = '1.9.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -529,7 +529,7 @@ function renderResult(result) {
       h('h2', {}, 'Nothing fits yet'),
       blockedList(result.filtered.slice(0, 6))));
   } else {
-    const passive = top.raw.passiveMinutes;
+    const passive = top.raw.waiting;
     cards.push(h('section', { class: 'card pick' },
       h('p', { class: 'pick-label' }, top.meal.origin === 'ai' ? 'Cook this · AI recipe' : 'Cook this'),
       state.pickSource === 'sample' ? h('p', { class: 'fallback-note' }, 'No AI answer in time · sample kitchen') : null,
@@ -542,7 +542,7 @@ function renderResult(result) {
         h('ul', {}, top.used.ingredients.map(ingredientLine)),
         h('h3', {}, 'Kit'),
         h('p', { class: 'muted' }, [...top.used.equipment, ...top.used.utensils].map(labelFor).join(', ') || 'Nothing'),
-        h('h3', {}, `Steps · about ${fmt(top.raw.activeMinutes, 1)} min hands-on${passive ? ` + ${passive} min waiting` : ''}`),
+        h('h3', {}, `Steps · about ${fmt(top.raw.handsOn, 1)} min hands-on${passive ? ` + ${passive} min waiting` : ''}`),
         h('ol', {}, top.meal.steps.map((s) => h('li', {}, s.text))),
         h('p', { class: 'mini' }, `${top.meal.macros.protein} g protein · ${top.meal.macros.kcal} kcal · ${top.meal.macros.fiber} g fiber (${{ label: 'from labels', ai: 'AI estimate', estimate: 'estimate' }[top.meal.source] ?? 'estimate'})`)),
       whyTable(top)));

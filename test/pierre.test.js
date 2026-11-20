@@ -22,7 +22,7 @@ test('the quiz file is valid: veg and egg foods, no spices or condiments', () =>
   assert.equal(quiz.edition, 2);
   for (const id of ids) assert.ok(!quiz.done.round1.includes(id), `${id} was in round 1`);
   for (const id of ['spinach', 'okra', 'brinjal']) assert.ok(!ids.includes(id), `${id} is set aside`);
-  for (const banned of ['chicken', 'tuna', 'salt', 'turmeric', 'garam_masala', 'ketchup', 'mayo', 'oil']) assert.ok(!ids.includes(banned), banned);
+  for (const banned of ['chicken', 'tuna', 'tofu', 'salt', 'turmeric', 'garam_masala', 'ketchup', 'mayo', 'oil']) assert.ok(!ids.includes(banned), banned);
   assert.deepEqual(quiz.textures.map((t) => t.id), ['crisp', 'creamy', 'chewy', 'juicy', 'flaky']);
   assert.deepEqual(quiz.tastes.map((t) => t.id), ['salt', 'sugar', 'fat', 'acid', 'heat', 'canvas', 'fresh']);
   assert.deepEqual(quiz.centre.map((c) => c.value), [1, 2, 3, 4, 5]);
@@ -425,4 +425,15 @@ test('Pierre-tutor: texture, taste, then distance 0–3 or x; exported as d and 
   const all = Object.fromEntries(tutor.foods.map((f) => [f.id, s.answers[id]]));
   const url = new URLSearchParams({ title: 'Pierre-tutor: 77 foods', labels: 'pierre-tutor', body: '```\n' + encodePayload(tutor, all) + '\n```' }).toString();
   assert.ok(url.length < 7000, `issue URL is ${url.length} chars`);
+});
+
+test('makhana is set aside from Pierre (pranjal, 20 Nov), but the whey bowl stays on the menu', async () => {
+  const { PIERRE_RAW: kb } = await import('../src/brain/pierre-raw.js');
+  const { CATALOGUE } = await import('../src/brain/catalogue.js');
+  for (const id of ['makhana', 'makhana@air_fried', 'makhana@roasted']) assert.ok(kb.excluded.includes(id), id);
+  assert.equal(kb.foods.makhana, undefined);
+  assert.equal(kb.prep.makhana, undefined);
+  assert.equal(kb.tech['makhana@air_fried'], undefined);
+  assert.ok(!tutor.foods.some((f) => f.food === 'makhana'));
+  assert.ok(CATALOGUE.some((m) => m.id === 'whey_makhana_bowl'));
 });
