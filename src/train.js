@@ -11,7 +11,7 @@ import { PIERRE_SEED, TECHNIQUE_OVERLAY, TRAINING_EXTRAS, FORM_TOOLS, PRE_PREP_O
 import { validateMeal } from './brain/validate.js';
 import { callModel, parseJsonObject } from './ai/providers.js';
 
-const VERSION = '1.12.1';
+const VERSION = '1.12.2';
 const $ = (id) => document.getElementById(id);
 
 // ── Storage (this browser only) ─────────────────────────────────────────────

@@ -9,7 +9,7 @@ import {
   canAdvance, advance, back, canGoBack, roundOver, unsent, markSent, encodePayload,
 } from './quiz/quiz.js';
 
-const VERSION = '1.12.1';
+const VERSION = '1.12.2';
 const RENAMED = { protein_bread: 'bread' };
 // One player, two quizzes: Pierre-trainer (raw foods) and Pierre-tutor (a food cooked one way).
 const QUIZ = document.body.dataset.quiz || 'pierre-trainer';
