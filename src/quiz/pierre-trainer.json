@@ -13,7 +13,7 @@
   "textures": [
     {
       "id": "crisp",
-      "label": "Crisp, crunchy"
+      "label": "Crisp, crunchy, flaky"
     },
     {
       "id": "creamy",
@@ -26,10 +26,6 @@
     {
       "id": "juicy",
       "label": "Juicy, moist"
-    },
-    {
-      "id": "flaky",
-      "label": "Flaky, crumbly"
     }
   ],
   "levels": [

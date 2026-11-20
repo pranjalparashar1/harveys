@@ -5,11 +5,10 @@ export const TECHNIQUE_PRIOR = {
   air_fried: {
     dense_starchy: {
       texture: {
-        crisp: 2,
+        crisp: 1,
         creamy: -1,
         chewy: 0,
-        juicy: 0,
-        flaky: -1
+        juicy: 0
       },
       taste: {
         salt: 0,
@@ -34,8 +33,7 @@ export const TECHNIQUE_PRIOR = {
         crisp: -1,
         creamy: 0,
         chewy: 1,
-        juicy: 0,
-        flaky: 0
+        juicy: 0
       },
       taste: {
         salt: 0,
@@ -57,11 +55,10 @@ export const TECHNIQUE_PRIOR = {
   pan_fried: {
     dense_starchy: {
       texture: {
-        crisp: 2,
+        crisp: 1,
         creamy: -1,
         chewy: 1,
-        juicy: 0,
-        flaky: -1
+        juicy: 0
       },
       taste: {
         salt: 0,
@@ -87,8 +84,7 @@ export const TECHNIQUE_PRIOR = {
         crisp: -1,
         creamy: 1,
         chewy: 1,
-        juicy: 0,
-        flaky: 0
+        juicy: 0
       },
       taste: {
         salt: 0,
@@ -112,11 +108,10 @@ export const TECHNIQUE_PRIOR = {
     },
     dense_starchy: {
       texture: {
-        crisp: 0,
+        crisp: 1,
         creamy: 0,
         chewy: 0,
-        juicy: 0,
-        flaky: 0
+        juicy: 0
       },
       taste: {
         salt: 0,
