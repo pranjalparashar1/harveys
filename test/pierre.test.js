@@ -23,7 +23,7 @@ test('the quiz file is valid: veg and egg foods, no spices or condiments', () =>
   for (const id of ids) assert.ok(!quiz.done.round1.includes(id), `${id} was in round 1`);
   for (const id of ['spinach', 'okra', 'brinjal']) assert.ok(!ids.includes(id), `${id} is set aside`);
   for (const banned of ['chicken', 'tuna', 'tofu', 'salt', 'turmeric', 'garam_masala', 'ketchup', 'mayo', 'oil']) assert.ok(!ids.includes(banned), banned);
-  assert.deepEqual(quiz.textures.map((t) => t.id), ['crisp', 'creamy', 'chewy', 'juicy', 'flaky']);
+  assert.deepEqual(quiz.textures.map((t) => t.id), ['crisp', 'creamy', 'chewy', 'juicy'], 'flaky merged into crisp (Step 4b)');
   assert.deepEqual(quiz.tastes.map((t) => t.id), ['sugar', 'fat', 'acid', 'canvas', 'fresh'], 'salt and heat are dish-level now (Step 3)');
   assert.deepEqual(quiz.centre.map((c) => c.value), [1, 2, 3, 4, 5]);
   assert.throws(() => validateQuiz({ ...quiz, foods: [...quiz.foods, quiz.foods[0]] }), /twice/);
@@ -156,8 +156,8 @@ test('a food is rated, part of prep, or both, and the export and brain file carr
   };
   const text = encodePayload(quiz, answers);
   assert.match(text, /^poha \| prep \| 2026-11-19T12:00Z$/m);
-  assert.match(text, /^paneer \| t 0\.3\.0\.0\.0 \| s 0\.1\.0\.0\.0 \| c 4 \| prep \| 2026-11-19T12:01Z$/m);
-  assert.match(text, /^eggs \| t 0\.2\.0\.0\.0 \| s 0\.1\.0\.0\.0 \| c 3 \| 2026-11-19T12:02Z$/m);
+  assert.match(text, /^paneer \| t 0\.3\.0\.0 \| s 0\.1\.0\.0\.0 \| c 4 \| prep \| 2026-11-19T12:01Z$/m);
+  assert.match(text, /^eggs \| t 0\.2\.0\.0 \| s 0\.1\.0\.0\.0 \| c 3 \| 2026-11-19T12:02Z$/m);
   const backText = decodePayload(text);
   assert.deepEqual(backText.poha, { prep: true, at: '2026-11-19T12:00Z' });
   assert.equal(backText.paneer.prep, true);
@@ -183,7 +183,7 @@ test('taste is 0–3 with canvas, and pre-1.6 answers read as Medium, marked ass
   assert.equal(upgradeAnswer(answers.paneer), answers.paneer, 'new answers are left alone');
   const text = encodePayload(quiz, answers);
   assert.match(text, /^tastes sugar\.fat\.acid\.canvas\.fresh$/m);
-  assert.match(text, /^cheese_slices \| t 0\.0\.0\.0\.0 \| s 0\.3\.1\.0\.0 \| c 2 \| /m);
+  assert.match(text, /^cheese_slices \| t 0\.0\.0\.0 \| s 0\.3\.1\.0\.0 \| c 2 \| /m);
   assert.match(text, /^tofu \| .* \| c 3 \| assumed \| /m);
   const back = decodePayload(text);
   assert.ok(back.cheese_slices.taste.fat > back.paneer.taste.fat, 'cheese is more fat than paneer');
@@ -207,8 +207,8 @@ test('the Send to Harvey’s text round-trips', () => {
   const text = encodePayload(quiz, answers);
   assert.match(text, /^#harveys pierre-trainer v3/);
   assert.ok(decodePayload(text.replace('#harveys pierre-trainer v3', '#marco pierre-trainer v2')).paneer, 'round-1 exports still read');
-  assert.match(text, /paneer \| t 0\.3\.2\.1\.0 \| s 0\.1\.0\.0\.0 \| c 4/);
-  assert.match(text, /makhana \| t 3\.0\.0\.0\.1 \| s 0\.0\.0\.0\.0 \| c 3/);
+  assert.match(text, /paneer \| t 0\.3\.2\.1 \| s 0\.1\.0\.0\.0 \| c 4/);
+  assert.match(text, /makhana \| t 3\.0\.0\.0 \| s 0\.0\.0\.0\.0 \| c 3/);
   const back = decodePayload('Here you go:\n```\n' + text + '\n```\n');
   assert.equal(back.paneer.texture.creamy, 3);
   assert.equal(back.paneer.taste.fat, 1);
@@ -408,13 +408,13 @@ test('Pierre-tutor: texture, taste, then distance 0–3 or x; exported as d and 
   assert.equal(d.distance, 'x');
   assert.equal(tapDistance(d, 'x').distance, null, 'tap again to clear');
   s = advance(tutor, { ...s, round: { ...s.round, draft: d } }, new Date('2026-11-20T09:00:00Z'));
-  assert.deepEqual(s.answers[id], { texture: { crisp: 3, creamy: 0, chewy: 0, juicy: 0, flaky: 0 }, taste: { salt: 0, sugar: 0, fat: 2, acid: 0, heat: 0, canvas: 0, fresh: 0 }, distance: 'x', v: 2, at: '2026-11-20T09:00:00.000Z' });
+  assert.deepEqual(s.answers[id], { texture: { crisp: 3, creamy: 0, chewy: 0, juicy: 0 }, taste: { salt: 0, sugar: 0, fat: 2, acid: 0, heat: 0, canvas: 0, fresh: 0 }, distance: 'x', v: 2, at: '2026-11-20T09:00:00.000Z' });
   const prev = back(tutor, s);
   assert.equal(steps[prev.round.step], 'distance');
   assert.equal(prev.round.draft.distance, 'x');
   const text = encodePayload(tutor, s.answers);
   assert.match(text, /^#harveys pierre-tutor v2/);
-  assert.ok(text.includes(`${id} | t 3.0.0.0.0 | s 0.0.2.0.0.0.0 | d x | 2026-11-20`));
+  assert.ok(text.includes(`${id} | t 3.0.0.0 | s 0.0.2.0.0.0.0 | d x | 2026-11-20`));
   const got = decodePayload(text);
   assert.equal(got[id].distance, 'x');
   const kb = mergeRatings({ foods: {}, prep: {} }, got);

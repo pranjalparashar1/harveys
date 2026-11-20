@@ -12,7 +12,13 @@ import { PIERRE_RAW } from './pierre-raw.js';
 import { TECHNIQUE_PRIOR } from './technique-prior.js';
 import { DEFAULT_CONFIG } from './config.js';
 
-export const TEXTURES = ['crisp', 'creamy', 'chewy', 'juicy', 'flaky'];
+// Flaky was merged into crisp (Step 4b, pranjal 20 Nov): crisp now reads "crisp, crunchy or
+// flaky". Old ratings keep their flaky number; textureOf() folds it in as max(crisp, flaky).
+export const TEXTURES = ['crisp', 'creamy', 'chewy', 'juicy'];
+/** A stored texture row (maybe with the old flaky) as the four textures Pierre reads. */
+export function textureOf(t = {}) {
+  return Object.fromEntries(TEXTURES.map((k) => [k, clamp(k === 'crisp' ? Math.max(t.crisp ?? 0, t.flaky ?? 0) : (t[k] ?? 0), 0, 3)]));
+}
 // Taste is 0–3 per element, like texture. `canvas` is the sixth dimension: how much
 // the food's flavour comes from the technique or what's added (tofu, rice: high).
 export const TASTES = ['salt', 'sugar', 'fat', 'acid', 'heat', 'canvas', 'fresh'];
@@ -24,7 +30,7 @@ export function rawVector(id, kb = PIERRE_RAW) {
   if (!f) return null;
   return {
     id,
-    texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(f.texture?.[k] ?? 0, 0, 3)])),
+    texture: textureOf(f.texture),
     taste: Object.fromEntries(TASTES.map((k) => [k, clamp(f.taste?.[k] ?? 0, 0, 3)])),
     centre: clamp(f.centre ?? 2, 1, 5),
   };
@@ -130,7 +136,7 @@ export function partVector(part, kb = PIERRE_RAW, techniques = TECHNIQUES) {
       id,
       technique,
       state,
-      texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(t.texture?.[k] ?? 0, 0, 3)])),
+      texture: textureOf(t.texture),
       taste: Object.fromEntries(TASTES.map((k) => [k, clamp(t.taste?.[k] ?? 0, 0, 3)])),
       centre: centreOf(id, kb), // null for a prep-only food with no centre yet (besan, poha)
       distance: t.distance ?? null,
@@ -360,7 +366,7 @@ export function mergeRatings(kb, ratings, { exclude = [], centres = {}, merges =
       const d = r.distance ?? (r.ready == null ? null : r.ready === 0 ? 'x' : READY_TO_DISTANCE[clamp(Math.round(r.ready), 1, 4)]);
       if (d == null) continue;
       tech[id] = {
-        texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(Math.round(r.texture?.[k] ?? 0), 0, 3)])),
+        texture: textureOf(Object.fromEntries(Object.entries(r.texture ?? {}).map(([k, v]) => [k, Math.round(v)]))),
         taste: Object.fromEntries(TASTES.map((k) => [k, clamp(Math.round(r.taste?.[k] ?? 0), 0, 3)])),
         ...(d === 'x' ? { veto: true } : { distance: clamp(Math.round(d), 0, 3) }),
         ...(r.at ? { at: r.at } : {}),
@@ -374,7 +380,7 @@ export function mergeRatings(kb, ratings, { exclude = [], centres = {}, merges =
       continue;
     }
     foods[id] = {
-      texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(Math.round(r.texture?.[k] ?? 0), 0, 3)])),
+      texture: textureOf(Object.fromEntries(Object.entries(r.texture ?? {}).map(([k, v]) => [k, Math.round(v)]))),
       // A rating without salt or heat (the quiz stopped asking them, Step 3) keeps the old value.
       taste: Object.fromEntries(TASTES.map((k) => [k, clamp(Math.round(r.taste?.[k] ?? foods[id]?.taste?.[k] ?? 0), 0, 3)])),
       ...(foods[id]?.class ? { class: foods[id].class } : {}),
@@ -390,7 +396,7 @@ export function mergeRatings(kb, ratings, { exclude = [], centres = {}, merges =
       const mode = (vals) => { const n = {}; for (const v of vals) n[v] = (n[v] ?? 0) + 1; return Number(Object.keys(n).sort((a, b) => n[b] - n[a] || a - b)[0]); };
       const centre = mode(rated.map((f) => f.centre));
       foods[to] = {
-        texture: Object.fromEntries(TEXTURES.map((k) => [k, mode(rated.map((f) => f.texture[k]))])),
+        texture: Object.fromEntries(TEXTURES.map((k) => [k, mode(rated.map((f) => textureOf(f.texture)[k]))])),
         taste: Object.fromEntries(TASTES.map((k) => [k, mode(rated.map((f) => f.taste[k]))])),
         centre,
         role: roleOf(centre),

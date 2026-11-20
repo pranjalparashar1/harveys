@@ -6,7 +6,7 @@
 // Every entry is provisional: a rated row or a dish verdict always beats it.
 import { writeFileSync } from 'node:fs';
 import { PIERRE_RAW } from '../src/brain/pierre-raw.js';
-import { TEXTURES, TASTES } from '../src/brain/ingredients.js';
+import { TEXTURES, TASTES, textureOf } from '../src/brain/ingredients.js';
 
 export const PRIOR_TECHNIQUES = ['air_fried', 'pan_fried', 'sauteed'];
 
@@ -24,7 +24,7 @@ export function derivePrior(kb = PIERRE_RAW) {
       const mean = (f) => Math.round(rows.reduce((s, r) => s + f(r), 0) / rows.length) || 0; // no -0
       const ds = rows.map((r) => r.row.distance).sort((a, b) => a - b);
       (out[tech] ??= {})[cls] = {
-        texture: Object.fromEntries(TEXTURES.map((k) => [k, mean((r) => (r.row.texture[k] ?? 0) - (r.raw.texture[k] ?? 0))])),
+        texture: Object.fromEntries(TEXTURES.map((k) => [k, mean((r) => textureOf(r.row.texture)[k] - textureOf(r.raw.texture)[k])])),
         taste: Object.fromEntries(TASTES.map((k) => [k, mean((r) => (r.row.taste[k] ?? 0) - (r.raw.taste[k] ?? 0))])),
         distance: ds[Math.floor((ds.length - 1) / 2)],
         from: rows.map((r) => r.id).sort(),

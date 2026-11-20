@@ -15,7 +15,7 @@
   "textures": [
     {
       "id": "crisp",
-      "label": "Crisp, crunchy",
+      "label": "Crisp, crunchy, flaky",
       "line": "None: Rajma · Low: Mango · Medium: Almonds · High: Cucumber"
     },
     {
@@ -32,11 +32,6 @@
       "id": "juicy",
       "label": "Juicy, moist",
       "line": "None: Bread · Low: Raisins · Medium: Pomegranate · High: Lemon"
-    },
-    {
-      "id": "flaky",
-      "label": "Flaky, crumbly",
-      "line": "None: Pasta · Low: Paneer · Medium: Cashews · High: –"
     }
   ],
   "levels": [
