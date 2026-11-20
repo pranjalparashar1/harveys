@@ -118,3 +118,17 @@ test('golden (gate on): high-calorie, low-protein dishes fail; lean high-protein
 test('every catalogue meal passes the nutrition gate when it is on', () => {
   for (const m of CATALOGUE) assert.deepEqual(nutritionProblems(m, GATED), [], m.id);
 });
+
+test('an AI recipe with chicken, tuna or tofu is rejected', () => {
+  for (const id of ['chicken', 'tuna', 'tofu']) {
+    const r = validateMeal({ ...good, ingredients: [...good.ingredients, { id, amount: '100 g', prep: 'ready' }] });
+    assert.equal(r.ok, false, id);
+    // Not a known food any more, so Marco can't verify it (tofu is a preference, not a diet rule).
+    assert.ok(r.errors.some((e) => e.includes(`"${id}"`)), r.errors.join('; '));
+  }
+});
+
+test('the AI recipe prompt states the diet', async () => {
+  const { recipePrompt } = await import('../src/ai/prompt.js');
+  assert.match(recipePrompt({ have: ['paneer'] }), /vegetarian plus eggs only\. No meat, fish or tofu/i);
+});

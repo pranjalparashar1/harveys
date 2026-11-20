@@ -36,6 +36,8 @@ Food available (use ONLY these ids): ${foods.join(', ') || 'none'}
 Appliances and cookware available (use ONLY these ids): ${kit.join(', ') || 'none'}
 Small utensils assumed available: ${Object.keys(ASSUMED_BASICS).join(', ')}
 
+Diet: vegetarian plus eggs only. No meat, fish or tofu.
+
 Design up to 3 different ${kind}s for one person${context.mood ? ` who feels ${context.mood}` : ''}. Aim for the laziest high-protein ${kind} possible: as few tools, ingredients, steps and hands-on minutes as you can, little chopping, little to wash. Use realistic amounts and honest nutrition estimates for one serving.
 
 Respond with ONLY a JSON object, no markdown and no prose, of exactly this form:

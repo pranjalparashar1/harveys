@@ -8,17 +8,24 @@
 
 /** @typedef {'food'|'appliance'|'cookware'|'utensil'} ItemKind */
 
-/** Food items. `group` is only for display. */
+/**
+ * How an ingredient is handled. `peel_chop` is the old catch-all; `peel`
+ * (garlic, onion) and `cut` (paneer cubes, tomato) are Friction v2's split.
+ */
+export const PREP_KINDS = Object.freeze(['ready', 'measure', 'wash', 'crack', 'crumble', 'cut', 'peel', 'peel_chop']);
+
+/**
+ * Food items. `group` is only for display. Vegetarian plus eggs only: no meat
+ * or fish id exists, so nothing a scan or the AI reports can map to one. Tofu
+ * is left out by preference (20 Nov).
+ */
 export const FOODS = {
   protein_bread: { label: 'Protein bread', group: 'bread', synonyms: ['protein bread', 'high protein bread', 'the health factory', 'protein loaf'] },
   bread: { label: 'Bread', group: 'bread', synonyms: ['bread', 'brown bread', 'white bread', 'multigrain bread', 'sandwich bread', 'whole wheat bread', 'pav', 'bun'] },
   cheese_slices: { label: 'Cheese slices', group: 'dairy', synonyms: ['cheese slice', 'cheese slices', 'amul cheese slices', 'sliced cheese'] },
   cheese: { label: 'Cheese (block or cubes)', group: 'dairy', synonyms: ['cheese', 'cheese block', 'cheese cubes', 'processed cheese', 'mozzarella', 'cheddar', 'cheese spread'] },
   paneer: { label: 'Paneer', group: 'dairy', synonyms: ['paneer', 'cottage cheese', 'malai paneer', 'amul paneer'] },
-  tofu: { label: 'Tofu', group: 'protein', synonyms: ['tofu', 'soya paneer'] },
   eggs: { label: 'Eggs', group: 'protein', synonyms: ['egg', 'eggs', 'anda'] },
-  chicken: { label: 'Chicken breast', group: 'protein', synonyms: ['chicken', 'chicken breast', 'raw chicken', 'boneless chicken'] },
-  tuna: { label: 'Canned tuna', group: 'protein', synonyms: ['tuna', 'canned tuna', 'tuna can'] },
   soya_chunks: { label: 'Soya chunks', group: 'protein', synonyms: ['soya chunks', 'soy chunks', 'nutrela', 'soya nuggets'] },
   whey: { label: 'Whey protein', group: 'protein', synonyms: ['whey', 'whey protein', 'protein powder', 'nakpro', 'nakpro whey', 'muscleblaze', 'optimum nutrition'] },
   milk: { label: 'Milk', group: 'dairy', synonyms: ['milk', 'toned milk', 'full cream milk', 'amul taaza', 'doodh'] },

@@ -11,7 +11,7 @@ import { PIERRE_SEED, TECHNIQUE_OVERLAY, TRAINING_EXTRAS, FORM_TOOLS, PRE_PREP_O
 import { validateMeal } from './brain/validate.js';
 import { callModel, parseJsonObject } from './ai/providers.js';
 
-const VERSION = '1.8.1';
+const VERSION = '1.9.0';
 const $ = (id) => document.getElementById(id);
 
 // ── Storage (this browser only) ─────────────────────────────────────────────
@@ -480,10 +480,10 @@ function importDishes() {
 
 // ── Wacky ideas from the AI ─────────────────────────────────────────────────
 function wackyPrompt() {
-  const foods = Object.keys(FOODS).filter((id) => !['chicken', 'tuna'].includes(id)).join(', ');
+  const foods = Object.keys(FOODS).join(', '); // FOODS holds no meat, fish or tofu
   const kit = [...Object.keys(EQUIPMENT), 'stovetop', 'pot', 'pan'].join(', ');
   const already = pool().map((d) => d.name).join('; ');
-  return `You invent dishes for a home cook in India so they can judge them. Vegetarian plus eggs only: no meat, no fish.
+  return `You invent dishes for a home cook in India so they can judge them. Vegetarian plus eggs only: no meat, no fish, no tofu.
 
 Invent 4 dishes that are deliberately different from each other: one wacky or silly, one austere (almost no effort), one lazy but tasty, and one more elaborate that might need soaking or marinating ahead. Do not repeat any of these: ${already}.
 

@@ -49,10 +49,11 @@ Pure ES modules: no DOM, no network, no clock, no randomness. Written to port to
 ```
 
 - **Payoff:** progress toward what's left of today's protein, calories and fiber, capped at the target.
-- **Friction:** tools, ingredients weighted by prep (ready < measure < peel/chop), steps, hands-on minutes (waiting time excluded), attention needed, cleanup (dishes + greasiness).
+- **Friction (v2, 1.9.0):** the same features the pick-two trainer uses (`FEATURES` in `src/brain/learn.js`): tools (the stove isn't a tool on top of its pan), hands-on minutes, waiting minutes, pre-prep (soaking, on a log scale), things to peel, things to cut, steps, attention, washing up. Weights are learn.js's provisional priors, not capped.
+- **Diet:** vegetarian plus eggs. `rank()` and `validateMeal()` both drop anything failing `inDiet()`, the vocabulary has no meat or fish ids, and the AI prompt states the rule. Tofu is left out by preference.
 - **λ_context:** mood (optional, neutral when absent) × late night × weekday/weekend.
-- **Weights:** `src/brain/config.js` is the only place tunable numbers live. **They are placeholders** (equal weights) until they're fitted to the meal log.
-- **Catalogue:** `src/brain/catalogue.js`, 26 seeded lazy meals with structured friction data. **Vocabulary:** `src/brain/vocabulary.js`, the ids the AI maps what it sees onto.
+- **Weights:** payoff and λ live in `src/brain/config.js`; friction weights live in `learn.js` `FEATURES`. **All are placeholders** until they're fitted to real choices.
+- **Catalogue:** `src/brain/catalogue.js`, seeded lazy meals with structured friction data. **Vocabulary:** `src/brain/vocabulary.js`, the ids the AI maps what it sees onto.
 
 ### Run and test locally
 

@@ -3,7 +3,8 @@
 // Friction is recomputed from structure where possible, so the AI can't make a
 // recipe look easier than it is. Pure: no DOM, no network.
 
-import { FOODS, EQUIPMENT, ASSUMED_BASICS, CAPABILITIES } from './vocabulary.js';
+import { FOODS, EQUIPMENT, ASSUMED_BASICS, CAPABILITIES, PREP_KINDS } from './vocabulary.js';
+import { inDiet } from './learn.js';
 import { DEFAULT_CONFIG } from './config.js';
 
 /**
@@ -67,14 +68,14 @@ export function validateMeal(raw, opts = {}) {
       errors.push(`it uses "${ing?.id ?? ing?.name ?? '?'}", which Marco can't verify you have`);
       continue;
     }
-    const prep = ing.prep in config.prepWeights ? ing.prep : 'measure';
+    const prep = PREP_KINDS.includes(ing.prep) ? ing.prep : 'measure';
     if (prep !== ing.prep) adjustments.push(`treated ${ing.id} as "measure"`);
     ingredients.push({ id: ing.id, amount: String(ing.amount ?? '').slice(0, 40) || 'some', prep, optional: ing.optional === true });
   }
   if (ingredients.length && ingredients.every((i) => i.optional)) errors.push('every ingredient is optional');
 
   // Chopping needs a knife and a board, whatever the AI listed.
-  if (ingredients.some((i) => i.prep === 'peel_chop')) {
+  if (ingredients.some((i) => ['peel_chop', 'peel', 'cut'].includes(i.prep))) {
     for (const u of ['knife', 'cutting_board']) {
       if (!utensils.includes(u)) {
         utensils.push(u);
@@ -124,6 +125,7 @@ export function validateMeal(raw, opts = {}) {
     macros: { protein: Math.round(protein ?? 0), kcal: Math.round(kcal ?? 0), fiber: Math.round(fiber) },
     source: 'ai',
   };
+  if (!inDiet(meal)) errors.push('it is not vegetarian plus eggs');
   if (protein != null && kcal != null) errors.push(...nutritionProblems(meal, config));
   return { ok: errors.length === 0, meal, errors, adjustments };
 }

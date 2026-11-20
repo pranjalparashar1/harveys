@@ -1,7 +1,8 @@
 // Marco's brain: decides what to cook. Deterministic and explainable.
 //
-//   1. Hard filter: a meal needing kit or an ingredient you don't have is dropped.
-//   2. score = payoff − λ_context × Σ_i w_i · f_i
+//   1. Hard filter: a meal outside the diet (vegetarian + eggs), or needing kit or
+//      an ingredient you don't have, is dropped.
+//   2. score = payoff − λ_context × Σ_i w_i · f_i   (Friction v2, see learn.js)
 //   3. Every score comes back as named parts, so the UI can say why it won.
 //
 // Pure: no DOM, no network, no randomness, no clock (the caller passes the time).
@@ -10,18 +11,15 @@
 import { CAPABILITIES, EQUIPMENT, labelFor } from './vocabulary.js';
 import { DEFAULT_CONFIG } from './config.js';
 import { nutritionProblems } from './validate.js';
+import { FEATURES, inDiet, prePrepUnits, rawFeatures } from './learn.js';
 
-/** Eating ware doesn't count as a "tool" (you'd use a plate for takeaway too). */
-const EATING_WARE = new Set(['plate', 'spoon', 'fork', 'mug']);
-
-const FRICTION_LABELS = {
-  tools: 'tools',
-  ingredients: 'ingredients (prep-weighted)',
-  steps: 'steps',
-  activeMinutes: 'hands-on minutes',
-  attention: 'attention needed',
-  cleanup: 'cleanup',
-};
+/**
+ * Friction v2: the friction half of learn.js's FEATURES. Weight = −prior.
+ * PROVISIONAL: the priors are hand-set, not fitted. They get refit from the
+ * "Cooked this" log (v2 plan, Step 5). Not capped at 1: effort past the
+ * scale still counts, the same as the pick-two trainer sees it.
+ */
+const FRICTION = FEATURES.filter((f) => !f.payoff);
 
 /**
  * λ_context with its named parts.
@@ -78,17 +76,13 @@ export function checkMeal(meal, inventory) {
   return { ok, equipment, utensils: meal.utensils.filter((u) => !missingBasics.has(u)), ingredients, missing };
 }
 
-/** Raw friction values for a meal as it would actually be made. */
-export function frictionFeatures(meal, used, config = DEFAULT_CONFIG) {
-  const tools = used.equipment.length + used.utensils.filter((u) => !EATING_WARE.has(u)).length;
-  const ingredients = used.ingredients.reduce((acc, i) => acc + (config.prepWeights[i.prep] ?? 1), 0);
-  const steps = meal.steps.length;
-  const activeMinutes = meal.steps.reduce((acc, s) => acc + (s.active ?? 0), 0);
-  const passiveMinutes = meal.steps.reduce((acc, s) => acc + (s.passive ?? 0), 0);
-  const attention = meal.attention;
-  const cleanup = meal.cleanup.dishes + meal.cleanup.greasy * config.greasyWeight;
-  const chopCount = used.ingredients.filter((i) => i.prep === 'peel_chop').length;
-  return { tools, ingredients, steps, activeMinutes, attention, cleanup, passiveMinutes, chopCount };
+/**
+ * Raw Friction v2 values for a meal as it would actually be made (the kit you
+ * own that it uses). The stove isn't a tool on top of its pan; peels (garlic,
+ * onion, ginger) are counted apart from easy cuts; pre-prep is its own value.
+ */
+export function frictionRaw(meal, used) {
+  return rawFeatures({ ...meal, equipment: used.equipment, utensils: used.utensils });
 }
 
 /** Payoff: progress toward what is left of today's targets, capped at the target. */
@@ -108,10 +102,12 @@ export function payoff(meal, targets, config = DEFAULT_CONFIG) {
 
 /** Scores one feasible meal. */
 export function scoreMeal(meal, used, targets, lambda, config = DEFAULT_CONFIG) {
-  const raw = frictionFeatures(meal, used, config);
-  const frictionParts = Object.keys(config.frictionWeights).map((key) => {
-    const normalised = Math.min(raw[key] / config.frictionScale[key], 1);
-    return { name: key, label: FRICTION_LABELS[key], raw: raw[key], normalised, value: config.frictionWeights[key] * normalised };
+  const raw = frictionRaw(meal, used);
+  const values = { ...raw, prePrep: prePrepUnits(raw.prePrepMinutes) };
+  const frictionParts = FRICTION.map((f) => {
+    const value = Number(values[f.key]) || 0;
+    const normalised = value / f.scale;
+    return { name: f.key, label: f.label, raw: value, normalised, value: -f.prior * normalised };
   });
   const friction = frictionParts.reduce((acc, p) => acc + p.value, 0);
   const pay = payoff(meal, targets, config);
@@ -127,14 +123,23 @@ function fmtMin(m) {
   return Number.isInteger(m) ? `${m}` : m.toFixed(1).replace(/\.0$/, '');
 }
 
+/** "no chopping", "1 thing to peel", "2 things to cut", or both. */
+function knifeWork(raw) {
+  if (raw.peels === 0 && raw.cuts === 0) return 'no chopping';
+  return [
+    raw.peels ? plural(raw.peels, 'thing to peel', 'things to peel') : null,
+    raw.cuts ? plural(raw.cuts, 'thing to cut', 'things to cut') : null,
+  ].filter(Boolean).join(', ');
+}
+
 /** The short "why" chips, e.g. ["1 tool", "no chopping", "2 min hands-on", "20 g protein"]. */
 export function headlineReasons(result) {
   const { raw, meal } = result;
   return [
     plural(raw.tools, 'tool'),
-    raw.chopCount === 0 ? 'no chopping' : plural(raw.chopCount, 'thing to chop', 'things to chop'),
-    `${fmtMin(raw.activeMinutes)} min hands-on`,
-    raw.passiveMinutes > 0 ? `${fmtMin(raw.passiveMinutes)} min waiting` : 'no waiting',
+    knifeWork(raw),
+    `${fmtMin(raw.handsOn)} min hands-on`,
+    raw.waiting > 0 ? `${fmtMin(raw.waiting)} min waiting` : 'no waiting',
     `${meal.macros.protein} g protein`,
   ];
 }
@@ -144,9 +149,16 @@ export function compareReasons(winner, other) {
   const reasons = [];
   const d = (k) => other.raw[k] - winner.raw[k];
   if (d('tools') > 0) reasons.push(`${plural(d('tools'), 'fewer tool', 'fewer tools')}`);
-  if (other.raw.chopCount > winner.raw.chopCount)
-    reasons.push(winner.raw.chopCount === 0 ? 'no chopping' : `${other.raw.chopCount - winner.raw.chopCount} less to chop`);
-  if (d('activeMinutes') >= 1) reasons.push(`${fmtMin(d('activeMinutes'))} fewer minutes standing there`);
+  const knife = (r) => r.peels + r.cuts;
+  if (knife(other.raw) > knife(winner.raw)) {
+    if (knife(winner.raw) === 0) reasons.push('no chopping');
+    else {
+      if (d('peels') > 0) reasons.push(`${plural(d('peels'), 'fewer thing', 'fewer things')} to peel`);
+      if (d('cuts') > 0) reasons.push(`${plural(d('cuts'), 'fewer thing', 'fewer things')} to cut`);
+    }
+  }
+  if (d('handsOn') >= 1) reasons.push(`${fmtMin(d('handsOn'))} fewer minutes standing there`);
+  if (d('prePrepMinutes') > 0) reasons.push(winner.raw.prePrepMinutes === 0 ? 'no soaking ahead' : 'less soaking ahead');
   if (d('cleanup') >= 1) reasons.push(`${fmtMin(d('cleanup'))} less to clean`);
   if (d('steps') > 0) reasons.push(`${plural(d('steps'), 'fewer step', 'fewer steps')}`);
   const proteinGap = winner.meal.macros.protein - other.meal.macros.protein;
@@ -172,6 +184,7 @@ export function rank({ inventory, targets, context = {}, catalogue, config = DEF
   const filtered = [];
   for (const meal of catalogue) {
     if (kind !== 'any' && meal.kind !== kind) continue;
+    if (!inDiet(meal)) continue; // vegetarian + eggs, whatever the scan or the AI says
     if (nutritionProblems(meal, config).length) continue; // not food worth suggesting
     const used = checkMeal(meal, inventory);
     if (!used.ok) {

@@ -7,14 +7,14 @@
 //   equipment   hard requirements: an EQUIPMENT id or a CAPABILITY id
 //   utensils    small kit (assumed present unless the user marks it missing)
 //   ingredients { id | anyOf, amount, prep, optional? }
-//               prep ∈ ready | measure | wash | crack | crumble | peel_chop
+//               prep ∈ PREP_KINDS (vocabulary.js)
 //               optional ones never filter a meal out; they only count if you have them
 //   steps       { text, active (min you must be there), passive (min of waiting) }
 //   attention   0 walk away … 3 needs watching / skill
 //   cleanup     { dishes, greasy 0–2 }
 //   macros      { protein g, kcal, fiber g }, source: 'label' | 'estimate'
 //   prePrep     { minutes, text } optional: soaking or marinating done ahead (1.4).
-//               The 1.3 ranker ignores it; the pick-two trainer (learn.js) uses it.
+//               Friction v2 counts it (learn.js prePrepUnits) in the live ranker too.
 
 export const CATALOGUE = [
   {
@@ -394,71 +394,6 @@ export const CATALOGUE = [
     cleanup: { dishes: 4, greasy: 2 },
     macros: { protein: 25, kcal: 450, fiber: 2 },
     source: 'estimate',
-  },
-  {
-    id: 'airfryer_tofu_bites',
-    name: 'Air-fryer tofu bites',
-    kind: 'meal',
-    equipment: ['air_fryer'],
-    utensils: ['knife', 'cutting_board', 'bowl', 'plate'],
-    ingredients: [
-      { id: 'tofu', amount: '150 g, cubed', prep: 'peel_chop' },
-      { id: 'oil', amount: '1 tsp', prep: 'measure' },
-      { id: 'salt', amount: 'a pinch', prep: 'measure' },
-      { id: 'chilli_flakes', amount: 'a pinch', prep: 'measure', optional: true },
-    ],
-    steps: [
-      { text: 'Pat the tofu dry and cube it.', active: 3 },
-      { text: 'Toss with oil and salt.', active: 1 },
-      { text: 'Air-fry at 200°C for 12 minutes, shaking once.', active: 1, passive: 12 },
-    ],
-    attention: 1,
-    cleanup: { dishes: 4, greasy: 1 },
-    macros: { protein: 21, kcal: 230, fiber: 1 },
-    source: 'estimate',
-  },
-  {
-    id: 'airfryer_chicken_breast',
-    name: 'Air-fryer chicken breast',
-    kind: 'meal',
-    equipment: ['air_fryer'],
-    utensils: ['plate', 'spatula'],
-    ingredients: [
-      { id: 'chicken', amount: '1 breast (~170 g)', prep: 'ready' },
-      { id: 'oil', amount: '1 tsp', prep: 'measure' },
-      { id: 'salt', amount: 'a pinch', prep: 'measure' },
-      { anyOf: ['garam_masala', 'red_chilli_powder', 'black_pepper'], amount: '½ tsp', prep: 'measure', optional: true },
-    ],
-    steps: [
-      { text: 'Rub the breast with oil, salt and spice.', active: 2 },
-      { text: 'Air-fry at 190°C for 16–18 minutes, flipping halfway.', active: 1, passive: 18 },
-      { text: 'Rest 3 minutes before eating.', active: 0, passive: 3 },
-    ],
-    attention: 2,
-    cleanup: { dishes: 2, greasy: 1 },
-    macros: { protein: 40, kcal: 290, fiber: 0 },
-    source: 'estimate',
-  },
-  {
-    id: 'tuna_mayo_toast',
-    name: 'Tuna mayo toast',
-    kind: 'meal',
-    equipment: [],
-    utensils: ['bowl', 'fork', 'plate'],
-    ingredients: [
-      { id: 'tuna', amount: '1 can, drained', prep: 'ready' },
-      { id: 'mayo', amount: '1 tbsp', prep: 'measure' },
-      { anyOf: ['protein_bread', 'bread'], amount: '2 slices', prep: 'ready' },
-      { id: 'black_pepper', amount: 'a pinch', prep: 'measure', optional: true },
-    ],
-    steps: [
-      { text: 'Mash the tuna with mayo and pepper.', active: 2 },
-      { text: 'Pile it on the bread.', active: 1 },
-    ],
-    attention: 0,
-    cleanup: { dishes: 2, greasy: 1 },
-    macros: { protein: 32, kcal: 420, fiber: 4 },
-    source: 'label',
   },
   {
     id: 'soya_chunk_curd_bowl',

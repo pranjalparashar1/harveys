@@ -310,20 +310,6 @@
       "everyday": true
     },
     {
-      "id": "makhana@roasted",
-      "food": "makhana",
-      "technique": "roasted",
-      "name": "Makhana, roasted",
-      "everyday": true
-    },
-    {
-      "id": "makhana@air_fried",
-      "food": "makhana",
-      "technique": "air_fried",
-      "name": "Makhana, air-fried",
-      "everyday": true
-    },
-    {
       "id": "peanuts@roasted",
       "food": "peanuts",
       "technique": "roasted",

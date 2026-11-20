@@ -16,7 +16,6 @@ export const PIERRE_SEED = {
   besan_chilla: { verdict: 'pass', why: 'Easy, and good' },
   moong_dal_khichdi: { verdict: 'pass', why: 'Easy, and good' },
   pasta_aglio_olio_paneer: { verdict: 'pass', why: 'Pierre approves' },
-  airfryer_tofu_bites: { verdict: 'pass', why: 'Passes Pierre and Marco' },
 };
 
 /** Extra technique facts the catalogue can't express, for Pierre's tags. */
