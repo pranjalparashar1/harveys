@@ -13,6 +13,9 @@
 //   attention   0 walk away … 3 needs watching / skill
 //   cleanup     { dishes, greasy 0–2 }
 //   macros      { protein g, kcal, fiber g }, source: 'label' | 'estimate'
+//   form, parts Pierre's view (v2 Step 3): the form the dish declares (ingredients.js
+//               FORMS) and its Pierre foods, each { id, technique? } (paneer@air_fried).
+//               Seasonings in `ingredients` are its modifiers (salt, chilli flakes).
 //   prePrep     { minutes, text } optional: soaking or marinating done ahead (1.4).
 //               Friction v2 counts it (learn.js prePrepUnits) in the live ranker too.
 
@@ -21,6 +24,8 @@ export const CATALOGUE = [
     id: 'airfryer_protein_cheese_toast',
     name: 'Air-fryer protein bread cheese toast',
     kind: 'meal',
+    form: 'toast',
+    parts: [{ id: 'bread', technique: 'air_fried' }, { id: 'cheese_slices', technique: 'melted' }],
     equipment: ['air_fryer'],
     utensils: ['plate'],
     ingredients: [
@@ -41,6 +46,8 @@ export const CATALOGUE = [
     id: 'pasta_aglio_olio_paneer',
     name: 'Fusilli aglio olio with air-fried paneer',
     kind: 'meal',
+    form: 'bowl',
+    parts: [{ id: 'pasta', technique: 'sauteed' }, { id: 'paneer', technique: 'air_fried' }],
     equipment: ['stovetop', 'pot', 'pan', 'strainer', 'air_fryer'],
     utensils: ['knife', 'cutting_board', 'spatula', 'plate'],
     ingredients: [
@@ -68,6 +75,8 @@ export const CATALOGUE = [
     id: 'microwave_paneer_bhurji',
     name: 'Microwave paneer bhurji (no chopping)',
     kind: 'meal',
+    form: 'bhurji',
+    parts: [{ id: 'paneer', technique: 'microwaved' }, { id: 'butter' }],
     equipment: ['microwave'],
     utensils: ['bowl', 'spoon'],
     ingredients: [
@@ -90,6 +99,8 @@ export const CATALOGUE = [
     id: 'curd_whey_bowl',
     name: 'Curd and whey protein bowl',
     kind: 'meal',
+    form: 'bowl',
+    parts: [{ id: 'curd' }, { id: 'whey' }, { id: 'banana' }],
     equipment: [],
     utensils: ['bowl', 'spoon'],
     ingredients: [
@@ -114,6 +125,8 @@ export const CATALOGUE = [
     id: 'whey_makhana_bowl',
     name: 'Whey and makhana bowl',
     kind: 'meal',
+    form: 'bowl',
+    parts: [{ id: 'whey', technique: 'shake_water' }, { id: 'makhana' }, { id: 'milk' }],
     equipment: [],
     utensils: ['bowl', 'spoon'],
     ingredients: [
@@ -135,6 +148,8 @@ export const CATALOGUE = [
     id: 'whey_milk_shake',
     name: 'Whey shake with milk',
     kind: 'snack',
+    form: 'shake',
+    parts: [{ id: 'whey', technique: 'shake_milk' }],
     equipment: [],
     utensils: ['shaker'],
     ingredients: [
@@ -154,6 +169,8 @@ export const CATALOGUE = [
     id: 'pb_protein_toast',
     name: 'Peanut butter protein toast',
     kind: 'snack',
+    form: 'toast',
+    parts: [{ id: 'bread' }, { id: 'peanut_butter' }, { id: 'banana' }],
     equipment: [],
     utensils: ['plate', 'knife'],
     ingredients: [
@@ -174,6 +191,8 @@ export const CATALOGUE = [
     id: 'microwave_whey_oats',
     name: 'Microwave protein oats',
     kind: 'meal',
+    form: 'bowl',
+    parts: [{ id: 'oats', technique: 'microwaved' }, { id: 'milk' }, { id: 'whey' }, { id: 'banana' }],
     equipment: ['microwave'],
     utensils: ['bowl', 'spoon'],
     ingredients: [
@@ -196,6 +215,8 @@ export const CATALOGUE = [
     id: 'boiled_eggs',
     name: 'Boiled eggs with salt and pepper',
     kind: 'meal',
+    form: 'one-pot',
+    parts: [{ id: 'eggs', technique: 'boiled' }],
     equipment: ['stovetop', 'pot'],
     utensils: ['plate'],
     ingredients: [
@@ -217,6 +238,8 @@ export const CATALOGUE = [
     id: 'mug_omelette',
     name: 'Microwave mug omelette',
     kind: 'meal',
+    form: 'bhurji',
+    parts: [{ id: 'eggs', technique: 'microwaved' }],
     equipment: ['microwave'],
     utensils: ['mug', 'fork'],
     ingredients: [
@@ -237,6 +260,8 @@ export const CATALOGUE = [
     id: 'plain_omelette',
     name: 'Butter omelette',
     kind: 'meal',
+    form: 'griddle',
+    parts: [{ id: 'eggs', technique: 'omelette' }, { id: 'butter' }],
     equipment: ['stovetop', 'pan'],
     utensils: ['bowl', 'fork', 'spatula', 'plate'],
     ingredients: [
@@ -259,6 +284,8 @@ export const CATALOGUE = [
     id: 'egg_bhurji',
     name: 'Egg bhurji',
     kind: 'meal',
+    form: 'bhurji',
+    parts: [{ id: 'eggs', technique: 'scrambled' }, { id: 'onion', technique: 'sauteed' }, { id: 'tomato', technique: 'sauteed' }],
     equipment: ['stovetop', 'pan'],
     utensils: ['knife', 'cutting_board', 'spatula', 'plate'],
     ingredients: [
@@ -284,6 +311,8 @@ export const CATALOGUE = [
     id: 'airfryer_egg_in_toast',
     name: 'Air-fryer egg-in-a-hole on protein bread',
     kind: 'meal',
+    form: 'toast',
+    parts: [{ id: 'bread', technique: 'air_fried' }, { id: 'eggs', technique: 'air_fried' }, { id: 'butter' }],
     equipment: ['air_fryer'],
     utensils: ['plate', 'spoon'],
     ingredients: [
@@ -306,6 +335,8 @@ export const CATALOGUE = [
     id: 'paneer_cheese_sandwich',
     name: 'Paneer cheese grilled sandwich',
     kind: 'meal',
+    form: 'sandwich',
+    parts: [{ id: 'bread', technique: 'toasted' }, { id: 'paneer' }, { id: 'cheese_slices', technique: 'melted' }],
     equipment: ['sandwich_maker'],
     utensils: ['plate', 'bowl', 'spoon'],
     ingredients: [
@@ -329,6 +360,8 @@ export const CATALOGUE = [
     id: 'tawa_paneer_cheese_sandwich',
     name: 'Tawa paneer cheese sandwich',
     kind: 'meal',
+    form: 'sandwich',
+    parts: [{ id: 'bread', technique: 'pan_fried' }, { id: 'paneer' }, { id: 'cheese_slices', technique: 'melted' }, { id: 'butter' }],
     equipment: ['stovetop', 'pan'],
     utensils: ['plate', 'bowl', 'spoon', 'spatula'],
     ingredients: [
@@ -351,6 +384,8 @@ export const CATALOGUE = [
     id: 'airfryer_paneer_tikka',
     name: 'Air-fryer paneer tikka',
     kind: 'meal',
+    form: 'griddle',
+    parts: [{ id: 'paneer', technique: 'air_fried' }, { id: 'curd' }, { id: 'capsicum', technique: 'air_fried' }],
     equipment: ['air_fryer'],
     utensils: ['knife', 'cutting_board', 'bowl', 'plate'],
     ingredients: [
@@ -374,6 +409,8 @@ export const CATALOGUE = [
     id: 'stovetop_paneer_bhurji',
     name: 'Classic paneer bhurji',
     kind: 'meal',
+    form: 'bhurji',
+    parts: [{ id: 'paneer', technique: 'scrambled' }, { id: 'onion', technique: 'sauteed' }, { id: 'tomato', technique: 'sauteed' }],
     equipment: ['stovetop', 'pan'],
     utensils: ['knife', 'cutting_board', 'spatula', 'plate'],
     ingredients: [
@@ -399,6 +436,8 @@ export const CATALOGUE = [
     id: 'soya_chunk_curd_bowl',
     name: 'Microwave soya chunks in spiced curd',
     kind: 'meal',
+    form: 'bowl',
+    parts: [{ id: 'soya_chunks', technique: 'boiled' }, { id: 'curd' }],
     equipment: ['microwave'],
     utensils: ['bowl', 'spoon'],
     ingredients: [
@@ -421,6 +460,8 @@ export const CATALOGUE = [
     id: 'chana_chaat',
     name: 'Chana chaat',
     kind: 'meal',
+    form: 'bowl',
+    parts: [{ id: 'chickpeas' }, { id: 'onion' }, { id: 'tomato' }, { id: 'lemon' }],
     equipment: [],
     utensils: ['knife', 'cutting_board', 'bowl', 'spoon'],
     ingredients: [
@@ -444,6 +485,8 @@ export const CATALOGUE = [
     id: 'sprouts_salad',
     name: 'Moong sprouts salad',
     kind: 'meal',
+    form: 'bowl',
+    parts: [{ id: 'sprouts' }, { id: 'tomato' }, { id: 'onion' }, { id: 'lemon' }],
     equipment: [],
     utensils: ['knife', 'cutting_board', 'bowl', 'spoon'],
     ingredients: [
@@ -467,6 +510,8 @@ export const CATALOGUE = [
     id: 'besan_chilla',
     name: 'Besan chilla',
     kind: 'meal',
+    form: 'griddle',
+    parts: [{ id: 'besan', technique: 'chilla' }],
     equipment: ['stovetop', 'pan'],
     utensils: ['bowl', 'spoon', 'spatula', 'knife', 'cutting_board', 'plate'],
     ingredients: [
@@ -491,6 +536,8 @@ export const CATALOGUE = [
     id: 'moong_dal_khichdi',
     name: 'Pressure-cooker moong dal khichdi',
     kind: 'meal',
+    form: 'one-pot',
+    parts: [{ id: 'rice', technique: 'pressure_cooked' }, { id: 'dal', technique: 'pressure_cooked' }, { id: 'ghee' }],
     equipment: ['stovetop', 'pressure_cooker'],
     utensils: ['spatula', 'bowl'],
     ingredients: [
@@ -516,6 +563,8 @@ export const CATALOGUE = [
     id: 'airfryer_makhana',
     name: 'Air-fryer masala makhana',
     kind: 'snack',
+    form: 'bowl',
+    parts: [{ id: 'makhana', technique: 'air_fried' }, { id: 'ghee' }],
     equipment: ['air_fryer'],
     utensils: ['bowl'],
     ingredients: [
@@ -536,6 +585,8 @@ export const CATALOGUE = [
     id: 'poha',
     name: 'Kanda poha with peanuts',
     kind: 'meal',
+    form: 'one-pot',
+    parts: [{ id: 'poha', technique: 'sauteed' }, { id: 'onion', technique: 'sauteed' }, { id: 'peanuts', technique: 'roasted' }],
     equipment: ['stovetop', 'pan', 'strainer'],
     utensils: ['knife', 'cutting_board', 'spatula', 'plate'],
     ingredients: [
@@ -563,6 +614,8 @@ export const CATALOGUE = [
     id: 'paneer_wrap',
     name: 'Microwave paneer wrap',
     kind: 'meal',
+    form: 'sandwich',
+    parts: [{ id: 'tortilla' }, { id: 'paneer', technique: 'microwaved' }],
     equipment: ['microwave'],
     utensils: ['plate', 'bowl'],
     ingredients: [

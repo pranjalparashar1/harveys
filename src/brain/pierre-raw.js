@@ -11,6 +11,8 @@
 //            pre-1.6 answer that only said present, read as 2.
 //   centre:  1–5 (accent, support, partner, centre, the meal)
 //   at:      when it was rated
+//   class:   dense_starchy | watery_veg (Step 3, via --class): which class prior its
+//            unrated cooked forms take (scripts/derive-prior.mjs). A label, not a rating.
 // prep: foods marked "part of prep, needs further processing" (soaked poha).
 //   They have no raw ratings; Pierre-tutor rates them with a technique. centre: 1–5,
 //   given directly (Step 2, via --centre), used by their tutor rows.
@@ -106,7 +108,8 @@ export const PIERRE_RAW = {
       },
       centre: 5,
       role: 'major',
-      at: '2026-11-19T16:45:16.000Z'
+      at: '2026-11-19T16:45:16.000Z',
+      class: 'dense_starchy'
     },
     butter: {
       texture: {
@@ -148,7 +151,8 @@ export const PIERRE_RAW = {
       },
       centre: 2,
       role: 'minor',
-      at: '2026-11-19T15:11:31.554Z'
+      at: '2026-11-19T15:11:31.554Z',
+      class: 'watery_veg'
     },
     capsicum: {
       texture: {
@@ -169,7 +173,8 @@ export const PIERRE_RAW = {
       },
       centre: 2,
       role: 'minor',
-      at: '2026-11-19T16:31:19.296Z'
+      at: '2026-11-19T16:31:19.296Z',
+      class: 'watery_veg'
     },
     carrot: {
       texture: {
@@ -190,7 +195,8 @@ export const PIERRE_RAW = {
       },
       centre: 2,
       role: 'minor',
-      at: '2026-11-19T15:07:44.988Z'
+      at: '2026-11-19T15:07:44.988Z',
+      class: 'watery_veg'
     },
     cashews: {
       texture: {
@@ -253,7 +259,8 @@ export const PIERRE_RAW = {
       },
       centre: 4,
       role: 'major',
-      at: '2026-11-19T14:27:28.172Z'
+      at: '2026-11-19T14:27:28.172Z',
+      class: 'dense_starchy'
     },
     coriander: {
       texture: {
@@ -316,7 +323,8 @@ export const PIERRE_RAW = {
       },
       centre: 2,
       role: 'minor',
-      at: '2026-11-19T16:31:00.964Z'
+      at: '2026-11-19T16:31:00.964Z',
+      class: 'watery_veg'
     },
     curd: {
       texture: {
@@ -365,7 +373,8 @@ export const PIERRE_RAW = {
         'toor_dal',
         'urad_dal',
         'chana_dal'
-      ]
+      ],
+      class: 'dense_starchy'
     },
     frozen_peas: {
       texture: {
@@ -449,7 +458,8 @@ export const PIERRE_RAW = {
       },
       centre: 4,
       role: 'major',
-      at: '2026-11-19T17:11:36.813Z'
+      at: '2026-11-19T17:11:36.813Z',
+      class: 'dense_starchy'
     },
     lemon: {
       texture: {
@@ -554,7 +564,8 @@ export const PIERRE_RAW = {
       },
       centre: 3,
       role: 'major',
-      at: '2026-11-19T14:29:55.998Z'
+      at: '2026-11-19T14:29:55.998Z',
+      class: 'watery_veg'
     },
     noodles: {
       texture: {
@@ -575,7 +586,8 @@ export const PIERRE_RAW = {
       },
       centre: 5,
       role: 'major',
-      at: '2026-11-19T17:13:33.635Z'
+      at: '2026-11-19T17:13:33.635Z',
+      class: 'dense_starchy'
     },
     oats: {
       texture: {
@@ -596,7 +608,8 @@ export const PIERRE_RAW = {
       },
       centre: 5,
       role: 'major',
-      at: '2026-11-19T16:45:16.000Z'
+      at: '2026-11-19T16:45:16.000Z',
+      class: 'dense_starchy'
     },
     onion: {
       texture: {
@@ -617,7 +630,8 @@ export const PIERRE_RAW = {
       },
       centre: 2,
       role: 'minor',
-      at: '2026-11-19T15:11:10.743Z'
+      at: '2026-11-19T15:11:10.743Z',
+      class: 'watery_veg'
     },
     paneer: {
       texture: {
@@ -638,7 +652,8 @@ export const PIERRE_RAW = {
       },
       centre: 4,
       role: 'major',
-      at: '2026-11-19T14:28:07.192Z'
+      at: '2026-11-19T14:28:07.192Z',
+      class: 'dense_starchy'
     },
     pasta: {
       texture: {
@@ -659,7 +674,8 @@ export const PIERRE_RAW = {
       },
       centre: 5,
       role: 'major',
-      at: '2026-11-19T14:22:04.035Z'
+      at: '2026-11-19T14:22:04.035Z',
+      class: 'dense_starchy'
     },
     peanut_butter: {
       texture: {
@@ -743,7 +759,8 @@ export const PIERRE_RAW = {
       },
       centre: 4,
       role: 'major',
-      at: '2026-11-19T15:06:52.720Z'
+      at: '2026-11-19T15:06:52.720Z',
+      class: 'dense_starchy'
     },
     raisins: {
       texture: {
@@ -785,7 +802,8 @@ export const PIERRE_RAW = {
       },
       centre: 4,
       role: 'major',
-      at: '2026-11-19T16:45:16.000Z'
+      at: '2026-11-19T16:45:16.000Z',
+      class: 'dense_starchy'
     },
     rice: {
       texture: {
@@ -806,7 +824,8 @@ export const PIERRE_RAW = {
       },
       centre: 5,
       role: 'major',
-      at: '2026-11-19T16:45:16.000Z'
+      at: '2026-11-19T16:45:16.000Z',
+      class: 'dense_starchy'
     },
     roti: {
       texture: {
@@ -827,7 +846,8 @@ export const PIERRE_RAW = {
       },
       centre: 5,
       role: 'major',
-      at: '2026-11-19T17:17:00.028Z'
+      at: '2026-11-19T17:17:00.028Z',
+      class: 'dense_starchy'
     },
     soya_chunks: {
       texture: {
@@ -848,7 +868,8 @@ export const PIERRE_RAW = {
       },
       centre: 4,
       role: 'major',
-      at: '2026-11-19T14:55:38.733Z'
+      at: '2026-11-19T14:55:38.733Z',
+      class: 'dense_starchy'
     },
     spring_onion: {
       texture: {
@@ -869,7 +890,8 @@ export const PIERRE_RAW = {
       },
       centre: 2,
       role: 'minor',
-      at: '2026-11-19T17:24:51.653Z'
+      at: '2026-11-19T17:24:51.653Z',
+      class: 'watery_veg'
     },
     sweet_corn: {
       texture: {
@@ -911,7 +933,8 @@ export const PIERRE_RAW = {
       },
       centre: 2,
       role: 'minor',
-      at: '2026-11-19T16:45:16.000Z'
+      at: '2026-11-19T16:45:16.000Z',
+      class: 'watery_veg'
     },
     walnuts: {
       texture: {
@@ -1886,6 +1909,66 @@ export const PIERRE_RAW = {
       },
       distance: 1,
       at: '2026-11-20T06:45Z'
+    },
+    'whey@pancake': {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 2,
+        juicy: 0,
+        flaky: 2
+      },
+      taste: {
+        salt: 0,
+        sugar: 2,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 0
+      },
+      distance: 1,
+      at: '2026-11-20T12:56Z'
+    },
+    'whey@shake_milk': {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 3,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      distance: 0,
+      at: '2026-11-20T12:57Z'
+    },
+    'whey@shake_water': {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 0
+      },
+      distance: 0,
+      at: '2026-11-20T12:57Z'
     }
   },
   aliases: {

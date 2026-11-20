@@ -43,6 +43,15 @@ export const DEFAULT_CONFIG = Object.freeze({
     condimentGroups: Object.freeze(['fat', 'spice', 'spread']),
   }),
 
+  // Pierre's floor (v2 Step 3). PROVISIONAL: not fitted; Step 4 refits it from the
+  // 30-dish blind benchmark. A dish clears it with one flavour beyond the assumed salt
+  // and sugar at Medium (2) or above, and one texture at Medium or above.
+  pierreFloor: Object.freeze({
+    flavours: Object.freeze(['fat', 'acid', 'heat', 'fresh']),
+    flavourMin: 2,
+    texturesMin: 1,
+  }),
+
   // Meals one missing ingredient away are offered as "buy X to unlock".
   unlockSuggestions: 3,
 });
