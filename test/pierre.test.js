@@ -508,3 +508,10 @@ test('all dals are one food, "dal"; chole, rajma and chana stay separate (pranja
   assert.equal(later.foods.dal.texture.creamy, 3);
   assert.ok(!later.foods.toor_dal);
 });
+
+test('Step 2 acceptance: whey shaken with water is rated, with its own centre', () => {
+  const v = partVector({ id: 'whey', technique: 'shake_water' });
+  assert.equal(v.source, 'rated');
+  assert.equal(v.centre, 3);
+  assert.equal(v.distance, 0);
+});

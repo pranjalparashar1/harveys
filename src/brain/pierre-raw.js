@@ -1886,6 +1886,66 @@ export const PIERRE_RAW = {
       },
       distance: 1,
       at: '2026-11-20T06:45Z'
+    },
+    'whey@pancake': {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 2,
+        juicy: 0,
+        flaky: 2
+      },
+      taste: {
+        salt: 0,
+        sugar: 2,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 0
+      },
+      distance: 1,
+      at: '2026-11-20T12:56Z'
+    },
+    'whey@shake_milk': {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 3,
+        fat: 1,
+        acid: 0,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      distance: 0,
+      at: '2026-11-20T12:57Z'
+    },
+    'whey@shake_water': {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 1,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 1,
+        fresh: 0
+      },
+      distance: 0,
+      at: '2026-11-20T12:57Z'
     }
   },
   aliases: {
