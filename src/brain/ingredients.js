@@ -97,15 +97,16 @@ export function partnersFor(anchorId, inventoryIds, kb = PIERRE_RAW) {
 // that shifts any raw vector: { texture: { crisp: +2 }, taste: { fat: 1 } }.
 // Empty for now: no guesses until there are real ratings.
 export const TECHNIQUES = {};
-// Pierre-tutor's readiness, 0–4: how far a food cooked one way is from the plate.
-// It's Marco's finishing friction: what's still left to do. pranjal, 19 Nov.
-export const READY = {
-  4: 'eat as is',          // salted scrambled eggs
-  3: 'needs seasoning',    // paneer scrambled, no salt yet
-  2: 'needs an addition',  // a sauce, chutney or masala
-  1: 'needs another step', // boiled soya chunks, then air-fried
-  0: 'inedible',           // microwaved paneer: a veto
+// Pierre-tutor's distance, 0–3: how many steps a food cooked one way (unsalted) is
+// from done, where done leaves only context or assembly. A veto has no distance.
+// It's Marco's finishing friction: what's still left to do. pranjal, 20 Nov.
+export const DISTANCE = {
+  0: 'done',               // melted cheese slice, fried onion garnish
+  1: 'one finishing step', // salt, butter or a spread
+  2: 'goes into something', // a sauce, tadka or masala
+  3: 'another cooking step', // roasted suji, then upma
 };
+const READY_TO_DISTANCE = { 4: 0, 3: 1, 2: 2, 1: 3 }; // v1 readiness; 0 was the veto
 
 export const techKey = (id, technique) => (technique ? `${id}@${technique}` : id);
 
@@ -120,7 +121,8 @@ export function partVector(part, kb = PIERRE_RAW, techniques = TECHNIQUES) {
       texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(t.texture?.[k] ?? 0, 0, 3)])),
       taste: Object.fromEntries(TASTES.map((k) => [k, clamp(t.taste?.[k] ?? 0, 0, 3)])),
       centre: rawVector(id, kb)?.centre ?? 3, // prep-only foods (eggs) have no centre yet
-      ready: t.ready,
+      distance: t.distance ?? null,
+      veto: !!t.veto,
       source: 'rated',
     };
   }
@@ -161,12 +163,12 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES) {
     tastes: TASTES.filter((k) => k !== 'canvas' && taste[k] > 0),
     shape: plateShape(vs.map((v) => v.id), kb),
     missing: parts.map((p) => (typeof p === 'string' ? p : p.id)).filter((id) => !rawVector(id, kb)),
-    // Readiness of the cooked parts: 0 is a veto on the dish (microwaved paneer); 1 needs
-    // another cooking step (fine in a chain, not as the last technique); 2–3 are what
+    // Distance of the cooked parts: a veto rules the dish out (microwaved eggs); 3 needs
+    // another cooking step (fine in a chain, not as the last technique); 0–2 are what
     // Marco still has to add. `finish` maps each part to what's left to do.
-    inedible: vs.filter((v) => v.ready === 0).map((v) => techKey(v.id, v.technique)),
-    unfinished: vs.filter((v) => v.ready === 1).map((v) => techKey(v.id, v.technique)),
-    finish: Object.fromEntries(vs.filter((v) => v.ready != null).map((v) => [techKey(v.id, v.technique), READY[v.ready]])),
+    inedible: vs.filter((v) => v.veto).map((v) => techKey(v.id, v.technique)),
+    unfinished: vs.filter((v) => v.distance === 3).map((v) => techKey(v.id, v.technique)),
+    finish: Object.fromEntries(vs.filter((v) => v.distance != null).map((v) => [techKey(v.id, v.technique), DISTANCE[v.distance]])),
   };
 }
 
@@ -190,13 +192,15 @@ export function mergeRatings(kb, ratings, { exclude = [] } = {}) {
     if (r.remove) { excluded.push(id); delete foods[id]; delete prep[id]; delete tech[id]; continue; }
     const old = foods[id] ?? prep[id] ?? tech[id];
     if (old?.at && r.at && old.at > r.at) continue;
-    // Pierre-tutor: a food cooked one way, and how ready it is (0–4). Its centre is the food's own.
+    // Pierre-tutor: a food cooked one way, and its distance from done (0–3, or a veto).
+    // Its centre is the food's own. v1 answers carried readiness 0–4 instead.
     if (id.includes('@')) {
-      if (r.ready == null) continue;
+      const d = r.distance ?? (r.ready == null ? null : r.ready === 0 ? 'x' : READY_TO_DISTANCE[clamp(Math.round(r.ready), 1, 4)]);
+      if (d == null) continue;
       tech[id] = {
         texture: Object.fromEntries(TEXTURES.map((k) => [k, clamp(Math.round(r.texture?.[k] ?? 0), 0, 3)])),
         taste: Object.fromEntries(TASTES.map((k) => [k, clamp(Math.round(r.taste?.[k] ?? 0), 0, 3)])),
-        ready: clamp(Math.round(r.ready), 0, 4),
+        ...(d === 'x' ? { veto: true } : { distance: clamp(Math.round(d), 0, 3) }),
         ...(r.at ? { at: r.at } : {}),
       };
       continue;

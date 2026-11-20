@@ -13,10 +13,11 @@
 //   at:      when it was rated
 // prep: foods marked "part of prep, needs further processing" (soaked poha).
 //   They have no raw ratings; Pierre-tutor rates them with a technique.
-// tech: Pierre-tutor ratings of a food cooked one way ("paneer@pan_fried"): texture and
-//   taste as above, plus ready 0–4: 4 eat as is, 3 needs seasoning, 2 needs an
-//   addition, 1 needs another cooking step (boiled soya chunks), 0 inedible (a veto).
-//   Its centre is the food's own.
+// tech: Pierre-tutor ratings of a food cooked one way ("paneer@pan_fried"), unsalted:
+//   texture and taste as above, plus distance 0–3, the steps left until done (only
+//   assembly left): 0 done, 1 one finishing step (salt, butter), 2 goes into a sauce,
+//   tadka or masala, 3 another cooking step (roasted suji). veto: never (microwaved
+//   eggs), with no distance. Its centre is the food's own.
 // excluded: foods set aside for now (too much work, or unfamiliar). Not trained on.
 export const PIERRE_RAW = {
   version: 1,
@@ -1231,7 +1232,7 @@ export const PIERRE_RAW = {
         canvas: 1,
         fresh: 0
       },
-      ready: 3,
+      distance: 0,
       at: '2026-11-20T06:47Z'
     },
     'besan@chilla': {
@@ -1251,7 +1252,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:50Z'
     },
     'bread@air_fried': {
@@ -1271,7 +1272,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:38Z'
     },
     'bread@pan_fried': {
@@ -1291,7 +1292,7 @@ export const PIERRE_RAW = {
         canvas: 2,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:35Z'
     },
     'bread@toasted': {
@@ -1311,7 +1312,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 2,
+      distance: 1,
       at: '2026-11-20T06:36Z'
     },
     'cabbage@sauteed': {
@@ -1331,7 +1332,7 @@ export const PIERRE_RAW = {
         canvas: 1,
         fresh: 0
       },
-      ready: 2,
+      distance: 1,
       at: '2026-11-20T06:49Z'
     },
     'capsicum@air_fried': {
@@ -1351,7 +1352,7 @@ export const PIERRE_RAW = {
         canvas: 1,
         fresh: 1
       },
-      ready: 2,
+      distance: 1,
       at: '2026-11-20T06:42Z'
     },
     'capsicum@sauteed': {
@@ -1371,7 +1372,7 @@ export const PIERRE_RAW = {
         canvas: 2,
         fresh: 1
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:48Z'
     },
     'cheese_slices@melted': {
@@ -1391,7 +1392,7 @@ export const PIERRE_RAW = {
         canvas: 0,
         fresh: 0
       },
-      ready: 3,
+      distance: 0,
       at: '2026-11-20T06:45Z'
     },
     'chickpeas@mashed': {
@@ -1411,7 +1412,7 @@ export const PIERRE_RAW = {
         canvas: 2,
         fresh: 0
       },
-      ready: 2,
+      distance: 2,
       at: '2026-11-20T06:39Z'
     },
     'eggs@boiled': {
@@ -1431,7 +1432,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T05:57Z'
     },
     'eggs@fried_egg': {
@@ -1451,7 +1452,7 @@ export const PIERRE_RAW = {
         canvas: 2,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:38Z'
     },
     'eggs@microwaved': {
@@ -1471,7 +1472,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 0,
+      veto: true,
       at: '2026-11-20T06:32Z'
     },
     'eggs@omelette': {
@@ -1491,7 +1492,7 @@ export const PIERRE_RAW = {
         canvas: 2,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:35Z'
     },
     'eggs@scrambled': {
@@ -1511,7 +1512,7 @@ export const PIERRE_RAW = {
         canvas: 2,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:37Z'
     },
     'frozen_peas@boiled': {
@@ -1531,7 +1532,7 @@ export const PIERRE_RAW = {
         canvas: 1,
         fresh: 0
       },
-      ready: 2,
+      distance: 2,
       at: '2026-11-20T06:50Z'
     },
     'kala_chana@sauteed': {
@@ -1551,7 +1552,7 @@ export const PIERRE_RAW = {
         canvas: 2,
         fresh: 0
       },
-      ready: 2,
+      distance: 1,
       at: '2026-11-20T06:44Z'
     },
     'makhana@air_fried': {
@@ -1571,7 +1572,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:37Z'
     },
     'mozzarella@melted': {
@@ -1591,7 +1592,7 @@ export const PIERRE_RAW = {
         canvas: 1,
         fresh: 0
       },
-      ready: 3,
+      distance: 0,
       at: '2026-11-20T06:44Z'
     },
     'mushroom@air_fried': {
@@ -1611,7 +1612,7 @@ export const PIERRE_RAW = {
         canvas: 1,
         fresh: 0
       },
-      ready: 2,
+      distance: 1,
       at: '2026-11-20T06:05Z'
     },
     'mushroom@sauteed': {
@@ -1631,7 +1632,7 @@ export const PIERRE_RAW = {
         canvas: 1,
         fresh: 0
       },
-      ready: 2,
+      distance: 1,
       at: '2026-11-20T06:41Z'
     },
     'onion@deep_fried': {
@@ -1651,7 +1652,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 3,
+      distance: 0,
       at: '2026-11-20T06:47Z'
     },
     'onion@sauteed': {
@@ -1671,7 +1672,7 @@ export const PIERRE_RAW = {
         canvas: 2,
         fresh: 0
       },
-      ready: 2,
+      distance: 2,
       at: '2026-11-20T06:49Z'
     },
     'paneer@air_fried': {
@@ -1691,7 +1692,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:40Z'
     },
     'paneer@microwaved': {
@@ -1711,7 +1712,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:37Z'
     },
     'paneer@pan_fried': {
@@ -1731,7 +1732,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 2,
+      distance: 1,
       at: '2026-11-20T06:40Z'
     },
     'paneer@scrambled': {
@@ -1751,7 +1752,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:41Z'
     },
     'pasta@sauteed': {
@@ -1771,7 +1772,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 2,
+      distance: 2,
       at: '2026-11-20T06:39Z'
     },
     'peanuts@roasted': {
@@ -1791,7 +1792,7 @@ export const PIERRE_RAW = {
         canvas: 1,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:42Z'
     },
     'poha@sauteed': {
@@ -1811,7 +1812,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 2,
+      distance: 2,
       at: '2026-11-20T05:57Z'
     },
     'potato@air_fried': {
@@ -1831,7 +1832,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T05:58Z'
     },
     'potato@microwaved': {
@@ -1851,7 +1852,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 2,
+      distance: 2,
       at: '2026-11-20T05:12Z'
     },
     'potato@pan_fried': {
@@ -1871,7 +1872,7 @@ export const PIERRE_RAW = {
         canvas: 2,
         fresh: 0
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:31Z'
     },
     'rice@sauteed': {
@@ -1891,7 +1892,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 2,
+      distance: 2,
       at: '2026-11-20T06:32Z'
     },
     'soya_chunks@air_fried': {
@@ -1911,7 +1912,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 2,
+      distance: 1,
       at: '2026-11-20T06:38Z'
     },
     'soya_chunks@sauteed': {
@@ -1931,7 +1932,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 2,
+      distance: 2,
       at: '2026-11-20T06:36Z'
     },
     'spring_onion@sauteed': {
@@ -1951,7 +1952,7 @@ export const PIERRE_RAW = {
         canvas: 1,
         fresh: 1
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:45Z'
     },
     'suji@roasted': {
@@ -1971,7 +1972,7 @@ export const PIERRE_RAW = {
         canvas: 3,
         fresh: 0
       },
-      ready: 1,
+      distance: 3,
       at: '2026-11-20T06:48Z'
     },
     'sweet_corn@boiled': {
@@ -1991,7 +1992,7 @@ export const PIERRE_RAW = {
         canvas: 1,
         fresh: 1
       },
-      ready: 2,
+      distance: 1,
       at: '2026-11-20T06:48Z'
     },
     'tomato@sauteed': {
@@ -2011,7 +2012,7 @@ export const PIERRE_RAW = {
         canvas: 1,
         fresh: 1
       },
-      ready: 3,
+      distance: 1,
       at: '2026-11-20T06:45Z'
     }
   }
