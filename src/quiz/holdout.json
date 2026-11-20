@@ -1,0 +1,594 @@
+{
+  "id": "holdout",
+  "title": "Pierre holdout",
+  "version": 1,
+  "seed": 20261122,
+  "tiers": [
+    {
+      "id": "veto",
+      "label": "Veto",
+      "line": "I wouldn’t eat this."
+    },
+    {
+      "id": "floor",
+      "label": "Floor",
+      "line": "Edible, but it’s missing something. Not worth making as it is."
+    },
+    {
+      "id": "pass",
+      "label": "Pass",
+      "line": "I’d happily eat this."
+    },
+    {
+      "id": "crave",
+      "label": "Crave",
+      "line": "I’d want this again. I’d go out of my way for it."
+    }
+  ],
+  "reasons": [
+    {
+      "id": "bland",
+      "label": "Bland"
+    },
+    {
+      "id": "savoury",
+      "label": "Lacks savoury depth"
+    },
+    {
+      "id": "texture",
+      "label": "Texture is off"
+    },
+    {
+      "id": "clash",
+      "label": "Doesn’t go together"
+    },
+    {
+      "id": "cooking",
+      "label": "Cooked wrong / raw"
+    },
+    {
+      "id": "meal",
+      "label": "Not a meal"
+    }
+  ],
+  "techniques": [
+    {
+      "id": "sauteed",
+      "label": "sautéed"
+    },
+    {
+      "id": "air_fried",
+      "label": "air-fried"
+    },
+    {
+      "id": "pan_fried",
+      "label": "pan-fried"
+    },
+    {
+      "id": "toasted",
+      "label": "toasted"
+    },
+    {
+      "id": "roasted",
+      "label": "roasted"
+    },
+    {
+      "id": "boiled",
+      "label": "boiled"
+    },
+    {
+      "id": "microwaved",
+      "label": "microwaved"
+    },
+    {
+      "id": "melted",
+      "label": "melted"
+    },
+    {
+      "id": "mashed",
+      "label": "mashed"
+    }
+  ],
+  "dishes": [
+    {
+      "id": "ho_rice_peas_butter",
+      "name": "Sautéed rice with boiled peas and butter",
+      "parts": "Rice (sautéed), frozen peas (boiled), butter, salt",
+      "items": [
+        {
+          "id": "rice",
+          "technique": "sauteed"
+        },
+        {
+          "id": "frozen_peas",
+          "technique": "boiled"
+        },
+        {
+          "id": "butter"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_raw_peas",
+      "name": "Paneer cubes with raw frozen peas and tomato",
+      "parts": "Paneer, frozen peas, tomato, salt, black pepper",
+      "items": [
+        {
+          "id": "paneer"
+        },
+        {
+          "id": "frozen_peas"
+        },
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_masala_egg_toast",
+      "name": "Masala scrambled eggs on toast",
+      "parts": "Bread (toasted), eggs (scrambled), onion (sautéed), salt, green chilli",
+      "items": [
+        {
+          "id": "bread",
+          "technique": "toasted"
+        },
+        {
+          "id": "eggs",
+          "technique": "scrambled"
+        },
+        {
+          "id": "onion",
+          "technique": "sauteed"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "green_chilli",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_dal_roti",
+      "name": "Dal with roti and ghee",
+      "parts": "Dal (pressure-cooked), roti, ghee, salt",
+      "items": [
+        {
+          "id": "dal",
+          "technique": "pressure_cooked"
+        },
+        {
+          "id": "roti"
+        },
+        {
+          "id": "ghee"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_mushroom_toast",
+      "name": "Garlic mushroom toast",
+      "parts": "Bread (toasted), mushroom (sautéed), butter, garlic (sautéed), salt, black pepper",
+      "items": [
+        {
+          "id": "bread",
+          "technique": "toasted"
+        },
+        {
+          "id": "mushroom",
+          "technique": "sauteed"
+        },
+        {
+          "id": "butter"
+        },
+        {
+          "id": "garlic",
+          "technique": "sauteed"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_curd_rice",
+      "name": "Curd rice",
+      "parts": "Rice (pressure-cooked), curd, salt",
+      "items": [
+        {
+          "id": "rice",
+          "technique": "pressure_cooked"
+        },
+        {
+          "id": "curd"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_kala_chana_salad",
+      "name": "Sautéed kala chana with raw tomato, cucumber and lemon",
+      "parts": "Kala chana (sautéed), tomato, cucumber, lemon, salt, chaat masala",
+      "items": [
+        {
+          "id": "kala_chana",
+          "technique": "sauteed"
+        },
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "cucumber"
+        },
+        {
+          "id": "lemon"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "chaat_masala",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_potato_butter",
+      "name": "Microwaved potato with butter, salt and pepper",
+      "parts": "Potato (microwaved), butter, salt, black pepper",
+      "items": [
+        {
+          "id": "potato",
+          "technique": "microwaved"
+        },
+        {
+          "id": "butter"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_paneer_chilli",
+      "name": "Pan-fried paneer with salt and chilli flakes",
+      "parts": "Paneer (pan-fried), salt, chilli flakes",
+      "items": [
+        {
+          "id": "paneer",
+          "technique": "pan_fried"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "chilli_flakes",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_paneer_capsicum",
+      "name": "Pan-fried paneer with sautéed capsicum and onion",
+      "parts": "Paneer (pan-fried), capsicum (sautéed), onion (sautéed), salt, red chilli powder",
+      "items": [
+        {
+          "id": "paneer",
+          "technique": "pan_fried"
+        },
+        {
+          "id": "capsicum",
+          "technique": "sauteed"
+        },
+        {
+          "id": "onion",
+          "technique": "sauteed"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "red_chilli_powder",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_pasta_tomato_cheese",
+      "name": "Boiled pasta tossed with sautéed tomato and garlic, cheese melted on top",
+      "parts": "Pasta (boiled), tomato (sautéed), garlic (sautéed), cheese slices (melted), salt",
+      "items": [
+        {
+          "id": "pasta",
+          "technique": "boiled"
+        },
+        {
+          "id": "tomato",
+          "technique": "sauteed"
+        },
+        {
+          "id": "garlic",
+          "technique": "sauteed"
+        },
+        {
+          "id": "cheese_slices",
+          "technique": "melted"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_pasta_tomato",
+      "name": "Boiled pasta tossed with sautéed tomato and salt",
+      "parts": "Pasta (boiled), tomato (sautéed), salt",
+      "items": [
+        {
+          "id": "pasta",
+          "technique": "boiled"
+        },
+        {
+          "id": "tomato",
+          "technique": "sauteed"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_apple_pb",
+      "name": "Apple slices with peanut butter",
+      "parts": "Apple, peanut butter",
+      "items": [
+        {
+          "id": "apple"
+        },
+        {
+          "id": "peanut_butter"
+        }
+      ]
+    },
+    {
+      "id": "ho_aloo_bhurji",
+      "name": "Aloo bhurji: pan-fried potato with sautéed onion",
+      "parts": "Potato (pan-fried), onion (sautéed), salt, red chilli powder",
+      "items": [
+        {
+          "id": "potato",
+          "technique": "pan_fried"
+        },
+        {
+          "id": "onion",
+          "technique": "sauteed"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "red_chilli_powder",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_mango_curd",
+      "name": "Mango with curd",
+      "parts": "Mango, curd",
+      "items": [
+        {
+          "id": "mango"
+        },
+        {
+          "id": "curd"
+        }
+      ]
+    },
+    {
+      "id": "ho_paneer_onion_sandwich",
+      "name": "Air-fried paneer sandwich with raw onion",
+      "parts": "Bread (toasted), paneer (air-fried), onion, salt, chaat masala",
+      "items": [
+        {
+          "id": "bread",
+          "technique": "toasted"
+        },
+        {
+          "id": "paneer",
+          "technique": "air_fried"
+        },
+        {
+          "id": "onion"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "chaat_masala",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_egg_lemon",
+      "name": "Boiled eggs with lemon and chaat masala",
+      "parts": "Eggs (boiled), lemon, salt, chaat masala",
+      "items": [
+        {
+          "id": "eggs",
+          "technique": "boiled"
+        },
+        {
+          "id": "lemon"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "chaat_masala",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_hung_curd_banana",
+      "name": "Hung curd with banana and honey",
+      "parts": "Hung curd, banana, honey",
+      "items": [
+        {
+          "id": "hung_curd"
+        },
+        {
+          "id": "banana"
+        },
+        {
+          "id": "honey",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_noodles_tomato_onion",
+      "name": "Boiled noodles tossed with sautéed tomato and onion, chilli flakes",
+      "parts": "Noodles (boiled), tomato (sautéed), onion (sautéed), salt, chilli flakes",
+      "items": [
+        {
+          "id": "noodles",
+          "technique": "boiled"
+        },
+        {
+          "id": "tomato",
+          "technique": "sauteed"
+        },
+        {
+          "id": "onion",
+          "technique": "sauteed"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "chilli_flakes",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_bread_omelette",
+      "name": "Bread omelette: butter omelette in toasted bread",
+      "parts": "Bread (toasted), eggs (omelette), butter, salt, black pepper",
+      "items": [
+        {
+          "id": "bread",
+          "technique": "toasted"
+        },
+        {
+          "id": "eggs",
+          "technique": "omelette"
+        },
+        {
+          "id": "butter"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_tomato_rice",
+      "name": "Tomato rice: rice sautéed with tomato and onion",
+      "parts": "Rice (sautéed), tomato (sautéed), onion (sautéed), salt, red chilli powder",
+      "items": [
+        {
+          "id": "rice",
+          "technique": "sauteed"
+        },
+        {
+          "id": "tomato",
+          "technique": "sauteed"
+        },
+        {
+          "id": "onion",
+          "technique": "sauteed"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "red_chilli_powder",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "ho_pasta_butter_pepper",
+      "name": "Boiled pasta with butter, salt and black pepper",
+      "parts": "Pasta (boiled), butter, salt, black pepper",
+      "items": [
+        {
+          "id": "pasta",
+          "technique": "boiled"
+        },
+        {
+          "id": "butter"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        }
+      ]
+    }
+  ]
+}
