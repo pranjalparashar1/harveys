@@ -1,6 +1,6 @@
 // Fit Marco's friction weights from the prep quiz (prep.html → "Send to Harvey's").
 //
-//   node scripts/fit-prep.mjs <answers.txt> [--no-taste] [--json]
+//   node scripts/fit-prep.mjs <answers.txt> [<round2.txt> …] [--no-taste] [--json]
 //
 // Input: the issue body or the copied text. Fits on 3 of every 4 questions, checks the
 // held-out quarter, then fits on all of them. Prints the weights next to src/brain/config.js
@@ -8,15 +8,15 @@
 
 import { readFileSync } from 'node:fs';
 import { DEFAULT_CONFIG } from '../src/brain/config.js';
-import { parsePrep, fitPrep, PREP_QUIZ } from '../src/quiz/prep.js';
+import { parsePrep, fitPrep, PREP_ALL } from '../src/quiz/prep.js';
 
 const args = process.argv.slice(2);
-const file = args.find((a) => !a.startsWith('--'));
-if (!file) {
+const files = args.filter((a) => !a.startsWith('--'));
+if (!files.length) {
   console.error('usage: node scripts/fit-prep.mjs <answers.txt> [--no-taste] [--json]');
   process.exit(1);
 }
-const answers = parsePrep(readFileSync(file, 'utf8'));
+const answers = Object.assign({}, ...files.map((f) => parsePrep(readFileSync(f, 'utf8'))));
 const r = fitPrep(answers, { current: DEFAULT_CONFIG.frictionTheta, noTaste: args.includes('--no-taste') });
 
 if (args.includes('--json')) {
@@ -25,7 +25,7 @@ if (args.includes('--json')) {
 }
 
 const f3 = (n) => (n == null ? '-' : (n >= 0 ? ' ' : '') + n.toFixed(3));
-console.log(`${r.answered} of ${PREP_QUIZ.length} answered.`);
+console.log(`${r.answered} answers (${PREP_ALL.length} questions across all rounds).`);
 console.log(`Held out: predicted ${r.heldHits}/${r.held} (fit on the other ${r.train}).`);
 console.log(`All: in-sample ${r.hits}/${r.answered}, leave-one-out ${r.looHits ?? '-'}/${r.answered}, current weights ${r.priorHits}/${r.answered}.`);
 console.log(`λ by energy: ${Object.entries(r.lambdas).map(([m, l]) => `${m} ${l}`).join(', ')}\n`);

@@ -1,10 +1,14 @@
 // Marco prep quiz (1.24.0): one dish, two ways to make it, at a stated time and energy.
 // Tap the way you'd actually do it. Answers save after every tap and go out by
 // "Send to Harvey's" (a GitHub issue, and the clipboard). scripts/fit-prep.mjs fits θ.
-import { PREP_QUIZ, ENERGY, prepFacts, encodePrep } from './quiz/prep.js';
+import { PREP_ROUNDS, ENERGY, prepFacts, encodePrep } from './quiz/prep.js';
 
-const VERSION = '1.24.0';
-const KEY = 'harveys.prep.v1';
+const VERSION = '1.26.0';
+// ?round=2 opens round 2; each round keeps its own answers.
+const ROUND = PREP_ROUNDS[new URLSearchParams(location.search).get('round')] ? Number(new URLSearchParams(location.search).get('round')) : 1;
+const PREP_QUIZ = PREP_ROUNDS[ROUND];
+const KEY = ROUND === 1 ? 'harveys.prep.v1' : `harveys.prep.r${ROUND}.v1`;
+const TITLE = ROUND === 1 ? 'Marco prep' : `Marco prep round ${ROUND}`;
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
 const app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -38,7 +42,7 @@ function render() {
   if (state.i >= n) return renderEnd();
   const q = PREP_QUIZ[state.i];
   const pick = state.answers[q.id]?.pick;
-  document.title = `${q.dish} · Marco prep`;
+  document.title = `${q.dish} · ${TITLE}`;
   const extra = (v, label) => `<button type="button" class="chip toggle" role="radio" aria-checked="${pick === v}" data-pick="${v}">${label}</button>`;
   app.innerHTML = `
   <header class="top play"><div class="top-in">
@@ -61,12 +65,12 @@ function render() {
 }
 
 function renderEnd() {
-  const body = encodePrep(state.answers);
-  const href = `${REPO_ISSUE}?${new URLSearchParams({ title: `Marco prep: ${done()} answers`, labels: 'benchmark', body: '```\n' + body + '\n```' })}`;
+  const body = encodePrep(state.answers, PREP_QUIZ);
+  const href = `${REPO_ISSUE}?${new URLSearchParams({ title: `${TITLE}: ${done()} answers`, labels: 'benchmark', body: '```\n' + body + '\n```' })}`;
   app.innerHTML = `
   <header class="top play"><div class="top-in">
     <a class="icon-btn" href="train.html" aria-label="Back to Train">✕</a>
-    <h1>Marco prep</h1>
+    <h1>${esc(TITLE)}</h1>
   </div></header>
   <main class="wrap play"><div class="endcard">
     <h1 class="prompt">${done()} of ${PREP_QUIZ.length} answered</h1>
@@ -75,7 +79,7 @@ function renderEnd() {
       <button class="btn ghost" data-act="back" type="button">Back to the last one</button>
       <button class="btn link quiet reset" data-act="reset" type="button">Start over</button>
     </div>
-    <p class="mini center version">Harvey’s ${VERSION} · Marco prep</p>
+    <p class="mini center version">Harvey’s ${VERSION} · ${esc(TITLE)}</p>
   </div></main>`;
 }
 
@@ -96,7 +100,7 @@ app.addEventListener('click', (e) => {
   }
   const act = el.dataset.act;
   if (act === 'send') {
-    navigator.clipboard?.writeText(encodePrep(state.answers)).then(() => toast('Copied, and opening GitHub.'), () => {});
+    navigator.clipboard?.writeText(encodePrep(state.answers, PREP_QUIZ)).then(() => toast('Copied, and opening GitHub.'), () => {});
     return;
   }
   if (act === 'skip') state.i += 1;
