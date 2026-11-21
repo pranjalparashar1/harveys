@@ -359,3 +359,10 @@ test('5B export round trip: cookLog and liveRepairs serialise for "Copy for Clau
   const again = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: BIG, context: WED_7PM, catalogue: CATALOGUE, verdicts: liveVerdicts([fix]) });
   assert.ok(again.vetoed.some((v) => v.meal.id === g2.pick.meal.id));
 });
+
+test('5C: fitted friction weights are costs (none positive) and cover every friction feature', async () => {
+  const { FEATURES } = await import('../src/brain/learn.js');
+  const keys = FEATURES.filter((f) => !f.payoff).map((f) => f.key).sort();
+  assert.deepEqual(Object.keys(DEFAULT_CONFIG.frictionTheta).sort(), keys);
+  for (const k of keys) assert.ok(DEFAULT_CONFIG.frictionTheta[k] <= 0, `${k} = ${DEFAULT_CONFIG.frictionTheta[k]}`);
+});

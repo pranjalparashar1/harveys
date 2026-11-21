@@ -14,8 +14,18 @@ export const PROVISIONAL = true;
 export const DEFAULT_CONFIG = Object.freeze({
   // score = payoff − λ_context × friction  (friction: learn.js FEATURES)
 
-  // Friction (v2) weights and scales live in learn.js FEATURES, shared with the
-  // pick-two trainer, so the live ranker and the trainer score effort the same way.
+  // Friction (v2) scales live in learn.js FEATURES, shared with the pick-two trainer.
+  // FITTED (5C, 21 Nov 2026): pranjal's 50-tap sprint on train.html (52 taps, 7 PM after
+  // work, low energy; leave-one-out 32/52, the priors got 19). Scaled so protein stays
+  // at 1 per 30 g. Raw export: project-files marco-sprint/fitted-weights-2026-11-21.json.
+  // cuts, attention and cleanup came out POSITIVE (+0.143, +0.369, +0.119): more effort
+  // scoring as better. A cost can't be a bonus; 52 taps can't separate them from the
+  // dishes pranjal likes (pan-fried paneer, egg bhurji are attention 2), so they count 0
+  // until the "Cooked this" log refits them. Priors stay in FEATURES for the trainer.
+  frictionTheta: Object.freeze({
+    tools: -0.081, handsOn: -0.369, waiting: -0.455, prePrep: -0.531, peels: -0.167, steps: -0.176,
+    cuts: 0, attention: 0, cleanup: 0, // fitted positive, clamped (see above)
+  }),
 
   // Payoff: progress to what is still remaining today, capped at the target.
   payoffWeights: Object.freeze({ protein: 3, calories: 1, fiber: 0.75 }),
