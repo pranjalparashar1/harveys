@@ -13,6 +13,7 @@
 // Pure: no DOM, no clock, no randomness.
 
 import { FEATURES, featureVector, fitMarco } from '../brain/learn.js';
+import { TASTE_PICKS } from '../brain/technique-prefs.js';
 
 export const PREP_HEADER = '#harveys marco-prep v1';
 export const PICKS = ['a', 'b', 'either', 'neither'];
@@ -229,6 +230,107 @@ const REPEATS_2 = [
 const DEFAULTS = { tools: 0, handsOn: 0, waiting: 0, prePrepMinutes: 0, peels: 0, cuts: 0, steps: 2, attention: 1, cleanup: 1 };
 const withDefaults = (opt, protein) => ({ ...opt, raw: { ...DEFAULTS, ...opt.c, protein } });
 
+// Round 3 (1.27.0): only pairs where the food tastes the same, so a pick is about effort alone.
+// Round 2 showed pranjal picks the careful way when it tastes better (src/brain/technique-prefs.js,
+// now Pierre's). Every option is written as the actual steps, in order (pranjal, 21 Nov).
+const PAIRS_3 = [
+  { id: 'p61', dish: 'Pasta in cream sauce', protein: 14, when: '8 PM', energy: 'okay',
+    a: o('Same pot', 'Boil the pasta. Drain it into the strainer and leave it there. In the same pot, warm oil, garlic and salt, then cream and cheese. Add the pasta back and toss.', { tools: 2, handsOn: 6, waiting: 12, peels: 1, cuts: 1, steps: 4, attention: 2, cleanup: 2 }),
+    b: o('Second pan', 'Boil the pasta. While it boils, warm oil, garlic and salt in a pan, then cream and cheese. Drain the pasta and tip it into the pan. Toss.', { tools: 3, handsOn: 6, waiting: 10, peels: 1, cuts: 1, steps: 4, attention: 3, cleanup: 3 }) },
+  { id: 'p62', dish: 'Boiled eggs', protein: 18, when: '7 PM', energy: 'okay',
+    a: o('Boil 10 min', 'Eggs in a pot of water. Boil 10 min, watching it doesn’t boil over. Cool in cold water and peel.', { tools: 1, handsOn: 4, waiting: 12, steps: 3, attention: 2, cleanup: 1 }),
+    b: o('Boil, then lid on and off the heat', 'Eggs in a pot of water. Bring to the boil, put the lid on and switch off. Leave 12 min. Cool in cold water and peel.', { tools: 1, handsOn: 4, waiting: 16, steps: 3, attention: 1, cleanup: 1 }) },
+  { id: 'p63', dish: 'Rinsing rice', protein: 4, when: '8 PM', energy: 'okay',
+    a: o('In the cooker', 'Rice in the cooker. Fill with water, swirl, pour off, three times. Add fresh water and cook.', { tools: 1, handsOn: 4, waiting: 20, steps: 3, attention: 1, cleanup: 1 }),
+    b: o('In the strainer', 'Rice in the strainer under the tap until the water runs clear. Tip it into the cooker, add water and cook.', { tools: 2, handsOn: 3, waiting: 20, steps: 3, attention: 1, cleanup: 1.5 }) },
+  { id: 'p64', dish: 'Boiled eggs with pasta', protein: 26, when: '9 PM', energy: 'tired',
+    a: o('Eggs in the pasta pot', 'Eggs go in the pasta water. Lift them out after 10 min, pasta keeps going. One pot.', { tools: 1, handsOn: 4, waiting: 12, steps: 3, attention: 2, cleanup: 2 }),
+    b: o('Eggs in their own pot', 'Pasta in one pot, eggs in a second pot of water, both 10 min.', { tools: 2, handsOn: 4, waiting: 12, steps: 3, attention: 2, cleanup: 3 }) },
+  { id: 'p65', dish: 'Coriander on chana chaat', protein: 15, when: '7 PM', energy: 'okay',
+    a: o('Knife and board', 'Wash the coriander, chop it on the board, scrape it over the chaat.', { tools: 2, handsOn: 3, cuts: 1, steps: 2, attention: 0, cleanup: 2 }),
+    b: o('Scissors over the bowl', 'Wash the coriander, snip it with scissors straight over the chaat.', { tools: 1, handsOn: 2, steps: 2, attention: 0, cleanup: 1 }) },
+  { id: 'p66', dish: 'Cheese toast', protein: 16, when: '10 PM', energy: 'tired',
+    a: o('Bare basket', 'Protein bread and cheese slice straight in the air fryer basket, 5 min. Wash the basket after.', { tools: 1, handsOn: 1, waiting: 5, steps: 2, attention: 0, cleanup: 1.5 }),
+    b: o('On a sheet of foil', 'Same toast on a square of foil in the basket, 5 min. Throw the foil away, basket stays clean.', { tools: 1, handsOn: 2, waiting: 5, steps: 3, attention: 0, cleanup: 0.5 }) },
+  { id: 'p67', dish: 'Draining pasta', protein: 12, when: '8 PM', energy: 'okay',
+    a: o('Strainer', 'Pour the pot through the strainer in the sink. Wash the strainer.', { tools: 2, handsOn: 2, steps: 2, attention: 1, cleanup: 2 }),
+    b: o('Lid held ajar', 'Hold the lid slightly open and tip the water out of the pot into the sink.', { tools: 1, handsOn: 2, steps: 1, attention: 2, cleanup: 1 }) },
+  { id: 'p68', dish: 'Whey shake', protein: 25, when: '7 PM', energy: 'okay',
+    a: o('Shaker bottle', 'Milk and a scoop of whey in the shaker. Shake 20 s. Rinse the shaker.', { tools: 1, handsOn: 1, steps: 1, attention: 0, cleanup: 1 }),
+    b: o('Blender jar', 'Milk and a scoop of whey in the blender jar. Blend 20 s, pour into a glass. Wash jar, blade and glass.', { tools: 1, handsOn: 2, steps: 2, attention: 0, cleanup: 2.5 }) },
+  { id: 'p69', dish: 'Protein oats', protein: 30, when: '8 AM', energy: 'okay',
+    a: o('In your eating bowl', 'Oats and milk in your eating bowl, microwave 3 min, stir in whey, eat.', { tools: 1, handsOn: 2, waiting: 3, steps: 2, attention: 1, cleanup: 1 }),
+    b: o('In a jug, then a bowl', 'Oats and milk in a microwave jug, 3 min, stir in whey, pour into a bowl. Wash both.', { tools: 2, handsOn: 3, waiting: 3, steps: 3, attention: 1, cleanup: 2 }) },
+  { id: 'p70', dish: 'Peeling boiled eggs', protein: 18, when: '9 PM', energy: 'tired',
+    a: o('Under the tap', 'Crack each egg and peel it under running water.', { tools: 0, handsOn: 3, peels: 1, steps: 1, attention: 1, cleanup: 0.5 }),
+    b: o('Shaken in the pot', 'Drain the pot, lid on, shake hard 10 s so the shells crack, slip them off.', { tools: 1, handsOn: 2, peels: 1, steps: 2, attention: 1, cleanup: 1 }) },
+  { id: 'p71', dish: 'Dal from the cooker', protein: 14, when: '8 PM', energy: 'okay',
+    a: o('Wait for the pressure to drop', 'After the whistles, switch off and wait about 10 min until the cooker opens.', { tools: 1, handsOn: 3, waiting: 30, steps: 2, attention: 0, cleanup: 1.5 }),
+    b: o('Cool it under the tap', 'After the whistles, carry the cooker to the sink, run cold water over the lid, open it in 1 min.', { tools: 1, handsOn: 5, waiting: 20, steps: 3, attention: 2, cleanup: 1.5 }) },
+  { id: 'p72', dish: 'Masala makhana', protein: 5, when: '9 PM', energy: 'tired',
+    a: o('Tossed in a bowl first', 'Makhana, melted ghee and salt in a bowl, toss, tip into the basket, 8 min.', { tools: 2, handsOn: 3, waiting: 8, steps: 3, attention: 0, cleanup: 2 }),
+    b: o('Straight in the basket', 'Makhana in the basket, drizzle ghee and salt on top, shake, 8 min, shake once more.', { tools: 1, handsOn: 2, waiting: 8, steps: 2, attention: 1, cleanup: 1.5 }) },
+  { id: 'p73', dish: 'Garlic for aglio olio', protein: 12, when: '8 PM', energy: 'okay',
+    a: o('Smashed, then peeled', 'Press each clove flat with the side of the knife, the skin slips off, slice.', { tools: 2, handsOn: 4, peels: 1, cuts: 1, steps: 2, attention: 0, cleanup: 1.5 }),
+    b: o('Peeled with your nails', 'Pick the skin off each clove with your nails, slice.', { tools: 2, handsOn: 6, peels: 1, cuts: 1, steps: 2, attention: 0, cleanup: 1.5 }) },
+  { id: 'p74', dish: 'Air-fried paneer', protein: 20, when: '8 PM', energy: 'okay',
+    a: o('Preheat first', 'Air fryer on empty 3 min. Paneer cubes in, 8 min, shake once.', { tools: 2, handsOn: 2, waiting: 11, cuts: 1, steps: 3, attention: 1, cleanup: 2 }),
+    b: o('Straight in, 2 min longer', 'Paneer cubes in the cold air fryer, 10 min, shake once.', { tools: 2, handsOn: 2, waiting: 10, cuts: 1, steps: 2, attention: 0, cleanup: 2 }) },
+  { id: 'p75', dish: 'Squeezing a lemon', protein: 15, when: '7 PM', energy: 'okay',
+    a: o('By hand, seeds caught', 'Cut the lemon, squeeze it through your fingers so the seeds stay in your hand.', { tools: 2, handsOn: 1, cuts: 1, steps: 1, attention: 0, cleanup: 1 }),
+    b: o('Squeezer', 'Cut the lemon, press it in the squeezer, pour. Wash the squeezer.', { tools: 3, handsOn: 1, cuts: 1, steps: 2, attention: 0, cleanup: 2 }) },
+  { id: 'p76', dish: 'Butter pasta', protein: 12, when: '9 PM', energy: 'tired',
+    a: o('Butter in the hot pot', 'Drain the pasta, put it back in the hot pot, add butter, cheese and pepper, stir until melted.', { tools: 2, handsOn: 3, waiting: 12, steps: 3, attention: 1, cleanup: 2 }),
+    b: o('Butter melted apart', 'Melt the butter in a bowl in the microwave, 30 s. Drain the pasta into a bowl, pour the butter over, add cheese and pepper.', { tools: 3, handsOn: 3, waiting: 12, steps: 4, attention: 1, cleanup: 3 }) },
+  { id: 'p77', dish: 'Soya chunks', protein: 25, when: '8 PM', energy: 'okay',
+    a: o('Squeezed by hand', 'Hot-soaked chunks: grab a fistful at a time and squeeze the water out.', { tools: 1, handsOn: 3, prePrepMinutes: 15, steps: 2, attention: 0, cleanup: 1 }),
+    b: o('Pressed in the strainer', 'Tip the chunks into the strainer and press them with a big spoon.', { tools: 2, handsOn: 3, prePrepMinutes: 15, steps: 2, attention: 0, cleanup: 2 }) },
+  { id: 'p78', dish: 'Cheese on pasta', protein: 14, when: '8 PM', energy: 'okay',
+    a: o('Grated onto a plate', 'Grate the cheese onto a plate, then scrape it onto the pasta.', { tools: 2, handsOn: 3, steps: 2, attention: 0, cleanup: 2 }),
+    b: o('Grated over the pasta', 'Hold the grater over the bowl and grate straight on.', { tools: 1, handsOn: 2, steps: 1, attention: 0, cleanup: 1 }) },
+  { id: 'p79', dish: 'Paneer bhurji', protein: 20, when: '9 PM', energy: 'tired',
+    a: o('Crumbled in the pan by hand', 'Crumble the paneer with your fingers straight into the hot ghee. Wash your hands.', { tools: 1, handsOn: 6, steps: 2, attention: 2, cleanup: 2 }),
+    b: o('Mashed with the spatula', 'Drop the block in the ghee and break it up with the spatula as it warms.', { tools: 1, handsOn: 7, steps: 2, attention: 2, cleanup: 1.5 }) },
+  { id: 'p80', dish: 'Rice for dal-chawal', protein: 18, when: '8 PM', energy: 'okay',
+    a: o('Rice and dal in one cooker', 'Dal at the bottom of the cooker, rice in the separator tin on top. Same whistles, both done.', { tools: 2, handsOn: 4, waiting: 20, steps: 3, attention: 1, cleanup: 2 }),
+    b: o('Rice and dal one after the other', 'Cook the dal, empty it into a bowl, then rice in the same cooker.', { tools: 2, handsOn: 5, waiting: 40, steps: 4, attention: 1, cleanup: 2 }) },
+  { id: 'p81', dish: 'Besan chilla', protein: 14, when: 'Sunday 10 AM', energy: 'fresh',
+    a: o('Oil wiped on', 'Dip a tissue in oil and wipe the pan before each chilla.', { tools: 3, handsOn: 10, steps: 4, attention: 3, cleanup: 3 }),
+    b: o('Oil poured on', 'A spoon of oil in the pan before each chilla, tilt to spread.', { tools: 3, handsOn: 9, steps: 4, attention: 3, cleanup: 3 }) },
+  { id: 'p82', dish: 'Pan after egg bhurji', protein: 18, when: '10 PM', energy: 'tired',
+    a: o('Wiped while warm', 'Eat, then wipe the warm pan with a tissue and rinse it. Done.', { tools: 1, handsOn: 5, steps: 3, attention: 2, cleanup: 1 }),
+    b: o('Soaked, washed tomorrow', 'Fill the pan with water and leave it. Scrub it tomorrow.', { tools: 1, handsOn: 4, steps: 3, attention: 2, cleanup: 2.5 }) },
+  { id: 'p83', dish: 'Paneer cubes', protein: 20, when: '8 PM', energy: 'okay',
+    a: o('Board and knife', 'Block on the board, cut into cubes, wash the board.', { tools: 2, handsOn: 3, cuts: 1, steps: 1, attention: 0, cleanup: 2 }),
+    b: o('On your plate', 'Cut the block into cubes on the plate you’ll eat from.', { tools: 1, handsOn: 3, cuts: 1, steps: 1, attention: 0, cleanup: 1 }) },
+  { id: 'p84', dish: 'Hot chocolate protein', protein: 25, when: '10 PM', energy: 'tired',
+    a: o('Stirred with a spoon', 'Warm milk in a mug, 2 min. Stir in cocoa and whey with a spoon until no lumps.', { tools: 1, handsOn: 3, waiting: 2, steps: 2, attention: 1, cleanup: 1 }),
+    b: o('Shaken, then warmed', 'Milk, cocoa and whey in the shaker, shake. Pour into a mug, 2 min in the microwave.', { tools: 2, handsOn: 2, waiting: 2, steps: 3, attention: 0, cleanup: 2 }) },
+  { id: 'p85', dish: 'Maggi', protein: 8, when: '11 PM', energy: 'tired',
+    a: o('Cake broken in half', 'Snap the noodle cake in half so it fits the small pot, water, masala, 2 min.', { tools: 1, handsOn: 3, waiting: 2, steps: 2, attention: 1, cleanup: 1.5 }),
+    b: o('Whole cake, bigger pot', 'Whole cake in the bigger pot, water, masala, 2 min.', { tools: 1, handsOn: 3, waiting: 2, steps: 2, attention: 1, cleanup: 2 }) },
+  { id: 'p86', dish: 'Paneer tikka', protein: 22, when: '8 PM', energy: 'okay',
+    a: o('Marinated in a bowl', 'Curd and spice in a bowl, toss the cubes in, tip into the basket, 15 min.', { tools: 3, handsOn: 4, waiting: 15, cuts: 1, steps: 3, attention: 0, cleanup: 2.5 }),
+    b: o('Marinated in the curd tub', 'Spice into the curd tub, cubes in, close the lid and shake, tip into the basket, 15 min.', { tools: 2, handsOn: 3, waiting: 15, cuts: 1, steps: 3, attention: 0, cleanup: 1.5 }) },
+  { id: 'p87', dish: 'Chana chaat', protein: 15, when: '7 PM', energy: 'okay',
+    a: o('Mixed in the eating bowl', 'Chickpeas, lemon and chaat masala straight in the bowl you eat from, stir.', { tools: 1, handsOn: 2, steps: 1, attention: 0, cleanup: 1 }),
+    b: o('Mixed in a big bowl', 'Mix in a big bowl so it tosses evenly, then spoon into your bowl.', { tools: 2, handsOn: 3, steps: 2, attention: 0, cleanup: 2 }) },
+  { id: 'p88', dish: 'Pasta water for aglio olio', protein: 12, when: '9 PM', energy: 'tired',
+    a: o('A mug before draining', 'Scoop a mug of pasta water out before you drain, splash it in at the end.', { tools: 2, handsOn: 2, steps: 2, attention: 1, cleanup: 1.5 }),
+    b: o('Pasta lifted straight in', 'Lift the pasta out with a slotted spoon into the garlic oil, water comes with it. No draining.', { tools: 2, handsOn: 3, steps: 2, attention: 2, cleanup: 1.5 }) },
+  { id: 'p89', dish: 'Scrambled eggs', protein: 18, when: '8 AM', energy: 'okay',
+    a: o('Whisked with a fork in a bowl', 'Crack the eggs into a bowl, whisk with a fork, pour into the butter.', { tools: 2, handsOn: 5, steps: 3, attention: 2, cleanup: 2.5 }),
+    b: o('Whisked in a mug', 'Crack the eggs into a mug, whisk with a fork, pour into the butter.', { tools: 2, handsOn: 5, steps: 3, attention: 2, cleanup: 2 }) },
+  { id: 'p90', dish: 'Air fryer basket', protein: 20, when: '10 PM', energy: 'tired',
+    a: o('Washed now', 'Right after eating, rinse the basket with hot water and soap while it’s warm.', { tools: 1, handsOn: 3, steps: 1, attention: 0, cleanup: 1 }),
+    b: o('Washed in the morning', 'Leave it in the air fryer overnight, scrub off the dried bits in the morning.', { tools: 1, handsOn: 4, steps: 1, attention: 0, cleanup: 2 }) },
+];
+const REPEATS_3 = [
+  ['p61', '10:30 PM', 'tired'], ['p63', '10 PM', 'tired'], ['p65', '10 PM', 'tired'], ['p67', '10 PM', 'tired'],
+  ['p68', '10 PM', 'tired'], ['p69', '10 PM', 'tired'], ['p71', 'Sunday 1 PM', 'fresh'], ['p76', 'Saturday 1 PM', 'fresh'],
+  ['p79', 'Saturday 7 PM', 'fresh'], ['p82', 'Saturday 2 PM', 'fresh'],
+];
+
 /** One round: pairs plus repeats at the other energy, interleaved; every 4th question held out. */
 function buildRound(pairs, repeats, firstRepeat, round) {
   const all = [
@@ -244,7 +346,7 @@ function buildRound(pairs, repeats, firstRepeat, round) {
 
 /** Round 1, in the order it is shown. */
 export const PREP_QUIZ = buildRound(PAIRS, REPEATS, 1, 1);
-export const PREP_ROUNDS = Object.freeze({ 1: PREP_QUIZ, 2: buildRound(PAIRS_2, REPEATS_2, 11, 2) });
+export const PREP_ROUNDS = Object.freeze({ 1: PREP_QUIZ, 2: buildRound(PAIRS_2, REPEATS_2, 11, 2), 3: buildRound(PAIRS_3, REPEATS_3, 21, 3) });
 /** Every question of every round: what the fitter reads answers against. */
 export const PREP_ALL = Object.freeze(Object.values(PREP_ROUNDS).flat());
 
@@ -295,7 +397,7 @@ export function prepChoices(answers, { quiz = PREP_ALL, noTaste = false } = {}) 
   const out = [];
   for (const q of quiz) {
     const a = answers[q.id];
-    if (!a || !PICKS.includes(a.pick) || (noTaste && q.taste)) continue;
+    if (!a || !PICKS.includes(a.pick) || (noTaste && (q.taste || TASTE_PICKS.includes(q.id)))) continue;
     out.push({ id: q.id, holdout: q.holdout, xa: featureVector(q.a.raw, 1), xb: featureVector(q.b.raw, 1), pick: a.pick, mood: q.energy });
   }
   return out;

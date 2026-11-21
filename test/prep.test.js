@@ -27,7 +27,6 @@ test('round 2: 40 more, ids unique across rounds, sound counts', () => {
   const r2 = PREP_ROUNDS[2];
   assert.equal(r2.length, 40);
   assert.equal(r2.filter((q) => q.holdout).length, 10);
-  assert.equal(new Set(PREP_ALL.map((q) => q.id)).size, 80);
   for (const q of r2) {
     assert.equal(q.round, 2);
     assert.notDeepEqual(q.a.raw, q.b.raw, q.id);
@@ -103,12 +102,28 @@ test('fit-prep script prints a config block and never edits config', () => {
   assert.equal(readFileSync('src/brain/config.js', 'utf8'), before);
 });
 
-test('answers from both rounds fit together', () => {
+test('answers from every round fit together', () => {
   const answers = {};
   for (const q of PREP_ALL) answers[q.id] = { pick: q.a.raw.handsOn <= q.b.raw.handsOn ? 'a' : 'b', at: null };
   const r = fitPrep(answers);
-  assert.equal(r.answered, 80);
-  assert.equal(r.held, 20);
-  assert.ok(r.heldHits >= 14, `held-out ${r.heldHits}/20`);
+  assert.equal(r.answered, 120);
+  assert.equal(r.held, 30);
+  assert.ok(r.heldHits >= 21, `held-out ${r.heldHits}/30`);
   assert.equal(encodePrep(answers, PREP_ROUNDS[2]).split('\n').length, 41);
+});
+
+test('round 3: 40 same-taste questions, no taste flags, written as steps', () => {
+  const r3 = PREP_ROUNDS[3];
+  assert.equal(r3.length, 40);
+  assert.equal(r3.filter((q) => q.holdout).length, 10);
+  assert.equal(new Set(PREP_ALL.map((q) => q.id)).size, 120);
+  for (const q of r3) {
+    assert.equal(q.round, 3);
+    assert.ok(!q.taste, q.id);
+    assert.notDeepEqual(q.a.raw, q.b.raw, q.id);
+    for (const side of ['a', 'b']) {
+      assert.ok(q[side].raw.attention >= 0 && q[side].raw.attention <= 3, q.id);
+      assert.match(q[side].how, /\.$/, `${q.id}.${side}: a full sentence`);
+    }
+  }
 });
