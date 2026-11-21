@@ -172,6 +172,7 @@ photo(s) ──► src/ai (Gemini flash-lite) ──► inventory {have, other}
 | `src/ai/providers.js`, `prompt.js`, `images.js` | Key detection, model lists, `callModel` (retry, timeout, same-model re-send every 2.5 s, groups of 4 photos at 640 px), scan and recipe prompts. |
 | `src/app.js` + `index.html` | Main page: key, scan, inventory, ladder, Cooked this, Fix / Veto, Debug ("Copy for Claude"). localStorage keys are `marco.*`. |
 | `src/train.js` + `train.html` | Pick-two trainer. Since 1.18.1 shows only Pierre round 3 and the 50-tap 7 PM sprint (older cards hidden, not deleted). "Equivalent" and "Neither" choices. "Copy fitted Marco weights". |
+| `src/prep.js` + `prep.html`, `src/quiz/prep.js` | Marco prep quiz (1.24.0): 40 questions, one dish two ways at a stated time and energy (30 pairs + 10 repeats at the other energy for λ; every 4th held out). "Send to Harvey's" issue → `node scripts/fit-prep.mjs <answers.txt> [--no-taste]` prints held-out hits, θ, λ by energy and a config block; never edits config. |
 | `src/bench.js` + `bench.html`, `src/quiz/bench.js` | Blind Pierre sheets (`?sheet=holdout`, `?sheet=round3`), 6-slot tap-to-repair card, "Send to Harvey's" (prefilled GitHub issue). |
 | `pierre.html`/`src/pierre.js`, `tutor.html`, `retest.html`, `src/quiz/*.json` | Earlier rating quizzes (raw foods, food×technique, retest). Done; kept for reference. |
 | `scripts/` | Ingest, prior derivation, sheet builders, scorers, `stamp.mjs` (cache-busting). |
@@ -347,6 +348,7 @@ node scripts/derive-prior.mjs                    # re-run after every ingest (re
 node scripts/score-sheets.mjs <key> <answers> [<key> <answers>…] --md
 node scripts/pierre-tiers.mjs > tiers.md         # every catalogue meal's tier
 node scripts/refit-cooklog.mjs <copy-for-claude.json>   # refit Marco θ from Cooked this (prints only; want 20+ dinners)
+node scripts/fit-prep.mjs <answers.txt> [--no-taste]     # fit Marco θ from the prep quiz (prints only)
 ```
 
 - **Ingest path:** pranjal taps "Send to Harvey's" on a quiz/bench page → a prefilled GitHub issue (and the text is copied). Read the issue with `gh api repos/pranjalparashar1/harveys/issues/<n>`, save the body to a file, run the ingest, commit in a PR.
