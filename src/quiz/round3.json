@@ -92,7 +92,7 @@
   "dishes": [
     {
       "id": "r3_potato_mayo",
-      "name": "Air-fried potato with mayo and chilli flakes",
+      "name": "Potato air-fried with no oil, salt and chilli flakes, mayo on the side as a dip",
       "parts": "Potato (air-fried), mayo, chilli flakes, salt",
       "items": [
         {
@@ -115,8 +115,8 @@
     },
     {
       "id": "r3_egg_bhurji",
-      "name": "Egg bhurji with sautéed onion and tomato, coriander and chilli flakes",
-      "parts": "Eggs (scrambled), onion (sautéed), tomato (sautéed), coriander, chilli flakes, salt",
+      "name": "Egg bhurji: onion, tomato and eggs cooked in butter, coriander and chilli flakes",
+      "parts": "Eggs (scrambled), onion (sautéed), tomato (sautéed), butter, coriander, chilli flakes, salt",
       "items": [
         {
           "id": "eggs",
@@ -129,6 +129,9 @@
         {
           "id": "tomato",
           "technique": "sauteed"
+        },
+        {
+          "id": "butter"
         },
         {
           "id": "coriander"
@@ -145,7 +148,7 @@
     },
     {
       "id": "r3_dal_rice",
-      "name": "Dal and rice with ghee and a squeeze of lemon",
+      "name": "Dal and rice with ghee stirred in and a squeeze of lemon",
       "parts": "Rice (pressure-cooked), dal (pressure-cooked), ghee, lemon, salt",
       "items": [
         {
@@ -170,7 +173,7 @@
     },
     {
       "id": "r3_omelette_ketchup",
-      "name": "Butter omelette with tomato sauce",
+      "name": "Omelette cooked in butter, tomato sauce on the side",
       "parts": "Eggs (omelette), butter, tomato sauce, black pepper, salt",
       "items": [
         {
@@ -196,8 +199,8 @@
     },
     {
       "id": "r3_chilli_soya",
-      "name": "Soya chunks sautéed with onion and capsicum in chilli sauce and tomato sauce",
-      "parts": "Soya chunks (sautéed), onion (sautéed), capsicum (sautéed), chilli sauce, tomato sauce, salt",
+      "name": "Chilli soya: soya chunks, onion and capsicum sautéed in olive oil, tossed in chilli sauce and tomato sauce",
+      "parts": "Soya chunks (sautéed), onion (sautéed), capsicum (sautéed), olive oil, chilli sauce, tomato sauce, salt",
       "items": [
         {
           "id": "soya_chunks",
@@ -210,6 +213,10 @@
         {
           "id": "capsicum",
           "technique": "sauteed"
+        },
+        {
+          "id": "olive_oil",
+          "mod": true
         },
         {
           "id": "chilli_sauce",
@@ -227,7 +234,7 @@
     },
     {
       "id": "r3_fried_rice",
-      "name": "Egg fried rice: rice sautéed in olive oil with spring onion, scrambled egg and chilli sauce",
+      "name": "Egg fried rice: rice, spring onion and egg stir-fried in olive oil, chilli sauce tossed through",
       "parts": "Rice (sautéed), eggs (scrambled), spring onion (sautéed), olive oil, chilli sauce, salt",
       "items": [
         {
@@ -258,7 +265,7 @@
     },
     {
       "id": "r3_cream_pasta",
-      "name": "Boiled pasta in cream with a cheese slice melted in and black pepper",
+      "name": "Boiled pasta tossed in warm cream as the sauce, a cheese slice melted in, black pepper",
       "parts": "Pasta (boiled), cream, cheese slices (melted), black pepper, salt",
       "items": [
         {
@@ -284,7 +291,7 @@
     },
     {
       "id": "r3_egg_mayo_sandwich",
-      "name": "Egg mayo sandwich: boiled eggs and mayo in toasted bread",
+      "name": "Egg mayo sandwich: boiled eggs mashed with mayo, in toasted bread",
       "parts": "Bread (toasted), eggs (boiled), mayo, black pepper, salt",
       "items": [
         {
@@ -353,8 +360,8 @@
     },
     {
       "id": "r3_paneer_mayo_sandwich",
-      "name": "Toasted sandwich of pan-fried paneer, raw onion, mayo and chilli sauce",
-      "parts": "Bread (toasted), paneer (pan-fried), onion, mayo, chilli sauce",
+      "name": "Toasted sandwich: paneer pan-fried in butter, raw onion, mayo and chilli sauce spread inside",
+      "parts": "Bread (toasted), paneer (pan-fried), butter, onion, mayo, chilli sauce",
       "items": [
         {
           "id": "bread",
@@ -363,6 +370,9 @@
         {
           "id": "paneer",
           "technique": "pan_fried"
+        },
+        {
+          "id": "butter"
         },
         {
           "id": "onion"
@@ -379,7 +389,7 @@
     },
     {
       "id": "r3_scrambled_toast",
-      "name": "Buttery scrambled eggs on toast with salt and pepper",
+      "name": "Eggs scrambled in butter, on toast with salt and pepper",
       "parts": "Bread (toasted), eggs (scrambled), butter, black pepper, salt",
       "items": [
         {
@@ -432,8 +442,8 @@
     },
     {
       "id": "r3_paneer_bhurji",
-      "name": "Paneer bhurji with sautéed onion and tomato, coriander and black pepper",
-      "parts": "Paneer (scrambled), onion (sautéed), tomato (sautéed), coriander, black pepper, salt",
+      "name": "Paneer bhurji: onion, tomato and crumbled paneer cooked in ghee, coriander and black pepper",
+      "parts": "Paneer (scrambled), onion (sautéed), tomato (sautéed), ghee, coriander, black pepper, salt",
       "items": [
         {
           "id": "paneer",
@@ -446,6 +456,9 @@
         {
           "id": "tomato",
           "technique": "sauteed"
+        },
+        {
+          "id": "ghee"
         },
         {
           "id": "coriander"
@@ -462,7 +475,7 @@
     },
     {
       "id": "r3_pasta_ketchup",
-      "name": "Boiled pasta tossed with tomato sauce and oregano",
+      "name": "Boiled pasta tossed with tomato sauce (ketchup) and oregano",
       "parts": "Pasta (boiled), tomato sauce, oregano, salt",
       "items": [
         {
@@ -512,8 +525,8 @@
     },
     {
       "id": "r3_maggi_egg",
-      "name": "Maggi with its masala, a fried egg on top",
-      "parts": "Maggi (boiled), eggs (fried)",
+      "name": "Maggi cooked with its masala, an egg fried in butter on top",
+      "parts": "Maggi (boiled), eggs (fried), butter",
       "items": [
         {
           "id": "maggi",
@@ -522,6 +535,9 @@
         {
           "id": "eggs",
           "technique": "fried_egg"
+        },
+        {
+          "id": "butter"
         }
       ]
     },
@@ -548,7 +564,7 @@
     },
     {
       "id": "r3_maggi_cheese",
-      "name": "Maggi with its masala and a cheese slice melted in",
+      "name": "Maggi cooked with its masala, a cheese slice melted in",
       "parts": "Maggi (boiled), cheese slices (melted)",
       "items": [
         {
@@ -601,12 +617,15 @@
     },
     {
       "id": "r3_paneer_mint_curd",
-      "name": "Pan-fried paneer with curd, mint and black pepper",
-      "parts": "Paneer (pan-fried), curd, mint, black pepper, salt",
+      "name": "Paneer pan-fried in ghee, with cold curd, mint and black pepper",
+      "parts": "Paneer (pan-fried), ghee, curd, mint, black pepper, salt",
       "items": [
         {
           "id": "paneer",
           "technique": "pan_fried"
+        },
+        {
+          "id": "ghee"
         },
         {
           "id": "curd"
@@ -650,7 +669,7 @@
     },
     {
       "id": "r3_garlic_bread",
-      "name": "Garlic bread: toasted bread with butter, sautéed garlic and oregano",
+      "name": "Garlic bread: garlic sautéed in butter, spread on toasted bread with oregano",
       "parts": "Bread (toasted), butter, garlic (sautéed), oregano, salt",
       "items": [
         {
@@ -676,8 +695,8 @@
     },
     {
       "id": "r3_mushroom_cream_toast",
-      "name": "Toast topped with mushrooms and garlic sautéed in cream",
-      "parts": "Bread (toasted), mushroom (sautéed), garlic (sautéed), cream, black pepper, salt",
+      "name": "Creamy mushroom toast: mushrooms and garlic sautéed in butter, finished with cream, on toast",
+      "parts": "Bread (toasted), mushroom (sautéed), garlic (sautéed), butter, cream, black pepper, salt",
       "items": [
         {
           "id": "bread",
@@ -690,6 +709,9 @@
         {
           "id": "garlic",
           "technique": "sauteed"
+        },
+        {
+          "id": "butter"
         },
         {
           "id": "cream"

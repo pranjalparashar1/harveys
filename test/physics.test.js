@@ -53,6 +53,8 @@ test('a plain fat only greases a base', () => {
   assert.deepEqual(fatRolesOf(P('pasta@boiled,butter')), { butter: 'main_binder' });
   assert.deepEqual(fatRolesOf(P('bread@toasted,butter')), { butter: 'seasoning' });
   assert.deepEqual(fatRolesOf(P('pasta@boiled,garlic@sauteed'), ['oil']), { oil: 'cooking_medium' });
+  assert.deepEqual(fatRolesOf(P('paneer@pan_fried,ghee,curd')), { ghee: 'cooking_medium' }, 'the fat a part is fried in');
+  assert.deepEqual(fatRolesOf(P('potato@air_fried'), ['mayo']), { mayo: 'seasoning' }, 'mayo is a condiment, never a cooking fat');
 });
 
 test('Fable §7 cases', () => {

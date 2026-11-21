@@ -4,7 +4,7 @@
 // the clipboard).
 import { encodeBench } from './quiz/bench.js';
 
-const VERSION = '1.15.1';
+const VERSION = '1.15.2';
 // ?sheet=holdout opens the Step 4c holdout sheet, ?sheet=round3 the third blind sheet; each
 // sheet keeps its own answers.
 const SHEETS = { benchmark: 'harveys.bench.v1', holdout: 'harveys.holdout.v1', round3: 'harveys.round3.v1' };
