@@ -328,7 +328,7 @@ Shipped as `config.frictionTheta` (rescaled so protein stays 1 per 30 g): tools 
 ## 10. Backlog (agreed or raised, not built)
 
 1. **Staples as catalogue dishes** (offered 21 Nov, waiting on pranjal): dal (pressure cooker), rice, Maggi, chole, noodles, kala chana etc. Ask pranjal which they actually cook and the usual method for each. Helps both the trainer and real dinners; the ladder is thin without them.
-2. **Refit from Cooked this** after 20–30 logged dinners: Bradley–Terry on chosen vs `ladderShown` + `alternativesShown`, refit θ (especially cuts/attention/cleanup), the provisional Pierre floors and `dryHeatNeedsFat`. **No refit script exists yet**: you'd write `scripts/refit-cooklog.mjs` reading a "Copy for Claude" paste. Ingest `liveRepairs` via `scripts/ingest-pierre.mjs`.
+2. **Refit from Cooked this** after 20–30 logged dinners: Bradley–Terry on chosen vs `ladderShown` + `alternativesShown`, refit θ (especially cuts/attention/cleanup), the provisional Pierre floors and `dryHeatNeedsFat`. The script exists (1.22.0): `node scripts/refit-cooklog.mjs <paste.json>` prints fitted vs current θ and a config block; it never edits config. Ingest `liveRepairs` via `scripts/ingest-pierre.mjs`.
 3. **Round 3 scoring** when answers arrive (§9.2). Then pranjal defines "passable" over rounds 3–4.
 4. **Store-bought / ready-made shortcuts:** an owned ready-made item (aglio olio paste, roasted chana, murmura, khakhra, corn flakes, cheese spread, peanut butter) should count as a pre-done technique (`food@technique`) and remove those steps' friction. Aglio olio from scratch is Marco-poor; with a paste it's Marco-compatible (MPW's Knorr-cube point). Roasted chana is on `excluded`; un-exclude when this is built. Frozen for v1.
 5. **Swift port (MarcoCore)**, Foundation-only, Swift Testing, Windows-buildable. Frozen for v1. Keep the brain pure JS with plain-data tables (no closures in data) so it ports.
@@ -346,6 +346,7 @@ node scripts/ingest-pierre.mjs <export.txt>      # Pierre-trainer/tutor/bench/re
 node scripts/derive-prior.mjs                    # re-run after every ingest (rewrites technique-prior.js)
 node scripts/score-sheets.mjs <key> <answers> [<key> <answers>…] --md
 node scripts/pierre-tiers.mjs > tiers.md         # every catalogue meal's tier
+node scripts/refit-cooklog.mjs <copy-for-claude.json>   # refit Marco θ from Cooked this (prints only; want 20+ dinners)
 ```
 
 - **Ingest path:** pranjal taps "Send to Harvey's" on a quiz/bench page → a prefilled GitHub issue (and the text is copied). Read the issue with `gh api repos/pranjalparashar1/harveys/issues/<n>`, save the body to a file, run the ingest, commit in a PR.
