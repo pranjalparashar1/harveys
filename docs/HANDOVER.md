@@ -5,6 +5,8 @@
 **Live:** https://pranjalparashar1.github.io/harveys/ (main page), `/train.html`, `/bench.html`, `/pierre.html`, `/tutor.html`.
 **Owner:** pranjal (GitHub `pranjalparashar1`). They are the only user, the only rater and the only source of weights.
 
+**Original v2 documents** (added 21 Nov from pranjal's copies) are in [`docs/v2/`](v2/): the [v2 execution plan](v2/v2-execution-plan.pdf), its [review](v2/v2-execution-plan-review.md), Fable's [Pierre ontology (SFAH)](v2/pierre-ontology-sfah.md) and the [Step 5 handoff](v2/step-5-white-v2-handoff.md). Sections 6 to 8 below summarise them; where they differ, pranjal's later rules here win.
+
 You have the code but none of the old project's memory, chat or files. Everything that only lived there is copied into this file. Where something lives only in the old project and isn't copied, this file says so.
 
 > **The repo is public.** Never commit secrets. pranjal holds their own Gemini API key and pastes it into the page; it lives only in their browser's `localStorage`. Ask them for it if you need a live scan test, and never write it into the repo, logs, PRs or memory.
