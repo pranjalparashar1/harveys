@@ -28,6 +28,33 @@ export function nutritionProblems(meal, config = DEFAULT_CONFIG) {
 }
 
 const EATING_WARE = new Set(['plate', 'spoon', 'fork', 'mug']);
+
+// ── pranjal's cooking rules ("The staples and their processes", 21 Nov) ─────
+// Eggs, dal and anything pressure-cooked (chana, chole, rajma) are never microwaved.
+export const NEVER_MICROWAVED = Object.freeze(['eggs', 'dal', 'chickpeas', 'rajma', 'kala_chana']);
+// Heat that isn't the microwave: with none of these, the microwave cooks everything.
+const OTHER_HEAT = new Set(['stovetop', 'induction', 'gas_stove', 'pot', 'pan', 'saucepan', 'frying_pan', 'tawa', 'kadai',
+  'pressure_cooker', 'air_fryer', 'oven', 'toaster', 'sandwich_maker', 'kettle']);
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const mentions = (text, id) => [id.replace(/_/g, ' '), ...(FOODS[id]?.synonyms ?? [])]
+  .some((w) => new RegExp(`\\b${escapeRe(w)}\\b`, 'i').test(text));
+
+/** Breaks of pranjal's cooking rules in a recipe's kit, ingredients and steps, or []. */
+export function cookingRuleProblems(meal) {
+  const problems = [];
+  const core = (meal.ingredients ?? []).filter((i) => !i.optional).map((i) => i.id);
+  const onlyMicrowave = (meal.equipment ?? []).includes('microwave') && !(meal.equipment ?? []).some((e) => OTHER_HEAT.has(e));
+  const microwaved = new Set(onlyMicrowave ? core.filter((id) => NEVER_MICROWAVED.includes(id)) : []);
+  for (const step of meal.steps ?? []) {
+    const text = String(step.text ?? '');
+    if (/microwav/i.test(text)) for (const id of NEVER_MICROWAVED) if (mentions(text, id)) microwaved.add(id);
+    // A tadka is oil (or ghee) plus flavour, never butter.
+    if (/\b(tadka|tadaka|tarka|temper(ing)?)\b/i.test(text) && /(?<!peanut )\bbutter\b/i.test(text)) problems.push('its tadka uses butter (oil or ghee only)');
+  }
+  for (const id of microwaved) problems.push(`it microwaves ${id.replace(/_/g, ' ')} (never microwaved)`);
+  return [...new Set(problems)];
+}
+
 const num = (v, lo, hi) => (Number.isFinite(Number(v)) ? Math.min(hi, Math.max(lo, Number(v))) : null);
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
 
@@ -126,6 +153,7 @@ export function validateMeal(raw, opts = {}) {
     source: 'ai',
   };
   if (!inDiet(meal)) errors.push('it is not vegetarian plus eggs');
+  errors.push(...cookingRuleProblems(meal));
   if (protein != null && kcal != null) errors.push(...nutritionProblems(meal, config));
   return { ok: errors.length === 0, meal, errors, adjustments };
 }
