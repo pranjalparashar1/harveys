@@ -21,6 +21,14 @@ export const PIERRE_SEED = {
   besan_chilla: { verdict: 'pass', why: 'Easy, and good' },
   moong_dal_khichdi: { verdict: 'pass', why: 'Easy, and good' },
   pasta_aglio_olio_paneer: { verdict: 'pass', why: 'Pierre approves' },
+  // Staples (1.20.0). Round 3 (issue #52, 21 Nov) rated the same dishes; the staples sheet says the rest.
+  maggi: { verdict: 'pass', tier: 'pass', why: 'Round 3: Maggi cooked with its masala, pass' },
+  maggi_cheese: { verdict: 'pass', tier: 'crave', why: 'Round 3: Maggi with a cheese slice melted in, crave' },
+  maggi_fried_egg: { verdict: 'pass', tier: 'crave', why: 'Round 3: Maggi with an egg fried in oil (your fix for butter), crave' },
+  egg_fried_rice: { verdict: 'pass', tier: 'crave', why: 'Round 3: egg fried rice in oil with no chilli sauce (your fix), crave. Spring onion left out here' },
+  cooker_chole: { verdict: 'pass', tier: 'pass', why: 'Staples sheet: ready to eat as is after pressure cooking with salt' },
+  cooker_rajma: { verdict: 'pass', tier: 'pass', why: 'Staples sheet: ready to eat as is after pressure cooking with salt' },
+  cooker_kala_chana: { verdict: 'pass', tier: 'pass', why: 'Staples sheet: ready to eat as is after pressure cooking with salt' },
 };
 
 /** Extra technique facts the catalogue can't express. */
