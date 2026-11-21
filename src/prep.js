@@ -3,7 +3,7 @@
 // "Send to Harvey's" (a GitHub issue, and the clipboard). scripts/fit-prep.mjs fits θ.
 import { PREP_ROUNDS, ENERGY, prepFacts, encodePrep } from './quiz/prep.js';
 
-const VERSION = '1.27.0';
+const VERSION = '1.27.1';
 // ?round=2 opens round 2; each round keeps its own answers.
 const ROUND = PREP_ROUNDS[new URLSearchParams(location.search).get('round')] ? Number(new URLSearchParams(location.search).get('round')) : 1;
 const PREP_QUIZ = PREP_ROUNDS[ROUND];
