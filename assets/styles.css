@@ -422,3 +422,11 @@ body.quiz .chip.toggle[aria-checked=true]::before { content: "✓ "; }
 .chain-chip.edited { border-color: var(--accent); background: var(--accent-soft); }
 .chain-tray { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; margin: 2px 0 6px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
 .chips.scope { margin-top: 10px; }
+
+/* Pierre's tier (v2 Step 5A) */
+h2 .badge.tier { vertical-align: 2px; text-transform: none; letter-spacing: 0; }
+.badge.tier-crave { color: var(--accent-ink); background: var(--accent); border-color: transparent; }
+.badge.tier-pass { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
+.badge.tier-floor { color: var(--muted); }
+.badge.tier-untested { color: var(--muted); border-style: dashed; }
+.lift { font-size: 14px; color: var(--accent); margin: -4px 0 10px; }

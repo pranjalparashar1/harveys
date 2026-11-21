@@ -10,7 +10,7 @@ import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 
-const VERSION = '1.16.0';
+const VERSION = '1.17.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -473,12 +473,15 @@ function aiIdeasCard(result) {
   }
   const position = new Map(result.ranked.map((r, i) => [r.meal.id, i + 1]));
   const blocked = new Map(result.filtered.map((f) => [f.meal.id, f.missing]));
+  const vetoed = new Set(result.vetoed.map((v) => v.meal.id));
   const rows = [
     ...ai.accepted.map((m) => {
       const pos = position.get(m.id);
       const missing = blocked.get(m.id);
       const verdict = pos
         ? h('span', { class: pos === 1 ? 'pass win' : 'pass' }, pos === 1 ? 'Marco’s pick' : `#${pos}`)
+        : vetoed.has(m.id)
+          ? h('span', { class: 'fail' }, 'Pierre veto')
         : missing
           ? h('span', { class: 'fail' }, `Needs ${describeMissing(missing).join(', ')}`)
           : h('span', { class: 'muted' }, 'Not a ' + state.ctx.kind);
@@ -499,6 +502,16 @@ function ingredientLine(ing) {
   return h('li', {}, labelFor(ing.id), ' ', h('small', {}, `· ${ing.amount}`), ing.optional ? h('small', {}, ' (optional, you have it)') : null);
 }
 
+// Pierre's tier as a compact badge, and a floor dish's one-line lift.
+const TIER_LABEL = { crave: 'Crave', pass: 'Pass', floor: 'Floor' };
+function tierBadge(p) {
+  if (!p) return null;
+  return h('span', { class: `badge tier tier-${p.untested ? 'untested' : p.tier}`, title: p.untested ? 'Pierre hasn’t judged this' : `Pierre: ${p.tier}` }, p.untested ? 'Not judged' : TIER_LABEL[p.tier]);
+}
+function tierHint(p) {
+  return p?.hint ? h('p', { class: 'lift' }, p.hint) : null;
+}
+
 function whyTable(r) {
   const payRows = r.payoff.parts.map((p) =>
     h('tr', {}, h('td', {}, `${p.amount} ${p.unit}`), h('td', { class: 'num' }, `${Math.round(p.progress * 100)}% of what's left`), h('td', { class: 'num' }, `+${fmt(p.value)}`)));
@@ -507,6 +520,8 @@ function whyTable(r) {
   return h('details', { class: 'why' },
     h('summary', {}, 'Why this score'),
     h('p', { class: 'formula' }, `score = payoff − λ × friction = ${fmt(r.payoff.value)} − ${fmt(r.lambda.value)} × ${fmt(r.friction)} = ${fmt(r.score)}`),
+    r.pierre ? h('h3', {}, 'Pierre') : null,
+    r.pierre ? h('p', { class: 'mini' }, `${r.pierre.untested ? 'not judged' : r.pierre.tier}${r.pierre.source === 'verdict' ? ' (your rating)' : ''}: ${r.pierre.why.length ? r.pierre.why.join('; ') : 'clears the floor'}`) : null,
     h('h3', {}, 'Payoff'),
     h('table', { class: 'parts' }, h('tbody', {}, payRows)),
     r.payoff.confidence < 1 ? h('p', { class: 'mini' }, `Payoff × ${Math.round(r.payoff.confidence * 100)}% (${r.meal.source === 'ai' ? 'AI-guessed' : 'estimated'} macros)`) : null,
@@ -534,7 +549,8 @@ function renderResult(result) {
       h('p', { class: 'pick-label' }, top.meal.origin === 'ai' ? 'Cook this · AI recipe' : 'Cook this'),
       state.pickSource === 'sample' ? h('p', { class: 'fallback-note' }, 'No AI answer in time · sample kitchen') : null,
       state.pickSource === 'last' ? h('p', { class: 'fallback-note' }, 'No AI answer in time · last scan') : null,
-      h('h2', {}, top.meal.name),
+      h('h2', {}, top.meal.name, ' ', tierBadge(top.pierre)),
+      tierHint(top.pierre),
       h('div', { class: 'reasons' }, top.reasons.map((r) => h('span', {}, r))),
       top.beats ? h('p', { class: 'beats' }, 'Beats ', h('strong', {}, top.beats.other.name), ': ', top.beats.reasons.join(', ') || 'a better balance of payoff and effort', '.') : null,
       h('div', { class: 'recipe' },
@@ -553,7 +569,8 @@ function renderResult(result) {
       h('h2', {}, 'Also possible'),
       h('ul', { class: 'others' }, rest.slice(0, 6).map((r, i) =>
         h('li', {},
-          h('div', { class: 'other-head' }, h('strong', {}, `${i + 2}. ${r.meal.name}`, r.meal.origin === 'ai' ? h('span', { class: 'badge ai' }, 'AI') : null)),
+          h('div', { class: 'other-head' }, h('strong', {}, `${i + 2}. ${r.meal.name}`, r.meal.origin === 'ai' ? h('span', { class: 'badge ai' }, 'AI') : null), tierBadge(r.pierre)),
+          tierHint(r.pierre),
           h('p', { class: 'mini' }, r.reasons.join(' · ')),
           whyTable(r))))));
   }

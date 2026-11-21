@@ -3,7 +3,9 @@
 //   1. Hard filter: a meal outside the diet (vegetarian + eggs), or needing kit or
 //      an ingredient you don't have, is dropped.
 //   2. score = payoff − λ_context × Σ_i w_i · f_i   (Friction v2, see learn.js)
-//   3. Every score comes back as named parts, so the UI can say why it won.
+//   3. Pierre (v2 Step 5A): a vetoed dish is dropped; the rest sort by tier
+//      (crave > pass > floor) first, then by score.
+//   4. Every score comes back as named parts, so the UI can say why it won.
 //
 // Pure: no DOM, no network, no randomness, no clock (the caller passes the time).
 // Written to port line-for-line to MarcoCore (Foundation-only Swift).
@@ -12,6 +14,8 @@ import { CAPABILITIES, EQUIPMENT, labelFor } from './vocabulary.js';
 import { DEFAULT_CONFIG } from './config.js';
 import { nutritionProblems } from './validate.js';
 import { FEATURES, inDiet, prePrepUnits, rawFeatures } from './learn.js';
+import { pierreTier } from './ingredients.js';
+import { PIERRE_SEED } from './train-data.js';
 
 /**
  * Friction v2: the friction half of learn.js's FEATURES. Weight = −prior.
@@ -115,6 +119,39 @@ export function scoreMeal(meal, used, targets, lambda, config = DEFAULT_CONFIG) 
   return { score, payoff: pay, friction, frictionParts, lambda, raw };
 }
 
+/** Sort weight of Pierre's tiers. A veto never reaches the sort: rank() drops it. */
+export const TIER_ORDER = { crave: 3, pass: 2, floor: 1 };
+
+/** The one line a floor dish shows: the cheapest add-on that lifts it, else the slot to fix, else why. */
+export function pierreHint(t) {
+  if (t.tier !== 'floor') return null;
+  if (t.upgrade) return `Lift it: + ${labelFor(t.upgrade.add)}`;
+  const fix = t.repairs?.[0];
+  if (fix?.suggest) return `Lift it: ${fix.slot === 'cookedWith' ? 'cook it with' : 'add'} ${labelFor(fix.suggest)}`;
+  if (t.source === 'verdict') return 'Your rating: floor';
+  return t.why.length ? `Why floor: ${t.why[0]}` : 'Floor';
+}
+
+/**
+ * Pierre's view of a meal in this kitchen. Catalogue meals carry `parts` and a `form`;
+ * the dish's seasonings are what it would actually use; pranjal's own verdict wins.
+ * A meal without parts (an AI recipe) isn't judged: it passes, marked `untested`.
+ */
+export function judgeMeal(meal, used, inventory, verdicts = PIERRE_SEED) {
+  if (!Array.isArray(meal.parts) || !meal.parts.length || !meal.form) {
+    return { tier: 'pass', computed: null, source: 'untested', why: ['not judged: no Pierre parts'], hint: null, untested: true, finish: {} };
+  }
+  const t = pierreTier(meal.parts, meal.form, {
+    modifiers: used.ingredients.map((i) => i.id),
+    inventory: [...inventory.have],
+    verdict: verdicts[meal.id] ?? null,
+  });
+  return {
+    tier: t.tier, computed: t.computed, source: t.source, why: t.why, upgrade: t.upgrade, repairs: t.repairs,
+    untested: t.untested, hint: pierreHint(t), finish: t.profile?.finish ?? {},
+  };
+}
+
 function plural(n, word, pluralWord = `${word}s`) {
   return `${n} ${n === 1 ? word : pluralWord}`;
 }
@@ -147,6 +184,9 @@ export function headlineReasons(result) {
 /** Sentences comparing the winner with another meal, largest friction gaps first. */
 export function compareReasons(winner, other) {
   const reasons = [];
+  if (winner.pierre && other.pierre && TIER_ORDER[winner.pierre.tier] > TIER_ORDER[other.pierre.tier]) {
+    reasons.push(`Pierre rates it ${winner.pierre.tier}, the other ${other.pierre.tier}`);
+  }
   const d = (k) => other.raw[k] - winner.raw[k];
   if (d('tools') > 0) reasons.push(`${plural(d('tools'), 'fewer tool', 'fewer tools')}`);
   const knife = (r) => r.peels + r.cuts;
@@ -176,12 +216,14 @@ export function compareReasons(winner, other) {
  * @param {{mood?: 'fresh'|'okay'|'tired', hour?: number, weekday?: number, kind?: 'meal'|'snack'|'any'}} input.context
  * @param {Array} input.catalogue
  * @param {object} [input.config]
+ * @param {object} [input.verdicts]  pranjal's Pierre verdicts by meal id (default PIERRE_SEED)
  */
-export function rank({ inventory, targets, context = {}, catalogue, config = DEFAULT_CONFIG }) {
+export function rank({ inventory, targets, context = {}, catalogue, config = DEFAULT_CONFIG, verdicts = PIERRE_SEED }) {
   const lambda = contextLambda(context, config);
   const kind = context.kind ?? 'meal';
   const ranked = [];
   const filtered = [];
+  const vetoed = [];
   for (const meal of catalogue) {
     if (kind !== 'any' && meal.kind !== kind) continue;
     if (!inDiet(meal)) continue; // vegetarian + eggs, whatever the scan or the AI says
@@ -191,9 +233,15 @@ export function rank({ inventory, targets, context = {}, catalogue, config = DEF
       filtered.push({ meal, missing: used.missing });
       continue;
     }
-    ranked.push({ meal, used, ...scoreMeal(meal, used, targets, lambda, config) });
+    const pierre = judgeMeal(meal, used, inventory, verdicts);
+    if (pierre.tier === 'veto') {
+      vetoed.push({ meal, pierre });
+      continue;
+    }
+    ranked.push({ meal, used, pierre, ...scoreMeal(meal, used, targets, lambda, config) });
   }
-  ranked.sort((a, b) => b.score - a.score || a.friction - b.friction || a.meal.id.localeCompare(b.meal.id));
+  ranked.sort((a, b) => TIER_ORDER[b.pierre.tier] - TIER_ORDER[a.pierre.tier]
+    || b.score - a.score || a.friction - b.friction || a.meal.id.localeCompare(b.meal.id));
   for (const r of ranked) r.reasons = headlineReasons(r);
   if (ranked.length > 1) ranked[0].beats = { other: ranked[1].meal, reasons: compareReasons(ranked[0], ranked[1]) };
 
@@ -201,6 +249,9 @@ export function rank({ inventory, targets, context = {}, catalogue, config = DEF
   const unlockCounts = new Map();
   for (const f of filtered) {
     if (f.missing.equipment.length === 0 && f.missing.ingredients.length === 1) {
+      // Never "unlock" a dish Pierre would veto once you had it (the mug omelette).
+      const asMade = { ingredients: f.meal.ingredients.map((i) => ({ id: i.id ?? i.anyOf[0] })) };
+      if (judgeMeal(f.meal, asMade, inventory, verdicts).tier === 'veto') continue;
       const key = f.missing.ingredients[0][0];
       if (!unlockCounts.has(key)) unlockCounts.set(key, []);
       unlockCounts.get(key).push(f.meal.name);
@@ -211,7 +262,7 @@ export function rank({ inventory, targets, context = {}, catalogue, config = DEF
     .slice(0, config.unlockSuggestions)
     .map(([id, meals]) => ({ id, label: labelFor(id), meals }));
 
-  return { ranked, filtered, unlocks, lambda };
+  return { ranked, filtered, vetoed, unlocks, lambda };
 }
 
 /** Human description of what blocked a meal. */

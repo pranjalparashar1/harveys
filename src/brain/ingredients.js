@@ -547,7 +547,9 @@ export function pierreTier(parts, form, { modifiers = [], inventory = [], verdic
     computed = why.length ? 'floor' : 'pass';
   }
   let upgrade = null;
-  if (computed === 'floor' && p && why.length === belowFloor(p, floor).length && why.length) {
+  // (Compare the reasons, not just their count: "can't judge makhana" is one reason too.)
+  const shortfall = p ? belowFloor(p, floor) : [];
+  if (computed === 'floor' && p && why.length && why.every((w) => shortfall.includes(w))) {
     // Only a taste/texture shortfall can be lifted by adding something.
     const has = new Set([...modifiers, ...parts.map((x) => (typeof x === 'string' ? x : x.id))]);
     const lifts = (extraParts, extraMods) => {

@@ -461,7 +461,7 @@ export const CATALOGUE = [
     name: 'Chana chaat',
     kind: 'meal',
     form: 'bowl',
-    parts: [{ id: 'chickpeas' }, { id: 'onion' }, { id: 'tomato' }, { id: 'lemon' }],
+    parts: [{ id: 'chickpeas', technique: 'boiled' }, { id: 'onion' }, { id: 'tomato' }, { id: 'lemon' }], // soaked and boiled ahead (prePrep) or canned
     equipment: [],
     utensils: ['knife', 'cutting_board', 'bowl', 'spoon'],
     ingredients: [
