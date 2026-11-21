@@ -1,0 +1,733 @@
+{
+  "id": "round3",
+  "title": "Pierre round 3",
+  "version": 1,
+  "seed": 20261123,
+  "tiers": [
+    {
+      "id": "veto",
+      "label": "Veto",
+      "line": "I wouldn’t eat this."
+    },
+    {
+      "id": "floor",
+      "label": "Floor",
+      "line": "Edible, but it’s missing something. Not worth making as it is."
+    },
+    {
+      "id": "pass",
+      "label": "Pass",
+      "line": "I’d happily eat this."
+    },
+    {
+      "id": "crave",
+      "label": "Crave",
+      "line": "I’d want this again. I’d go out of my way for it."
+    }
+  ],
+  "reasons": [
+    {
+      "id": "bland",
+      "label": "Bland"
+    },
+    {
+      "id": "savoury",
+      "label": "Lacks savoury depth"
+    },
+    {
+      "id": "texture",
+      "label": "Texture is off"
+    },
+    {
+      "id": "clash",
+      "label": "Doesn’t go together"
+    },
+    {
+      "id": "cooking",
+      "label": "Cooked wrong / raw"
+    },
+    {
+      "id": "meal",
+      "label": "Not a meal"
+    }
+  ],
+  "techniques": [
+    {
+      "id": "sauteed",
+      "label": "sautéed"
+    },
+    {
+      "id": "air_fried",
+      "label": "air-fried"
+    },
+    {
+      "id": "pan_fried",
+      "label": "pan-fried"
+    },
+    {
+      "id": "toasted",
+      "label": "toasted"
+    },
+    {
+      "id": "roasted",
+      "label": "roasted"
+    },
+    {
+      "id": "boiled",
+      "label": "boiled"
+    },
+    {
+      "id": "microwaved",
+      "label": "microwaved"
+    },
+    {
+      "id": "melted",
+      "label": "melted"
+    },
+    {
+      "id": "mashed",
+      "label": "mashed"
+    }
+  ],
+  "dishes": [
+    {
+      "id": "r3_potato_mayo",
+      "name": "Air-fried potato with mayo and chilli flakes",
+      "parts": "Potato (air-fried), mayo, chilli flakes, salt",
+      "items": [
+        {
+          "id": "potato",
+          "technique": "air_fried"
+        },
+        {
+          "id": "mayo",
+          "mod": true
+        },
+        {
+          "id": "chilli_flakes",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_egg_bhurji",
+      "name": "Egg bhurji with sautéed onion and tomato, coriander and chilli flakes",
+      "parts": "Eggs (scrambled), onion (sautéed), tomato (sautéed), coriander, chilli flakes, salt",
+      "items": [
+        {
+          "id": "eggs",
+          "technique": "scrambled"
+        },
+        {
+          "id": "onion",
+          "technique": "sauteed"
+        },
+        {
+          "id": "tomato",
+          "technique": "sauteed"
+        },
+        {
+          "id": "coriander"
+        },
+        {
+          "id": "chilli_flakes",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_dal_rice",
+      "name": "Dal and rice with ghee and a squeeze of lemon",
+      "parts": "Rice (pressure-cooked), dal (pressure-cooked), ghee, lemon, salt",
+      "items": [
+        {
+          "id": "rice",
+          "technique": "pressure_cooked"
+        },
+        {
+          "id": "dal",
+          "technique": "pressure_cooked"
+        },
+        {
+          "id": "ghee"
+        },
+        {
+          "id": "lemon"
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_omelette_ketchup",
+      "name": "Butter omelette with tomato sauce",
+      "parts": "Eggs (omelette), butter, tomato sauce, black pepper, salt",
+      "items": [
+        {
+          "id": "eggs",
+          "technique": "omelette"
+        },
+        {
+          "id": "butter"
+        },
+        {
+          "id": "tomato_sauce",
+          "mod": true
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_chilli_soya",
+      "name": "Soya chunks sautéed with onion and capsicum in chilli sauce and tomato sauce",
+      "parts": "Soya chunks (sautéed), onion (sautéed), capsicum (sautéed), chilli sauce, tomato sauce, salt",
+      "items": [
+        {
+          "id": "soya_chunks",
+          "technique": "sauteed"
+        },
+        {
+          "id": "onion",
+          "technique": "sauteed"
+        },
+        {
+          "id": "capsicum",
+          "technique": "sauteed"
+        },
+        {
+          "id": "chilli_sauce",
+          "mod": true
+        },
+        {
+          "id": "tomato_sauce",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_fried_rice",
+      "name": "Egg fried rice: rice sautéed in olive oil with spring onion, scrambled egg and chilli sauce",
+      "parts": "Rice (sautéed), eggs (scrambled), spring onion (sautéed), olive oil, chilli sauce, salt",
+      "items": [
+        {
+          "id": "rice",
+          "technique": "sauteed"
+        },
+        {
+          "id": "eggs",
+          "technique": "scrambled"
+        },
+        {
+          "id": "spring_onion",
+          "technique": "sauteed"
+        },
+        {
+          "id": "olive_oil",
+          "mod": true
+        },
+        {
+          "id": "chilli_sauce",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_cream_pasta",
+      "name": "Boiled pasta in cream with a cheese slice melted in and black pepper",
+      "parts": "Pasta (boiled), cream, cheese slices (melted), black pepper, salt",
+      "items": [
+        {
+          "id": "pasta",
+          "technique": "boiled"
+        },
+        {
+          "id": "cream"
+        },
+        {
+          "id": "cheese_slices",
+          "technique": "melted"
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_egg_mayo_sandwich",
+      "name": "Egg mayo sandwich: boiled eggs and mayo in toasted bread",
+      "parts": "Bread (toasted), eggs (boiled), mayo, black pepper, salt",
+      "items": [
+        {
+          "id": "bread",
+          "technique": "toasted"
+        },
+        {
+          "id": "eggs",
+          "technique": "boiled"
+        },
+        {
+          "id": "mayo",
+          "mod": true
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_maggi",
+      "name": "Maggi cooked with its masala",
+      "parts": "Maggi (boiled)",
+      "items": [
+        {
+          "id": "maggi",
+          "technique": "boiled"
+        }
+      ]
+    },
+    {
+      "id": "r3_pomodoro",
+      "name": "Pasta with tomato simmered down in olive oil with garlic and oregano",
+      "parts": "Pasta (boiled), tomato (simmered), garlic (sautéed), olive oil, oregano, salt",
+      "items": [
+        {
+          "id": "pasta",
+          "technique": "boiled"
+        },
+        {
+          "id": "tomato",
+          "technique": "simmered"
+        },
+        {
+          "id": "garlic",
+          "technique": "sauteed"
+        },
+        {
+          "id": "olive_oil",
+          "mod": true
+        },
+        {
+          "id": "oregano",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_paneer_mayo_sandwich",
+      "name": "Toasted sandwich of pan-fried paneer, raw onion, mayo and chilli sauce",
+      "parts": "Bread (toasted), paneer (pan-fried), onion, mayo, chilli sauce",
+      "items": [
+        {
+          "id": "bread",
+          "technique": "toasted"
+        },
+        {
+          "id": "paneer",
+          "technique": "pan_fried"
+        },
+        {
+          "id": "onion"
+        },
+        {
+          "id": "mayo",
+          "mod": true
+        },
+        {
+          "id": "chilli_sauce",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_scrambled_toast",
+      "name": "Buttery scrambled eggs on toast with salt and pepper",
+      "parts": "Bread (toasted), eggs (scrambled), butter, black pepper, salt",
+      "items": [
+        {
+          "id": "bread",
+          "technique": "toasted"
+        },
+        {
+          "id": "eggs",
+          "technique": "scrambled"
+        },
+        {
+          "id": "butter"
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_aglio_olio",
+      "name": "Pasta aglio olio: garlic and chilli flakes in olive oil",
+      "parts": "Pasta (boiled), garlic (sautéed), olive oil, chilli flakes, salt",
+      "items": [
+        {
+          "id": "pasta",
+          "technique": "boiled"
+        },
+        {
+          "id": "garlic",
+          "technique": "sauteed"
+        },
+        {
+          "id": "olive_oil",
+          "mod": true
+        },
+        {
+          "id": "chilli_flakes",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_paneer_bhurji",
+      "name": "Paneer bhurji with sautéed onion and tomato, coriander and black pepper",
+      "parts": "Paneer (scrambled), onion (sautéed), tomato (sautéed), coriander, black pepper, salt",
+      "items": [
+        {
+          "id": "paneer",
+          "technique": "scrambled"
+        },
+        {
+          "id": "onion",
+          "technique": "sauteed"
+        },
+        {
+          "id": "tomato",
+          "technique": "sauteed"
+        },
+        {
+          "id": "coriander"
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_pasta_ketchup",
+      "name": "Boiled pasta tossed with tomato sauce and oregano",
+      "parts": "Pasta (boiled), tomato sauce, oregano, salt",
+      "items": [
+        {
+          "id": "pasta",
+          "technique": "boiled"
+        },
+        {
+          "id": "tomato_sauce",
+          "mod": true
+        },
+        {
+          "id": "oregano",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_aloo_chaat",
+      "name": "Aloo chaat: boiled potato with raw onion, tomato, coriander, lemon and chaat masala",
+      "parts": "Potato (boiled), onion, tomato, coriander, lemon, chaat masala",
+      "items": [
+        {
+          "id": "potato",
+          "technique": "boiled"
+        },
+        {
+          "id": "onion"
+        },
+        {
+          "id": "tomato"
+        },
+        {
+          "id": "coriander"
+        },
+        {
+          "id": "lemon"
+        },
+        {
+          "id": "chaat_masala",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_maggi_egg",
+      "name": "Maggi with its masala, a fried egg on top",
+      "parts": "Maggi (boiled), eggs (fried)",
+      "items": [
+        {
+          "id": "maggi",
+          "technique": "boiled"
+        },
+        {
+          "id": "eggs",
+          "technique": "fried_egg"
+        }
+      ]
+    },
+    {
+      "id": "r3_raita",
+      "name": "Cucumber raita with mint and salt",
+      "parts": "Curd, cucumber, mint, salt",
+      "items": [
+        {
+          "id": "curd"
+        },
+        {
+          "id": "cucumber"
+        },
+        {
+          "id": "mint",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_maggi_cheese",
+      "name": "Maggi with its masala and a cheese slice melted in",
+      "parts": "Maggi (boiled), cheese slices (melted)",
+      "items": [
+        {
+          "id": "maggi",
+          "technique": "boiled"
+        },
+        {
+          "id": "cheese_slices",
+          "technique": "melted"
+        }
+      ]
+    },
+    {
+      "id": "r3_fruit_curd",
+      "name": "Curd with apple, banana and a little sugar",
+      "parts": "Curd, apple, banana, sugar",
+      "items": [
+        {
+          "id": "curd"
+        },
+        {
+          "id": "apple"
+        },
+        {
+          "id": "banana"
+        },
+        {
+          "id": "sugar",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_choc_shake",
+      "name": "Chocolate whey shaken with milk, banana and cocoa",
+      "parts": "Whey (shaken with milk), banana, cocoa powder",
+      "items": [
+        {
+          "id": "whey",
+          "technique": "shake_milk"
+        },
+        {
+          "id": "banana"
+        },
+        {
+          "id": "cocoa_powder",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_paneer_mint_curd",
+      "name": "Pan-fried paneer with curd, mint and black pepper",
+      "parts": "Paneer (pan-fried), curd, mint, black pepper, salt",
+      "items": [
+        {
+          "id": "paneer",
+          "technique": "pan_fried"
+        },
+        {
+          "id": "curd"
+        },
+        {
+          "id": "mint",
+          "mod": true
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_cheese_toast_oregano",
+      "name": "Cheese toast with oregano and chilli flakes",
+      "parts": "Bread (toasted), cheese slices (melted), oregano, chilli flakes",
+      "items": [
+        {
+          "id": "bread",
+          "technique": "toasted"
+        },
+        {
+          "id": "cheese_slices",
+          "technique": "melted"
+        },
+        {
+          "id": "oregano",
+          "mod": true
+        },
+        {
+          "id": "chilli_flakes",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_garlic_bread",
+      "name": "Garlic bread: toasted bread with butter, sautéed garlic and oregano",
+      "parts": "Bread (toasted), butter, garlic (sautéed), oregano, salt",
+      "items": [
+        {
+          "id": "bread",
+          "technique": "toasted"
+        },
+        {
+          "id": "butter"
+        },
+        {
+          "id": "garlic",
+          "technique": "sauteed"
+        },
+        {
+          "id": "oregano",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_mushroom_cream_toast",
+      "name": "Toast topped with mushrooms and garlic sautéed in cream",
+      "parts": "Bread (toasted), mushroom (sautéed), garlic (sautéed), cream, black pepper, salt",
+      "items": [
+        {
+          "id": "bread",
+          "technique": "toasted"
+        },
+        {
+          "id": "mushroom",
+          "technique": "sauteed"
+        },
+        {
+          "id": "garlic",
+          "technique": "sauteed"
+        },
+        {
+          "id": "cream"
+        },
+        {
+          "id": "black_pepper",
+          "mod": true
+        },
+        {
+          "id": "salt",
+          "mod": true
+        }
+      ]
+    },
+    {
+      "id": "r3_cocoa_oats",
+      "name": "Microwaved oats with milk, banana, cocoa and honey",
+      "parts": "Oats (microwaved), milk, banana, cocoa powder, honey",
+      "items": [
+        {
+          "id": "oats",
+          "technique": "microwaved"
+        },
+        {
+          "id": "milk"
+        },
+        {
+          "id": "banana"
+        },
+        {
+          "id": "cocoa_powder",
+          "mod": true
+        },
+        {
+          "id": "honey",
+          "mod": true
+        }
+      ]
+    }
+  ]
+}

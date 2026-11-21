@@ -108,8 +108,9 @@ test('4b: raw garlic vetoes a dish where nothing is cooked, and only then', () =
   assert.equal(tierOfDish(['bread', 'tomato', 'paneer'], 'open', ['salt', 'garlic']).tier, 'veto');
   assert.equal(tierOfDish(['bread', 'tomato', 'paneer'], 'open', ['salt']).tier, 'pass', 'your fix: drop the garlic');
   const fixed = tierOfDish(['oats@boiled', 'tomato', 'potato@microwaved', 'butter'], 'open', ['garlic']);
-  assert.equal(fixed.tier, 'floor', 'with something cooked it is a clash, not a veto (you: floor)');
-  assert.match(fixed.why.join(), /clash: raw .*garlic/);
+  assert.equal(fixed.tier, 'floor', 'with something cooked it is not a veto (you: floor)');
+  // Step 5: on a cooked base the raw garlic is no clash; the boiled oats have no sauce instead.
+  assert.match(fixed.why.join(), /no sauce: oats@boiled/);
   assert.equal(PIERRE_RAW.tech['garlic@sauteed'].distance, 0, 'sautéed garlic is done: only added to things');
   assert.ok(PIERRE_RAW.foods.garlic.estimate && PIERRE_RAW.tech['garlic@sauteed'].estimate, 'the numbers are marked as estimates');
 });
@@ -120,7 +121,8 @@ test('4b: raw onion needs a High acid (lemon) to sit right', () => {
 });
 
 test('4b: one texture throughout floors a dish', () => {
-  const t = tierOfDish(['eggs@boiled', 'hung_curd'], 'bowl', ['salt', 'black_pepper']);
+  // Hung curd left the brain in round 3 (pranjal, 21 Nov); banana with peanut butter is all creamy too.
+  const t = tierOfDish(['banana', 'peanut_butter'], 'bowl', []);
   assert.equal(t.tier, 'floor');
   assert.match(t.why.join(), /one texture throughout: all creamy/);
   assert.equal(tierOfDish(['eggs@boiled'], 'one-pot', ['salt', 'black_pepper']).tier, 'pass', 'one part is not mush');
