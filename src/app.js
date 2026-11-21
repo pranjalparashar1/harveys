@@ -5,13 +5,14 @@ import {
   CATALOGUE, DEFAULT_CONFIG, PROVISIONAL, ASSUMED_BASICS,
   buildInventory, parseItemList, kindOf, labelFor, rank, describeMissing,
   PIERRE_SEED, cookLogEntry, liveRepairEntry, liveVerdicts, soakNeeds,
+  importKitchens, looksLikeKitchenJson, classifyPrompt, parseClassification,
 } from './brain/index.js';
-import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, allowedModels, detectProvider, checkKey, pickModel, scanKitchen, designRecipes, AIError } from './ai/providers.js';
+import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, allowedModels, detectProvider, checkKey, pickModel, scanKitchen, designRecipes, callModel, AIError } from './ai/providers.js';
 import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 
-const VERSION = '1.28.0';
+const VERSION = '1.29.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -53,6 +54,7 @@ const state = {
   photos: [], // { base64, mediaType, previewUrl }
   // Not restored on reload: every page load starts clean (demo-ready).
   items: [], // [{ name, canonical, category, source }]
+  pantry: store.get('pantry', {}), // flash-lite profiles of names Harvey's didn't know (1.29.0), kept
   missingBasics: store.get('missingBasics', []),
   soaked: soakedToday(),
   // No mood: 1.3.2 doesn't ask, so the ranker's λ is neutral on mood (see contextLambda).
@@ -340,10 +342,32 @@ function setItems(items) {
   state.items = items; // memory only, so a reload starts clean
   renderInventory();
   if (state.decided) decide();
+  classifyUnknown();
 }
 
 function inventory() {
-  return buildInventory(state.items, { missingBasics: state.missingBasics });
+  return buildInventory(state.items, { missingBasics: state.missingBasics, cache: state.pantry });
+}
+
+// Names nothing knows go to flash-lite once; the answer is cached in this browser for good.
+let classifying = false;
+async function classifyUnknown() {
+  const names = inventory().unmatched.slice(0, 40);
+  if (!names.length || classifying || !state.ai?.apiKey) return;
+  classifying = true;
+  try {
+    const { text } = await callModel({ ...state.ai, prompt: classifyPrompt(names), deadlineMs: 12000, maxTokens: 3000, parallel: 1, copies: 2, hedgeMs: 3000 });
+    const found = parseClassification(text);
+    if (!Object.keys(found).length) return;
+    state.pantry = { ...state.pantry, ...found };
+    store.set('pantry', state.pantry);
+    renderInventory();
+    if (state.decided) decide();
+  } catch {
+    // Unknown names still count as plain extras; try again on the next change.
+  } finally {
+    classifying = false;
+  }
 }
 
 function renderInventory() {
@@ -353,10 +377,12 @@ function renderInventory() {
   if (!has) return;
   const groups = { food: [], kit: [], other: [] };
   state.items.forEach((item, index) => {
-    const id = buildInventory([item]).matched[0]?.id ?? null;
-    const kind = id ? kindOf(id) : null;
+    const one = buildInventory([item], { cache: state.pantry });
+    const id = one.matched[0]?.id ?? null;
+    const extra = one.extras[0];
+    const kind = id ? kindOf(id) : extra && !one.unmatched.length ? (extra.kind === 'food' ? 'food' : 'kit') : null;
     const bucket = kind === 'food' ? 'food' : kind ? 'kit' : 'other';
-    groups[bucket].push({ item, index, id });
+    groups[bucket].push({ item, index, id: id ?? (kind ? extra.id : null) });
   });
   const titles = { food: 'Food', kit: 'Kit', other: 'Not usable yet' };
   $('inventory-groups').replaceChildren(...Object.entries(groups).filter(([, list]) => list.length).map(([key, list]) =>
@@ -550,7 +576,7 @@ function aiIdeasCard(result) {
 }
 
 function ingredientLine(ing) {
-  return h('li', {}, labelFor(ing.id), ' ', h('small', {}, `· ${ing.amount}`), ing.optional ? h('small', {}, ' (optional, you have it)') : null);
+  return h('li', {}, ing.label ?? labelFor(ing.id), ' ', h('small', {}, `· ${ing.amount}`), ing.optional ? h('small', {}, ' (optional, you have it)') : null);
 }
 
 // Pierre's tier as a compact badge, and a floor dish's one-line lift.
@@ -799,8 +825,18 @@ function init() {
   });
 
   // A pasted list (another app's export, a note) works as the whole inventory.
+  // So does a catalogued kitchen's JSON (1.29.0): the first kitchen in it.
   $('paste-go').addEventListener('click', () => {
-    const items = parseItemList($('paste-text').value);
+    const text = $('paste-text').value;
+    const kitchen = looksLikeKitchenJson(text) ? importKitchens(text)[0] : null;
+    if (kitchen) {
+      state.pickSource = 'inventory';
+      setItems(kitchen.items);
+      $('paste-list').open = false;
+      $('step-inventory').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    const items = parseItemList(text);
     if (!items.length) return;
     state.pickSource = 'inventory';
     setItems(items.map((name) => ({ name, canonical: null, category: 'other', source: 'paste' })));

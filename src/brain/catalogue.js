@@ -20,6 +20,10 @@
 //               Friction v2 counts it (learn.js prePrepUnits) in the live ranker too.
 //               soak (1.21.0): the foods that must be soaked first. Ticked as soaked, the
 //               dish ranks with no pre-prep; not soaked, it moves to "For tomorrow".
+//   role:x      in anyOf (1.29.0): any item that brings that seasoning role (pantry.js), so
+//               vinegar fills a lemon slot and sriracha a chilli-flakes one.
+//   swap        { id: { protein, kcal, fiber, name } } macro deltas when a stand-in fills the slot
+//               (plain bread for protein bread). ESTIMATE.
 
 export const CATALOGUE = [
   {
@@ -31,9 +35,9 @@ export const CATALOGUE = [
     equipment: ['air_fryer'],
     utensils: ['plate'],
     ingredients: [
-      { id: 'protein_bread', amount: '2 slices', prep: 'ready' },
+      { anyOf: ['protein_bread', 'bread'], amount: '2 slices', prep: 'ready', swap: { bread: { protein: -8, fiber: -4, kcal: -20, name: 'Air-fryer cheese toast' } } },
       { anyOf: ['cheese_slices', 'cheese'], amount: '2 slices (or 40 g grated)', prep: 'ready' },
-      { id: 'chilli_flakes', amount: 'a pinch', prep: 'measure', optional: true },
+      { anyOf: ['chilli_flakes', 'role:heat'], amount: 'a pinch', prep: 'measure', optional: true },
     ],
     steps: [
       { text: 'Lay a cheese slice on each slice of protein bread.', active: 1 },
@@ -58,7 +62,7 @@ export const CATALOGUE = [
       { id: 'garlic', amount: '4 cloves, sliced', prep: 'peel_chop' },
       { id: 'oil', amount: '1 tbsp', prep: 'measure' },
       { id: 'salt', amount: 'to taste', prep: 'measure' },
-      { id: 'chilli_flakes', amount: '1 tsp', prep: 'measure', optional: true },
+      { anyOf: ['chilli_flakes', 'role:heat'], amount: '1 tsp', prep: 'measure', optional: true },
     ],
     steps: [
       { text: 'Boil salted water and cook the fusilli for 10 minutes.', active: 2, passive: 10 },
@@ -176,7 +180,7 @@ export const CATALOGUE = [
     equipment: [],
     utensils: ['plate', 'knife'],
     ingredients: [
-      { id: 'protein_bread', amount: '2 slices', prep: 'ready' },
+      { anyOf: ['protein_bread', 'bread'], amount: '2 slices', prep: 'ready', swap: { bread: { protein: -8, fiber: -4, kcal: -20, name: 'Peanut butter toast' } } },
       { id: 'peanut_butter', amount: '2 tbsp', prep: 'measure' },
       { id: 'banana', amount: '½, sliced', prep: 'ready', optional: true },
     ],
@@ -318,7 +322,7 @@ export const CATALOGUE = [
     equipment: ['air_fryer'],
     utensils: ['plate', 'spoon'],
     ingredients: [
-      { id: 'protein_bread', amount: '2 slices', prep: 'ready' },
+      { anyOf: ['protein_bread', 'bread'], amount: '2 slices', prep: 'ready', swap: { bread: { protein: -8, fiber: -4, kcal: -20, name: 'Air-fryer egg-in-a-hole' } } },
       { id: 'eggs', amount: '2', prep: 'crack' },
       { id: 'salt', amount: 'a pinch', prep: 'measure' },
       { id: 'butter', amount: 'a little', prep: 'measure', optional: true },
@@ -470,7 +474,7 @@ export const CATALOGUE = [
       { id: 'chickpeas', amount: '1 cup', prep: 'ready' },
       { id: 'onion', amount: '½, chopped', prep: 'peel_chop' },
       { id: 'tomato', amount: '1, chopped', prep: 'peel_chop' },
-      { id: 'lemon', amount: '½', prep: 'peel_chop', optional: true },
+      { anyOf: ['lemon', 'role:acid'], amount: '½ lemon or a splash', prep: 'peel_chop', optional: true },
       { id: 'chaat_masala', amount: '1 tsp', prep: 'measure' },
     ],
     steps: [
@@ -495,7 +499,7 @@ export const CATALOGUE = [
       { id: 'sprouts', amount: '1 cup', prep: 'wash' },
       { id: 'tomato', amount: '1, chopped', prep: 'peel_chop' },
       { id: 'onion', amount: '½, chopped', prep: 'peel_chop', optional: true },
-      { id: 'lemon', amount: '½', prep: 'peel_chop', optional: true },
+      { anyOf: ['lemon', 'role:acid'], amount: '½ lemon or a splash', prep: 'peel_chop', optional: true },
       { id: 'salt', amount: 'a pinch', prep: 'measure' },
     ],
     steps: [
@@ -898,7 +902,7 @@ export const CATALOGUE = [
       { id: 'soya_chunks', amount: '50 g', prep: 'measure' },
       { id: 'oil', amount: '1 tsp', prep: 'measure' },
       { id: 'salt', amount: 'a pinch', prep: 'measure' },
-      { id: 'chilli_flakes', amount: 'a pinch', prep: 'measure', optional: true },
+      { anyOf: ['chilli_flakes', 'role:heat'], amount: 'a pinch', prep: 'measure', optional: true },
     ],
     steps: [
       { text: 'Cover the soya chunks with water and microwave 5 minutes.', active: 1, passive: 5 },

@@ -1,0 +1,30 @@
+[
+  {
+    "kitchen": "Pune PG room, video 1",
+    "have": ["maggi", "eggs", "bread", "butter", "milk", "onion", "tomato", "salt", "turmeric", "red_chilli_powder", "induction", "saucepan", "kettle"],
+    "other": ["instant upma packet", "coffee"],
+    "diet": "veg+eggs",
+    "notes": "no fridge visible; only one burner"
+  },
+  {
+    "kitchen": "Bangalore flat, video 2",
+    "items": [
+      { "name": "brown bread", "category": "bread" },
+      { "name": "Amul cheese slices", "category": "dairy" },
+      { "name": "soy sauce", "category": "condiment" },
+      { "name": "white vinegar", "category": "condiment" },
+      { "name": "sriracha", "category": "condiment" },
+      { "name": "chickpeas", "category": "protein" },
+      { "name": "onion", "category": "veg" },
+      { "name": "tomato", "category": "veg" },
+      { "name": "chaat masala", "category": "spice" },
+      { "name": "frozen chicken nuggets", "category": "protein" },
+      { "name": "zaatar", "category": "spice" },
+      { "name": "air fryer", "category": "appliance" },
+      { "name": "nonstick pan", "category": "cookware" },
+      { "name": "gas stove", "category": "appliance" }
+    ],
+    "diet": "non-veg",
+    "notes": ""
+  }
+]

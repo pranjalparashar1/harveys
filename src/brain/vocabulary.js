@@ -117,7 +117,11 @@ export const CAPABILITIES = {
   pan: { label: 'a pan', anyOf: ['frying_pan', 'tawa', 'kadai'] },
 };
 
+const ROLE_LABELS = { salt: 'something salty', umami: 'something savoury', acid: 'something sour', fat: 'a fat', heat: 'something hot', sweet: 'something sweet', fresh: 'a fresh herb', crunch: 'something crunchy' };
+
 export function labelFor(id) {
+  if (typeof id === 'string' && id.startsWith('role:')) return ROLE_LABELS[id.slice(5)] ?? id.slice(5);
+  if (typeof id === 'string' && id.startsWith('x:')) return id.slice(2).replace(/_/g, ' ');
   return FOODS[id]?.label ?? EQUIPMENT[id]?.label ?? ASSUMED_BASICS[id]?.label ?? CAPABILITIES[id]?.label ?? id;
 }
 

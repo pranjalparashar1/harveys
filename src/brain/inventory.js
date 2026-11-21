@@ -2,6 +2,7 @@
 // Pure: no DOM, no network.
 
 import { FOODS, EQUIPMENT, ASSUMED_BASICS } from './vocabulary.js';
+import { profileOf, roleToken, ID_ROLES } from './pantry.js';
 
 const ALL = { ...FOODS, ...EQUIPMENT, ...ASSUMED_BASICS };
 
@@ -29,14 +30,32 @@ export function matchName(name) {
 }
 
 /**
- * @param {Array<{name: string, canonical?: string|null}>} items  what the AI (or the user) reported
- * @param {{missingBasics?: string[]}} [options]  basics the user says they don't have
- * @returns {{have: Set<string>, missingBasics: Set<string>, matched: Array<{name: string, id: string}>, unmatched: string[]}}
+ * @param {Array<{name: string, canonical?: string|null, category?: string}>} items  what the AI (or the user) reported
+ * @param {{missingBasics?: string[], cache?: object}} [options]  basics the user says they don't have;
+ *   cache = flash-lite classifications (pantry.js), keyed by cleaned name
+ * @returns {{have: Set<string>, missingBasics: Set<string>, matched: Array<{name: string, id: string}>,
+ *   unmatched: string[], extras: object[], roles: Map<string, string[]>, labels: Map<string, string>, excluded: string[]}}
+ *
+ * Open-ended since 1.29.0: a name with no vocabulary id still joins the inventory as an
+ * extra ('x:soy_sauce') with a profile, and its seasoning roles join `have` as 'role:umami'
+ * etc., so a dish's "any acid" slot can use vinegar. `unmatched` now lists only the names
+ * nothing could profile (worth a flash-lite classification). Non-veg items go to `excluded`.
  */
 export function buildInventory(items, options = {}) {
   const have = new Set();
   const matched = [];
   const unmatched = [];
+  const extras = [];
+  const excluded = [];
+  const roles = new Map();
+  const labels = new Map();
+  const addRoles = (list, id) => {
+    for (const r of list ?? []) {
+      have.add(roleToken(r));
+      if (!roles.has(r)) roles.set(r, []);
+      if (!roles.get(r).includes(id)) roles.get(r).push(id);
+    }
+  };
   for (const item of items ?? []) {
     const name = typeof item === 'string' ? item : item?.name;
     const canonical = typeof item === 'object' ? item?.canonical : null;
@@ -44,11 +63,25 @@ export function buildInventory(items, options = {}) {
     if (id) {
       have.add(id);
       matched.push({ name: name ?? id, id });
-    } else if (name) {
-      unmatched.push(name);
+      addRoles(ID_ROLES[id], id);
+      continue;
     }
+    if (!name) continue;
+    const profile = profileOf(name, { category: item?.category, cache: options.cache ?? {} });
+    if (!profile) continue;
+    if (profile.diet === 'non_veg') { excluded.push(name); continue; }
+    if (profile.source === 'unknown') unmatched.push(name);
+    if (profile.as) {
+      have.add(profile.as);
+      matched.push({ name, id: profile.as });
+    } else {
+      have.add(profile.id);
+      labels.set(profile.id, name);
+    }
+    extras.push(profile);
+    addRoles(profile.roles, profile.as ?? profile.id);
   }
-  return { have, missingBasics: new Set(options.missingBasics ?? []), matched, unmatched };
+  return { have, missingBasics: new Set(options.missingBasics ?? []), matched, unmatched, extras, roles, labels, excluded };
 }
 
 /** Splits pasted text into item names: lines, commas, semicolons; drops bullets and numbering. */

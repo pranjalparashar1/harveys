@@ -202,6 +202,14 @@ export const MODIFIERS = {
   oregano: { fresh: LOW, estimate: true },
   maggi_masala: { salt: PRESENT, heat: LOW, estimate: true },
   cocoa_powder: { estimate: true },
+  // Open-ended pantry (1.29.0): what any seasoning brings, by its role (pantry.js). ESTIMATES.
+  // Umami and crunch have no Pierre taste dimension, so they bring nothing measurable here.
+  'role:salt': { salt: PRESENT, estimate: true },
+  'role:acid': { acid: LOW, estimate: true },
+  'role:heat': { heat: PRESENT, estimate: true },
+  'role:sweet': { sugar: PRESENT, estimate: true },
+  'role:fat': { fat: PRESENT, estimate: true },
+  'role:fresh': { fresh: LOW, estimate: true },
 };
 // Cooking oils named as a modifier: the medium of a sauté, and a coating fat for a tadka.
 export const OIL_MODIFIERS = ['oil', 'olive_oil'];
