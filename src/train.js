@@ -14,7 +14,7 @@ import { PIERRE_SEED, TECHNIQUE_OVERLAY, TRAINING_EXTRAS, FORM_TOOLS, PRE_PREP_O
 import { validateMeal } from './brain/validate.js';
 import { callModel, parseJsonObject } from './ai/providers.js';
 
-const VERSION = '1.18.0';
+const VERSION = '1.18.1';
 const $ = (id) => document.getElementById(id);
 
 // ── Storage (this browser only) ─────────────────────────────────────────────
@@ -231,7 +231,6 @@ function renderPair() {
     return;
   }
   box.replaceChildren(
-    h('h2', { class: 'pair-title' }, 'Which would you make right now?'),
     dishCard(pair[0], 'a'),
     h('p', { class: 'or', 'aria-hidden': 'true' }, 'or'),
     dishCard(pair[1], 'b'),
