@@ -331,6 +331,95 @@ const REPEATS_3 = [
   ['p79', 'Saturday 7 PM', 'fresh'], ['p82', 'Saturday 2 PM', 'fresh'],
 ];
 
+// Round 4 (1.28.0): new dishes and items, every pair a trade-off (one way saves one kind of
+// effort and costs another), tuned so the current weights are close to undecided. Taste the
+// same both ways, written as the actual steps (as in round 3).
+const PAIRS_4 = [
+  { id: 'p91', dish: 'Boiled potatoes', protein: 4, when: '7 PM', energy: 'okay',
+    a: o('Pot of water', 'Potatoes in a pot of water. Boil about 25 min until a knife slides in. Drain.', { tools: 1, handsOn: 3, waiting: 25, steps: 3, attention: 1, cleanup: 1 }),
+    b: o('Pressure cooker', 'Potatoes and a cup of water in the cooker. Count 3 whistles, wait for the pressure to drop, open.', { tools: 1, handsOn: 3, waiting: 15, steps: 3, attention: 2, cleanup: 2 }) },
+  { id: 'p92', dish: 'Chickpeas from dry', protein: 15, when: 'Sunday 12 PM', energy: 'fresh',
+    a: o('Soaked overnight', 'Soak in water the night before. Drain, 4 whistles in the cooker.', { tools: 1, handsOn: 4, waiting: 20, prePrepMinutes: 480, steps: 3, attention: 1, cleanup: 1.5 }),
+    b: o('No soak, long cook', 'Straight into the cooker with water. 10 whistles, about 50 min.', { tools: 1, handsOn: 3, waiting: 50, steps: 2, attention: 2, cleanup: 1.5 }) },
+  { id: 'p93', dish: 'Besan chilla batter', protein: 14, when: '9 AM', energy: 'okay',
+    a: o('Whisked by hand', 'Besan, water and salt in a bowl. Whisk with a fork about 3 min until smooth.', { tools: 2, handsOn: 4, steps: 2, attention: 1, cleanup: 1.5 }),
+    b: o('Blender', 'Besan, water and salt in the blender jar. Blend 20 s, pour out. Wash the jar and blade.', { tools: 2, handsOn: 1, steps: 2, attention: 0, cleanup: 3 }) },
+  { id: 'p94', dish: 'Tomatoes for tomato rice', protein: 5, when: '8 PM', energy: 'okay',
+    a: o('Chopped on the board', 'Chop 2 tomatoes small on the board, cook them down in ghee.', { tools: 2, handsOn: 5, cuts: 1, steps: 2, attention: 2, cleanup: 2 }),
+    b: o('Blended', 'Quarter 2 tomatoes into the blender, blitz, pour into the ghee and cook down.', { tools: 2, handsOn: 2, steps: 2, attention: 2, cleanup: 3 }) },
+  { id: 'p95', dish: 'Water for pasta', protein: 12, when: '8 PM', energy: 'okay',
+    a: o('Lid on, faster', 'Pot of water, lid on. Boils in about 6 min, but stay close so it doesn’t boil over.', { tools: 1, handsOn: 1, waiting: 6, steps: 1, attention: 2, cleanup: 1 }),
+    b: o('Lid off, slower', 'Pot of water, no lid. Boils in about 10 min. Walk away.', { tools: 1, handsOn: 1, waiting: 10, steps: 1, attention: 0, cleanup: 1 }) },
+  { id: 'p96', dish: 'Pasta for one', protein: 12, when: '9 PM', energy: 'tired',
+    a: o('Cold start', 'Pasta and cold water in the pot together. Heat, stirring every minute or two, 14 min. Drain.', { tools: 2, handsOn: 5, waiting: 9, steps: 2, attention: 2, cleanup: 2 }),
+    b: o('Wait for the boil', 'Boil the water first, then add the pasta. Stir once, 10 min. Drain.', { tools: 2, handsOn: 2, waiting: 18, steps: 3, attention: 1, cleanup: 2 }) },
+  { id: 'p97', dish: 'Banana for a curd bowl', protein: 10, when: '9 PM', energy: 'tired',
+    a: o('Sliced on the board', 'Peel the banana, slice it on the board, tip it onto the curd.', { tools: 2, handsOn: 2, peels: 1, cuts: 1, steps: 2, attention: 0, cleanup: 2 }),
+    b: o('Cut with the spoon', 'Peel the banana, hold it over the bowl and cut pieces off with your spoon.', { tools: 0, handsOn: 3, peels: 1, steps: 1, attention: 1, cleanup: 1 }) },
+  { id: 'p98', dish: 'Kala chana', protein: 15, when: 'Saturday 1 PM', energy: 'fresh',
+    a: o('Hot soak, 1 hour', 'Boil a pot of water, pour it over the chana, wait an hour. Then 5 whistles.', { tools: 2, handsOn: 5, waiting: 25, prePrepMinutes: 60, steps: 4, attention: 1, cleanup: 2 }),
+    b: o('Soaked overnight', 'Cold water over the chana the night before. Then 5 whistles.', { tools: 1, handsOn: 3, waiting: 25, prePrepMinutes: 480, steps: 3, attention: 1, cleanup: 1.5 }) },
+  { id: 'p99', dish: 'Washing up after dal-chawal', protein: 18, when: '8 PM', energy: 'okay',
+    a: o('While the cooker whistles', 'Wash the board, bowls and spoons while you wait. After dinner only the cooker and plate.', { tools: 1, handsOn: 8, waiting: 20, steps: 3, attention: 1, cleanup: 1 }),
+    b: o('All after dinner', 'Sit down while it cooks. Wash everything after you eat.', { tools: 1, handsOn: 3, waiting: 20, steps: 2, attention: 1, cleanup: 3 }) },
+  { id: 'p100', dish: 'Air-fried potato wedges', protein: 4, when: '8 PM', energy: 'okay',
+    a: o('Straight in', 'Cut wedges, toss in oil and salt, 20 min in the basket, shake once.', { tools: 2, handsOn: 4, waiting: 20, cuts: 1, steps: 2, attention: 1, cleanup: 2 }),
+    b: o('Microwave first', 'Cut wedges, microwave 4 min in a bowl, toss in oil and salt, 10 min in the basket.', { tools: 3, handsOn: 5, waiting: 14, cuts: 1, steps: 3, attention: 1, cleanup: 2.5 }) },
+  { id: 'p101', dish: 'Besan chillas for two', protein: 28, when: 'Sunday 10 AM', energy: 'fresh',
+    a: o('One pan, one at a time', 'Cook four chillas one after another in the same pan.', { tools: 3, handsOn: 16, steps: 4, attention: 2, cleanup: 3 }),
+    b: o('Two pans at once', 'Two pans side by side, two chillas at a time. Done in half the time.', { tools: 4, handsOn: 9, steps: 4, attention: 3, cleanup: 4 }) },
+  { id: 'p102', dish: 'Dal and rice together', protein: 18, when: '8 PM', energy: 'okay',
+    a: o('Cooker and a pot at once', 'Dal in the cooker, rice in a pot of water on the other burner, both going together.', { tools: 2, handsOn: 5, waiting: 20, steps: 3, attention: 2, cleanup: 2.5 }),
+    b: o('One cooker, one after the other', 'Cook the dal, empty it into a bowl, then rice in the same cooker.', { tools: 2, handsOn: 5, waiting: 40, steps: 4, attention: 1, cleanup: 2 }) },
+  { id: 'p103', dish: 'Microwave protein oats', protein: 30, when: '8 AM', energy: 'okay',
+    a: o('3 min in one go', 'Oats and milk in a big bowl, 3 min. Stand by to stop it boiling over.', { tools: 1, handsOn: 2, waiting: 3, steps: 2, attention: 2, cleanup: 1 }),
+    b: o('Three 1-minute bursts', 'Oats and milk in the bowl, 1 min, stir, 1 min, stir, 1 min.', { tools: 1, handsOn: 3, waiting: 3, steps: 4, attention: 1, cleanup: 1 }) },
+  { id: 'p104', dish: 'Potatoes for aloo chaat', protein: 6, when: '7 PM', energy: 'okay',
+    a: o('Peeled raw', 'Peel the raw potatoes with the peeler, cube, then boil 12 min.', { tools: 3, handsOn: 6, waiting: 12, peels: 1, cuts: 1, steps: 3, attention: 1, cleanup: 2 }),
+    b: o('Peeled after boiling', 'Boil whole 25 min, cool under the tap, slip the skins off by hand, cube.', { tools: 2, handsOn: 5, waiting: 25, peels: 1, cuts: 1, steps: 4, attention: 1, cleanup: 1.5 }) },
+  { id: 'p105', dish: 'Capsicum for pasta', protein: 12, when: '9 PM', energy: 'tired',
+    a: o('Sliced on the board', 'Cut the capsicum into strips on the board, into the pan.', { tools: 2, handsOn: 3, cuts: 1, steps: 2, attention: 1, cleanup: 2 }),
+    b: o('Torn by hand', 'Pull the capsicum apart into chunks with your hands, straight into the pan.', { tools: 0, handsOn: 4, steps: 1, attention: 1, cleanup: 1 }) },
+  { id: 'p106', dish: 'Cabbage for Maggi', protein: 8, when: '11 PM', energy: 'tired',
+    a: o('Knife and board', 'Shred a handful of cabbage on the board, into the pot.', { tools: 2, handsOn: 3, cuts: 1, steps: 2, attention: 1, cleanup: 2 }),
+    b: o('Scissors over the pot', 'Snip the cabbage leaves straight into the pot with scissors.', { tools: 1, handsOn: 4, steps: 1, attention: 1, cleanup: 1 }) },
+  { id: 'p107', dish: 'Kala chana', protein: 15, when: '8 PM', energy: 'okay',
+    a: o('Pot, no whistles', 'Soaked chana in a pot of water, simmer about 60 min. Walk away.', { tools: 1, handsOn: 3, waiting: 60, steps: 2, attention: 0, cleanup: 1 }),
+    b: o('Pressure cooker', 'Soaked chana in the cooker, count 5 whistles, wait for the pressure to drop.', { tools: 1, handsOn: 3, waiting: 25, steps: 3, attention: 2, cleanup: 2 }) },
+  { id: 'p108', dish: 'Pasta in cream sauce', protein: 14, when: '8 PM', energy: 'okay',
+    a: o('Sauce while the pasta boils', 'Pasta boiling in one pot, cream sauce going in a pan at the same time. Toss together.', { tools: 3, handsOn: 7, waiting: 10, steps: 3, attention: 3, cleanup: 3 }),
+    b: o('Sauce after, in the same pot', 'Boil the pasta, drain it into the strainer. Make the sauce in that pot, add the pasta back.', { tools: 2, handsOn: 7, waiting: 16, steps: 4, attention: 1, cleanup: 2 }) },
+  { id: 'p109', dish: 'Boiled potatoes for the week', protein: 4, when: 'Sunday 11 AM', energy: 'fresh',
+    a: o('A batch on Sunday', 'Boil 1 kg on Sunday, keep it in the fridge. Each night: take two out, cube.', { tools: 1, handsOn: 2, cuts: 1, steps: 2, attention: 0, cleanup: 0.5 }),
+    b: o('Boil when you need them', 'Each night: boil two potatoes 25 min, cool, cube.', { tools: 1, handsOn: 4, waiting: 25, cuts: 1, steps: 3, attention: 1, cleanup: 1 }) },
+  { id: 'p110', dish: 'Carrot for pasta', protein: 12, when: '8 PM', energy: 'okay',
+    a: o('Peeled', 'Peel the carrot with the peeler, slice, into the pasta water for the last 3 min.', { tools: 3, handsOn: 4, peels: 1, cuts: 1, steps: 3, attention: 1, cleanup: 2 }),
+    b: o('Scrubbed, skin on', 'Scrub the carrot under the tap, slice, into the pasta water for the last 3 min.', { tools: 2, handsOn: 4, cuts: 1, steps: 3, attention: 1, cleanup: 1.5 }) },
+  { id: 'p111', dish: 'Masala makhana', protein: 5, when: '9 PM', energy: 'tired',
+    a: o('Pan, stirring', 'Ghee in the pan, makhana in, keep stirring 6 min. Salt.', { tools: 1, handsOn: 6, steps: 2, attention: 3, cleanup: 2 }),
+    b: o('Microwave', 'Makhana, ghee and salt in a bowl. 2 min, stir, 1 min more.', { tools: 1, handsOn: 2, waiting: 3, steps: 3, attention: 1, cleanup: 1 }) },
+  { id: 'p112', dish: 'Rice', protein: 4, when: '8 PM', energy: 'okay',
+    a: o('Pressure cooker', 'Rinsed rice and water in the cooker, 2 whistles, rest 10 min.', { tools: 1, handsOn: 2, waiting: 20, steps: 2, attention: 1, cleanup: 1.5 }),
+    b: o('Microwave bowl', 'Rinsed rice and water in a big bowl, 6 min, stir, 6 min more, rest 2.', { tools: 1, handsOn: 3, waiting: 14, steps: 3, attention: 1, cleanup: 1.5 }) },
+  { id: 'p113', dish: 'Aloo fry', protein: 4, when: '8 PM', energy: 'okay',
+    a: o('Raw potato in the pan', 'Peel and cube raw potato, fry in the pan, stirring, about 15 min.', { tools: 2, handsOn: 15, peels: 1, cuts: 1, steps: 2, attention: 2, cleanup: 2.5 }),
+    b: o('Boiled first', 'Boil the potato 25 min, peel, cube, crisp in the pan 5 min.', { tools: 3, handsOn: 8, waiting: 25, peels: 1, cuts: 1, steps: 4, attention: 1, cleanup: 3 }) },
+  { id: 'p114', dish: 'Cheese omelette', protein: 22, when: '8 AM', energy: 'okay',
+    a: o('Cheese grated in', 'Grate the cheese over the eggs in the pan, fold.', { tools: 3, handsOn: 6, steps: 3, attention: 2, cleanup: 3 }),
+    b: o('Cheese slices torn in', 'Tear two cheese slices over the eggs in the pan, fold.', { tools: 2, handsOn: 6, steps: 3, attention: 2, cleanup: 2.5 }) },
+  { id: 'p115', dish: 'Rajma', protein: 15, when: 'Sunday 12 PM', energy: 'fresh',
+    a: o('Many whistles on high', 'Soaked rajma in the cooker on high, count 8 whistles.', { tools: 1, handsOn: 3, waiting: 30, prePrepMinutes: 480, steps: 2, attention: 2, cleanup: 1.5 }),
+    b: o('One whistle, then low', 'Soaked rajma, high till the first whistle, then low for 30 min. Set a timer.', { tools: 1, handsOn: 3, waiting: 40, prePrepMinutes: 480, steps: 3, attention: 0, cleanup: 1.5 }) },
+  { id: 'p116', dish: 'Boiled eggs and potatoes', protein: 22, when: '7 PM', energy: 'okay',
+    a: o('Together in the cooker', 'Potatoes and water in the cooker, eggs on top. 3 whistles, wait for the pressure, peel both.', { tools: 1, handsOn: 5, waiting: 15, peels: 1, steps: 3, attention: 2, cleanup: 2 }),
+    b: o('Together in a pot', 'Potatoes and eggs in a pot of water. Lift the eggs out at 10 min, potatoes go on to 25 min. Peel both.', { tools: 1, handsOn: 6, waiting: 25, peels: 1, steps: 4, attention: 1, cleanup: 1 }) },
+];
+const REPEATS_4 = [
+  ['p91', '10 PM', 'tired'], ['p112', '10 PM', 'tired'], ['p95', '10 PM', 'tired'], ['p93', 'Sunday 10 AM', 'fresh'],
+  ['p100', 'Saturday 6 PM', 'fresh'], ['p102', '10 PM', 'tired'], ['p103', '10 PM', 'tired'], ['p108', '10:30 PM', 'tired'],
+  ['p113', 'Saturday 1 PM', 'fresh'], ['p99', '10 PM', 'tired'],
+];
+
 /** One round: pairs plus repeats at the other energy, interleaved; every 4th question held out. */
 function buildRound(pairs, repeats, firstRepeat, round) {
   const all = [
@@ -346,7 +435,7 @@ function buildRound(pairs, repeats, firstRepeat, round) {
 
 /** Round 1, in the order it is shown. */
 export const PREP_QUIZ = buildRound(PAIRS, REPEATS, 1, 1);
-export const PREP_ROUNDS = Object.freeze({ 1: PREP_QUIZ, 2: buildRound(PAIRS_2, REPEATS_2, 11, 2), 3: buildRound(PAIRS_3, REPEATS_3, 21, 3) });
+export const PREP_ROUNDS = Object.freeze({ 1: PREP_QUIZ, 2: buildRound(PAIRS_2, REPEATS_2, 11, 2), 3: buildRound(PAIRS_3, REPEATS_3, 21, 3), 4: buildRound(PAIRS_4, REPEATS_4, 31, 4) });
 /** Every question of every round: what the fitter reads answers against. */
 export const PREP_ALL = Object.freeze(Object.values(PREP_ROUNDS).flat());
 
@@ -384,7 +473,7 @@ export function parsePrep(text) {
   const answers = {};
   for (const raw of String(text).split('\n')) {
     const line = raw.replace(/^```.*$/, '').trim();
-    const m = /^([pr]\d{2})\s*\|\s*(a|b|either|neither)\s*(?:\|\s*(\S+))?$/.exec(line);
+    const m = /^([pr]\d{2,3})\s*\|\s*(a|b|either|neither)\s*(?:\|\s*(\S+))?$/.exec(line);
     if (m) answers[m[1]] = { pick: m[2], at: m[3] && m[3] !== '-' ? m[3] : null };
   }
   return answers;
