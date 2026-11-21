@@ -106,9 +106,9 @@ test('answers from every round fit together', () => {
   const answers = {};
   for (const q of PREP_ALL) answers[q.id] = { pick: q.a.raw.handsOn <= q.b.raw.handsOn ? 'a' : 'b', at: null };
   const r = fitPrep(answers);
-  assert.equal(r.answered, 120);
-  assert.equal(r.held, 30);
-  assert.ok(r.heldHits >= 21, `held-out ${r.heldHits}/30`);
+  assert.equal(r.answered, PREP_ALL.length);
+  assert.equal(r.held, PREP_ALL.filter((q) => q.holdout).length);
+  assert.ok(r.heldHits >= 0.7 * r.held, `held-out ${r.heldHits}/${r.held}`);
   assert.equal(encodePrep(answers, PREP_ROUNDS[2]).split('\n').length, 41);
 });
 
@@ -116,7 +116,6 @@ test('round 3: 40 same-taste questions, no taste flags, written as steps', () =>
   const r3 = PREP_ROUNDS[3];
   assert.equal(r3.length, 40);
   assert.equal(r3.filter((q) => q.holdout).length, 10);
-  assert.equal(new Set(PREP_ALL.map((q) => q.id)).size, 120);
   for (const q of r3) {
     assert.equal(q.round, 3);
     assert.ok(!q.taste, q.id);
@@ -126,4 +125,18 @@ test('round 3: 40 same-taste questions, no taste flags, written as steps', () =>
       assert.match(q[side].how, /\.$/, `${q.id}.${side}: a full sentence`);
     }
   }
+});
+
+test('round 4: 36 trade-off questions, new ids parse, written as steps', () => {
+  const r4 = PREP_ROUNDS[4];
+  assert.equal(r4.length, 36);
+  assert.equal(new Set(PREP_ALL.map((q) => q.id)).size, PREP_ALL.length);
+  for (const q of r4) {
+    assert.equal(q.round, 4);
+    assert.ok(!q.taste, q.id);
+    assert.notDeepEqual(q.a.raw, q.b.raw, q.id);
+    for (const side of ['a', 'b']) assert.match(q[side].how, /\.$/, `${q.id}.${side}`);
+  }
+  const back = parsePrep(encodePrep({ p101: { pick: 'b', at: null } }, r4));
+  assert.equal(back.p101.pick, 'b');
 });
