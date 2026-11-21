@@ -2155,5 +2155,390 @@ export const PIERRE_RAW = {
     moong_dal: 'dal',
     toor_dal: 'dal',
     urad_dal: 'dal'
-  }
+  },
+  repairs: {
+    r3_aglio_olio: {
+      before: 'floor',
+      edits: [
+        {
+          slot: 'toppedWith',
+          from: null,
+          to: 'coriander'
+        }
+      ],
+      after: 'pass',
+      scope: 'dish',
+      at: '2026-11-21T12:43Z'
+    },
+    r3_aloo_chaat: {
+      before: 'pass',
+      edits: [
+        {
+          slot: 'seasonedWith',
+          from: [
+            'chaat_masala'
+          ],
+          to: [
+            'chaat_masala',
+            'salt'
+          ]
+        }
+      ],
+      after: 'crave',
+      scope: 'dish',
+      at: '2026-11-21T12:45Z'
+    },
+    r3_chilli_soya: {
+      before: 'floor',
+      edits: [
+        {
+          slot: 'seasonedWith',
+          from: [
+            'salt',
+            'tomato_sauce'
+          ],
+          to: [
+            'black_pepper',
+            'salt',
+            'tomato_sauce'
+          ]
+        },
+        {
+          slot: 'cookedWith',
+          from: 'olive_oil',
+          to: 'oil'
+        },
+        {
+          slot: 'servedWith',
+          from: 'chilli_sauce',
+          to: null
+        }
+      ],
+      after: 'pass',
+      scope: 'dish',
+      at: '2026-11-21T12:27Z'
+    },
+    r3_cream_pasta: {
+      before: 'floor',
+      edits: [
+        {
+          slot: 'cookedWith',
+          from: null,
+          to: 'butter'
+        },
+        {
+          slot: 'toppedWith',
+          from: null,
+          to: 'mozzarella'
+        }
+      ],
+      after: 'pass',
+      scope: 'dish',
+      at: '2026-11-21T12:29Z'
+    },
+    r3_dal_rice: {
+      before: 'floor',
+      edits: [
+        {
+          slot: 'seasonedWith',
+          from: [
+            'salt'
+          ],
+          to: [
+            'salt',
+            'turmeric'
+          ]
+        }
+      ],
+      after: 'floor',
+      scope: 'dish',
+      at: '2026-11-21T12:26Z'
+    },
+    r3_egg_bhurji: {
+      before: 'pass',
+      edits: [
+        {
+          slot: 'toppedWith',
+          from: 'coriander',
+          to: null
+        }
+      ],
+      after: 'crave',
+      scope: 'dish',
+      at: '2026-11-21T12:24Z'
+    },
+    r3_fried_rice: {
+      before: 'pass',
+      edits: [
+        {
+          slot: 'cookedWith',
+          from: 'olive_oil',
+          to: 'oil'
+        },
+        {
+          slot: 'servedWith',
+          from: 'chilli_sauce',
+          to: null
+        }
+      ],
+      after: 'crave',
+      scope: 'dish',
+      at: '2026-11-21T12:28Z'
+    },
+    r3_maggi_egg: {
+      before: 'pass',
+      edits: [
+        {
+          slot: 'cookedWith',
+          from: 'butter',
+          to: 'oil'
+        }
+      ],
+      after: 'crave',
+      scope: 'dish',
+      at: '2026-11-21T12:45Z'
+    },
+    r3_paneer_bhurji: {
+      before: 'pass',
+      edits: [
+        {
+          slot: 'seasonedWith',
+          from: [
+            'black_pepper',
+            'salt'
+          ],
+          to: [
+            'black_pepper',
+            'salt',
+            'turmeric'
+          ]
+        },
+        {
+          slot: 'toppedWith',
+          from: 'coriander',
+          to: null
+        }
+      ],
+      after: 'crave',
+      scope: 'dish',
+      at: '2026-11-21T12:44Z'
+    },
+    r3_paneer_mayo_sandwich: {
+      before: 'pass',
+      edits: [
+        {
+          slot: 'seasonedWith',
+          from: [
+            'chilli_sauce'
+          ],
+          to: [
+            'chaat_masala',
+            'chilli_sauce',
+            'salt'
+          ]
+        }
+      ],
+      after: 'crave',
+      scope: 'dish',
+      at: '2026-11-21T12:38Z'
+    },
+    r3_pomodoro: {
+      before: 'pass',
+      edits: [
+        {
+          slot: 'toppedWith',
+          from: null,
+          to: 'mozzarella'
+        }
+      ],
+      after: 'crave',
+      scope: 'dish',
+      at: '2026-11-21T12:37Z'
+    },
+    r3_potato_mayo: {
+      before: 'floor',
+      edits: [
+        {
+          slot: 'cookedWith',
+          from: null,
+          to: 'olive_oil'
+        },
+        {
+          slot: 'seasonedWith',
+          from: [
+            'chilli_flakes',
+            'salt'
+          ],
+          to: [
+            'black_pepper',
+            'chilli_flakes',
+            'oregano',
+            'salt'
+          ]
+        }
+      ],
+      after: 'crave',
+      scope: 'dish',
+      at: '2026-11-21T11:49Z'
+    },
+    r3_scrambled_toast: {
+      before: 'pass',
+      edits: [
+        {
+          slot: 'toppedWith',
+          from: null,
+          to: 'cheese_slices'
+        }
+      ],
+      after: 'crave',
+      scope: 'dish',
+      at: '2026-11-21T12:42Z'
+    }
+  },
+  dishes: {
+    'black_pepper+bread@toasted+butter+cheese_slices+eggs@scrambled+salt': {
+      tier: 'crave',
+      from: 'r3_scrambled_toast',
+      fixed: true,
+      at: '2026-11-21T12:42Z'
+    },
+    'black_pepper+bread@toasted+butter+eggs@scrambled+salt': {
+      tier: 'pass',
+      from: 'r3_scrambled_toast',
+      at: '2026-11-21T12:42Z'
+    },
+    'black_pepper+butter+cheese_slices@melted+cream+mozzarella+pasta@boiled+salt': {
+      tier: 'pass',
+      from: 'r3_cream_pasta',
+      fixed: true,
+      at: '2026-11-21T12:29Z'
+    },
+    'black_pepper+capsicum@sauteed+oil+onion@sauteed+salt+soya_chunks@sauteed+tomato_sauce': {
+      tier: 'pass',
+      from: 'r3_chilli_soya',
+      fixed: true,
+      at: '2026-11-21T12:27Z'
+    },
+    'black_pepper+cheese_slices@melted+cream+pasta@boiled+salt': {
+      tier: 'floor',
+      from: 'r3_cream_pasta',
+      at: '2026-11-21T12:29Z'
+    },
+    'black_pepper+chilli_flakes+mayo+olive_oil+oregano+potato@air_fried+salt': {
+      tier: 'crave',
+      from: 'r3_potato_mayo',
+      fixed: true,
+      at: '2026-11-21T11:49Z'
+    },
+    'black_pepper+coriander+ghee+onion@sauteed+paneer@scrambled+salt+tomato@sauteed': {
+      tier: 'pass',
+      from: 'r3_paneer_bhurji',
+      at: '2026-11-21T12:44Z'
+    },
+    'black_pepper+ghee+onion@sauteed+paneer@scrambled+salt+tomato@sauteed+turmeric': {
+      tier: 'crave',
+      from: 'r3_paneer_bhurji',
+      fixed: true,
+      at: '2026-11-21T12:44Z'
+    },
+    'bread@toasted+butter+chaat_masala+chilli_sauce+mayo+onion+paneer@pan_fried+salt': {
+      tier: 'crave',
+      from: 'r3_paneer_mayo_sandwich',
+      fixed: true,
+      at: '2026-11-21T12:38Z'
+    },
+    'bread@toasted+butter+chilli_sauce+mayo+onion+paneer@pan_fried': {
+      tier: 'pass',
+      from: 'r3_paneer_mayo_sandwich',
+      at: '2026-11-21T12:38Z'
+    },
+    'butter+chilli_flakes+coriander+eggs@scrambled+onion@sauteed+salt+tomato@sauteed': {
+      tier: 'pass',
+      from: 'r3_egg_bhurji',
+      at: '2026-11-21T12:24Z'
+    },
+    'butter+chilli_flakes+eggs@scrambled+onion@sauteed+salt+tomato@sauteed': {
+      tier: 'crave',
+      from: 'r3_egg_bhurji',
+      fixed: true,
+      at: '2026-11-21T12:24Z'
+    },
+    'butter+eggs@fried_egg+maggi@boiled': {
+      tier: 'pass',
+      from: 'r3_maggi_egg',
+      at: '2026-11-21T12:45Z'
+    },
+    'capsicum@sauteed+chilli_sauce+olive_oil+onion@sauteed+salt+soya_chunks@sauteed+tomato_sauce': {
+      tier: 'floor',
+      from: 'r3_chilli_soya',
+      at: '2026-11-21T12:27Z'
+    },
+    'chaat_masala+coriander+lemon+onion+potato@boiled+salt+tomato': {
+      tier: 'crave',
+      from: 'r3_aloo_chaat',
+      fixed: true,
+      at: '2026-11-21T12:45Z'
+    },
+    'chaat_masala+coriander+lemon+onion+potato@boiled+tomato': {
+      tier: 'pass',
+      from: 'r3_aloo_chaat',
+      at: '2026-11-21T12:45Z'
+    },
+    'chilli_flakes+coriander+garlic@sauteed+olive_oil+pasta@boiled+salt': {
+      tier: 'pass',
+      from: 'r3_aglio_olio',
+      fixed: true,
+      at: '2026-11-21T12:43Z'
+    },
+    'chilli_flakes+garlic@sauteed+olive_oil+pasta@boiled+salt': {
+      tier: 'floor',
+      from: 'r3_aglio_olio',
+      at: '2026-11-21T12:43Z'
+    },
+    'chilli_flakes+mayo+potato@air_fried+salt': {
+      tier: 'floor',
+      from: 'r3_potato_mayo',
+      at: '2026-11-21T11:49Z'
+    },
+    'chilli_sauce+eggs@scrambled+olive_oil+rice@sauteed+salt+spring_onion@sauteed': {
+      tier: 'pass',
+      from: 'r3_fried_rice',
+      at: '2026-11-21T12:28Z'
+    },
+    'dal@pressure_cooked+ghee+lemon+rice@pressure_cooked+salt': {
+      tier: 'floor',
+      from: 'r3_dal_rice',
+      at: '2026-11-21T12:26Z'
+    },
+    'dal@pressure_cooked+ghee+lemon+rice@pressure_cooked+salt+turmeric': {
+      tier: 'floor',
+      from: 'r3_dal_rice',
+      fixed: true,
+      at: '2026-11-21T12:26Z'
+    },
+    'eggs@fried_egg+maggi@boiled+oil': {
+      tier: 'crave',
+      from: 'r3_maggi_egg',
+      fixed: true,
+      at: '2026-11-21T12:45Z'
+    },
+    'eggs@scrambled+oil+rice@sauteed+salt+spring_onion@sauteed': {
+      tier: 'crave',
+      from: 'r3_fried_rice',
+      fixed: true,
+      at: '2026-11-21T12:28Z'
+    },
+    'garlic@sauteed+mozzarella+olive_oil+oregano+pasta@boiled+salt+tomato@simmered': {
+      tier: 'crave',
+      from: 'r3_pomodoro',
+      fixed: true,
+      at: '2026-11-21T12:37Z'
+    },
+    'garlic@sauteed+olive_oil+oregano+pasta@boiled+salt+tomato@simmered': {
+      tier: 'pass',
+      from: 'r3_pomodoro',
+      at: '2026-11-21T12:37Z'
+    }
+  },
+  rules: {}
 };
