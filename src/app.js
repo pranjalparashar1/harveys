@@ -11,7 +11,7 @@ import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 
-const VERSION = '1.18.3';
+const VERSION = '1.19.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
