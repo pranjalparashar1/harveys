@@ -51,3 +51,67 @@ test('Fix it: a veto rescued by cooking changes round-trips and applies', () => 
   assert.ok(!encodeBench(sheet, { [d.id]: { ...answers[d.id], tier: 'pass' } }).includes('fix '));
   assert.ok(!encodeBench(sheet, { [d.id]: { ...answers[d.id], fix: { changes: answers[d.id].fix.changes } } }).includes('fix '));
 });
+
+// ── Tap-to-repair (1.16) ────────────────────────────────────────────────────
+import { editSlot, setRepairTier, setRepairScope, clearRepairs, repairLine, parseRepairLine } from '../src/quiz/bench.js';
+import { toDishChain } from '../src/brain/ingredients.js';
+
+const round3 = JSON.parse(readFileSync(new URL('../src/quiz/round3.json', import.meta.url), 'utf8'));
+const potato = round3.dishes.find((d) => d.id === 'r3_potato_mayo');
+
+test('repair: a slot edit records the diff, and swapping back removes it', () => {
+  const orig = toDishChain(potato);
+  assert.equal(orig.cookedWith, null);
+  let a = { tier: 'floor', reasons: [], at: '2026-11-21T08:10:00.000Z' };
+  a = editSlot(a, 'cookedWith', 'oil', orig);
+  assert.deepEqual(a.repair.edits, [{ slot: 'cookedWith', from: null, to: 'oil' }]);
+  assert.equal(a.repair.scope, 'class', 'a cooking-medium fix generalises by default');
+  assert.equal(a.tier, 'floor', 'the before tier stays');
+  a = editSlot(a, 'cookedWith', null, orig);
+  assert.equal(a.repair, null, 'back to the original: no repair');
+});
+
+test('repair: scope defaults per slot, and a picked scope sticks', () => {
+  const orig = toDishChain(potato);
+  let a = editSlot({ tier: 'pass' }, 'servedWith', 'tomato_sauce', orig);
+  assert.equal(a.repair.scope, 'dish', 'a dip change stays with the dish');
+  assert.deepEqual(a.repair.edits, [{ slot: 'servedWith', from: 'mayo', to: 'tomato_sauce' }]);
+  a = editSlot(a, 'cookedWith', 'ghee', orig);
+  assert.equal(a.repair.scope, 'class');
+  a = setRepairScope(a, 'dish');
+  a = editSlot(a, 'technique', 'pan_fried', orig);
+  assert.equal(a.repair.scope, 'dish', 'pranjal picked dish, so it stays');
+  a = setRepairTier(a, 'crave');
+  assert.equal(a.repair.afterTier, 'crave');
+  a = editSlot(a, 'seasonedWith', ['salt', 'chilli_flakes', 'chaat_masala'], orig);
+  assert.deepEqual(a.repair.edits.find((e) => e.slot === 'seasonedWith'), { slot: 'seasonedWith', from: ['chilli_flakes', 'salt'], to: ['chaat_masala', 'chilli_flakes', 'salt'] });
+  assert.equal(clearRepairs(a).repair, null);
+  assert.equal(clearRepairs(a).tier, 'pass');
+});
+
+test('repair: export round-trips before, edits, after and scope, beside the old lines', () => {
+  const orig = toDishChain(potato);
+  let a = { tier: 'floor', reasons: ['texture'], at: '2026-11-21T08:10:00.000Z' };
+  a = setRepairTier(editSlot(a, 'cookedWith', 'oil', orig), 'crave');
+  a.repair.at = '2026-11-21T08:15:00.000Z';
+  let b = editSlot({ tier: 'pass', at: '2026-11-21T08:11:00.000Z' }, 'seasonedWith', ['salt'], toDishChain(round3.dishes[1]));
+  b = setRepairTier(b, 'floor');
+  b.repair.at = '2026-11-21T08:16:00.000Z';
+  const text = encodeBench(round3, { r3_potato_mayo: a, [round3.dishes[1].id]: b });
+  assert.match(text, /^repair r3_potato_mayo \| before=floor \| edit=cookedWith:none->oil \| after=crave \| scope=class \| at=2026-11-21T08:15Z$/m);
+  const back = decodeBench(text);
+  assert.equal(back.answers.r3_potato_mayo.tier, 'floor');
+  assert.deepEqual(back.answers.r3_potato_mayo.reasons, ['texture']);
+  assert.deepEqual(back.answers.r3_potato_mayo.repair, { edits: [{ slot: 'cookedWith', from: null, to: 'oil' }], afterTier: 'crave', scope: 'class', at: '2026-11-21T08:15Z' });
+  assert.deepEqual(back.answers[round3.dishes[1].id].repair.edits, [{ slot: 'seasonedWith', from: ['chilli_flakes', 'salt'], to: ['salt'] }]);
+  assert.equal(back.repairs.length, 2);
+  assert.equal(back.seed, round3.seed);
+  // An unfinished repair (no after tier) isn't exported.
+  assert.equal(repairLine('x', editSlot({ tier: 'floor' }, 'cookedWith', 'oil', orig)), '');
+  assert.equal(parseRepairLine('repair x | before=floor | after=crave'), null, 'no edits, no repair');
+});
+
+test('repair: an old answer with no repair exports exactly as before', () => {
+  const answers = { [round3.dishes[0].id]: { tier: 'pass', reasons: [], at: '2026-11-21T08:00:00.000Z' } };
+  assert.ok(!encodeBench(round3, answers).includes('repair'));
+});

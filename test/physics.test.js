@@ -104,3 +104,52 @@ test('umami is reported as an estimate and never judged on', () => {
 test('the physics rules sit in config, PROVISIONAL', () => {
   assert.match(readFileSync(new URL('../src/brain/config.js', import.meta.url), 'utf8'), /PROVISIONAL[^]*pierreRules/);
 });
+
+// ── Tap-to-repair: the 6-slot chain and the cooking medium (1.16) ───────────
+import { toDishChain, fromDishChain, chainKey, CHAIN_SLOTS } from '../src/brain/ingredients.js';
+import { CATALOGUE } from '../src/brain/catalogue.js';
+
+const dry = { parts: [{ id: 'potato', technique: 'air_fried' }], modifiers: ['mayo', 'chilli_flakes', 'salt'] };
+
+test('chain: dry air-fried potato with mayo reads as the six slots', () => {
+  const c = toDishChain({ form: 'bowl', ...dry });
+  assert.deepEqual(c, { form: 'bowl', anchor: { id: 'potato' }, seasonedWith: ['chilli_flakes', 'salt'], cookedWith: null, technique: 'air_fried', toppedWith: null, servedWith: { id: 'mayo', role: 'dip' }, with: [] });
+  for (const s of CHAIN_SLOTS) assert.ok(s in c, s);
+  const bhurji = toDishChain({ parts: [{ id: 'eggs', technique: 'scrambled' }, { id: 'onion', technique: 'sauteed' }, { id: 'butter' }, { id: 'coriander' }], modifiers: ['salt'] });
+  assert.equal(bhurji.cookedWith, 'butter', 'a fat beside a part cooked in it is the medium');
+  assert.deepEqual(bhurji.toppedWith, { id: 'coriander' });
+  assert.deepEqual(bhurji.with, [{ id: 'onion', technique: 'sauteed' }]);
+});
+
+test('chain: round-trips every catalogue meal and every sheet dish, and Pierre judges it the same', () => {
+  const bag = (parts, mods) => [...parts.map((p) => `p:${p.id}@${p.technique ?? ''}`), ...mods.map((m) => `m:${m}`)].sort();
+  for (const n of ['benchmark', 'holdout', 'round3']) {
+    const s = JSON.parse(readFileSync(new URL(`../src/quiz/${n}.json`, import.meta.url), 'utf8'));
+    for (const d of s.dishes) {
+      const b = fromDishChain(toDishChain(d));
+      assert.deepEqual(bag(b.parts, b.modifiers), bag(d.items.filter((x) => !x.mod), d.items.filter((x) => x.mod).map((x) => x.id)), d.id);
+    }
+  }
+  for (const m of CATALOGUE) {
+    const b = fromDishChain(toDishChain(m));
+    assert.deepEqual(bag(b.parts, b.modifiers), bag(m.parts, []), m.id);
+    assert.equal(pierreTier(b.parts, m.form).computed, pierreTier(m.parts, m.form).computed, m.id);
+  }
+  assert.equal(chainKey(dry.parts, dry.modifiers), 'chilli_flakes+mayo+potato@air_fried+salt');
+});
+
+test('cooking medium: dry air-fried potato floors with a cookedWith hint; oil clears it', () => {
+  const t = pierreTier(dry.parts, 'bowl', { modifiers: dry.modifiers });
+  assert.equal(t.tier, 'floor');
+  assert.equal(t.repairs.length, 1);
+  assert.deepEqual({ ...t.repairs[0], reason: undefined }, { slot: 'cookedWith', suggest: 'oil', reason: undefined, source: 'provisional' });
+  for (const fat of ['oil', 'olive_oil']) assert.equal(pierreTier(dry.parts, 'bowl', { modifiers: [...dry.modifiers, fat] }).tier, 'pass', fat);
+  assert.equal(pierreTier([...dry.parts, { id: 'ghee' }], 'bowl', { modifiers: dry.modifiers }).tier, 'pass', 'ghee');
+  assert.equal(fatRolesOf(dry.parts, [...dry.modifiers, 'oil']).oil, 'cooking_medium');
+  // Physics prior only: bread is already cooked, so a dry air-fried toast is fine.
+  assert.deepEqual(pierreTier([{ id: 'bread', technique: 'air_fried' }, { id: 'cheese_slices', technique: 'melted' }], 'toast').repairs, []);
+  // The prior is a switch: off, Pierre judges on learned rules only.
+  const off = { ...DEFAULT_CONFIG.pierreRules, dryHeatNeedsFat: { ...DEFAULT_CONFIG.pierreRules.dryHeatNeedsFat, on: false } };
+  assert.equal(pierreTier(dry.parts, 'bowl', { modifiers: dry.modifiers, rules: off }).repairs.length, 0);
+  assert.ok(DEFAULT_CONFIG.pierreRules.dryHeatNeedsFat.provisional, 'marked PROVISIONAL');
+});

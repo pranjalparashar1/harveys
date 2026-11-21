@@ -407,3 +407,18 @@ a.btn.send.fresh:not(.primary) { border-color: var(--accent); color: var(--accen
 /* Benchmark chips (1.12.2): a picked reason or fixed tier is filled, not just outlined */
 body.quiz .chip.toggle[aria-checked=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
 body.quiz .chip.toggle[aria-checked=true]::before { content: "✓ "; }
+
+/* Tap-to-repair: the dish as a flowchart (bench, 1.16) */
+.chain { list-style: none; margin: 4px 0 6px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.chain-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-height: 40px; }
+.chain-node { font-weight: 600; font-size: 17px; text-transform: capitalize; }
+.chain-also { color: var(--muted); font-size: 14px; }
+.chain-link { color: var(--muted); font-size: 14px; min-width: 104px; }
+.chain-chip {
+  font: 500 15px var(--font); color: var(--ink); min-height: 40px; padding: 0 14px; cursor: pointer;
+  background: var(--surface2); border: 1px solid var(--line); border-radius: 99px; touch-action: manipulation;
+}
+.chain-chip.open { border-color: var(--blue); }
+.chain-chip.edited { border-color: var(--accent); background: var(--accent-soft); }
+.chain-tray { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; margin: 2px 0 6px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.chips.scope { margin-top: 10px; }
