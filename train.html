@@ -27,27 +27,27 @@
       <p class="mini">26 new dishes from your round-3 pantry, blind: veto, floor, pass or crave.</p>
       <a class="btn primary xl" href="bench.html?sheet=round3">Begin</a>
     </section>
-    <section class="card pierre-card" aria-labelledby="holdout-title">
+    <section class="card pierre-card" aria-labelledby="holdout-title" hidden>
       <h2 id="holdout-title">Pierre holdout</h2>
       <p class="mini">22 dishes. Rated, done.</p>
       <a class="btn xl" href="bench.html?sheet=holdout">Open</a>
     </section>
-    <section class="card pierre-card" aria-labelledby="bench-title">
+    <section class="card pierre-card" aria-labelledby="bench-title" hidden>
       <h2 id="bench-title">Pierre benchmark</h2>
       <p class="mini">30 dishes. Rated, done.</p>
       <a class="btn xl" href="bench.html">Open</a>
     </section>
-    <section class="card pierre-card" aria-labelledby="tutor-title">
+    <section class="card pierre-card" aria-labelledby="tutor-title" hidden>
       <h2 id="tutor-title">Pierre-tutor</h2>
       <p class="mini">A food cooked one way: texture, taste, and how ready it is.</p>
       <a class="btn xl" href="tutor.html">Open</a>
     </section>
-    <section class="card pierre-card" aria-labelledby="pierre-title">
+    <section class="card pierre-card" aria-labelledby="pierre-title" hidden>
       <h2 id="pierre-title">Pierre-trainer</h2>
       <p class="mini">Raw foods. Stage one, done.</p>
       <a class="btn xl" href="pierre.html">Open</a>
     </section>
-    <section class="card pierre-card" aria-labelledby="retest-title">
+    <section class="card pierre-card" aria-labelledby="retest-title" hidden>
       <h2 id="retest-title">Pierre retest</h2>
       <p class="mini">12 raw foods again, blind, against fixed anchors.</p>
       <a class="btn xl" href="retest.html">Open</a>
@@ -66,13 +66,13 @@
     <p class="mini center" id="tally"></p>
 
     <!-- What Marco learned -->
-    <section class="card" id="learned" aria-labelledby="learned-title">
+    <section class="card" id="learned" aria-labelledby="learned-title" hidden>
       <h2 id="learned-title">What Marco learned</h2>
       <div id="learned-body"></div>
     </section>
 
     <!-- Your dishes -->
-    <section class="card" id="mine" aria-labelledby="mine-title">
+    <section class="card" id="mine" aria-labelledby="mine-title" hidden>
       <div class="card-head">
         <h2 id="mine-title">Your dishes</h2>
         <span class="status" id="mine-count"></span>
@@ -132,7 +132,7 @@
     </section>
 
     <!-- Wacky ideas -->
-    <section class="card" id="wacky" aria-labelledby="wacky-title">
+    <section class="card" id="wacky" aria-labelledby="wacky-title" hidden>
       <div class="card-head">
         <h2 id="wacky-title">Wacky ideas</h2>
         <span class="status" id="wacky-count"></span>
@@ -144,7 +144,7 @@
 
     <section class="card" aria-label="Export">
       <button class="btn primary wide no-top" id="copy-weights" data-haptic type="button">Copy fitted Marco weights</button>
-      <button class="btn wide" id="export" data-haptic type="button">Copy for Claude</button>
+      <button class="btn wide" id="export" data-haptic type="button" hidden>Copy for Claude</button>
       <div class="row center-row">
         <button class="btn link quiet" id="reset" type="button">Start over</button>
       </div>
