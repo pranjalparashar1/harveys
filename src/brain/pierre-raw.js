@@ -443,27 +443,6 @@ export const PIERRE_RAW = {
       role: 'minor',
       at: '2026-11-19T15:55:49.746Z'
     },
-    hung_curd: {
-      texture: {
-        crisp: 0,
-        creamy: 2,
-        chewy: 0,
-        juicy: 1,
-        flaky: 0
-      },
-      taste: {
-        salt: 0,
-        sugar: 0,
-        fat: 3,
-        acid: 3,
-        heat: 0,
-        canvas: 1,
-        fresh: 2
-      },
-      centre: 2,
-      role: 'minor',
-      at: '2026-11-19T17:20:33.195Z'
-    },
     kala_chana: {
       texture: {
         crisp: 0,
@@ -507,6 +486,30 @@ export const PIERRE_RAW = {
       centre: 1,
       role: 'minor',
       at: '2026-11-19T17:28:59.152Z'
+    },
+    maggi: {
+      texture: {
+        crisp: 0,
+        creamy: 0,
+        chewy: 3,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 0,
+        canvas: 3,
+        fresh: 0
+      },
+      centre: 5,
+      role: 'major',
+      class: 'dense_starchy',
+      cookFirst: true,
+      estimate: true,
+      estimateFrom: 'noodles'
     },
     mango: {
       texture: {
@@ -1043,9 +1046,6 @@ export const PIERRE_RAW = {
     ghee: {
       at: '2026-11-19T15:55:49.746Z'
     },
-    hung_curd: {
-      at: '2026-11-19T17:20:33.195Z'
-    },
     kala_chana: {
       at: '2026-11-19T17:11:36.813Z'
     },
@@ -1136,6 +1136,7 @@ export const PIERRE_RAW = {
     'green_beans',
     'green_moong',
     'guava',
+    'hung_curd',
     'khakhra',
     'lauki',
     'lettuce',

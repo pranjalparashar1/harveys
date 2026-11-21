@@ -52,9 +52,12 @@ function mulberry32(a) {
 const words = (id) => id.replace(/_/g, ' ');
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-export function buildHoldout(seed = HOLDOUT_SEED) {
+export const buildHoldout = (seed = HOLDOUT_SEED) => buildSheet(HOLDOUT, seed, 'holdout', 'Pierre holdout');
+
+/** A blind sheet (shuffled by seed) and its hidden key, for any list of dishes. */
+export function buildSheet(rows, seed, id, title) {
   const rng = mulberry32(seed);
-  const dishes = [...HOLDOUT];
+  const dishes = [...rows];
   for (let i = dishes.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [dishes[i], dishes[j]] = [dishes[j], dishes[i]]; }
   const tierOf = (parts, mods, form) => pierreTier(parts, form, { modifiers: mods, inventory: TABLE_KITCHEN }).computed;
   const key = dishes.map((d) => {
@@ -70,7 +73,7 @@ export function buildHoldout(seed = HOLDOUT_SEED) {
   // The same tiers, reasons and Fix-it cookings as the Step 4 sheet.
   const { tiers, reasons, techniques } = buildBenchmark([{ spoons: 0, foods: [], name: 'x' }]).sheet;
   const sheet = {
-    id: 'holdout', title: 'Pierre holdout', version: 1, seed, tiers, reasons, techniques,
+    id, title, version: 1, seed, tiers, reasons, techniques,
     dishes: dishes.map((d) => ({
       id: d.id, name: d.name, parts: cap([...d.parts.map(partLabel), ...d.modifiers.map(words)].join(', ')),
       items: [...d.parts.map((p) => ({ id: p.id, ...(p.technique ? { technique: p.technique } : {}) })), ...d.modifiers.map((id) => ({ id, mod: true }))],

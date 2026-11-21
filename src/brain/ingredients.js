@@ -194,7 +194,20 @@ export const MODIFIERS = {
   red_chilli_powder: { heat: PRESENT },
   green_chilli: { heat: PRESENT },
   chaat_masala: { salt: PRESENT, acid: LOW },
+  // Round 3 pantry (pranjal, 21 Nov). ESTIMATES by Claude, not ratings: pranjal can rate them.
+  // Olive oil is the round's cooking oil. A condiment brings its taste only (mayo's creaminess
+  // isn't a texture here). Cocoa brings nothing Pierre measures (bitterness has no dimension).
+  olive_oil: { fat: PRESENT, estimate: true },
+  oregano: { fresh: LOW, estimate: true },
+  mint: { fresh: PRESENT, estimate: true },
+  tomato_sauce: { salt: PRESENT, sugar: PRESENT, acid: PRESENT, estimate: true },
+  chilli_sauce: { salt: PRESENT, heat: PRESENT, acid: LOW, sugar: LOW, estimate: true },
+  mayo: { fat: PRESENT, acid: LOW, estimate: true },
+  maggi_masala: { salt: PRESENT, heat: LOW, estimate: true },
+  cocoa_powder: { estimate: true },
 };
+// Cooking oils named as a modifier: the medium of a sauté, and a coating fat for a tadka.
+export const OIL_MODIFIERS = ['oil', 'olive_oil'];
 
 // ── Forms (Step 3) ──────────────────────────────────────────────────────────
 // The grammar a dish declares. Each form names its slots and the states a slot takes:
@@ -324,7 +337,7 @@ export function fatRolesOf(parts, modifiers = [], kb = PIERRE_RAW) {
   const bloomed = ps.some((p) => BLOOM_AROMATICS.includes(p.id) && inFat(p.technique));
   const base = ps.some((p) => p.technique && isGrainBase(p.id, centreOf(p.id, kb) ?? 0));
   const roles = {};
-  if (modifiers.includes('oil')) roles.oil = 'cooking_medium';
+  for (const o of OIL_MODIFIERS) if (modifiers.includes(o)) roles[o] = 'cooking_medium';
   for (const p of ps.filter((x) => COATING_FATS.includes(x.id))) {
     roles[p.id] = p.technique || bloomed ? 'cooking_medium' : base ? 'main_binder' : 'seasoning';
   }
@@ -342,7 +355,7 @@ export function coatingOf(parts, modifiers = [], kb = PIERRE_RAW, techniques = T
   const vs = ps.map((p) => partVector(p, kb, techniques)).filter(Boolean);
   const sauce = vs.find((v) => !isGrainBase(v.id, v.centre ?? 0) && (v.phase === 'cohesive_sauce' || v.phase === 'paste_mash'));
   if (sauce) return { kind: 'sauce', by: [techKey(sauce.id, sauce.technique)] };
-  const fat = ps.find((p) => COATING_FATS.includes(p.id))?.id ?? (modifiers.includes('oil') ? 'oil' : null);
+  const fat = ps.find((p) => COATING_FATS.includes(p.id))?.id ?? OIL_MODIFIERS.find((o) => modifiers.includes(o)) ?? null;
   const aromatic = ps.find((p) => BLOOM_AROMATICS.includes(p.id) && inFat(p.technique));
   if (fat && aromatic) return { kind: 'flavored_fat', by: [fat, techKey(aromatic.id, aromatic.technique)] };
   return null;
@@ -368,7 +381,7 @@ export const cookFirst = (id, kb = PIERRE_RAW) => !!(kb.foods?.[id]?.cookFirst |
 // Step 5 (SFAH temperature contrast): sharp raw veg isn't a clash on a cooked base, since a cold
 // crunch against hot toast is a garnish (holdout sandwich). One texture floors only a soft
 // texture, and never a cold sweet dairy-and-fruit bowl (rules.mushTextures, PROVISIONAL).
-const DAIRY_BOWL = ['curd', 'hung_curd', 'milk', 'cream'];
+const DAIRY_BOWL = ['curd', 'milk', 'cream'];
 function sweetDairyBowl(vs, modifiers) {
   return vs.every((r) => r.v.temp === 'cold') && vs.some((r) => DAIRY_BOWL.includes(r.x.id))
     && vs.some((r) => r.v.foodClass === 'watery_veg_fruit' && r.v.taste.sugar >= 2) ;
@@ -382,7 +395,12 @@ function harmonyOf(slotted, p, kb, techniques, modifiers, rules = DEFAULT_CONFIG
   // A cooked base (toasted bread, rice) carries a raw crunch: the sandwich with raw onion passed.
   const cookedBase = vs.some((r) => r.v.state !== 'raw' && (r.v.centre ?? 0) >= BASE);
   if (sharp.length && acid < TAMING_ACID && !(rules.sharpTamedByCookedBase && cookedBase)) why.push(`clash: raw ${sharp.join(', ')} with nothing sour enough (lemon) to tame it`);
-  if (p.mush && rules.mushTextures.includes(p.mush) && !sweetDairyBowl(vs, modifiers)) why.push(`one texture throughout: all ${p.mush}`);
+  // Strong flavour lifts one texture (pranjal, 21 Nov): mashed chickpeas, butter and curd is all
+  // creamy, but its taste (fat, acid, fresh) carries it. Pierre-left low, Pierre-right high.
+  // A drink is meant to be smooth: one texture is the point of a shake.
+  const drink = vs.some((r) => r.v.phase === 'liquid_drink' && r.x.slot !== 'addOn');
+  const lift = drink || Object.entries(rules.mushLift).every(([k, min]) => (p.brought?.[k] ?? 0) >= min);
+  if (p.mush && rules.mushTextures.includes(p.mush) && !sweetDairyBowl(vs, modifiers) && !lift) why.push(`one texture throughout: all ${p.mush}`);
   const idle = vs.filter((r) => r.x.slot === 'addOn' && (r.v.centre ?? 0) >= 2
     && !TEXTURES.some((k) => r.v.texture[k] >= 2) && !TASTES.some((k) => k !== 'canvas' && r.v.taste[k] >= 2)).map((r) => techKey(r.x.id, r.x.technique));
   if (idle.length) why.push(`clash: ${idle.join(', ')} adds nothing at Medium or above`);
@@ -530,7 +548,7 @@ export function pierreTier(parts, form, { modifiers = [], inventory = [], verdic
     const sweet = (taste) => (taste?.sugar ?? 0) >= 2;
     const dishSweet = parts.some((x) => sweet(partVector(x, kb, techniques)?.taste));
     const sameSide = (taste) => sweet(taste) === dishSweet;
-    const spices = inventory.filter((id) => MODIFIERS[id] && id !== 'oil' && !has.has(id) && sameSide(MODIFIERS[id]) && lifts([], [id]));
+    const spices = inventory.filter((id) => MODIFIERS[id] && !OIL_MODIFIERS.includes(id) && !has.has(id) && sameSide(MODIFIERS[id]) && lifts([], [id]));
     const foods = inventory.filter((id) => !has.has(id) && !MODIFIERS[id] && (kb.foods?.[id]?.centre ?? 9) <= 2 && sameSide(kb.foods[id].taste) && lifts([id], [])).sort((a, b) => kb.foods[a].centre - kb.foods[b].centre);
     const all = [...spices, ...foods];
     if (all.length) upgrade = { add: all[0], options: all };

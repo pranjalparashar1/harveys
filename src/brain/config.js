@@ -68,6 +68,9 @@ export const DEFAULT_CONFIG = Object.freeze({
     // crisp passed (holdout sandwich). A cold sweet dairy-and-fruit bowl is exempt: creamy is
     // the point of it (hung curd, banana, honey passed).
     mushTextures: Object.freeze(['creamy']),
+    // ...unless the taste carries it (pranjal, 21 Nov: mashed chickpeas, butter and curd passes on
+    // flavour). The dish must bring each of these at least this strongly.
+    mushLift: Object.freeze({ fat: 2, acid: 1, fresh: 2 }),
     // A plate with no anchor passes as a snack pairing when its parts bring at least this many
     // textures from different parts (apple with peanut butter: crisp, juicy, creamy).
     snackContrast: 2,

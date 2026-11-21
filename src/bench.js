@@ -4,10 +4,13 @@
 // the clipboard).
 import { encodeBench } from './quiz/bench.js';
 
-const VERSION = '1.14.0';
-// ?sheet=holdout opens the Step 4c holdout sheet; each sheet keeps its own answers.
-const SHEET = new URLSearchParams(location.search).get('sheet') === 'holdout' ? 'holdout' : 'benchmark';
-const KEY = SHEET === 'holdout' ? 'harveys.holdout.v1' : 'harveys.bench.v1';
+const VERSION = '1.15.0';
+// ?sheet=holdout opens the Step 4c holdout sheet, ?sheet=round3 the third blind sheet; each
+// sheet keeps its own answers.
+const SHEETS = { benchmark: 'harveys.bench.v1', holdout: 'harveys.holdout.v1', round3: 'harveys.round3.v1' };
+const asked = new URLSearchParams(location.search).get('sheet');
+const SHEET = SHEETS[asked] ? asked : 'benchmark';
+const KEY = SHEETS[SHEET];
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
 const app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

@@ -121,7 +121,8 @@ test('4b: raw onion needs a High acid (lemon) to sit right', () => {
 });
 
 test('4b: one texture throughout floors a dish', () => {
-  const t = tierOfDish(['eggs@boiled', 'hung_curd'], 'bowl', ['salt', 'black_pepper']);
+  // Hung curd left the brain in round 3 (pranjal, 21 Nov); banana with peanut butter is all creamy too.
+  const t = tierOfDish(['banana', 'peanut_butter'], 'bowl', []);
   assert.equal(t.tier, 'floor');
   assert.match(t.why.join(), /one texture throughout: all creamy/);
   assert.equal(tierOfDish(['eggs@boiled'], 'one-pot', ['salt', 'black_pepper']).tier, 'pass', 'one part is not mush');

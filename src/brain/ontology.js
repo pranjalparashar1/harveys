@@ -39,14 +39,14 @@ export const FOOD_CLASS = {
   eggs: 'delicate_protein',
   whey: 'protein_powder_flour', besan: 'protein_powder_flour', suji: 'protein_powder_flour',
   oil: 'pure_or_emulsified_fat', ghee: 'pure_or_emulsified_fat', butter: 'pure_or_emulsified_fat', cream: 'pure_or_emulsified_fat',
-  curd: 'pure_or_emulsified_fat', hung_curd: 'pure_or_emulsified_fat', milk: 'pure_or_emulsified_fat', peanut_butter: 'pure_or_emulsified_fat',
+  curd: 'pure_or_emulsified_fat', olive_oil: 'pure_or_emulsified_fat', maggi: 'dry_starch_seed', milk: 'pure_or_emulsified_fat', peanut_butter: 'pure_or_emulsified_fat',
   almonds: 'pure_or_emulsified_fat', peanuts: 'pure_or_emulsified_fat', walnuts: 'pure_or_emulsified_fat', cashews: 'pure_or_emulsified_fat',
   garlic: 'aromatic_herb_acid', green_chilli: 'aromatic_herb_acid', coriander: 'aromatic_herb_acid', lemon: 'aromatic_herb_acid',
 };
 export const foodClassOf = (id) => FOOD_CLASS[id] ?? null;
 
 // The fats that can carry a coating or a tadka: a pure fat, not a food that happens to be rich.
-export const COATING_FATS = ['oil', 'ghee', 'butter', 'cream'];
+export const COATING_FATS = ['oil', 'olive_oil', 'ghee', 'butter', 'cream'];
 // Aromatics that bloom in fat into a tadka (Fable §4.1: onion is the base of a masala).
 export const BLOOM_AROMATICS = ['garlic', 'onion', 'spring_onion', 'green_chilli'];
 // Grain bases that need a coating to be a dish (§4.2 coated_base): pasta, rice, noodles, oats, poha.
@@ -90,7 +90,7 @@ export const inFat = (technique) => METHODS[technique]?.medium === 'fat';
 
 // What a food is as it comes (§1.2), when it isn't raw_edible.
 const RAW_PHASE = {
-  curd: 'cohesive_sauce', hung_curd: 'cohesive_sauce', cream: 'cohesive_sauce', // a cultured dairy sauce, ready as is
+  curd: 'cohesive_sauce', cream: 'cohesive_sauce', // a cultured dairy sauce, ready as is
   peanut_butter: 'paste_mash',
   milk: 'liquid_drink',
 };

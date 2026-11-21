@@ -57,9 +57,8 @@ test('a plain fat only greases a base', () => {
 
 test('Fable §7 cases', () => {
   assert.equal(tier('chickpeas@boiled', 'bowl').computed, 'floor', 'plain boiled chickpeas');
-  // Fable passes this (hot mash, cold curd). Your 4b rule floors it: all creamy, and boiled eggs in
-  // hung curd (hot and cold too) was your veto. Open question for the next sheet.
-  assert.match(tier('chickpeas@mashed,butter,curd', 'savory_mash', ['salt']).why.join(), /all creamy/);
+  // All creamy, but the taste carries it (pranjal, 21 Nov): fat, acid and fresh.
+  assert.equal(tier('chickpeas@mashed,butter,curd', 'savory_mash', ['salt']).computed, 'pass');
   assert.equal(tier('butter', 'bowl', ['salt']).computed, 'floor', 'no anchor');
   assert.equal(tier('oats,tomato', 'open').computed, 'veto', 'raw oats');
   assert.equal(tier('eggs,bread@toasted', 'toast').computed, 'veto', 'raw eggs are inedible');
@@ -82,15 +81,15 @@ test('loosened 4b rules: raw onion on a cooked base, a sweet curd bowl, a snack 
   assert.equal(tier('bread@toasted,paneer@air_fried,onion', 'sandwich', ['salt', 'chaat_masala']).computed, 'pass', 'you: pass');
   assert.equal(tier('bread,tomato,onion,paneer', 'open', ['salt']).computed, 'floor', 'all raw still clashes');
   assert.equal(tier('tomato,onion,paneer@pan_fried', 'open', ['salt']).computed, 'floor', 'no base to carry the onion (you: floor)');
-  assert.equal(tier('hung_curd,banana', 'bowl', ['honey']).computed, 'pass', 'you: pass');
-  assert.match(tier('eggs@boiled,hung_curd', 'bowl', ['salt', 'black_pepper']).why.join(), /all creamy/, 'still mush');
+  assert.equal(tier('curd,banana', 'bowl', ['honey']).computed, 'pass', 'a sweet curd bowl (you passed it with hung curd)');
+  assert.match(tier('banana,peanut_butter', 'bowl').why.join(), /all creamy/, 'still mush');
   assert.equal(tier('apple,peanut_butter', 'bowl').computed, 'pass', 'you: pass');
 });
 
 test('chemistry vetoes: sweet with savoury, milk boiled with acid', () => {
   assert.equal(tier('banana,onion@sauteed', 'bowl').computed, 'veto');
   assert.equal(tier('milk@boiled,tomato', 'open').computed, 'veto');
-  for (const id of ['curd', 'hung_curd', 'honey', 'chaat_masala']) assert.ok(!DEFAULT_CONFIG.pierreRules.savourySide.includes(id), `${id} is not savoury`);
+  for (const id of ['curd', 'honey', 'chaat_masala']) assert.ok(!DEFAULT_CONFIG.pierreRules.savourySide.includes(id), `${id} is not savoury`);
 });
 
 test('umami is reported as an estimate and never judged on', () => {
