@@ -263,6 +263,29 @@ export const PIERRE_RAW = {
       class: 'dense_starchy',
       cookFirst: true
     },
+    chilli_sauce: {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 0,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 2,
+        sugar: 1,
+        fat: 0,
+        acid: 2,
+        heat: 3,
+        canvas: 0,
+        fresh: 0
+      },
+      centre: 1,
+      role: 'minor',
+      estimate: true,
+      estimatedBy: 'claude',
+      at: '2026-11-21T07:40:00.000Z'
+    },
     coriander: {
       texture: {
         crisp: 2,
@@ -532,6 +555,29 @@ export const PIERRE_RAW = {
       role: 'major',
       at: '2026-11-19T17:22:25.449Z'
     },
+    mayo: {
+      texture: {
+        crisp: 0,
+        creamy: 3,
+        chewy: 0,
+        juicy: 0,
+        flaky: 0
+      },
+      taste: {
+        salt: 1,
+        sugar: 1,
+        fat: 3,
+        acid: 1,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      centre: 1,
+      role: 'minor',
+      estimate: true,
+      estimatedBy: 'claude',
+      at: '2026-11-21T07:40:00.000Z'
+    },
     milk: {
       texture: {
         crisp: 0,
@@ -552,6 +598,29 @@ export const PIERRE_RAW = {
       centre: 2,
       role: 'minor',
       at: '2026-11-19T14:51:03.325Z'
+    },
+    mint: {
+      texture: {
+        crisp: 1,
+        creamy: 0,
+        chewy: 0,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 0,
+        sugar: 0,
+        fat: 0,
+        acid: 0,
+        heat: 1,
+        canvas: 0,
+        fresh: 3
+      },
+      centre: 1,
+      role: 'minor',
+      estimate: true,
+      estimatedBy: 'claude',
+      at: '2026-11-21T07:40:00.000Z'
     },
     mozzarella: {
       texture: {
@@ -973,6 +1042,29 @@ export const PIERRE_RAW = {
       role: 'minor',
       at: '2026-11-19T16:45:16.000Z',
       class: 'watery_veg'
+    },
+    tomato_sauce: {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 0,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 2,
+        sugar: 3,
+        fat: 0,
+        acid: 2,
+        heat: 0,
+        canvas: 0,
+        fresh: 0
+      },
+      centre: 1,
+      role: 'minor',
+      estimate: true,
+      estimatedBy: 'claude',
+      at: '2026-11-21T07:40:00.000Z'
     },
     walnuts: {
       texture: {
@@ -1527,6 +1619,28 @@ export const PIERRE_RAW = {
       },
       distance: 1,
       at: '2026-11-20T06:44Z'
+    },
+    'maggi@boiled': {
+      texture: {
+        crisp: 0,
+        creamy: 1,
+        chewy: 2,
+        juicy: 1,
+        flaky: 0
+      },
+      taste: {
+        salt: 3,
+        sugar: 1,
+        fat: 2,
+        acid: 0,
+        heat: 1,
+        canvas: 1,
+        fresh: 0
+      },
+      distance: 0,
+      estimate: true,
+      estimatedBy: 'claude',
+      at: '2026-11-21T07:40:00.000Z'
     },
     'mozzarella@melted': {
       texture: {

@@ -2,7 +2,8 @@
 // so these dishes are new to Pierre. Only pranjal's round-3 pantry: spices salt, sugar, chilli
 // flakes, oregano, chaat masala, black pepper (no other masalas: pranjal adds those as
 // improvements); lemon, coriander, mint, curd; tomato sauce, chilli sauce, mayo; olive oil, ghee,
-// butter; milk, cream; Maggi and its masala, whey (chocolate), cocoa; and the common foods.
+// butter; milk, cream; honey; Maggi (cooked with its masala), whey (chocolate), cocoa; and the
+// common foods. Mint, the condiments and Maggi carry Claude's estimated profiles until rated.
 // Hung curd is out. Writes src/quiz/round3.json and the hidden key (keep it out of the repo).
 //   node scripts/round3.mjs key.json [seed]
 import { writeFileSync } from 'node:fs';
@@ -13,9 +14,9 @@ const P = (s) => s.split(',').map((x) => { const [id, technique] = x.trim().spli
 const M = (s) => (s ? s.split(',') : []);
 // [id, source, probe, name, form, parts, modifiers]. probe = which rule or new ingredient it tests.
 const ROWS = [
-  ['r3_maggi', 'instant', 'seasoning water as a sauce', 'Maggi cooked with its masala', 'one-pot', 'maggi@boiled', 'maggi_masala'],
-  ['r3_maggi_cheese', 'instant', 'melted cheese on a base', 'Maggi with its masala and a cheese slice melted in', 'one-pot', 'maggi@boiled,cheese_slices@melted', 'maggi_masala'],
-  ['r3_maggi_egg', 'instant', 'protein on an instant base', 'Maggi with its masala, a fried egg on top', 'one-pot', 'maggi@boiled,eggs@fried_egg', 'maggi_masala'],
+  ['r3_maggi', 'instant', 'Maggi as a dish', 'Maggi cooked with its masala', 'one-pot', 'maggi@boiled', ''],
+  ['r3_maggi_cheese', 'instant', 'melted cheese on a base', 'Maggi with its masala and a cheese slice melted in', 'one-pot', 'maggi@boiled,cheese_slices@melted', ''],
+  ['r3_maggi_egg', 'instant', 'protein on an instant base', 'Maggi with its masala, a fried egg on top', 'one-pot', 'maggi@boiled,eggs@fried_egg', ''],
   ['r3_pasta_ketchup', 'combo', 'condiment as a sauce', 'Boiled pasta tossed with tomato sauce and oregano', 'open', 'pasta@boiled', 'tomato_sauce,oregano,salt'],
   ['r3_aglio_olio', 'everyday', 'flavoured fat coats a base', 'Pasta aglio olio: garlic and chilli flakes in olive oil', 'coated_base', 'pasta@boiled,garlic@sauteed', 'olive_oil,chilli_flakes,salt'],
   ['r3_pomodoro', 'everyday', 'simmered tomato is a sauce', 'Pasta with tomato simmered down in olive oil with garlic and oregano', 'coated_base', 'pasta@boiled,tomato@simmered,garlic@sauteed', 'olive_oil,oregano,salt'],
@@ -36,7 +37,7 @@ const ROWS = [
   ['r3_potato_mayo', 'hack', 'one part + condiment', 'Air-fried potato with mayo and chilli flakes', 'bowl', 'potato@air_fried', 'mayo,chilli_flakes,salt'],
   ['r3_mushroom_cream_toast', 'combo', 'a sauce as the topping', 'Toast topped with mushrooms and garlic sautéed in cream', 'toast', 'bread@toasted,mushroom@sauteed,garlic@sauteed,cream', 'black_pepper,salt'],
   ['r3_choc_shake', 'hack', 'chocolate whey, cocoa', 'Chocolate whey shaken with milk, banana and cocoa', 'shake', 'whey@shake_milk,banana', 'cocoa_powder'],
-  ['r3_cocoa_oats', 'hack', 'sweet base, no whey', 'Microwaved oats with milk, banana, cocoa and sugar', 'bowl', 'oats@microwaved,milk,banana', 'cocoa_powder,sugar'],
+  ['r3_cocoa_oats', 'hack', 'sweet base, no whey', 'Microwaved oats with milk, banana, cocoa and honey', 'bowl', 'oats@microwaved,milk,banana', 'cocoa_powder,honey'],
   ['r3_fruit_curd', 'hack', 'sweet curd bowl', 'Curd with apple, banana and a little sugar', 'bowl', 'curd,apple,banana', 'sugar'],
   ['r3_raita', 'hack', 'no anchor (a side)', 'Cucumber raita with mint and salt', 'bowl', 'curd,cucumber', 'mint,salt'],
 ];

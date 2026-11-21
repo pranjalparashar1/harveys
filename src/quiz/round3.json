@@ -312,15 +312,11 @@
     {
       "id": "r3_maggi",
       "name": "Maggi cooked with its masala",
-      "parts": "Maggi (boiled), maggi masala",
+      "parts": "Maggi (boiled)",
       "items": [
         {
           "id": "maggi",
           "technique": "boiled"
-        },
-        {
-          "id": "maggi_masala",
-          "mod": true
         }
       ]
     },
@@ -517,7 +513,7 @@
     {
       "id": "r3_maggi_egg",
       "name": "Maggi with its masala, a fried egg on top",
-      "parts": "Maggi (boiled), eggs (fried), maggi masala",
+      "parts": "Maggi (boiled), eggs (fried)",
       "items": [
         {
           "id": "maggi",
@@ -526,10 +522,6 @@
         {
           "id": "eggs",
           "technique": "fried_egg"
-        },
-        {
-          "id": "maggi_masala",
-          "mod": true
         }
       ]
     },
@@ -557,7 +549,7 @@
     {
       "id": "r3_maggi_cheese",
       "name": "Maggi with its masala and a cheese slice melted in",
-      "parts": "Maggi (boiled), cheese slices (melted), maggi masala",
+      "parts": "Maggi (boiled), cheese slices (melted)",
       "items": [
         {
           "id": "maggi",
@@ -566,10 +558,6 @@
         {
           "id": "cheese_slices",
           "technique": "melted"
-        },
-        {
-          "id": "maggi_masala",
-          "mod": true
         }
       ]
     },
@@ -718,8 +706,8 @@
     },
     {
       "id": "r3_cocoa_oats",
-      "name": "Microwaved oats with milk, banana, cocoa and sugar",
-      "parts": "Oats (microwaved), milk, banana, cocoa powder, sugar",
+      "name": "Microwaved oats with milk, banana, cocoa and honey",
+      "parts": "Oats (microwaved), milk, banana, cocoa powder, honey",
       "items": [
         {
           "id": "oats",
@@ -736,7 +724,7 @@
           "mod": true
         },
         {
-          "id": "sugar",
+          "id": "honey",
           "mod": true
         }
       ]

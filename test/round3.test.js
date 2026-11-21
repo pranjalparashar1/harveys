@@ -19,13 +19,15 @@ test('round 3: the sheet is blind, new, and matches the script', () => {
 });
 
 test("round 3: only pranjal's round-3 pantry, no masalas, no hung curd", () => {
-  const spices = ['salt', 'sugar', 'chilli_flakes', 'oregano', 'chaat_masala', 'black_pepper', 'mint', 'tomato_sauce', 'chilli_sauce', 'mayo', 'olive_oil', 'maggi_masala', 'cocoa_powder'];
+  const spices = ['salt', 'sugar', 'honey', 'chilli_flakes', 'oregano', 'chaat_masala', 'black_pepper', 'olive_oil', 'maggi_masala', 'cocoa_powder'];
+  const estimated = ['mint', 'tomato_sauce', 'chilli_sauce', 'mayo'];
   for (const d of ROUND3) {
-    for (const m of d.modifiers) assert.ok(spices.includes(m), `${d.id}: ${m}`);
+    for (const m of d.modifiers) assert.ok(spices.includes(m) || estimated.includes(m), `${d.id}: ${m}`);
     for (const p of d.parts) assert.ok(PIERRE_RAW.foods[p.id] || PIERRE_RAW.prep[p.id], `${d.id}: ${p.id}`);
   }
   assert.ok(!JSON.stringify(ROUND3).includes('hung_curd'));
   assert.ok(!PIERRE_RAW.foods.hung_curd && PIERRE_RAW.excluded.includes('hung_curd'));
   for (const m of spices) assert.ok(MODIFIERS[m], m);
-  assert.ok(PIERRE_RAW.foods.maggi.estimate, 'Maggi is an estimate until you rate it');
+  assert.ok(PIERRE_RAW.foods.maggi.estimate && PIERRE_RAW.tech['maggi@boiled'].estimate, 'Maggi is an estimate until you rate it');
+  for (const id of estimated) assert.ok(PIERRE_RAW.foods[id]?.estimate && PIERRE_RAW.foods[id].texture, `${id} has an estimated profile`);
 });

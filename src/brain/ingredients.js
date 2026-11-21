@@ -195,14 +195,11 @@ export const MODIFIERS = {
   green_chilli: { heat: PRESENT },
   chaat_masala: { salt: PRESENT, acid: LOW },
   // Round 3 pantry (pranjal, 21 Nov). ESTIMATES by Claude, not ratings: pranjal can rate them.
-  // Olive oil is the round's cooking oil. A condiment brings its taste only (mayo's creaminess
-  // isn't a texture here). Cocoa brings nothing Pierre measures (bitterness has no dimension).
+  // Olive oil is the round's cooking oil. Cocoa brings nothing Pierre measures (bitterness has
+  // no dimension). Mint and the condiments (tomato sauce, chilli sauce, mayo) are foods in the
+  // brain file with estimated taste and texture, so they count like any rated accent.
   olive_oil: { fat: PRESENT, estimate: true },
   oregano: { fresh: LOW, estimate: true },
-  mint: { fresh: PRESENT, estimate: true },
-  tomato_sauce: { salt: PRESENT, sugar: PRESENT, acid: PRESENT, estimate: true },
-  chilli_sauce: { salt: PRESENT, heat: PRESENT, acid: LOW, sugar: LOW, estimate: true },
-  mayo: { fat: PRESENT, acid: LOW, estimate: true },
   maggi_masala: { salt: PRESENT, heat: LOW, estimate: true },
   cocoa_powder: { estimate: true },
 };
@@ -391,7 +388,8 @@ function harmonyOf(slotted, p, kb, techniques, modifiers, rules = DEFAULT_CONFIG
   const why = [];
   const vs = slotted.map((x) => ({ x, v: partVector(x, kb, techniques) })).filter((r) => r.v);
   const acid = Math.max(0, ...vs.map((r) => r.v.taste.acid), ...modifiers.map((id) => MODIFIERS[id]?.acid ?? 0));
-  const sharp = vs.filter((r) => r.v.state === 'raw' && r.v.taste.heat >= SHARP_HEAT).map((r) => r.x.id);
+  // Sharp raw veg only: a condiment (chilli sauce) is a sauce as it comes, not a raw onion.
+  const sharp = vs.filter((r) => r.v.state === 'raw' && r.v.phase === 'raw_edible' && r.v.taste.heat >= SHARP_HEAT).map((r) => r.x.id);
   // A cooked base (toasted bread, rice) carries a raw crunch: the sandwich with raw onion passed.
   const cookedBase = vs.some((r) => r.v.state !== 'raw' && (r.v.centre ?? 0) >= BASE);
   if (sharp.length && acid < TAMING_ACID && !(rules.sharpTamedByCookedBase && cookedBase)) why.push(`clash: raw ${sharp.join(', ')} with nothing sour enough (lemon) to tame it`);
@@ -529,7 +527,10 @@ export function pierreTier(parts, form, { modifiers = [], inventory = [], verdic
     if (p) why.push(...structureOf(slotted, form, modifiers, kb, techniques, rules));
     if (p) why.push(...harmonyOf(slotted, p, kb, techniques, modifiers, rules));
     const anchor = slotted.find((x) => x.slot === 'anchor') ?? slotted.find((x) => x.anchors);
-    const done = anchor ? partVector(anchor, kb, techniques)?.distance === 0 : false;
+    // Round 3: a base that is done as it is (Maggi cooked with its masala) carries its flavour
+    // under a topping too, as it does alone.
+    const done = (anchor ? partVector(anchor, kb, techniques)?.distance === 0 : false)
+      || slotted.some((x) => x.slot === 'base' && partVector(x, kb, techniques)?.distance === 0);
     if (!p) why.push('no rated parts');
     else why.push(...belowFloor(p, floor, done));
     computed = why.length ? 'floor' : 'pass';

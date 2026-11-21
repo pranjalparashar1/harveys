@@ -41,6 +41,7 @@ export const FOOD_CLASS = {
   oil: 'pure_or_emulsified_fat', ghee: 'pure_or_emulsified_fat', butter: 'pure_or_emulsified_fat', cream: 'pure_or_emulsified_fat',
   curd: 'pure_or_emulsified_fat', olive_oil: 'pure_or_emulsified_fat', maggi: 'dry_starch_seed', milk: 'pure_or_emulsified_fat', peanut_butter: 'pure_or_emulsified_fat',
   almonds: 'pure_or_emulsified_fat', peanuts: 'pure_or_emulsified_fat', walnuts: 'pure_or_emulsified_fat', cashews: 'pure_or_emulsified_fat',
+  mint: 'aromatic_herb_acid', chilli_sauce: 'aromatic_herb_acid', tomato_sauce: 'watery_veg_fruit', mayo: 'pure_or_emulsified_fat',
   garlic: 'aromatic_herb_acid', green_chilli: 'aromatic_herb_acid', coriander: 'aromatic_herb_acid', lemon: 'aromatic_herb_acid',
 };
 export const foodClassOf = (id) => FOOD_CLASS[id] ?? null;
@@ -51,7 +52,9 @@ export const COATING_FATS = ['oil', 'olive_oil', 'ghee', 'butter', 'cream'];
 export const BLOOM_AROMATICS = ['garlic', 'onion', 'spring_onion', 'green_chilli'];
 // Grain bases that need a coating to be a dish (§4.2 coated_base): pasta, rice, noodles, oats, poha.
 // Bread and roti are not here: a toast or sandwich carries its own grammar.
-export const isGrainBase = (id, centre) => foodClassOf(id) === 'dry_starch_seed' && centre >= 5;
+// Maggi is cooked with its own masala (pranjal, 21 Nov), so it carries its coating.
+export const SELF_COATED = ['maggi'];
+export const isGrainBase = (id, centre) => foodClassOf(id) === 'dry_starch_seed' && centre >= 5 && !SELF_COATED.includes(id);
 
 // ── Layer 2 and 3: methods and phases ───────────────────────────────────────
 export const PHASES = ['raw_inedible', 'raw_edible', 'discrete_cooked', 'paste_mash', 'cohesive_sauce', 'flavored_fat', 'liquid_drink', 'set_batter'];
@@ -92,6 +95,7 @@ export const inFat = (technique) => METHODS[technique]?.medium === 'fat';
 const RAW_PHASE = {
   curd: 'cohesive_sauce', cream: 'cohesive_sauce', // a cultured dairy sauce, ready as is
   peanut_butter: 'paste_mash',
+  tomato_sauce: 'cohesive_sauce', chilli_sauce: 'cohesive_sauce', mayo: 'cohesive_sauce', // condiments: sauces as they come
   milk: 'liquid_drink',
 };
 

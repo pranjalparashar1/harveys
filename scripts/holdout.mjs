@@ -9,6 +9,7 @@
 import { writeFileSync } from 'node:fs';
 import { pierreTier, techKey, MODIFIERS } from '../src/brain/ingredients.js';
 import { TABLE_KITCHEN } from './pierre-tiers.mjs';
+import { PIERRE_RAW } from '../src/brain/pierre-raw.js';
 import { buildBenchmark, partLabel } from './benchmark.mjs';
 
 export const HOLDOUT_SEED = 20261122;
@@ -67,7 +68,7 @@ export function buildSheet(rows, seed, id, title) {
     return {
       id: d.id, source: d.source, probe: d.probe, name: d.name, form: d.form, parts: d.parts.map((p) => techKey(p.id, p.technique)), modifiers: d.modifiers,
       computed: t.computed, why: t.why, upgrade: t.upgrade?.add ?? null, untested: t.untested,
-      unrated: [...(t.profile?.unscored ?? []), ...d.modifiers.filter((m) => !MODIFIERS[m])], boundary,
+      unrated: [...(t.profile?.unscored ?? []), ...d.modifiers.filter((m) => !MODIFIERS[m] && !PIERRE_RAW.foods[m])], boundary,
     };
   });
   // The same tiers, reasons and Fix-it cookings as the Step 4 sheet.
