@@ -37,6 +37,7 @@ Appliances and cookware available (use ONLY these ids): ${kit.join(', ') || 'non
 Small utensils assumed available: ${Object.keys(ASSUMED_BASICS).join(', ')}
 
 Diet: vegetarian plus eggs only. No meat, fish or tofu.
+Cooking rules: never microwave eggs, dal, chickpeas, rajma or kala chana. A tadka is oil or ghee, never butter.
 
 Design up to 3 different ${kind}s for one person${context.mood ? ` who feels ${context.mood}` : ''}. Aim for the laziest high-protein ${kind} possible: as few tools, ingredients, steps and hands-on minutes as you can, little chopping, little to wash. Use realistic amounts and honest nutrition estimates for one serving.
 

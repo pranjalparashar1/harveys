@@ -135,3 +135,35 @@ test('the AI recipe prompt states the diet', async () => {
   const { recipePrompt } = await import('../src/ai/prompt.js');
   assert.match(recipePrompt({ have: ['paneer'] }), /vegetarian plus eggs only\. No meat, fish or tofu/i);
 });
+
+// pranjal's cooking rules ("The staples and their processes", 21 Nov).
+const withSteps = (steps, extra = {}) => ({ ...good, steps: steps.map((text) => ({ text, active: 2, passive: 0 })), ...extra });
+
+test('an AI recipe that microwaves eggs, dal or legumes is rejected', () => {
+  const mug = validateMeal(withSteps(['Whisk eggs in a mug.', 'Microwave the eggs 90 s.'], {
+    equipment: ['microwave'], ingredients: [{ id: 'eggs', amount: '2', prep: 'crack' }, { id: 'salt', amount: 'pinch', prep: 'measure' }],
+  }));
+  assert.ok(!mug.ok);
+  assert.ok(mug.errors.some((e) => /microwaves eggs/.test(e)), mug.errors.join('; '));
+  const chole = validateMeal(withSteps(['Microwave the chole with water for 10 min.']));
+  assert.ok(chole.errors.some((e) => /microwaves chickpeas/.test(e)), chole.errors.join('; '));
+  // The microwave as the only heat, with dal in it, even if the steps don't say so.
+  const dal = validateMeal(withSteps(['Cook it all for 8 min.'], { equipment: ['microwave'], ingredients: [{ id: 'dal', amount: '50 g', prep: 'measure' }] }));
+  assert.ok(dal.errors.some((e) => /microwaves dal/.test(e)), dal.errors.join('; '));
+});
+
+test('microwaving paneer, oats or soya is fine; so are eggs on the stove beside a microwave', () => {
+  assert.ok(validateMeal(withSteps(['Microwave the paneer 1 min.'], { equipment: ['microwave'] })).ok);
+  const both = validateMeal(withSteps(['Scramble the eggs in the pan.', 'Microwave the bread 20 s.'], {
+    equipment: ['microwave', 'stovetop', 'pan'], ingredients: [...good.ingredients, { id: 'eggs', amount: '2', prep: 'crack' }],
+  }));
+  assert.deepEqual(both.errors.filter((e) => /microwaves/.test(e)), []);
+  assert.ok(!validateMeal(withSteps(['Make the bread and egg mix.']), {}).errors.some((e) => /microwaves/.test(e)), 'eggless mayo is not an egg');
+});
+
+test('a tadka is oil or ghee, never butter; butter elsewhere is fine', () => {
+  const v = validateMeal(withSteps(['Make a tadka: heat butter, add mustard seeds.', 'Pour over the dal.']));
+  assert.ok(v.errors.includes('its tadka uses butter (oil or ghee only)'), v.errors.join('; '));
+  assert.ok(validateMeal(withSteps(['Make a tadka in ghee with mustard seeds.'])).ok);
+  assert.ok(validateMeal(withSteps(['Fry the paneer in butter until golden.'])).ok, 'butter omelette / butter paneer stay allowed');
+});
