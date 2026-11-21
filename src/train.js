@@ -14,7 +14,7 @@ import { PIERRE_SEED, TECHNIQUE_OVERLAY, TRAINING_EXTRAS, FORM_TOOLS, PRE_PREP_O
 import { validateMeal } from './brain/validate.js';
 import { callModel, parseJsonObject } from './ai/providers.js';
 
-const VERSION = '1.18.1';
+const VERSION = '1.18.2';
 const $ = (id) => document.getElementById(id);
 
 // ── Storage (this browser only) ─────────────────────────────────────────────
@@ -188,7 +188,7 @@ function dishCard(dish, side) {
     h('p', { class: 'mini rung-line' }, `Rung ${rungOf(dish)} · ${RUNGS[rungOf(dish)]}`),
     h('div', { class: 'reasons' }, ...facts(dish).map((f) => h('span', {}, f))),
     howBlock(dish),
-    verdictControl(dish),
+    // The 50-tap sprint is about effort only: Pierre's tier still feeds the fit silently (5B).
     h('button', { class: 'btn primary wide pick', type: 'button', 'data-haptic': true, onclick: () => choose(side) }, 'I’d cook this'),
   );
 }
