@@ -4,14 +4,14 @@
 import {
   CATALOGUE, DEFAULT_CONFIG, PROVISIONAL, ASSUMED_BASICS,
   buildInventory, parseItemList, kindOf, labelFor, rank, describeMissing,
-  PIERRE_SEED, cookLogEntry, liveRepairEntry, liveVerdicts,
+  PIERRE_SEED, cookLogEntry, liveRepairEntry, liveVerdicts, soakNeeds,
 } from './brain/index.js';
 import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, allowedModels, detectProvider, checkKey, pickModel, scanKitchen, designRecipes, AIError } from './ai/providers.js';
 import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 
-const VERSION = '1.19.0';
+const VERSION = '1.21.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -38,12 +38,23 @@ function savedContext() {
   return rest;
 }
 
+// What's soaking or soaked (1.21.0) holds for today only: a tick from last night is gone by morning.
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function soakedToday() {
+  const saved = store.get('soaked', null);
+  return saved?.day === today() && Array.isArray(saved.ids) ? saved.ids : [];
+}
+
 const state = {
   ai: store.get('ai', null), // { apiKey, provider, model, models }
   photos: [], // { base64, mediaType, previewUrl }
   // Not restored on reload: every page load starts clean (demo-ready).
   items: [], // [{ name, canonical, category, source }]
   missingBasics: store.get('missingBasics', []),
+  soaked: soakedToday(),
   // No mood: 1.3.2 doesn't ask, so the ranker's λ is neutral on mood (see contextLambda).
   ctx: { kind: 'meal', when: 'now', targets: { protein: 40, calories: 800, fiber: 15 }, ...savedContext() },
   decided: false,
@@ -364,6 +375,30 @@ function renderInventory() {
       onkeydown: (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleBasic(id); } },
     }, b.label);
   }));
+  renderSoaked();
+}
+
+// Foods in your kitchen that some dish needs soaked first.
+const SOAK_FOODS = [...new Set(CATALOGUE.flatMap(soakNeeds))];
+function renderSoaked() {
+  const have = inventory().have;
+  const foods = SOAK_FOODS.filter((id) => have.has(id));
+  show($('soaked-wrap'), foods.length > 0);
+  $('soaked').replaceChildren(...foods.map((id) => {
+    const on = state.soaked.includes(id);
+    return h('span', {
+      class: 'chip toggle', role: 'checkbox', 'aria-checked': String(on), tabindex: '0',
+      onclick: () => toggleSoaked(id),
+      onkeydown: (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleSoaked(id); } },
+    }, labelFor(id));
+  }));
+}
+
+function toggleSoaked(id) {
+  state.soaked = state.soaked.includes(id) ? state.soaked.filter((x) => x !== id) : [...state.soaked, id];
+  store.set('soaked', { day: today(), ids: state.soaked });
+  renderSoaked();
+  if (state.decided) decide();
 }
 
 function toggleBasic(id) {
@@ -405,6 +440,7 @@ function updateCtx(patch) {
 function decide(opts = {}) {
   if (opts.source) state.pickSource = opts.source;
   state.decided = true;
+  state.soaked = soakedToday(); // a page left open past midnight forgets last night's ticks
   const result = rank({
     inventory: inventory(),
     targets: state.ctx.targets,
@@ -415,6 +451,7 @@ function decide(opts = {}) {
     config: DEFAULT_CONFIG,
     // Your Fix / Veto taps win at once, over the chat verdicts.
     verdicts: { ...PIERRE_SEED, ...liveVerdicts(state.liveRepairs) },
+    soaked: state.soaked,
   });
   state.result = result;
   renderResult(result);
@@ -553,7 +590,7 @@ function cookedThis(item) {
   const entry = cookLogEntry({
     chosen: item,
     ladder: state.result.ladder,
-    context: { kind: state.ctx.kind, ...moment(), targets: state.ctx.targets },
+    context: { kind: state.ctx.kind, ...moment(), targets: state.ctx.targets, soaked: state.soaked },
     at: new Date().toISOString(),
   });
   state.cookLog = [...state.cookLog, entry].slice(-500);
@@ -654,6 +691,15 @@ function renderResult(result) {
       state.pickSource === 'sample' ? h('p', { class: 'fallback-note' }, 'No AI answer in time · sample kitchen') : null,
       state.pickSource === 'last' ? h('p', { class: 'fallback-note' }, 'No AI answer in time · last scan') : null));
     for (const g of result.ladder) cards.push(rungCard(g));
+  }
+
+  if (result.tomorrow?.length) {
+    cards.push(h('section', { class: 'card' },
+      h('h2', {}, 'For tomorrow'),
+      h('ul', { class: 'others' }, result.tomorrow.slice(0, 4).map((t) =>
+        h('li', {},
+          h('div', { class: 'other-head' }, h('strong', {}, t.meal.name), h('span', { class: 'muted' }, t.pierre.tier)),
+          h('p', { class: 'mini' }, `Soak the ${t.soak.map((id) => labelFor(id).toLowerCase()).join(' and ')} tonight`))))));
   }
 
   cards.push(aiIdeasCard(result));

@@ -259,7 +259,8 @@ test('5A: a meal without Pierre parts (an AI recipe) is ranked, marked untested'
 test('5A: chana chaat (chickpeas boiled ahead) is not vetoed as raw', () => {
   const inv = buildInventory([...DEMO_KITCHEN, 'chickpeas', 'onion', 'lemon', 'chaat masala']);
   const r = rankAll(inv);
-  assert.ok(positionOf(r, 'chana_chaat') >= 0);
+  assert.ok(r.tomorrow.some((t) => t.meal.id === 'chana_chaat'), 'not soaked: for tomorrow, not vetoed');
+  assert.ok(!r.vetoed.some((v) => v.meal.id === 'chana_chaat'));
 });
 
 test('5A: "one thing to buy" never unlocks a dish Pierre vetoes', () => {
@@ -268,7 +269,7 @@ test('5A: "one thing to buy" never unlocks a dish Pierre vetoes', () => {
 });
 
 // ── v2 Step 5B: White's effort ladder ──────────────────────────────────────
-import { rungOf, buildLadder, cookLogEntry, liveRepairEntry, liveVerdicts } from '../src/brain/index.js';
+import { rungOf, buildLadder, cookLogEntry, liveRepairEntry, liveVerdicts, soakNeeds } from '../src/brain/index.js';
 const meal = (id) => CATALOGUE.find((m) => m.id === id);
 const WED_7PM = { hour: 19, weekday: 3 };
 const BIG = { protein: 60, calories: 1200, fiber: 20 };
@@ -281,12 +282,41 @@ test('5B: fixed rung assignments', () => {
   for (const [id, rung] of Object.entries(want)) assert.equal(rungOf(meal(id)), rung, id);
 });
 
-test('5B: chana chaat keeps its attention rung and carries the pre-prep note', () => {
+test('soaking switch: not soaked, a soak dish leaves tonight for tomorrow; soaked, it ranks with no pre-prep', () => {
   const inv = buildInventory([...DEMO_KITCHEN, 'chickpeas', 'onion', 'lemon', 'chaat masala']);
-  const r = rank({ inventory: inv, targets: BIG, context: WED_7PM, catalogue: CATALOGUE });
-  const c = r.ranked.find((x) => x.meal.id === 'chana_chaat');
-  assert.equal(c.rung, 3);
-  assert.match(c.prePrepNote, /Soak/);
+  const dry = rank({ inventory: inv, targets: BIG, context: WED_7PM, catalogue: CATALOGUE });
+  assert.ok(!dry.ranked.some((x) => x.meal.id === 'chana_chaat'));
+  assert.ok(!dry.ladder.some((g) => [g.pick, ...g.alternatives].some((x) => x.meal.id === 'chana_chaat')));
+  const t = dry.tomorrow.find((x) => x.meal.id === 'chana_chaat');
+  assert.deepEqual(t.soak, ['chickpeas']);
+  const wet = rank({ inventory: inv, targets: BIG, context: WED_7PM, catalogue: CATALOGUE, soaked: ['chickpeas'] });
+  const c = wet.ranked.find((x) => x.meal.id === 'chana_chaat');
+  assert.equal(c.rung, 3, 'keeps its attention rung');
+  assert.equal(c.prePrepNote, null);
+  assert.equal(c.raw.prePrepMinutes, 0);
+  assert.ok(!wet.tomorrow.some((x) => x.meal.id === 'chana_chaat'));
+});
+
+test('soaking switch: every soak food is needed (dal tadka with rice wants dal and rice)', () => {
+  const inv = buildInventory([...DEMO_KITCHEN, 'dal', 'rice', 'onion', 'ghee', 'pressure cooker']);
+  const half = rank({ inventory: inv, targets: BIG, context: WED_7PM, catalogue: CATALOGUE, soaked: ['dal'] });
+  assert.deepEqual(half.tomorrow.find((x) => x.meal.id === 'dal_tadka_rice').soak, ['rice']);
+  const both = rank({ inventory: inv, targets: BIG, context: WED_7PM, catalogue: CATALOGUE, soaked: ['dal', 'rice'] });
+  assert.ok(both.ranked.some((x) => x.meal.id === 'dal_tadka_rice'));
+});
+
+test('soaking switch: a short soak with no soak list (poha, 15 min) stays an "if you have time" note', () => {
+  assert.deepEqual(soakNeeds(meal('poha')), []);
+  for (const m of CATALOGUE) for (const id of soakNeeds(m)) assert.ok(FOODS[id], `${m.id}: ${id}`);
+});
+
+test('egg fried rice: pass without spring onion, crave with it', () => {
+  const inv = buildInventory([...DEMO_KITCHEN, 'rice', 'eggs', 'spring onion']);
+  const r = rank({ inventory: inv, targets: BIG, context: WED_7PM, catalogue: CATALOGUE, soaked: ['rice'] });
+  assert.equal(r.ranked.find((x) => x.meal.id === 'egg_fried_rice').pierre.tier, 'pass');
+  assert.equal(r.ranked.find((x) => x.meal.id === 'egg_fried_rice_spring_onion').pierre.tier, 'crave');
+  const without = rank({ inventory: buildInventory([...DEMO_KITCHEN, 'rice', 'eggs']), targets: BIG, context: WED_7PM, catalogue: CATALOGUE, soaked: ['rice'] });
+  assert.ok(!without.ranked.some((x) => x.meal.id === 'egg_fried_rice_spring_onion'));
 });
 
 test('5B precedence: two closed appliances juggle (rung 4); a no-cook dish with a cut stands (rung 3)', () => {

@@ -55,6 +55,7 @@ export const FOODS = {
   tortilla: { label: 'Wraps / roti', group: 'bread', synonyms: ['tortilla', 'wrap', 'wraps', 'roti', 'chapati'] },
   tomato: { label: 'Tomato', group: 'veg', synonyms: ['tomato', 'tomatoes', 'tamatar'] },
   onion: { label: 'Onion', group: 'veg', synonyms: ['onion', 'onions', 'pyaz', 'red onion'] },
+  spring_onion: { label: 'Spring onion', group: 'veg', synonyms: ['spring onion', 'spring onions', 'green onion', 'scallion', 'hara pyaz'] },
   garlic: { label: 'Garlic', group: 'veg', synonyms: ['garlic', 'lahsun', 'garlic cloves'] },
   ginger: { label: 'Ginger', group: 'veg', synonyms: ['ginger', 'adrak'] },
   green_chilli: { label: 'Green chilli', group: 'veg', synonyms: ['green chilli', 'green chili', 'hari mirch', 'chillies'] },
