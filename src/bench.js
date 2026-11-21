@@ -4,7 +4,7 @@
 // the clipboard).
 import { encodeBench } from './quiz/bench.js';
 
-const VERSION = '1.13.1';
+const VERSION = '1.14.0';
 // ?sheet=holdout opens the Step 4c holdout sheet; each sheet keeps its own answers.
 const SHEET = new URLSearchParams(location.search).get('sheet') === 'holdout' ? 'holdout' : 'benchmark';
 const KEY = SHEET === 'holdout' ? 'harveys.holdout.v1' : 'harveys.bench.v1';

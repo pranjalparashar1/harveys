@@ -11,6 +11,7 @@
 import { PIERRE_RAW } from './pierre-raw.js';
 import { TECHNIQUE_PRIOR } from './technique-prior.js';
 import { DEFAULT_CONFIG } from './config.js';
+import { foodClassOf, phaseOf, tempOf, umamiOf, TECHNIQUE_ALIASES, COATING_FATS, BLOOM_AROMATICS, inFat, isGrainBase, TOOMAMI } from './ontology.js';
 
 // Flaky was merged into crisp (Step 4b, pranjal 20 Nov): crisp now reads "crisp, crunchy or
 // flaky". Old ratings keep their flaky number; textureOf() folds it in as max(crisp, flaky).
@@ -129,8 +130,17 @@ export const centreOf = (id, kb = PIERRE_RAW) => kb.foods?.[id]?.centre ?? kb.pr
  */
 export function partVector(part, kb = PIERRE_RAW, techniques = TECHNIQUES) {
   const { id, technique } = typeof part === 'string' ? { id: part } : part;
+  const v = vectorOf(id, technique, kb, techniques);
+  if (!v) return null;
+  // Step 5 physics (ontology.js): what the food is, the physical state it's in, hot or cold, and
+  // its savoury depth (an estimate). Rated numbers above are untouched.
+  return { ...v, foodClass: foodClassOf(id), phase: phaseOf(id, technique, { cookFirst: cookFirst(id, kb) }), temp: tempOf(technique), umami: umamiOf(id, technique) };
+}
+
+function vectorOf(id, technique, kb, techniques) {
   const state = technique ? `@${technique}` : 'raw';
-  const t = technique ? kb.tech?.[techKey(id, technique)] : null;
+  // A tadka reads the sauté's rated row (garlic@bloom_tadka is garlic@sauteed), keeping its own name.
+  const t = technique ? kb.tech?.[techKey(id, technique)] ?? kb.tech?.[techKey(id, TECHNIQUE_ALIASES[technique])] : null;
   if (t) {
     return {
       id,
@@ -147,7 +157,7 @@ export function partVector(part, kb = PIERRE_RAW, techniques = TECHNIQUES) {
   const raw = rawVector(id, kb);
   if (!raw) return null;
   const cls = kb.foods[id].class;
-  const effect = technique ? (techniques[technique]?.[cls] ?? null) : null;
+  const effect = technique ? (techniques[technique]?.[cls] ?? techniques[TECHNIQUE_ALIASES[technique]]?.[cls] ?? null) : null;
   if (!effect) return { ...raw, technique: technique ?? null, state, distance: null, veto: false, source: 'raw' };
   return {
     ...raw,
@@ -197,13 +207,25 @@ export const FORMS = {
   shake: { slots: { anchor: { need: true, states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } } },
   bowl: { slots: { base: { states: ['cooked'] }, anchor: { need: true, states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } } },
   // A toast's bread is toasted (or air- or pan-fried): you fixed peanut butter toast by toasting it.
-  toast: { slots: { base: { need: true, states: ['cooked'] }, anchor: { need: true, states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } } },
+  // Step 5: a toast's topping is an egg, paneer, cheese or a spread (Fable's toast_melt).
+  toast: { slots: { base: { need: true, states: ['cooked'] }, anchor: { need: true, states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } }, requires: ['topping'] },
   sandwich: { slots: { base: { need: true, states: ANY }, anchor: { need: true, states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } } },
   mash: { slots: { anchor: { need: true, states: ['@mashed', 'cooked'] }, addOn: { states: ANY }, modifier: { states: ANY } } },
   bhurji: { slots: { anchor: { need: true, states: ['cooked'] }, addOn: { states: ANY }, modifier: { states: ANY } } },
   griddle: { slots: { base: { states: ['cooked'] }, anchor: { need: true, states: ['cooked'] }, addOn: { states: ANY }, modifier: { states: ANY } } },
   'one-pot': { slots: { base: { states: ['cooked'] }, anchor: { need: true, states: ['cooked'] }, addOn: { states: ANY }, modifier: { states: ANY } } },
 };
+// Fable's form names (Step 5, SFAH §4.2) as aliases, plus coated_base: a grain base and a coating
+// (a sauce, curd, or a fat with a bloomed aromatic). The coating rule holds in every form, since
+// it is physics: a sautéed tomato never coats pasta, whatever the dish is called.
+FORMS.coated_base = { slots: { base: { need: true, states: ['cooked'] }, anchor: { states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } }, requires: ['coating'] };
+FORMS.toast_melt = FORMS.toast;
+FORMS.cold_bowl = FORMS.bowl;
+FORMS.chaat_salad = FORMS.bowl;
+FORMS.savory_mash = FORMS.mash;
+FORMS.griddle_cake = FORMS.griddle;
+FORMS.quick_stir_bhurji = FORMS.bhurji;
+FORMS.one_pot = FORMS['one-pot'];
 export const OPEN_FORM = { slots: { anchor: { need: true, states: ANY }, base: { states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } }, untested: true };
 const stateFits = (state, states) => states.includes(state) || (state !== 'raw' && states.includes('cooked'));
 
@@ -281,7 +303,49 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES, mod
     inedible: vs.filter((v) => v.veto).map((v) => techKey(v.id, v.technique)),
     unfinished: vs.filter((v) => v.distance === 3).map((v) => techKey(v.id, v.technique)),
     finish: Object.fromEntries(vs.filter((v) => v.distance != null).map((v) => [techKey(v.id, v.technique), DISTANCE[v.distance]])),
+    // Step 5 physics. phases: each part's physical state. temp: hot and cold parts, and whether
+    // the dish has both (a hot base with a cold garnish, SFAH's temperature contrast).
+    phases: Object.fromEntries(vs.map((v) => [techKey(v.id, v.technique), v.phase])),
+    temps: { hot: vs.filter((v) => v.temp === 'hot').map((v) => v.id), cold: vs.filter((v) => v.temp === 'cold').map((v) => v.id) },
+    tempContrast: vs.some((v) => v.temp === 'hot') && vs.some((v) => v.temp === 'cold'),
+    // Umami is an ESTIMATE (ontology.js), reported and never judged on.
+    umami: { level: Math.max(0, ...vs.map((v) => v.umami)), sources: vs.filter((v) => v.umami > 0).map((v) => techKey(v.id, v.technique)), estimate: true, toomami: vs.filter((v) => v.umami > 0).length >= TOOMAMI },
+    fatRoles: fatRolesOf(parts, modifiers, kb),
   };
+}
+
+// ── Fat roles (Step 5, SFAH §2.2) ───────────────────────────────────────────
+// A pure fat in a dish does one of three jobs. Oil named as a modifier is the cooking medium.
+// A fat with a cooked aromatic (garlic, onion) is the medium of a tadka. A raw fat tossed
+// through a hot grain base is the binder (butter swirled into pasta). Otherwise it's seasoning
+// (butter on toast, ghee on dal). Reported, so Pierre and White can say what the fat is doing.
+export function fatRolesOf(parts, modifiers = [], kb = PIERRE_RAW) {
+  const ps = parts.map((p) => (typeof p === 'string' ? { id: p } : p));
+  const bloomed = ps.some((p) => BLOOM_AROMATICS.includes(p.id) && inFat(p.technique));
+  const base = ps.some((p) => p.technique && isGrainBase(p.id, centreOf(p.id, kb) ?? 0));
+  const roles = {};
+  if (modifiers.includes('oil')) roles.oil = 'cooking_medium';
+  for (const p of ps.filter((x) => COATING_FATS.includes(x.id))) {
+    roles[p.id] = p.technique || bloomed ? 'cooking_medium' : base ? 'main_binder' : 'seasoning';
+  }
+  return roles;
+}
+
+/**
+ * What coats a grain base (Step 5, §4.2 coated_base): a cohesive sauce or paste beside it (curd,
+ * cooked dal, a simmered tomato, a mash), or a flavoured fat: a named fat (oil, ghee, butter)
+ * with an aromatic cooked in it (garlic, onion: a tadka). A sautéed tomato is pieces, never a
+ * sauce, and a plain fat only greases the base. Returns what coats it, or null.
+ */
+export function coatingOf(parts, modifiers = [], kb = PIERRE_RAW, techniques = TECHNIQUES) {
+  const ps = parts.map((p) => (typeof p === 'string' ? { id: p } : p));
+  const vs = ps.map((p) => partVector(p, kb, techniques)).filter(Boolean);
+  const sauce = vs.find((v) => !isGrainBase(v.id, v.centre ?? 0) && (v.phase === 'cohesive_sauce' || v.phase === 'paste_mash'));
+  if (sauce) return { kind: 'sauce', by: [techKey(sauce.id, sauce.technique)] };
+  const fat = ps.find((p) => COATING_FATS.includes(p.id))?.id ?? (modifiers.includes('oil') ? 'oil' : null);
+  const aromatic = ps.find((p) => BLOOM_AROMATICS.includes(p.id) && inFat(p.technique));
+  if (fat && aromatic) return { kind: 'flavored_fat', by: [fat, techKey(aromatic.id, aromatic.technique)] };
+  return null;
 }
 
 // ── Harmony (Step 4b) ───────────────────────────────────────────────────────
@@ -301,17 +365,79 @@ export const TAMING_ACID = 3;
 /** A food that is never eaten as it comes (raw oats, pasta, potato): you rated it cooked. */
 export const cookFirst = (id, kb = PIERRE_RAW) => !!(kb.foods?.[id]?.cookFirst || kb.prep?.[id]?.cookFirst);
 
-function harmonyOf(slotted, p, kb, techniques, modifiers) {
+// Step 5 (SFAH temperature contrast): sharp raw veg isn't a clash on a cooked base, since a cold
+// crunch against hot toast is a garnish (holdout sandwich). One texture floors only a soft
+// texture, and never a cold sweet dairy-and-fruit bowl (rules.mushTextures, PROVISIONAL).
+const DAIRY_BOWL = ['curd', 'hung_curd', 'milk', 'cream'];
+function sweetDairyBowl(vs, modifiers) {
+  return vs.every((r) => r.v.temp === 'cold') && vs.some((r) => DAIRY_BOWL.includes(r.x.id))
+    && vs.some((r) => r.v.foodClass === 'watery_veg_fruit' && r.v.taste.sugar >= 2) ;
+}
+
+function harmonyOf(slotted, p, kb, techniques, modifiers, rules = DEFAULT_CONFIG.pierreRules) {
   const why = [];
   const vs = slotted.map((x) => ({ x, v: partVector(x, kb, techniques) })).filter((r) => r.v);
   const acid = Math.max(0, ...vs.map((r) => r.v.taste.acid), ...modifiers.map((id) => MODIFIERS[id]?.acid ?? 0));
   const sharp = vs.filter((r) => r.v.state === 'raw' && r.v.taste.heat >= SHARP_HEAT).map((r) => r.x.id);
-  if (sharp.length && acid < TAMING_ACID) why.push(`clash: raw ${sharp.join(', ')} with nothing sour enough (lemon) to tame it`);
-  if (p.mush) why.push(`one texture throughout: all ${p.mush}`);
+  // A cooked base (toasted bread, rice) carries a raw crunch: the sandwich with raw onion passed.
+  const cookedBase = vs.some((r) => r.v.state !== 'raw' && (r.v.centre ?? 0) >= BASE);
+  if (sharp.length && acid < TAMING_ACID && !(rules.sharpTamedByCookedBase && cookedBase)) why.push(`clash: raw ${sharp.join(', ')} with nothing sour enough (lemon) to tame it`);
+  if (p.mush && rules.mushTextures.includes(p.mush) && !sweetDairyBowl(vs, modifiers)) why.push(`one texture throughout: all ${p.mush}`);
   const idle = vs.filter((r) => r.x.slot === 'addOn' && (r.v.centre ?? 0) >= 2
     && !TEXTURES.some((k) => r.v.texture[k] >= 2) && !TASTES.some((k) => k !== 'canvas' && r.v.taste[k] >= 2)).map((r) => techKey(r.x.id, r.x.technique));
   if (idle.length) why.push(`clash: ${idle.join(', ')} adds nothing at Medium or above`);
   return why;
+}
+
+// ── Physics (Step 5, Fable's SFAH ontology) ─────────────────────────────────
+// Vetoes that are chemistry, not taste: milk boiled with acid curdles; a sweet part with a savoury
+// aromatic clashes (SFAH stage 1; the sides are PROVISIONAL lists in config).
+const ACID_PARTS = 2;
+function physicsVetoes(slotted, modifiers, rules) {
+  const why = [];
+  const ids = [...slotted.map((x) => x.id), ...modifiers];
+  const milkHot = slotted.find((x) => x.id === 'milk' && x.technique && METHODS_BOIL.includes(x.technique));
+  const acid = slotted.filter((x) => x.id !== 'milk' && (PIERRE_RAW.foods?.[x.id]?.taste?.acid ?? 0) >= ACID_PARTS).map((x) => x.id);
+  if (milkHot && acid.length) why.push(`curdles: milk boiled with ${acid.join(', ')}`);
+  const sweet = ids.filter((id) => rules.sweetSide.includes(id));
+  const savoury = ids.filter((id) => rules.savourySide.includes(id));
+  if (sweet.length && savoury.length) why.push(`clash: sweet ${sweet.join(', ')} with savoury ${savoury.join(', ')}`);
+  return why;
+}
+const METHODS_BOIL = ['boiled', 'simmered', 'reduced', 'pressure_cooked'];
+
+/**
+ * Structure floors (Step 5, phase-aware FORMS):
+ *   coating  a savoury dish on a grain base (pasta, rice, noodles, oats, poha) needs a coating
+ *            (coatingOf). Sautéed tomato is pieces: boiled pasta with it is not a sauced pasta.
+ *   topping  a toast carries an egg, paneer, cheese or a spread (toast_melt); a sautéed
+ *            vegetable on toast isn't a meal (garlic mushroom toast).
+ *   powder   whey or besan stirred in as a powder isn't hydrated: shake it or make a batter.
+ */
+const TOPPING_CLASSES = ['dense_protein_dairy', 'delicate_protein'];
+function structureOf(slotted, form, modifiers, kb, techniques, rules) {
+  const why = [];
+  const vs = slotted.map((x) => ({ x, v: partVector(x, kb, techniques) })).filter((r) => r.v);
+  const ids = [...slotted.map((x) => x.id), ...modifiers];
+  const sweet = ids.some((id) => rules.sweetSide.includes(id));
+  const bases = vs.filter((r) => isGrainBase(r.x.id, r.v.centre ?? 0) && r.v.phase !== 'raw_inedible');
+  if (bases.length && !sweet && !coatingOf(slotted, modifiers, kb, techniques)) {
+    const fats = slotted.filter((x) => COATING_FATS.includes(x.id) && !x.technique).map((x) => x.id);
+    why.push(`no sauce: ${bases.map((r) => techKey(r.x.id, r.x.technique)).join(', ')} has nothing to coat it${fats.length ? ` (${fats.join(', ')} only greases it)` : ''}`);
+  }
+  // Read from the food itself, so an unrated cooking (eggs@air_fried) still counts as an egg.
+  const topping = (x) => TOPPING_CLASSES.includes(foodClassOf(x.id)) || ['paste_mash', 'cohesive_sauce'].includes(phaseOf(x.id, x.technique));
+  if ((FORMS[form]?.requires ?? []).includes('topping') && !slotted.some((x) => x.slot !== 'base' && topping(x))) {
+    why.push('not a meal: a toast needs an egg, paneer, cheese or a spread on it');
+  }
+  const powder = slotted.filter((x) => foodClassOf(x.id) === 'protein_powder_flour' && !x.technique).map((x) => x.id);
+  if (powder.length) why.push(`texture: ${powder.join(', ')} stirred in as a powder (shake it into a drink or cook it into a batter)`);
+  return why;
+}
+
+/** A plate with no anchor that still works as a snack: two supports with real texture contrast (apple + peanut butter). */
+function snackPairing(slotted, p, rules) {
+  return slotted.every((x) => x.centre != null) && slotted.filter((x) => x.centre >= 2).length >= 2 && (p?.contrast ?? 0) >= rules.snackContrast;
 }
 
 // ── Pierre's tier (Step 3) ──────────────────────────────────────────────────
@@ -348,7 +474,7 @@ function belowFloor(p, floor, done = false) {
  * opts: { modifiers: ids in the dish, inventory: ids in the kitchen, verdict: a PIERRE_SEED entry }.
  * `computed` is the tier before the verdict, so the two can be compared.
  */
-export function pierreTier(parts, form, { modifiers = [], inventory = [], verdict = null, kb = PIERRE_RAW, techniques = TECHNIQUES, floor = DEFAULT_CONFIG.pierreFloor } = {}) {
+export function pierreTier(parts, form, { modifiers = [], inventory = [], verdict = null, kb = PIERRE_RAW, techniques = TECHNIQUES, floor = DEFAULT_CONFIG.pierreFloor, rules = DEFAULT_CONFIG.pierreRules } = {}) {
   // A rated food named among the modifiers and not among the parts (garlic) is a part of the
   // dish, as it comes. Unrated ones (turmeric) stay ignored, as before.
   const named = new Set(parts.map((x) => (typeof x === 'string' ? x : x.id)));
@@ -358,19 +484,22 @@ export function pierreTier(parts, form, { modifiers = [], inventory = [], verdic
   const p = dishProfile(parts, kb, techniques, modifiers);
   const slotted = slotParts(parts, kb);
   const why = [];
-  const raw = slotted.filter((x) => x.state === 'raw' && cookFirst(x.id, kb)).map((x) => x.id);
+  // Inedible raw (Step 5 phase raw_inedible): pranjal's cook-first list, and raw eggs.
+  const raw = slotted.filter((x) => x.state === 'raw' && (cookFirst(x.id, kb) || foodClassOf(x.id) === 'delicate_protein')).map((x) => x.id);
+  const physics = physicsVetoes(slotted, modifiers, rules);
   // Raw garlic vetoes a dish where nothing is cooked (pranjal, 20 Nov: "for now").
   const sharp = slotted.some((x) => x.state !== 'raw') ? [] : slotted.filter((x) => kb.foods?.[x.id]?.vetoUncooked).map((x) => x.id);
   let computed;
-  if (p?.inedible.length || raw.length || sharp.length) {
+  if (p?.inedible.length || raw.length || sharp.length || physics.length) {
     computed = 'veto';
+    why.push(...physics);
     if (p?.inedible.length) why.push(`vetoed: ${p.inedible.join(', ')}`);
     if (raw.length) why.push(`raw: ${raw.join(', ')} ${raw.length > 1 ? 'need' : 'needs'} cooking first`);
     if (sharp.length) why.push(`raw ${sharp.join(', ')} in a dish where nothing is cooked`);
   } else {
     for (const [slot, rule] of Object.entries(grammar.slots)) {
       const inSlot = slotted.filter((x) => x.slot === slot);
-      if (rule.need && !inSlot.length && !(slot === 'anchor' && slotted.some((x) => x.anchors))) {
+      if (rule.need && !inSlot.length && !(slot === 'anchor' && (slotted.some((x) => x.anchors) || snackPairing(slotted, p, rules)))) {
         const unrated = slotted.filter((x) => x.centre == null).map((x) => x.id);
         why.push(slot === 'anchor' && unrated.length ? `no anchor (no centre rated for ${unrated.join(', ')})` : `no ${slot}`);
       }
@@ -379,7 +508,8 @@ export function pierreTier(parts, form, { modifiers = [], inventory = [], verdic
     for (const x of slotted) if (!grammar.slots[x.slot]) why.push(`a ${form} has no ${x.slot}`);
     if (p?.unfinished.length) why.push(`needs another cooking step: ${p.unfinished.join(', ')}`);
     if (p?.unscored.length) why.push(`can't judge ${p.unscored.join(', ')}: not rated that way`);
-    if (p) why.push(...harmonyOf(slotted, p, kb, techniques, modifiers));
+    if (p) why.push(...structureOf(slotted, form, modifiers, kb, techniques, rules));
+    if (p) why.push(...harmonyOf(slotted, p, kb, techniques, modifiers, rules));
     const anchor = slotted.find((x) => x.slot === 'anchor') ?? slotted.find((x) => x.anchors);
     const done = anchor ? partVector(anchor, kb, techniques)?.distance === 0 : false;
     if (!p) why.push('no rated parts');
