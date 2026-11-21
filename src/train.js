@@ -1,17 +1,20 @@
 // The pick-two trainer (1.4.0). Marco shows two dishes; you tap the one you'd
 // cook tonight and give each a Pierre verdict. Every tap refits the weights in
 // src/brain/learn.js. Everything stays in this browser until "Copy for Claude".
+// Step 5B: the 50-tap Marco sprint. One fixed baseline (7 PM after work, low
+// energy), pairs within one rung of each other, Pierre from pierreTier(), and a
+// one-click copy of the fitted weights for config.js.
 
-import { CATALOGUE, FOODS, EQUIPMENT, ASSUMED_BASICS, matchName } from './brain/index.js';
+import { CATALOGUE, FOODS, EQUIPMENT, ASSUMED_BASICS, matchName, rungOf, RUNGS } from './brain/index.js';
 import {
-  FEATURES, rawFeatures, featureVector, pierreTags, fitPierre, pierreSummary, fitMarco,
-  explainWeights, nextPair, inDiet, VERDICT_VALUE, methodsOf,
+  FEATURES, rawFeatures, featureVector, fitMarco, explainWeights, nextPair, inDiet, methodsOf, fittedWeightsPayload,
 } from './brain/learn.js';
+import { pierreTier } from './brain/ingredients.js';
 import { PIERRE_SEED, TECHNIQUE_OVERLAY, TRAINING_EXTRAS, FORM_TOOLS, PRE_PREP_OPTIONS } from './brain/train-data.js';
 import { validateMeal } from './brain/validate.js';
 import { callModel, parseJsonObject } from './ai/providers.js';
 
-const VERSION = '1.17.0';
+const VERSION = '1.18.0';
 const $ = (id) => document.getElementById(id);
 
 // ── Storage (this browser only) ─────────────────────────────────────────────
@@ -36,8 +39,18 @@ function seededVerdicts() {
   return Object.fromEntries(Object.entries(PIERRE_SEED).map(([id, v]) => [id, { ...v, source: 'chat 19 Nov' }]));
 }
 
+// Your verdict on the page as Pierre's 0–1 input to Marco, and Pierre's own tier the same way.
+const VERDICT_VALUE = { pass: 1, meh: 0.5, fail: 0 };
+const TIER_VALUE = { crave: 1, pass: 1, floor: 0.5, veto: 0 };
+const TIER_WORD = { crave: 'crave', pass: 'pass', floor: 'meh (floor)', veto: 'fail (veto)' };
+// A dish nobody judged and Pierre can't read (yours, the AI's): assume it mostly passes.
+const UNJUDGED = 0.75;
+const SPRINT_TAPS = 50;
+// The sprint's one baseline: λ isn't split by mood (Fable's handoff, locked 21 Nov).
+const BASELINE_MOOD = 'okay';
+
 const state = {
-  mood: store.get('train.mood', 'okay'),
+  mood: BASELINE_MOOD,
   choices: store.get('train.choices', []),
   verdicts: store.get('train.verdicts', null) ?? seededVerdicts(),
   mine: store.get('train.mine', []),
@@ -82,29 +95,35 @@ function pool() {
 }
 const byId = () => new Map(pool().map((d) => [d.id, d]));
 
-/** Pierre fitted on every verdict so far; predicts dishes nobody judged. */
-function pierreModel(dishes = pool()) {
-  const rows = dishes.filter((d) => state.verdicts[d.id]).map((d) => ({ tags: pierreTags(d), value: VERDICT_VALUE[state.verdicts[d.id].verdict] }));
-  return fitPierre(rows);
+/** Pierre's tier for a dish, from the same engine as the live app (null if it can't read it). */
+const tierCache = new Map();
+function pierreTierOf(dish) {
+  if (!Array.isArray(dish.parts) || !dish.form) return null;
+  if (!tierCache.has(dish.id)) {
+    const modifiers = (dish.ingredients ?? []).map((i) => i.id ?? i.anyOf?.[0]).filter(Boolean);
+    tierCache.set(dish.id, pierreTier(dish.parts, dish.form, { modifiers }).tier);
+  }
+  return tierCache.get(dish.id);
 }
-function pierreOf(dish, model) {
+function pierreOf(dish) {
   const v = state.verdicts[dish.id];
-  return v ? VERDICT_VALUE[v.verdict] : model.predict(pierreTags(dish));
+  if (v) return VERDICT_VALUE[v.verdict];
+  const t = pierreTierOf(dish);
+  return t ? TIER_VALUE[t] : UNJUDGED;
 }
 
 /** Choices as the fitter wants them, with today's Pierre for each dish. */
-function choiceVectors(model, map) {
+function choiceVectors(map) {
   return state.choices.map((c) => {
-    const pa = map.has(c.a) ? pierreOf(map.get(c.a), model) : c.pa;
-    const pb = map.has(c.b) ? pierreOf(map.get(c.b), model) : c.pb;
+    const pa = map.has(c.a) ? pierreOf(map.get(c.a)) : c.pa;
+    const pb = map.has(c.b) ? pierreOf(map.get(c.b)) : c.pb;
     return { xa: featureVector(c.ra, pa), xb: featureVector(c.rb, pb), pick: c.pick, mood: c.mood };
   });
 }
 
 function refit() {
   const map = byId();
-  const model = pierreModel([...map.values()]);
-  const fit = fitMarco(choiceVectors(model, map));
+  const fit = fitMarco(choiceVectors(map));
   if (state.fit) {
     // The headline for "what moved": the biggest change in protein-gram terms.
     const before = explainWeights(state.fit.theta);
@@ -116,7 +135,6 @@ function refit() {
     if (moved && Math.abs(moved.gramsPerUnit - moved.before.gramsPerUnit) >= 0.5) state.lastMove = moved;
   }
   state.fit = fit;
-  state.pierre = model;
 }
 
 // ── Facts on a dish card ───────────────────────────────────────────────────
@@ -146,7 +164,7 @@ function facts(dish) {
 
 const ORIGIN = { 'built-in': 'Built-in', mine: 'Yours', ai: 'AI' };
 
-function verdictControl(dish, model) {
+function verdictControl(dish) {
   const v = state.verdicts[dish.id];
   const seg = h('div', { class: 'segmented verdict', role: 'radiogroup', 'aria-label': `Pierre on ${dish.name}` },
     ...['pass', 'meh', 'fail'].map((value) => h('button', {
@@ -154,9 +172,8 @@ function verdictControl(dish, model) {
       onclick: () => setVerdict(dish.id, v?.verdict === value ? null : value),
     }, value[0].toUpperCase() + value.slice(1))));
   const guess = v ? null : (() => {
-    const p = model.predict(pierreTags(dish));
-    const word = p >= 0.67 ? 'pass' : p >= 0.4 ? 'meh' : 'fail';
-    return h('span', { class: 'guess' }, `Pierre guesses ${word}`);
+    const t = pierreTierOf(dish);
+    return h('span', { class: 'guess' }, t ? `Pierre says ${TIER_WORD[t]}` : 'Pierre hasn’t judged this');
   })();
   const why = h('input', {
     type: 'text', class: 'why', placeholder: 'Why? (optional)', value: v?.why ?? '', 'aria-label': `Why, for ${dish.name}`,
@@ -165,12 +182,13 @@ function verdictControl(dish, model) {
   return h('div', { class: 'pierre' }, h('div', { class: 'pierre-head' }, h('span', { class: 'pierre-label' }, 'Pierre'), guess), seg, why);
 }
 
-function dishCard(dish, side, model) {
+function dishCard(dish, side) {
   return h('article', { class: 'card dish rise', 'data-side': side },
     h('div', { class: 'dish-top' }, h('h3', {}, dish.name), h('span', { class: `badge ${dish.origin === 'ai' ? 'ai' : ''}` }, ORIGIN[dish.origin] ?? 'Dish')),
+    h('p', { class: 'mini rung-line' }, `Rung ${rungOf(dish)} · ${RUNGS[rungOf(dish)]}`),
     h('div', { class: 'reasons' }, ...facts(dish).map((f) => h('span', {}, f))),
     howBlock(dish),
-    verdictControl(dish, model),
+    verdictControl(dish),
     h('button', { class: 'btn primary wide pick', type: 'button', 'data-haptic': true, onclick: () => choose(side) }, 'I’d cook this'),
   );
 }
@@ -190,12 +208,11 @@ function howBlock(dish) {
 function pickNewPair() {
   const map = byId();
   const dishes = [...map.values()];
-  const model = state.pierre ?? pierreModel(dishes);
-  const items = dishes.map((d) => ({ id: d.id, x: featureVector(rawFeatures(d), pierreOf(d, model)), unjudged: !state.verdicts[d.id] }));
+  const items = dishes.map((d) => ({ id: d.id, x: featureVector(rawFeatures(d), pierreOf(d)), unjudged: !state.verdicts[d.id] && !pierreTierOf(d), rung: rungOf(d) }));
   const seenPairs = new Set(state.choices.map((c) => [c.a, c.b].sort().join('|')));
   const shown = new Map();
   for (const c of state.choices) for (const id of [c.a, c.b]) shown.set(id, (shown.get(id) ?? 0) + 1);
-  const pair = nextPair(items, { theta: state.fit.theta, seenPairs, shown, rng: Math.random, last: state.pair ?? [] });
+  const pair = nextPair(items, { theta: state.fit.theta, seenPairs, shown, rng: Math.random, last: state.pair ?? [], maxRungGap: 1 });
   state.pair = pair ? [pair[0].id, pair[1].id] : null;
   save();
 }
@@ -213,26 +230,27 @@ function renderPair() {
     box.replaceChildren(h('p', { class: 'mini center' }, 'Add a dish to start.'));
     return;
   }
-  const model = state.pierre;
   box.replaceChildren(
-    h('h2', { class: 'pair-title' }, 'Which would you cook tonight?'),
-    dishCard(pair[0], 'a', model),
+    h('h2', { class: 'pair-title' }, 'Which would you make right now?'),
+    dishCard(pair[0], 'a'),
     h('p', { class: 'or', 'aria-hidden': 'true' }, 'or'),
-    dishCard(pair[1], 'b', model),
+    dishCard(pair[1], 'b'),
   );
   $('undo').hidden = !state.undo;
-  $('tally').textContent = state.choices.length ? `${state.choices.length} ${state.choices.length === 1 ? 'pick' : 'picks'} so far` : 'A dozen picks takes about a minute.';
+  const n = state.choices.length;
+  $('tally').textContent = n >= SPRINT_TAPS
+    ? `${n} taps: enough for Marco v1. Copy the fitted weights below.`
+    : `${n} / ${SPRINT_TAPS} taps for Marco v1 fit`;
 }
 
 function choose(pick) {
   const map = byId();
   const [a, b] = state.pair.map((id) => map.get(id));
-  const model = state.pierre;
   const now = new Date();
   state.choices.push({
-    at: now.toISOString(), hour: now.getHours(), weekday: now.getDay(), mood: state.mood,
-    a: a.id, b: b.id, an: a.name, bn: b.name, pick,
-    ra: rawFeatures(a), rb: rawFeatures(b), pa: pierreOf(a, model), pb: pierreOf(b, model),
+    at: now.toISOString(), hour: now.getHours(), weekday: now.getDay(), mood: BASELINE_MOOD, baseline: '7pm-low-energy',
+    a: a.id, b: b.id, an: a.name, bn: b.name, pick, rungs: [rungOf(a), rungOf(b)],
+    ra: rawFeatures(a), rb: rawFeatures(b), pa: pierreOf(a), pb: pierreOf(b),
   });
   state.undo = { kind: 'choice', pair: [...state.pair] };
   refit();
@@ -255,7 +273,7 @@ function setVerdict(id, verdict) {
 
 // ── What Marco learned ──────────────────────────────────────────────────────
 function renderLearned() {
-  const { fit, pierre } = state;
+  const { fit } = state;
   const body = [];
   const n = fit.n;
   if (n === 0) {
@@ -289,12 +307,9 @@ function renderLearned() {
     body.push(h('p', { class: 'mini' }, moods.map(([m, l]) => `${m[0].toUpperCase()}${m.slice(1)}: effort feels ${fmt(l, 2)}× as heavy as on an okay night.`).join(' ')));
   }
 
-  const ps = pierreSummary(pierre);
-  const chipRow = (title, list, cls) => (list.length ? h('div', { class: 'group' }, h('h3', {}, title), h('div', { class: 'reasons' }, ...list.map((t) => h('span', { class: cls }, t.label)))) : null);
   const judged = Object.keys(state.verdicts).length;
-  body.push(h('h3', { class: 'sub' }, `Pierre (${judged} verdicts)`));
-  body.push(chipRow('Likes', ps.likes, 'like') ?? h('p', { class: 'mini' }, 'No strong likes yet.'));
-  body.push(chipRow('Dislikes', ps.dislikes, 'dislike') ?? h('p', { class: 'mini' }, 'No strong dislikes yet.'));
+  body.push(h('h3', { class: 'sub' }, 'Pierre'));
+  body.push(h('p', { class: 'mini' }, `Each dish’s taste comes from Pierre, the same engine as the live app. Your ${judged} ${judged === 1 ? 'verdict' : 'verdicts'} on this page override it.`));
   $('learned-body').replaceChildren(...body.filter(Boolean));
 }
 
@@ -562,11 +577,9 @@ function renderWackyCount() {
 function exportData() {
   const { fit } = state;
   const weights = explainWeights(fit.theta).map((w) => ({ key: w.key, theta: +w.theta.toFixed(3), prior: w.prior, gramsPerUnit: w.gramsPerUnit == null ? null : +w.gramsPerUnit.toFixed(2) }));
-  const ps = pierreSummary(state.pierre, { top: 8, min: 0.05 });
   const payload = {
     app: 'marco-train', version: VERSION, exportedAt: new Date().toISOString(),
     fit: { n: fit.n, hits: fit.hits, looHits: fit.looHits, priorHits: fit.priorHits, outside: +fit.outside.toFixed(3), lambdas: fit.lambdas, weights },
-    pierre: { bias: +state.pierre.bias.toFixed(3), likes: ps.likes.map((t) => [t.tag, +t.weight.toFixed(2)]), dislikes: ps.dislikes.map((t) => [t.tag, +t.weight.toFixed(2)]) },
     choices: state.choices,
     verdicts: state.verdicts,
     mine: state.mine,
@@ -576,6 +589,15 @@ function exportData() {
   const btn = $('export');
   const lbl = btn.querySelector('.lbl') ?? btn;
   navigator.clipboard?.writeText(text).then(() => { lbl.textContent = 'Copied'; setTimeout(() => { lbl.textContent = 'Copy for Claude'; }, 2000); }, () => { lbl.textContent = 'Copy failed'; });
+}
+
+function copyWeights() {
+  const p = fittedWeightsPayload(state.fit, state.choices);
+  const text = `Marco v1 fitted weights (${VERSION}, ${p.taps} taps, LOO ${p.looHits ?? '–'}/${p.taps}).\n`
+    + `// src/brain/config.js → DEFAULT_CONFIG\nfrictionTheta: Object.freeze(${JSON.stringify(p.frictionTheta)}),\n\n${JSON.stringify(p)}`;
+  const btn = $('copy-weights');
+  const lbl = btn.querySelector('.lbl') ?? btn;
+  navigator.clipboard?.writeText(text).then(() => { lbl.textContent = 'Copied'; setTimeout(() => { lbl.textContent = 'Copy fitted Marco weights'; }, 2000); }, () => { lbl.textContent = 'Copy failed'; });
 }
 
 function reset(e) {
@@ -615,12 +637,7 @@ function addHaptics(root = document) {
   }
 }
 
-function renderMood() {
-  for (const b of $('mood').querySelectorAll('button')) b.setAttribute('aria-checked', String(b.dataset.value === state.mood));
-}
-
 function renderAll() {
-  renderMood();
   renderPair();
   renderLearned();
   renderMine();
@@ -632,13 +649,6 @@ function init() {
   $('version').textContent = `Marco ${VERSION} · trainer`;
   $('d-prePrep').replaceChildren(...PRE_PREP_OPTIONS.map(([v, l]) => h('option', { value: String(v) }, l)));
   renderToolChips();
-  $('mood').addEventListener('click', (e) => {
-    const v = e.target.closest('button')?.dataset.value;
-    if (!v) return;
-    state.mood = v;
-    save();
-    renderMood();
-  });
   $('neither').addEventListener('click', () => choose('neither'));
   $('skip').addEventListener('click', () => { pickNewPair(); state.undo = null; renderPair(); addHaptics(); });
   $('undo').addEventListener('click', () => { undo(); addHaptics(); });
@@ -653,6 +663,7 @@ function init() {
   $('import-go').addEventListener('click', () => { importDishes(); addHaptics(); });
   $('wacky-go').addEventListener('click', inventWacky);
   $('export').addEventListener('click', exportData);
+  $('copy-weights').addEventListener('click', copyWeights);
   $('reset').addEventListener('click', reset);
   // Re-wire haptics on anything rendered later (pair cards).
   new MutationObserver(() => addHaptics($('pair'))).observe($('pair'), { childList: true });

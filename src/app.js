@@ -4,13 +4,14 @@
 import {
   CATALOGUE, DEFAULT_CONFIG, PROVISIONAL, ASSUMED_BASICS,
   buildInventory, parseItemList, kindOf, labelFor, rank, describeMissing,
+  PIERRE_SEED, cookLogEntry, liveRepairEntry, liveVerdicts,
 } from './brain/index.js';
 import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, allowedModels, detectProvider, checkKey, pickModel, scanKitchen, designRecipes, AIError } from './ai/providers.js';
 import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 
-const VERSION = '1.17.0';
+const VERSION = '1.18.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -48,6 +49,12 @@ const state = {
   decided: false,
   debug: store.get('debugRuns', []),
   aiRecipes: { status: 'idle', accepted: [], rejected: [], model: null, error: null, key: null },
+  // White v2 live learning (Step 5B). Both survive reloads; Debug's "Copy for Claude" carries them.
+  cookLog: store.get('cookLog', []),
+  liveRepairs: store.get('liveRepairs', []),
+  cookedNow: new Set(), // dishes logged since this page loaded, for the "Logged" state
+  fixing: null, // the dish id whose Fix / Veto drawer is open
+  result: null,
 };
 
 // ── Tiny DOM helper (text only, so AI output can never inject markup) ──────
@@ -313,7 +320,7 @@ function renderDebug() {
   );
 }
 function copyDebug() {
-  const text = JSON.stringify({ version: VERSION, ua: navigator.userAgent, conn: navigator.connection?.effectiveType ?? null, provider: state.ai?.provider, model: state.ai?.model, scanTimes: store.get('scanTimes', []), runs: state.debug }, null, 1);
+  const text = JSON.stringify({ version: VERSION, ua: navigator.userAgent, conn: navigator.connection?.effectiveType ?? null, provider: state.ai?.provider, model: state.ai?.model, scanTimes: store.get('scanTimes', []), runs: state.debug, cookLog: state.cookLog, liveRepairs: state.liveRepairs }, null, 1);
   navigator.clipboard?.writeText(text).then(() => { $('copy-debug').textContent = 'Copied'; }, () => {});
 }
 
@@ -406,7 +413,10 @@ function decide(opts = {}) {
     // The AI's recipes compete on exactly the same terms as the catalogue.
     catalogue: [...CATALOGUE, ...state.aiRecipes.accepted],
     config: DEFAULT_CONFIG,
+    // Your Fix / Veto taps win at once, over the chat verdicts.
+    verdicts: { ...PIERRE_SEED, ...liveVerdicts(state.liveRepairs) },
   });
+  state.result = result;
   renderResult(result);
 }
 
@@ -471,7 +481,9 @@ function aiIdeasCard(result) {
       h('p', { class: 'error' }, ai.error),
       h('button', { class: 'btn', type: 'button', onclick: () => askAIForRecipes(true) }, 'Try again'));
   }
-  const position = new Map(result.ranked.map((r, i) => [r.meal.id, i + 1]));
+  const position = new Map();
+  for (const g of result.ladder) [g.pick, ...g.alternatives].forEach((x, i) => position.set(x.meal.id, { rung: g.rung, top: i === 0 }));
+  const ranked = new Set(result.ranked.map((r) => r.meal.id));
   const blocked = new Map(result.filtered.map((f) => [f.meal.id, f.missing]));
   const vetoed = new Set(result.vetoed.map((v) => v.meal.id));
   const rows = [
@@ -479,7 +491,9 @@ function aiIdeasCard(result) {
       const pos = position.get(m.id);
       const missing = blocked.get(m.id);
       const verdict = pos
-        ? h('span', { class: pos === 1 ? 'pass win' : 'pass' }, pos === 1 ? 'Marco’s pick' : `#${pos}`)
+        ? h('span', { class: pos.top ? 'pass win' : 'pass' }, pos.top ? `Rung ${pos.rung} pick` : `On rung ${pos.rung}`)
+        : ranked.has(m.id)
+          ? h('span', { class: 'pass' }, 'Possible')
         : vetoed.has(m.id)
           ? h('span', { class: 'fail' }, 'Pierre veto')
         : missing
@@ -532,47 +546,114 @@ function whyTable(r) {
     PROVISIONAL ? h('p', { class: 'mini' }, h('span', { class: 'badge' }, 'Placeholder weights')) : null);
 }
 
+// ── White v2: the effort ladder ─────────────────────────────────────────────
+const TIERS_YOU_SAY = [['veto', 'Veto'], ['floor', 'Floor'], ['pass', 'Pass'], ['crave', 'Crave']];
+
+function cookedThis(item) {
+  const entry = cookLogEntry({
+    chosen: item,
+    ladder: state.result.ladder,
+    context: { kind: state.ctx.kind, ...moment(), targets: state.ctx.targets },
+    at: new Date().toISOString(),
+  });
+  state.cookLog = [...state.cookLog, entry].slice(-500);
+  store.set('cookLog', state.cookLog);
+  state.cookedNow.add(item.meal.id);
+  renderResult(state.result);
+}
+
+function saveLiveRepair(item, tier, fix) {
+  const entry = liveRepairEntry({ item, tier, fix, at: new Date().toISOString() });
+  state.liveRepairs = [...state.liveRepairs, entry].slice(-200);
+  store.set('liveRepairs', state.liveRepairs);
+  state.fixing = null;
+  decide();
+}
+
+function undoLiveRepair(dishId) {
+  state.liveRepairs = state.liveRepairs.filter((r) => r.dishId !== dishId);
+  store.set('liveRepairs', state.liveRepairs);
+  decide();
+}
+
+function cookButton(item, primary = true) {
+  const done = state.cookedNow.has(item.meal.id);
+  return h('button', {
+    class: `btn ${primary ? 'primary' : ''} cook`, type: 'button', disabled: done,
+    onclick: () => cookedThis(item),
+  }, done ? 'Logged · Cooked tonight' : 'Cooked this');
+}
+
+function fixDrawer(item) {
+  const note = h('input', { type: 'text', class: 'fix-note', placeholder: 'What would fix it? (optional)', 'aria-label': `What would fix ${item.meal.name}` });
+  return h('div', { class: 'fix-drawer' },
+    h('p', { class: 'mini' }, `Pierre says ${item.pierre.untested ? 'nothing (not judged)' : item.pierre.tier}. You say:`),
+    h('div', { class: 'segmented fix-tiers', role: 'group', 'aria-label': 'Your tier' },
+      TIERS_YOU_SAY.map(([tier, label]) => h('button', { type: 'button', onclick: () => saveLiveRepair(item, tier, note.value) }, label))),
+    note,
+    h('p', { class: 'mini' }, 'Applies now on this phone, and goes to Claude with “Copy for Claude”.'));
+}
+
+function recipeBlock(r) {
+  const passive = r.raw.waiting;
+  const steps = r.meal.steps.map((st) => h('li', {}, st.text));
+  if (r.assemblyStep) steps.push(h('li', { class: 'assembly' }, r.assemblyStep));
+  return h('details', { class: 'recipe-fold' },
+    h('summary', {}, 'Recipe'),
+    h('div', { class: 'recipe' },
+      h('h3', {}, 'You need'),
+      h('ul', {}, r.used.ingredients.map(ingredientLine)),
+      h('h3', {}, 'Kit'),
+      h('p', { class: 'muted' }, [...r.used.equipment, ...r.used.utensils].map(labelFor).join(', ') || 'Nothing'),
+      h('h3', {}, `Steps · about ${fmt(r.raw.handsOn, 1)} min hands-on${passive ? ` + ${passive} min waiting` : ''}`),
+      h('ol', {}, steps),
+      h('p', { class: 'mini' }, `${r.meal.macros.protein} g protein · ${r.meal.macros.kcal} kcal · ${r.meal.macros.fiber} g fiber (${{ label: 'from labels', ai: 'AI estimate', estimate: 'estimate' }[r.meal.source] ?? 'estimate'})`)),
+    whyTable(r));
+}
+
+function rungCard(g) {
+  const top = g.pick;
+  const fixing = state.fixing === top.meal.id;
+  return h('section', { class: `card rung rung-${g.rung}` },
+    h('p', { class: 'pick-label' }, `Rung ${g.rung} · ${g.name}`),
+    h('h2', { class: 'dish-name' }, top.meal.name, top.meal.origin === 'ai' ? h('span', { class: 'badge ai' }, 'AI') : null, ' ', tierBadge(top.pierre)),
+    tierHint(top.pierre),
+    top.prePrepNote ? h('p', { class: 'preprep' }, `If you have time: ${top.prePrepNote}`) : null,
+    h('div', { class: 'reasons' }, top.reasons.map((x) => h('span', {}, x))),
+    recipeBlock(top),
+    h('div', { class: 'rung-actions' },
+      cookButton(top),
+      h('button', { class: 'btn link quiet', type: 'button', 'aria-expanded': String(fixing), onclick: () => { state.fixing = fixing ? null : top.meal.id; renderResult(state.result); } }, 'Fix / Veto')),
+    fixing ? fixDrawer(top) : null,
+    g.alternatives.length ? h('details', { class: 'alts' },
+      h('summary', {}, `${g.alternatives.length} more on this rung`),
+      h('ul', { class: 'others' }, g.alternatives.map((r) => h('li', {},
+        h('div', { class: 'other-head' }, h('strong', {}, r.meal.name, r.meal.origin === 'ai' ? h('span', { class: 'badge ai' }, 'AI') : null), tierBadge(r.pierre)),
+        tierHint(r.pierre),
+        r.prePrepNote ? h('p', { class: 'mini' }, `If you have time: ${r.prePrepNote}`) : null,
+        h('p', { class: 'mini' }, r.reasons.join(' · ')),
+        recipeBlock(r),
+        h('div', { class: 'rung-actions' }, cookButton(r, false),
+          h('button', { class: 'btn link quiet', type: 'button', onclick: () => { state.fixing = state.fixing === r.meal.id ? null : r.meal.id; renderResult(state.result); } }, 'Fix / Veto')),
+        state.fixing === r.meal.id ? fixDrawer(r) : null)))) : null);
+}
+
 function renderResult(result) {
   const root = $('result');
   const appearing = root.hidden; // animate in once, not on every re-rank
   show(root);
-  const [top, ...rest] = result.ranked;
   const cards = [];
 
-  if (!top) {
+  if (!result.ladder.length) {
     cards.push(h('section', { class: 'card' },
       h('h2', {}, 'Nothing fits yet'),
       blockedList(result.filtered.slice(0, 6))));
   } else {
-    const passive = top.raw.waiting;
-    cards.push(h('section', { class: 'card pick' },
-      h('p', { class: 'pick-label' }, top.meal.origin === 'ai' ? 'Cook this · AI recipe' : 'Cook this'),
+    cards.push(h('div', { class: 'ladder-head' },
+      h('h2', {}, 'Pick your effort'),
       state.pickSource === 'sample' ? h('p', { class: 'fallback-note' }, 'No AI answer in time · sample kitchen') : null,
-      state.pickSource === 'last' ? h('p', { class: 'fallback-note' }, 'No AI answer in time · last scan') : null,
-      h('h2', {}, top.meal.name, ' ', tierBadge(top.pierre)),
-      tierHint(top.pierre),
-      h('div', { class: 'reasons' }, top.reasons.map((r) => h('span', {}, r))),
-      top.beats ? h('p', { class: 'beats' }, 'Beats ', h('strong', {}, top.beats.other.name), ': ', top.beats.reasons.join(', ') || 'a better balance of payoff and effort', '.') : null,
-      h('div', { class: 'recipe' },
-        h('h3', {}, 'You need'),
-        h('ul', {}, top.used.ingredients.map(ingredientLine)),
-        h('h3', {}, 'Kit'),
-        h('p', { class: 'muted' }, [...top.used.equipment, ...top.used.utensils].map(labelFor).join(', ') || 'Nothing'),
-        h('h3', {}, `Steps · about ${fmt(top.raw.handsOn, 1)} min hands-on${passive ? ` + ${passive} min waiting` : ''}`),
-        h('ol', {}, top.meal.steps.map((s) => h('li', {}, s.text))),
-        h('p', { class: 'mini' }, `${top.meal.macros.protein} g protein · ${top.meal.macros.kcal} kcal · ${top.meal.macros.fiber} g fiber (${{ label: 'from labels', ai: 'AI estimate', estimate: 'estimate' }[top.meal.source] ?? 'estimate'})`)),
-      whyTable(top)));
-  }
-
-  if (rest.length) {
-    cards.push(h('section', { class: 'card' },
-      h('h2', {}, 'Also possible'),
-      h('ul', { class: 'others' }, rest.slice(0, 6).map((r, i) =>
-        h('li', {},
-          h('div', { class: 'other-head' }, h('strong', {}, `${i + 2}. ${r.meal.name}`, r.meal.origin === 'ai' ? h('span', { class: 'badge ai' }, 'AI') : null), tierBadge(r.pierre)),
-          tierHint(r.pierre),
-          h('p', { class: 'mini' }, r.reasons.join(' · ')),
-          whyTable(r))))));
+      state.pickSource === 'last' ? h('p', { class: 'fallback-note' }, 'No AI answer in time · last scan') : null));
+    for (const g of result.ladder) cards.push(rungCard(g));
   }
 
   cards.push(aiIdeasCard(result));
@@ -584,9 +665,23 @@ function renderResult(result) {
   }
 
   const blockedCatalogue = result.filtered.filter((f) => f.meal.origin !== 'ai');
-  if (top && blockedCatalogue.length) {
+  if (result.ladder.length && blockedCatalogue.length) {
     cards.push(h('section', { class: 'card' },
       h('details', { class: 'skipped' }, h('summary', {}, 'Can’t make yet'), blockedList(blockedCatalogue))));
+  }
+
+  const latest = Object.keys(liveVerdicts(state.liveRepairs));
+  if (latest.length) {
+    const byId = new Map(state.liveRepairs.map((r) => [r.dishId, r]));
+    cards.push(h('section', { class: 'card' },
+      h('details', { class: 'skipped' }, h('summary', {}, `Your fixes (${latest.length})`),
+        h('ul', { class: 'others' }, latest.map((id) => {
+          const r = byId.get(id);
+          return h('li', {},
+            h('div', { class: 'other-head' }, h('strong', {}, r.name), h('span', { class: 'muted' }, `${r.pierre} → ${r.yours}`)),
+            r.fix ? h('p', { class: 'mini' }, r.fix) : null,
+            h('button', { class: 'btn link quiet', type: 'button', onclick: () => undoLiveRepair(id) }, 'Undo'));
+        })))));
   }
 
   const shown = cards.filter(Boolean);

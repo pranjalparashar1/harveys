@@ -5,12 +5,15 @@
 //   2. score = payoff − λ_context × Σ_i w_i · f_i   (Friction v2, see learn.js)
 //   3. Pierre (v2 Step 5A): a vetoed dish is dropped; the rest sort by tier
 //      (crave > pass > floor) first, then by score.
-//   4. Every score comes back as named parts, so the UI can say why it won.
+//   4. White v2 (Step 5B): the ladder. Each dish sits on one attention rung (nothing
+//      to watch, walk away, stand at it, juggle); inside a rung, tier → payoff →
+//      friction. One pick per rung, so an easy dish never buries a better one.
+//   5. Every score comes back as named parts, so the UI can say why it won.
 //
 // Pure: no DOM, no network, no randomness, no clock (the caller passes the time).
 // Written to port line-for-line to MarcoCore (Foundation-only Swift).
 
-import { CAPABILITIES, EQUIPMENT, labelFor } from './vocabulary.js';
+import { CAPABILITIES, EQUIPMENT, FOODS, labelFor } from './vocabulary.js';
 import { DEFAULT_CONFIG } from './config.js';
 import { nutritionProblems } from './validate.js';
 import { FEATURES, inDiet, prePrepUnits, rawFeatures } from './learn.js';
@@ -111,7 +114,9 @@ export function scoreMeal(meal, used, targets, lambda, config = DEFAULT_CONFIG) 
   const frictionParts = FRICTION.map((f) => {
     const value = Number(values[f.key]) || 0;
     const normalised = value / f.scale;
-    return { name: f.key, label: f.label, raw: value, normalised, value: -f.prior * normalised };
+    // Fitted Marco weights (config.frictionTheta, from the 50-tap sprint) win over the priors.
+    const theta = config.frictionTheta?.[f.key] ?? f.prior;
+    return { name: f.key, label: f.label, raw: value, normalised, value: -theta * normalised };
   });
   const friction = frictionParts.reduce((acc, p) => acc + p.value, 0);
   const pay = payoff(meal, targets, config);
@@ -150,6 +155,73 @@ export function judgeMeal(meal, used, inventory, verdicts = PIERRE_SEED) {
     tier: t.tier, computed: t.computed, source: t.source, why: t.why, upgrade: t.upgrade, repairs: t.repairs,
     untested: t.untested, hint: pierreHint(t), finish: t.profile?.finish ?? {},
   };
+}
+
+// ── White v2: the effort ladder (Step 5B) ──────────────────────────────────
+/** Closed appliances: walk-away heat. */
+export const CLOSED_APPLIANCES = new Set(['microwave', 'air_fryer', 'sandwich_maker', 'toaster', 'kettle', 'pressure_cooker']);
+/** Open vessels you stand over (capabilities and the kit that meets them). */
+export const OPEN_VESSELS = new Set(['pan', 'pot', 'saucepan', 'frying_pan', 'tawa', 'kadai', 'oven']);
+/** Everything that counts toward juggling. */
+export const COOKING_UNITS = new Set([...CLOSED_APPLIANCES, ...OPEN_VESSELS]);
+
+export const RUNGS = {
+  1: 'Nothing to watch',
+  2: 'Walk away',
+  3: 'Stand at it',
+  4: 'Juggle',
+};
+
+/**
+ * The attention rung of a meal as it would be made (`used` = checkMeal's kit, else the meal's).
+ * Checked in this order: 4 (two or more cooking units, or attention 3), 1 (no heat, no knife),
+ * 2 (exactly one closed appliance, no open vessel, attention ≤ 1, nothing to peel), else 3.
+ * "Heat" is read from the kit, not the step text: "protein toast" is not a toaster.
+ * Pre-prep never moves a dish between rungs.
+ */
+export function rungOf(meal, used = null) {
+  const equipment = used?.equipment ?? meal.equipment ?? [];
+  const raw = rawFeatures({ ...meal, equipment, utensils: used?.utensils ?? meal.utensils });
+  const units = equipment.filter((e) => COOKING_UNITS.has(e));
+  const closed = units.filter((e) => CLOSED_APPLIANCES.has(e)).length;
+  const open = units.length - closed;
+  if (units.length >= 2 || raw.attention >= 3) return 4;
+  if (units.length === 0 && raw.peels === 0 && raw.cuts === 0) return 1;
+  if (closed === 1 && open === 0 && raw.attention <= 1 && raw.peels === 0) return 2;
+  return 3;
+}
+
+/** White's assembly line: parts one finishing step from done get a closing step, not friction. */
+export function assemblyStepOf(meal, pierre, used) {
+  const near = Object.entries(pierre?.finish ?? {}).filter(([, d]) => d === 'one finishing step').map(([k]) => k.split('@')[0]);
+  if (!near.length) return null;
+  const nearSet = new Set(near);
+  const seasonings = (used?.ingredients ?? meal.ingredients ?? [])
+    .map((i) => i.id ?? i.anyOf?.[0])
+    .filter((id) => id && !nearSet.has(id) && ['spice', 'fat'].includes(FOODS[id]?.group) && id !== 'oil');
+  const list = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : xs[0]);
+  const what = list([...new Set(near)].map((id) => labelFor(id).toLowerCase()));
+  const withWhat = seasonings.length ? list([...new Set(seasonings)].map((id) => labelFor(id).toLowerCase())) : 'a pinch of salt';
+  return `Finish the ${what} with ${withWhat}.`;
+}
+
+/** Inside a rung: tier, then payoff (macros win), then friction, then id. */
+export function byRungOrder(a, b) {
+  return TIER_ORDER[b.pierre.tier] - TIER_ORDER[a.pierre.tier]
+    || b.payoff.value - a.payoff.value
+    || a.friction - b.friction
+    || a.meal.id.localeCompare(b.meal.id);
+}
+
+/** Groups ranked meals into the ladder: only rungs with a dish, one pick each. */
+export function buildLadder(ranked, { alternatives = 3 } = {}) {
+  const ladder = [];
+  for (const rung of [1, 2, 3, 4]) {
+    const items = ranked.filter((r) => r.rung === rung).sort(byRungOrder);
+    if (!items.length) continue;
+    ladder.push({ rung, name: RUNGS[rung], pick: items[0], alternatives: items.slice(1, 1 + alternatives) });
+  }
+  return ladder;
 }
 
 function plural(n, word, pluralWord = `${word}s`) {
@@ -238,7 +310,12 @@ export function rank({ inventory, targets, context = {}, catalogue, config = DEF
       vetoed.push({ meal, pierre });
       continue;
     }
-    ranked.push({ meal, used, pierre, ...scoreMeal(meal, used, targets, lambda, config) });
+    ranked.push({
+      meal, used, pierre, rung: rungOf(meal, used),
+      prePrepNote: meal.prePrep?.text ?? null,
+      assemblyStep: assemblyStepOf(meal, pierre, used),
+      ...scoreMeal(meal, used, targets, lambda, config),
+    });
   }
   ranked.sort((a, b) => TIER_ORDER[b.pierre.tier] - TIER_ORDER[a.pierre.tier]
     || b.score - a.score || a.friction - b.friction || a.meal.id.localeCompare(b.meal.id));
@@ -262,7 +339,7 @@ export function rank({ inventory, targets, context = {}, catalogue, config = DEF
     .slice(0, config.unlockSuggestions)
     .map(([id, meals]) => ({ id, label: labelFor(id), meals }));
 
-  return { ranked, filtered, vetoed, unlocks, lambda };
+  return { ladder: buildLadder(ranked), ranked, filtered, vetoed, unlocks, lambda };
 }
 
 /** Human description of what blocked a meal. */
