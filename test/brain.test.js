@@ -216,3 +216,53 @@ test('AI recipes still validate with the new prep kinds, and get a knife for a c
   assert.equal(r.meal.ingredients[0].prep, 'cut');
   assert.ok(r.meal.utensils.includes('knife'));
 });
+
+// ── v2 Step 5A: Pierre in the live ranker ──────────────────────────────────
+const EGG_KITCHEN = () => buildInventory([...DEMO_KITCHEN, 'eggs', 'soya chunks', 'curd']);
+const rankAll = (inventory, extra = {}) => rank({ inventory, targets: TARGETS, context: { hour: 19, weekday: 3, kind: 'any' }, catalogue: CATALOGUE, ...extra });
+
+test('5A: a vetoed dish never reaches ranked, and is listed in vetoed', () => {
+  const r = rankAll(EGG_KITCHEN());
+  for (const id of ['mug_omelette', 'soya_chunk_curd_bowl']) {
+    assert.equal(positionOf(r, id), -1, `${id} should not be ranked`);
+    assert.ok(r.vetoed.some((v) => v.meal.id === id), `${id} should be in vetoed`);
+  }
+  assert.ok(r.ranked.every((x) => x.pierre.tier !== 'veto'));
+});
+
+test('5A: crave ranks above pass, pass above floor, whatever the score', () => {
+  const r = rankAll(EGG_KITCHEN(), { verdicts: { boiled_eggs: { tier: 'crave' }, whey_milk_shake: { tier: 'floor' }, mug_omelette: { verdict: 'fail' } } });
+  const order = { crave: 3, pass: 2, floor: 1 };
+  for (let i = 1; i < r.ranked.length; i++) assert.ok(order[r.ranked[i - 1].pierre.tier] >= order[r.ranked[i].pierre.tier], `#${i} ${r.ranked[i - 1].meal.id} before ${r.ranked[i].meal.id}`);
+  assert.equal(r.ranked[0].meal.id, 'boiled_eggs');
+  assert.equal(r.ranked.find((x) => x.meal.id === 'whey_milk_shake').pierre.tier, 'floor');
+});
+
+test('5A: every floor dish carries a one-line hint, and pass/crave dishes none', () => {
+  const r = rankAll(EGG_KITCHEN());
+  assert.ok(r.ranked.some((x) => x.pierre.tier === 'floor'));
+  for (const x of r.ranked) {
+    if (x.pierre.tier === 'floor') assert.ok(typeof x.pierre.hint === 'string' && x.pierre.hint.length > 0, x.meal.id);
+    else assert.equal(x.pierre.hint, null, x.meal.id);
+  }
+  const bhurji = r.ranked.find((x) => x.meal.id === 'microwave_paneer_bhurji');
+  assert.match(bhurji.pierre.hint, /^Lift it: \+ /);
+});
+
+test('5A: a meal without Pierre parts (an AI recipe) is ranked, marked untested', () => {
+  const ai = { ...CATALOGUE.find((m) => m.id === 'whey_milk_shake'), id: 'ai_shake', origin: 'ai', parts: undefined, form: undefined };
+  const r = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: TARGETS, context: { hour: 19, weekday: 3, kind: 'any' }, catalogue: [ai] });
+  assert.equal(r.ranked[0].pierre.untested, true);
+  assert.equal(r.ranked[0].pierre.tier, 'pass');
+});
+
+test('5A: chana chaat (chickpeas boiled ahead) is not vetoed as raw', () => {
+  const inv = buildInventory([...DEMO_KITCHEN, 'chickpeas', 'onion', 'lemon', 'chaat masala']);
+  const r = rankAll(inv);
+  assert.ok(positionOf(r, 'chana_chaat') >= 0);
+});
+
+test('5A: "one thing to buy" never unlocks a dish Pierre vetoes', () => {
+  const r = rankAll(buildInventory(DEMO_KITCHEN));
+  for (const u of r.unlocks) assert.ok(!u.meals.includes('Microwave mug omelette'), u.label);
+});
