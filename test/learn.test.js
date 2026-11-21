@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { CATALOGUE, parseItemList, buildInventory } from '../src/brain/index.js';
 import {
-  rawFeatures, featureVector, fitMarco, fitPierre, pierreTags, explainWeights, nextPair, mulberry32,
-  inDiet, prePrepUnits, FEATURES, utility, VERDICT_VALUE,
+  rawFeatures, featureVector, fitMarco, explainWeights, nextPair, mulberry32,
+  inDiet, prePrepUnits, FEATURES, utility,
 } from '../src/brain/learn.js';
-import { PIERRE_SEED, TECHNIQUE_OVERLAY, TRAINING_EXTRAS } from '../src/brain/train-data.js';
+import * as learn from '../src/brain/learn.js';
+import { TECHNIQUE_OVERLAY } from '../src/brain/train-data.js';
+import { rungOf } from '../src/brain/ranker.js';
 
 const dish = (id) => ({ ...CATALOGUE.find((d) => d.id === id), ...TECHNIQUE_OVERLAY[id] });
 
@@ -40,14 +42,9 @@ test('the training pool is vegetarian plus eggs', () => {
   assert.ok(pool.includes('egg_bhurji'));
 });
 
-test('Pierre learns "microwaved protein is sad" from the chat verdicts', () => {
-  const dishes = [...CATALOGUE.map((d) => ({ ...d, ...TECHNIQUE_OVERLAY[d.id] })), ...TRAINING_EXTRAS];
-  const rows = Object.entries(PIERRE_SEED).map(([id, v]) => ({ tags: pierreTags(dishes.find((d) => d.id === id)), value: VERDICT_VALUE[v.verdict] }));
-  const pierre = fitPierre(rows);
-  assert.ok(pierre.weights['method:microwave'] < 0, 'microwave is disliked');
-  const panPaneer = pierre.predict(pierreTags(TRAINING_EXTRAS[0]));
-  const microPaneer = pierre.predict(pierreTags(dish('microwave_paneer_bhurji')));
-  assert.ok(panPaneer > microPaneer, `pan-fried paneer ${panPaneer.toFixed(2)} > microwave ${microPaneer.toFixed(2)}`);
+test('the tag-logistic Pierre is gone: Pierre is pierreTier() everywhere (5B)', () => {
+  for (const name of ['fitPierre', 'pierreSummary', 'pierreTags', 'tagLabel', 'VERDICT_VALUE']) assert.equal(learn[name], undefined, name);
+  for (const o of Object.values(TECHNIQUE_OVERLAY)) assert.equal(o.pierreTags, undefined);
 });
 
 /** A simulated user who hates peeling far more than the prior assumes. */
@@ -128,3 +125,35 @@ function FIELDS_FROM(js) {
   const m = js.match(/const FIELDS = \[([^\]]+)\]/);
   return m ? [...m[1].matchAll(/'(\w+)'/g)].map((x) => x[1]) : [];
 }
+
+test('5B: nextPair with maxRungGap 1 never pairs rung 1 with rung 4 when closer pairs exist', () => {
+  const pool = CATALOGUE.filter(inDiet).map((d) => ({ id: d.id, x: featureVector(rawFeatures(d), 0.75), rung: rungOf(d) }));
+  assert.ok(pool.some((p) => p.rung === 1) && pool.some((p) => p.rung === 4));
+  const theta = FEATURES.map((f) => f.prior);
+  const rng = mulberry32(3);
+  let same = 0;
+  for (let k = 0; k < 200; k++) {
+    const [a, b] = nextPair(pool, { theta, rng, maxRungGap: 1 });
+    assert.ok(Math.abs(a.rung - b.rung) <= 1, `${a.id} (${a.rung}) vs ${b.id} (${b.rung})`);
+    if (a.rung === b.rung) same++;
+  }
+  assert.ok(same > 100, `most pairs within one rung (${same}/200)`);
+});
+
+test('5B: nextPair falls back to any pair when no pair is close enough', () => {
+  const pool = [{ id: 'a', x: [0], rung: 1 }, { id: 'b', x: [0], rung: 4 }];
+  const pair = nextPair(pool, { theta: [0], rng: mulberry32(1), maxRungGap: 1 });
+  assert.deepEqual(pair.map((p) => p.id).sort(), ['a', 'b']);
+});
+
+test('5B: the fitted-weights payload is ready for config.js (protein-scaled friction θ)', () => {
+  const fit = fitMarco(simulate(60));
+  const p = learn.fittedWeightsPayload(fit, []);
+  assert.equal(p.taps, 60);
+  const friction = FEATURES.filter((f) => !f.payoff).map((f) => f.key);
+  assert.deepEqual(Object.keys(p.frictionTheta).sort(), [...friction].sort());
+  for (const k of friction) assert.ok(Number.isFinite(p.frictionTheta[k]), k);
+  assert.ok(p.explained.some((w) => w.key === 'peels'));
+  // Round trip: the ranker reads the same keys from config.frictionTheta.
+  assert.doesNotThrow(() => JSON.parse(JSON.stringify(p)));
+});

@@ -266,3 +266,96 @@ test('5A: "one thing to buy" never unlocks a dish Pierre vetoes', () => {
   const r = rankAll(buildInventory(DEMO_KITCHEN));
   for (const u of r.unlocks) assert.ok(!u.meals.includes('Microwave mug omelette'), u.label);
 });
+
+// ── v2 Step 5B: White's effort ladder ──────────────────────────────────────
+import { rungOf, buildLadder, cookLogEntry, liveRepairEntry, liveVerdicts } from '../src/brain/index.js';
+const meal = (id) => CATALOGUE.find((m) => m.id === id);
+const WED_7PM = { hour: 19, weekday: 3 };
+const BIG = { protein: 60, calories: 1200, fiber: 20 };
+
+test('5B: fixed rung assignments', () => {
+  const want = {
+    whey_milk_shake: 1, whey_makhana_bowl: 1, airfryer_protein_cheese_toast: 2, microwave_paneer_bhurji: 2,
+    stovetop_paneer_bhurji: 3, pasta_aglio_olio_paneer: 4, chana_chaat: 3,
+  };
+  for (const [id, rung] of Object.entries(want)) assert.equal(rungOf(meal(id)), rung, id);
+});
+
+test('5B: chana chaat keeps its attention rung and carries the pre-prep note', () => {
+  const inv = buildInventory([...DEMO_KITCHEN, 'chickpeas', 'onion', 'lemon', 'chaat masala']);
+  const r = rank({ inventory: inv, targets: BIG, context: WED_7PM, catalogue: CATALOGUE });
+  const c = r.ranked.find((x) => x.meal.id === 'chana_chaat');
+  assert.equal(c.rung, 3);
+  assert.match(c.prePrepNote, /Soak/);
+});
+
+test('5B precedence: two closed appliances juggle (rung 4); a no-cook dish with a cut stands (rung 3)', () => {
+  const two = { equipment: ['microwave', 'air_fryer'], utensils: [], ingredients: [], steps: [{ text: 'Heat.', active: 1 }], attention: 1 };
+  assert.equal(rungOf(two), 4);
+  const cut = { equipment: [], utensils: ['knife'], ingredients: [{ id: 'tomato', prep: 'peel_chop' }], steps: [{ text: 'Slice.', active: 2 }], attention: 0 };
+  assert.equal(rungOf(cut), 3);
+});
+
+test('5B within a rung: a higher-protein pass beats a lower-protein pass with slightly less friction', () => {
+  const base = meal('stovetop_paneer_bhurji');
+  const lean = { ...base, id: 'lean', macros: { ...base.macros, protein: 12 }, steps: base.steps.slice(0, -1) };
+  const rich = { ...base, id: 'rich', macros: { ...base.macros, protein: 30 } };
+  const inv = buildInventory([...DEMO_KITCHEN, 'onion']);
+  const r = rank({ inventory: inv, targets: BIG, context: WED_7PM, catalogue: [lean, rich], verdicts: {} });
+  const rich3 = r.ranked.find((x) => x.meal.id === 'rich');
+  const lean3 = r.ranked.find((x) => x.meal.id === 'lean');
+  assert.equal(rich3.rung, 3);
+  assert.equal(lean3.rung, 3);
+  assert.equal(rich3.pierre.tier, lean3.pierre.tier);
+  assert.ok(lean3.friction < rich3.friction, 'lean is a little less effort');
+  assert.equal(r.ladder.find((g) => g.rung === 3).pick.meal.id, 'rich');
+});
+
+test('5B small pantry: only no-cook dishes gives a rung-1-only ladder', () => {
+  const r = rank({ inventory: buildInventory(['whey', 'milk', 'makhana']), targets: BIG, context: { ...WED_7PM, kind: 'any' }, catalogue: CATALOGUE });
+  assert.ok(r.ladder.length >= 1);
+  assert.deepEqual(r.ladder.map((g) => g.rung), [1]);
+});
+
+test('5B: no vetoed dish appears on any rung', () => {
+  const r = rank({ inventory: buildInventory([...DEMO_KITCHEN, 'eggs', 'soya chunks', 'curd']), targets: BIG, context: { ...WED_7PM, kind: 'any' }, catalogue: CATALOGUE });
+  assert.ok(r.vetoed.length >= 2);
+  const vetoed = new Set(r.vetoed.map((v) => v.meal.id));
+  for (const g of r.ladder) for (const x of [g.pick, ...g.alternatives]) assert.ok(!vetoed.has(x.meal.id) && x.pierre.tier !== 'veto', x.meal.id);
+});
+
+test('5B ladder trace: demo kitchen, Wednesday 7 PM: whey on 1, toast on 2, sandwich on 3, aglio olio on 4', () => {
+  const r = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: BIG, context: WED_7PM, catalogue: CATALOGUE });
+  const pick = Object.fromEntries(r.ladder.map((g) => [g.rung, g.pick.meal.id]));
+  assert.deepEqual(r.ladder.map((g) => g.rung), [1, 2, 3, 4]);
+  assert.match(pick[1], /whey/);
+  assert.equal(pick[2], 'airfryer_protein_cheese_toast');
+  assert.match(pick[3], /sandwich/);
+  assert.equal(pick[4], 'pasta_aglio_olio_paneer');
+  assert.ok(r.ladder.find((g) => g.rung === 2).alternatives.some((a) => a.meal.id === 'microwave_paneer_bhurji'));
+});
+
+test('5B assembly line: a dish one finishing step from done gets a closing step', () => {
+  const r = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: BIG, context: WED_7PM, catalogue: CATALOGUE });
+  const bhurji = r.ranked.find((x) => x.meal.id === 'microwave_paneer_bhurji');
+  assert.match(bhurji.assemblyStep, /^Finish the paneer with .*butter/);
+});
+
+test('5B export round trip: cookLog and liveRepairs serialise for "Copy for Claude"', () => {
+  const r = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: BIG, context: WED_7PM, catalogue: CATALOGUE });
+  const g2 = r.ladder.find((g) => g.rung === 2);
+  const chosen = g2.alternatives[0];
+  const entry = cookLogEntry({ chosen, ladder: r.ladder, context: { kind: 'meal', ...WED_7PM }, at: '2026-11-21T19:00:00Z' });
+  assert.equal(entry.dishId, chosen.meal.id);
+  assert.equal(entry.rung, 2);
+  assert.equal(entry.ladderShown.length, r.ladder.length);
+  assert.ok(entry.alternativesShown.some((a) => a.id === g2.pick.meal.id), 'the rung pick you skipped is recorded');
+  assert.ok(!entry.alternativesShown.some((a) => a.id === chosen.meal.id));
+  const fix = liveRepairEntry({ item: g2.pick, tier: 'veto', fix: 'too dry', at: '2026-11-21T19:01:00Z' });
+  const json = JSON.parse(JSON.stringify({ cookLog: [entry], liveRepairs: [fix] }));
+  assert.deepEqual(json.cookLog[0], entry);
+  assert.equal(json.liveRepairs[0].chain.anchor.id, 'bread');
+  // A live veto applies at once.
+  const again = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: BIG, context: WED_7PM, catalogue: CATALOGUE, verdicts: liveVerdicts([fix]) });
+  assert.ok(again.vetoed.some((v) => v.meal.id === g2.pick.meal.id));
+});

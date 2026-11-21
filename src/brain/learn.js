@@ -8,9 +8,8 @@
 // neither), and can give each dish a Pierre verdict: pass, meh or fail.
 // From those taps this file fits:
 //
-//   1. Pierre: a logistic model over technique tags (method × main ingredient,
-//      e.g. "microwave × paneer"), trained on the verdicts. It predicts a verdict
-//      for dishes nobody has judged yet, such as wacky AI ones.
+//   1. Pierre is no longer fitted here: its tier comes from pierreTier()
+//      (ingredients.js), the same engine the live ranker uses (Step 5B).
 //   2. Marco: a Bradley–Terry (pairwise logistic) model,
 //        P(pick A over B) = σ(u_A − u_B),   u = θ · x
 //      where x = protein, Pierre and the friction features below. θ starts at a
@@ -106,9 +105,7 @@ export function featureVector(raw, pierre) {
   return FEATURES.map((f) => (Number(values[f.key]) || 0) / f.scale);
 }
 
-// ── Pierre: verdicts → technique tags → predicted taste ────────────────────
-
-export const VERDICT_VALUE = { pass: 1, meh: 0.5, fail: 0 };
+// ── How a dish is cooked ────────────────────────────────────────────────────
 
 const METHOD_WORDS = [
   ['microwave', /microwave/i],
@@ -145,66 +142,7 @@ export function starsOf(dish) {
   return [...new Set(ids)].sort();
 }
 
-/** Tags Pierre judges by: each method, each star, and each method × star. */
-export function pierreTags(dish) {
-  const methods = methodsOf(dish);
-  const stars = starsOf(dish);
-  const tags = [...methods.map((m) => `method:${m}`), ...stars.map((s) => `food:${s}`)];
-  for (const m of methods) for (const s of stars) tags.push(`${m} × ${s}`);
-  for (const t of dish.pierreTags ?? []) tags.push(`tag:${t}`);
-  return tags;
-}
-
-export function tagLabel(tag) {
-  const pretty = (s) => (FOODS[s]?.label ?? s).toLowerCase();
-  if (tag.startsWith('method:')) return tag.slice(7);
-  if (tag.startsWith('food:')) return pretty(tag.slice(5));
-  if (tag.startsWith('tag:')) return tag.slice(4);
-  const [m, s] = tag.split(' × ');
-  return `${m} × ${pretty(s)}`;
-}
-
 const sigmoid = (z) => 1 / (1 + Math.exp(-z));
-
-/**
- * Fits Pierre from verdicts. Soft labels (pass 1, meh .5, fail 0), L2 toward 0
- * on every tag, intercept toward "most food passes" (σ(1) ≈ .73).
- * @param {Array<{tags: string[], value: number}>} rows
- */
-export function fitPierre(rows, { alpha = 1, iterations = 400, rate = 0.5 } = {}) {
-  const tags = [...new Set(rows.flatMap((r) => r.tags))].sort();
-  const w = Object.fromEntries(tags.map((t) => [t, 0]));
-  let b = 1;
-  const n = Math.max(rows.length, 1);
-  for (let it = 0; it < iterations; it++) {
-    const g = Object.fromEntries(tags.map((t) => [t, alpha * w[t]]));
-    let gb = alpha * (b - 1);
-    for (const r of rows) {
-      const p = sigmoid(b + r.tags.reduce((acc, t) => acc + w[t], 0));
-      const err = p - r.value;
-      gb += err;
-      for (const t of r.tags) g[t] += err;
-    }
-    b -= (rate * gb) / n;
-    for (const t of tags) w[t] -= (rate * g[t]) / n;
-  }
-  const support = Object.fromEntries(tags.map((t) => [t, rows.filter((r) => r.tags.includes(t)).length]));
-  return {
-    bias: b,
-    weights: w,
-    support,
-    predict: (dishTags) => sigmoid(b + dishTags.reduce((acc, t) => acc + (w[t] ?? 0), 0)),
-  };
-}
-
-/** The tags Pierre leans on most, for "Pierre now hates the microwave for paneer". */
-export function pierreSummary(model, { top = 4, min = 0.15 } = {}) {
-  const entries = Object.entries(model.weights).map(([tag, weight]) => ({ tag, label: tagLabel(tag), weight, support: model.support[tag] }));
-  return {
-    likes: entries.filter((e) => e.weight >= min).sort((a, b) => b.weight - a.weight).slice(0, top),
-    dislikes: entries.filter((e) => e.weight <= -min).sort((a, b) => a.weight - b.weight).slice(0, top),
-  };
-}
 
 // ── Marco: pairwise choices → weights ──────────────────────────────────────
 
@@ -358,26 +296,56 @@ export function explainWeights(theta) {
   });
 }
 
+/**
+ * The fitted Marco weights, ready for src/brain/config.js (PR 5C). Friction θ is scaled so
+ * protein stays at its prior (1 per 30 g), the unit the live ranker's priors are in.
+ */
+export function fittedWeightsPayload(fit, choices = []) {
+  const proteinPrior = FEATURES.find((f) => f.key === 'protein').prior;
+  const k = fit.theta[0] > 0 ? proteinPrior / fit.theta[0] : 1;
+  const frictionTheta = Object.fromEntries(FEATURES.map((f, j) => [f, fit.theta[j]]).filter(([f]) => !f.payoff).map(([f, t]) => [f.key, +(t * k).toFixed(3)]));
+  return {
+    taps: fit.n, looHits: fit.looHits, hits: fit.hits, priorHits: fit.priorHits, baseline: '7 PM after work, low energy',
+    theta: Object.fromEntries(FEATURES.map((f, j) => [f.key, +fit.theta[j].toFixed(3)])),
+    frictionTheta,
+    explained: explainWeights(fit.theta).filter((w) => w.key !== 'protein').map((w) => ({ key: w.key, gramsPerUnit: w.gramsPerUnit == null ? null : +w.gramsPerUnit.toFixed(2) })),
+    choices,
+  };
+}
+
 // ── Picking the next pair ───────────────────────────────────────────────────
 
 /**
  * Picks the pair that teaches Marco the most: close in predicted utility
  * (a hard call), not shown together before, and favouring dishes seen least.
- * @param {Array<{id: string, x: number[], unjudged?: boolean}>} pool
- * @param {{theta: number[], seenPairs: Set<string>, shown: Map<string, number>, rng: () => number, last?: string[]}} opts
+ * Step 5B: when items carry `rung`, pairs stay within `maxRungGap` rungs of each
+ * other (same rung preferred: the real trade-offs live there; the ladder already
+ * separates rung 1 from rung 4). Any pair is a fallback only if none qualifies.
+ * @param {Array<{id: string, x: number[], unjudged?: boolean, rung?: number}>} pool
+ * @param {{theta: number[], seenPairs: Set<string>, shown: Map<string, number>, rng: () => number, last?: string[], maxRungGap?: number}} opts
  */
-export function nextPair(pool, { theta, seenPairs = new Set(), shown = new Map(), rng, last = [], tries = 60 }) {
+export function nextPair(pool, { theta, seenPairs = new Set(), shown = new Map(), rng, last = [], tries = 60, maxRungGap = 1 }) {
   if (pool.length < 2) return null;
+  const gapOf = (a, b) => (a.rung == null || b.rung == null ? 0 : Math.abs(a.rung - b.rung));
+  const candidates = [];
+  for (let i = 0; i < pool.length; i++) for (let j = i + 1; j < pool.length; j++) if (gapOf(pool[i], pool[j]) <= maxRungGap) candidates.push([pool[i], pool[j]]);
   let best = null;
   for (let t = 0; t < tries; t++) {
-    const i = Math.floor(rng() * pool.length);
-    let j = Math.floor(rng() * (pool.length - 1));
-    if (j >= i) j++;
-    const [a, b] = [pool[i], pool[j]];
+    let a;
+    let b;
+    if (candidates.length) {
+      [a, b] = candidates[Math.floor(rng() * candidates.length)];
+    } else {
+      const i = Math.floor(rng() * pool.length);
+      let j = Math.floor(rng() * (pool.length - 1));
+      if (j >= i) j++;
+      [a, b] = [pool[i], pool[j]];
+    }
     const key = [a.id, b.id].sort().join('|');
     const gap = Math.abs(utility(theta, a.x) - utility(theta, b.x));
     const novelty = 1 / (1 + (shown.get(a.id) ?? 0)) + 1 / (1 + (shown.get(b.id) ?? 0));
-    const score = -gap + 0.8 * novelty + (a.unjudged ? 0.3 : 0) + (b.unjudged ? 0.3 : 0)
+    const sameRung = a.rung != null && a.rung === b.rung ? 0.5 : 0;
+    const score = -gap + 0.8 * novelty + sameRung + (a.unjudged ? 0.3 : 0) + (b.unjudged ? 0.3 : 0)
       - (seenPairs.has(key) ? 2 : 0) - (last.includes(a.id) || last.includes(b.id) ? 1.5 : 0) + 0.15 * rng();
     if (!best || score > best.score) best = { a, b, score };
   }

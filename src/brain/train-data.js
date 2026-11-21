@@ -23,10 +23,9 @@ export const PIERRE_SEED = {
   pasta_aglio_olio_paneer: { verdict: 'pass', why: 'Pierre approves' },
 };
 
-/** Extra technique facts the catalogue can't express, for Pierre's tags. */
+/** Extra technique facts the catalogue can't express. */
 export const TECHNIQUE_OVERLAY = {
   soya_chunk_curd_bowl: { methods: ['boil'] }, // microwaved in water = boiled
-  paneer_wrap: { pierreTags: ['wrap'] },
 };
 
 /** Dishes that exist only to be judged, not (yet) in Marco's catalogue. */

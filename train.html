@@ -53,12 +53,8 @@
       <a class="btn xl" href="retest.html">Open</a>
     </section>
 
-    <!-- Tonight -->
-    <div class="segmented" id="mood" role="radiogroup" aria-label="Tonight I feel">
-      <button type="button" role="radio" data-haptic data-value="fresh">Fresh</button>
-      <button type="button" role="radio" data-haptic data-value="okay">Okay</button>
-      <button type="button" role="radio" data-haptic data-value="tired">Tired</button>
-    </div>
+    <!-- The fixed baseline for the Marco v1 sprint (Step 5B): one mood, so every tap fits θ -->
+    <p class="baseline" id="baseline">7 PM after a long day of work, low energy. Which would you actually make right now?</p>
 
     <!-- The pair -->
     <section class="pair" id="pair" aria-live="polite"></section>
@@ -147,7 +143,8 @@
     </section>
 
     <section class="card" aria-label="Export">
-      <button class="btn primary wide no-top" id="export" data-haptic type="button">Copy for Claude</button>
+      <button class="btn primary wide no-top" id="copy-weights" data-haptic type="button">Copy fitted Marco weights</button>
+      <button class="btn wide" id="export" data-haptic type="button">Copy for Claude</button>
       <div class="row center-row">
         <button class="btn link quiet" id="reset" type="button">Start over</button>
       </div>

@@ -430,3 +430,20 @@ h2 .badge.tier { vertical-align: 2px; text-transform: none; letter-spacing: 0; }
 .badge.tier-floor { color: var(--muted); }
 .badge.tier-untested { color: var(--muted); border-style: dashed; }
 .lift { font-size: 14px; color: var(--accent); margin: -4px 0 10px; }
+
+/* White v2: the effort ladder (Step 5B) */
+.ladder-head { margin: 8px 4px 10px; }
+.ladder-head h2 { margin-bottom: 4px; }
+.card.rung h2.dish-name { font-size: 22px; line-height: 1.25; font-weight: 700; color: var(--ink); letter-spacing: 0; text-transform: none; margin: 0 0 8px; }
+.preprep { font-size: 14px; color: var(--blue); margin: -4px 0 10px; }
+.recipe-fold { margin: 10px 0 4px; }
+.recipe-fold > summary { cursor: pointer; font-weight: 600; font-size: 15px; color: var(--muted); }
+.recipe li.assembly { color: var(--accent); }
+.rung-actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+.rung-actions .btn.cook { flex: 1; min-width: 0; }
+.rung-actions .btn.cook[disabled] { opacity: 1; background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.fix-drawer { margin-top: 12px; padding: 12px; border-radius: var(--r); background: var(--surface2); border: 1px solid var(--line); }
+.fix-drawer .segmented { margin: 8px 0; }
+.alts { margin-top: 12px; }
+.alts > summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+.baseline { font-size: 15px; color: var(--muted); text-align: center; margin: 4px 8px 12px; }
