@@ -290,7 +290,17 @@ export function compareReasons(winner, other) {
  * @param {object} [input.config]
  * @param {object} [input.verdicts]  pranjal's Pierre verdicts by meal id (default PIERRE_SEED)
  */
-export function rank({ inventory, targets, context = {}, catalogue, config = DEFAULT_CONFIG, verdicts = PIERRE_SEED }) {
+/** The foods a dish needs soaked first (1.21.0): catalogue `prePrep.soak`. */
+export const soakNeeds = (meal) => meal.prePrep?.soak ?? [];
+
+/**
+ * `soaked` (1.21.0): the foods you have soaking or soaked today. A dish whose soak foods are all
+ * soaked ranks as if the soaking were done (no pre-prep friction, no note); one that still needs
+ * soaking leaves tonight's ladder for `tomorrow` ("Soak rajma tonight"). Never hidden (v2 plan §2).
+ */
+export function rank({ inventory, targets, context = {}, catalogue, config = DEFAULT_CONFIG, verdicts = PIERRE_SEED, soaked = [] }) {
+  const isSoaked = new Set(soaked);
+  const tomorrow = [];
   const lambda = contextLambda(context, config);
   const kind = context.kind ?? 'meal';
   const ranked = [];
@@ -310,13 +320,23 @@ export function rank({ inventory, targets, context = {}, catalogue, config = DEF
       vetoed.push({ meal, pierre });
       continue;
     }
+    const needs = soakNeeds(meal);
+    const unsoaked = needs.filter((id) => !isSoaked.has(id));
+    if (unsoaked.length) {
+      tomorrow.push({ meal, used, pierre, soak: unsoaked, ...scoreMeal(meal, used, targets, lambda, config) });
+      continue;
+    }
+    // Soaked already: the pre-prep is done, so it costs nothing and needs no note.
+    const ready = needs.length ? { ...meal, prePrep: null } : meal;
     ranked.push({
-      meal, used, pierre, rung: rungOf(meal, used),
-      prePrepNote: meal.prePrep?.text ?? null,
-      assemblyStep: assemblyStepOf(meal, pierre, used),
-      ...scoreMeal(meal, used, targets, lambda, config),
+      meal: ready, used, pierre, rung: rungOf(ready, used),
+      prePrepNote: ready.prePrep?.text ?? null,
+      assemblyStep: assemblyStepOf(ready, pierre, used),
+      ...scoreMeal(ready, used, targets, lambda, config),
     });
   }
+  tomorrow.sort((a, b) => TIER_ORDER[b.pierre.tier] - TIER_ORDER[a.pierre.tier]
+    || b.score - a.score || a.meal.id.localeCompare(b.meal.id));
   ranked.sort((a, b) => TIER_ORDER[b.pierre.tier] - TIER_ORDER[a.pierre.tier]
     || b.score - a.score || a.friction - b.friction || a.meal.id.localeCompare(b.meal.id));
   for (const r of ranked) r.reasons = headlineReasons(r);
@@ -339,7 +359,7 @@ export function rank({ inventory, targets, context = {}, catalogue, config = DEF
     .slice(0, config.unlockSuggestions)
     .map(([id, meals]) => ({ id, label: labelFor(id), meals }));
 
-  return { ladder: buildLadder(ranked), ranked, filtered, vetoed, unlocks, lambda };
+  return { ladder: buildLadder(ranked), ranked, filtered, vetoed, unlocks, lambda, tomorrow };
 }
 
 /** Human description of what blocked a meal. */

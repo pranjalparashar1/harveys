@@ -103,3 +103,7 @@ The live ranker (`ranker.js`, `config.js`) is unchanged: fitted weights move the
 ### Everyday staples (1.20.0)
 
 From pranjal's "The staples and their processes": dal tadka with rice, pressure-cooker chole, rajma and kala chana (tadka first, in the cooker), paneer pulao, egg fried rice, Maggi (plain, cheese, fried egg), air-fried soya chunks and masala oats. New food ids `rajma`, `kala_chana` and `maggi`. Where round 3 or the staples sheet already rated a dish, that rating is its Pierre verdict in `PIERRE_SEED`. Soaking is pre-prep, so those dishes keep their rung and say "If you have time".
+
+### Soaked or not (1.21.0)
+
+Dishes that need soaking (dal, rice, chole, rajma, kala chana) list those foods in `prePrep.soak`. Under "Right now", tick what's already soaked; the ticks last until midnight. A dish whose foods are all soaked ranks with no soaking cost. Any other soak dish leaves tonight's ladder for a "For tomorrow" card ("Soak the rajma tonight"). Poha's 15-minute soak stays an "If you have time" note. Egg fried rice is pass without spring onion and crave with it, as a separate dish (new food id `spring_onion`).

@@ -25,7 +25,9 @@ export const PIERRE_SEED = {
   maggi: { verdict: 'pass', tier: 'pass', why: 'Round 3: Maggi cooked with its masala, pass' },
   maggi_cheese: { verdict: 'pass', tier: 'crave', why: 'Round 3: Maggi with a cheese slice melted in, crave' },
   maggi_fried_egg: { verdict: 'pass', tier: 'crave', why: 'Round 3: Maggi with an egg fried in oil (your fix for butter), crave' },
-  egg_fried_rice: { verdict: 'pass', tier: 'crave', why: 'Round 3: egg fried rice in oil with no chilli sauce (your fix), crave. Spring onion left out here' },
+  // pranjal, 21 Nov: "I don't make egg fried rice with spring onion often, but it's a crave with them."
+  egg_fried_rice: { verdict: 'pass', tier: 'pass', why: 'Pass without spring onion: how you usually make it' },
+  egg_fried_rice_spring_onion: { verdict: 'pass', tier: 'crave', why: 'Round 3 (your fix: oil, no chilli sauce) and 21 Nov: a crave with spring onion' },
   cooker_chole: { verdict: 'pass', tier: 'pass', why: 'Staples sheet: ready to eat as is after pressure cooking with salt' },
   cooker_rajma: { verdict: 'pass', tier: 'pass', why: 'Staples sheet: ready to eat as is after pressure cooking with salt' },
   cooker_kala_chana: { verdict: 'pass', tier: 'pass', why: 'Staples sheet: ready to eat as is after pressure cooking with salt' },

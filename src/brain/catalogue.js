@@ -16,8 +16,10 @@
 //   form, parts Pierre's view (v2 Step 3): the form the dish declares (ingredients.js
 //               FORMS) and its Pierre foods, each { id, technique? } (paneer@air_fried).
 //               Seasonings in `ingredients` are its modifiers (salt, chilli flakes).
-//   prePrep     { minutes, text } optional: soaking or marinating done ahead (1.4).
+//   prePrep     { minutes, text, soak? } optional: soaking or marinating done ahead (1.4).
 //               Friction v2 counts it (learn.js prePrepUnits) in the live ranker too.
+//               soak (1.21.0): the foods that must be soaked first. Ticked as soaked, the
+//               dish ranks with no pre-prep; not soaked, it moves to "For tomorrow".
 
 export const CATALOGUE = [
   {
@@ -478,7 +480,7 @@ export const CATALOGUE = [
     attention: 0,
     cleanup: { dishes: 3, greasy: 0 },
     macros: { protein: 13, kcal: 300, fiber: 11 },
-    prePrep: { minutes: 480, text: 'Soak dry chickpeas overnight, then boil them (skip with canned)' },
+    prePrep: { minutes: 480, text: 'Soak dry chickpeas overnight, then boil them (skip with canned)', soak: ['chickpeas'] },
     source: 'estimate',
   },
   {
@@ -556,7 +558,7 @@ export const CATALOGUE = [
     attention: 1,
     cleanup: { dishes: 2, greasy: 1 },
     macros: { protein: 12, kcal: 330, fiber: 4 },
-    prePrep: { minutes: 60, text: 'Soak the rice and dal for about an hour' },
+    prePrep: { minutes: 60, text: 'Soak the rice and dal for about an hour', soak: ['rice', 'dal'] },
     source: 'estimate',
   },
   {
@@ -665,7 +667,7 @@ export const CATALOGUE = [
     attention: 2,
     cleanup: { dishes: 5, greasy: 1 },
     macros: { protein: 16, kcal: 470, fiber: 6 },
-    prePrep: { minutes: 60, text: 'Soak the dal and rice for about an hour' },
+    prePrep: { minutes: 60, text: 'Soak the dal and rice for about an hour', soak: ['dal', 'rice'] },
     source: 'estimate',
   },
   {
@@ -689,7 +691,7 @@ export const CATALOGUE = [
     attention: 1,
     cleanup: { dishes: 2, greasy: 1 },
     macros: { protein: 15, kcal: 420, fiber: 13 },
-    prePrep: { minutes: 480, text: 'Soak the chickpeas overnight' },
+    prePrep: { minutes: 480, text: 'Soak the chickpeas overnight', soak: ['chickpeas'] },
     source: 'estimate',
   },
   {
@@ -713,7 +715,7 @@ export const CATALOGUE = [
     attention: 1,
     cleanup: { dishes: 2, greasy: 1 },
     macros: { protein: 18, kcal: 390, fiber: 12 },
-    prePrep: { minutes: 480, text: 'Soak the rajma overnight' },
+    prePrep: { minutes: 480, text: 'Soak the rajma overnight', soak: ['rajma'] },
     source: 'estimate',
   },
   {
@@ -737,7 +739,7 @@ export const CATALOGUE = [
     attention: 1,
     cleanup: { dishes: 2, greasy: 1 },
     macros: { protein: 15, kcal: 420, fiber: 14 },
-    prePrep: { minutes: 480, text: 'Soak the kala chana overnight' },
+    prePrep: { minutes: 480, text: 'Soak the kala chana overnight', soak: ['kala_chana'] },
     source: 'estimate',
   },
   {
@@ -764,7 +766,7 @@ export const CATALOGUE = [
     attention: 2,
     cleanup: { dishes: 3, greasy: 1 },
     macros: { protein: 24, kcal: 600, fiber: 2 },
-    prePrep: { minutes: 60, text: 'Soak the rice for about an hour' },
+    prePrep: { minutes: 60, text: 'Soak the rice for about an hour', soak: ['rice'] },
     source: 'estimate',
   },
   {
@@ -790,7 +792,35 @@ export const CATALOGUE = [
     attention: 2,
     cleanup: { dishes: 4, greasy: 1 },
     macros: { protein: 17, kcal: 520, fiber: 1 },
-    prePrep: { minutes: 60, text: 'Soak the rice for about an hour (or use leftover rice)' },
+    prePrep: { minutes: 60, text: 'Soak the rice for about an hour (or use leftover rice)', soak: ['rice'] },
+    source: 'estimate',
+  },
+  {
+    id: 'egg_fried_rice_spring_onion',
+    name: 'Egg fried rice with spring onion',
+    kind: 'meal',
+    form: 'coated_base',
+    parts: [{ id: 'rice', technique: 'sauteed' }, { id: 'eggs', technique: 'scrambled' }, { id: 'spring_onion', technique: 'sauteed' }],
+    equipment: ['stovetop', 'pot', 'strainer', 'pan'],
+    utensils: ['spatula', 'bowl', 'plate'],
+    ingredients: [
+      { id: 'rice', amount: '70 g', prep: 'wash' },
+      { id: 'eggs', amount: '2', prep: 'crack' },
+      { id: 'spring_onion', amount: '2 stalks, sliced', prep: 'cut' },
+      { id: 'oil', amount: '1 tbsp', prep: 'measure' },
+      { id: 'salt', amount: 'to taste', prep: 'measure' },
+      { id: 'black_pepper', amount: 'a pinch', prep: 'measure', optional: true },
+    ],
+    steps: [
+      { text: 'Boil the soaked rice for 10 minutes, then strain it.', active: 2, passive: 10 },
+      { text: 'Slice the spring onion.', active: 2 },
+      { text: 'Scramble the eggs in oil in a hot pan, then add the spring onion.', active: 4 },
+      { text: 'Add the rice and salt and stir-fry for 3 minutes.', active: 3 },
+    ],
+    attention: 2,
+    cleanup: { dishes: 4, greasy: 1 },
+    macros: { protein: 17, kcal: 520, fiber: 1 },
+    prePrep: { minutes: 60, text: 'Soak the rice for about an hour (or use leftover rice)', soak: ['rice'] },
     source: 'estimate',
   },
   {
