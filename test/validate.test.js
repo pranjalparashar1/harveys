@@ -115,8 +115,11 @@ test('golden (gate on): high-calorie, low-protein dishes fail; lean high-protein
   assert.equal(validateMeal({ ...base, ingredients: [{ id: 'whey', amount: '1 scoop', prep: 'ready' }, { id: 'makhana', amount: '1 cup', prep: 'measure' }], macros: { protein: 28, kcal: 260, fiber: 2 } }, { config: GATED }).ok, true);
 });
 
-test('every catalogue meal passes the nutrition gate when it is on', () => {
-  for (const m of CATALOGUE) assert.deepEqual(nutritionProblems(m, GATED), [], m.id);
+// Staples pranjal eats as they are (1.20.0) sit under the gate's protein floor. The gate is off by
+// default, so they still surface; with it on they're the ones it would hide, and nothing else.
+const UNDER_GATE = { maggi: ['only 6 g protein'], masala_oats: ['only 7 g protein'] };
+test('every catalogue meal passes the nutrition gate when it is on, except the light staples', () => {
+  for (const m of CATALOGUE) assert.deepEqual(nutritionProblems(m, GATED), UNDER_GATE[m.id] ?? [], m.id);
 });
 
 test('an AI recipe with chicken, tuna or tofu is rejected', () => {

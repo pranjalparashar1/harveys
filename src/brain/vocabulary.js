@@ -47,6 +47,10 @@ export const FOODS = {
   // One food since 20 Nov (pranjal): the differences between dals are negligible. Chole, rajma, chana stay separate.
   dal: { label: 'Dal', group: 'grain', synonyms: ['dal', 'daal', 'moong dal', 'yellow moong dal', 'split moong', 'masoor dal', 'toor dal', 'arhar dal', 'urad dal', 'chana dal'] },
   chickpeas: { label: 'Chickpeas (boiled or canned)', group: 'protein', synonyms: ['chickpeas', 'chole', 'kabuli chana', 'canned chickpeas', 'boiled chana'] },
+  // Staples from pranjal's "The staples and their processes" (21 Nov): soaked overnight, then pressure-cooked.
+  rajma: { label: 'Rajma', group: 'protein', synonyms: ['rajma', 'kidney beans', 'red kidney beans'] },
+  kala_chana: { label: 'Kala chana', group: 'protein', synonyms: ['kala chana', 'black chana', 'black chickpeas', 'bengal gram'] },
+  maggi: { label: 'Maggi noodles', group: 'grain', synonyms: ['maggi', 'maggi noodles', 'maggi masala noodles', 'instant noodles', '2-minute noodles'] },
   sprouts: { label: 'Moong sprouts', group: 'protein', synonyms: ['sprouts', 'moong sprouts', 'sprouted moong'] },
   tortilla: { label: 'Wraps / roti', group: 'bread', synonyms: ['tortilla', 'wrap', 'wraps', 'roti', 'chapati'] },
   tomato: { label: 'Tomato', group: 'veg', synonyms: ['tomato', 'tomatoes', 'tamatar'] },

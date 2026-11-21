@@ -521,6 +521,8 @@ import { DEFAULT_CONFIG } from '../src/brain/config.js';
 import { PIERRE_RAW } from '../src/brain/pierre-raw.js';
 
 const r3 = JSON.parse(readFileSync(new URL('../src/quiz/round3.json', import.meta.url), 'utf8'));
+// A brain without pranjal's real round-3 repairs, so these synthetic ones are the only ones (newer repairs win).
+const BASE = { ...PIERRE_RAW, repairs: {}, dishes: {}, rules: {} };
 const EXPORT = ['#harveys benchmark v1', `seed ${r3.seed}`, 'r3_potato_mayo | floor | texture | 2026-11-21T08:10Z',
   'repair r3_potato_mayo | before=floor | edit=cookedWith:none->oil | after=crave | scope=class | at=2026-11-21T08:15Z'].join('\n');
 const noPrior = { ...DEFAULT_CONFIG.pierreRules, dryHeatNeedsFat: { ...DEFAULT_CONFIG.pierreRules.dryHeatNeedsFat, on: false } };
@@ -528,7 +530,7 @@ const noPrior = { ...DEFAULT_CONFIG.pierreRules, dryHeatNeedsFat: { ...DEFAULT_C
 test('repair ingest: a class repair becomes a rule the whole class inherits', () => {
   const repairs = repairsFromBench(EXPORT);
   assert.equal(repairs[0].dish.id, 'r3_potato_mayo');
-  const kb = mergeRepairs(PIERRE_RAW, repairs);
+  const kb = mergeRepairs(BASE, repairs);
   const rule = kb.rules['hydrated_starch@air_fried:cookedWith'];
   assert.deepEqual(rule, { id: 'hydrated_starch@air_fried:cookedWith', foodClass: 'hydrated_starch', technique: 'air_fried', slot: 'cookedWith', requireNonNull: true, preferred: 'oil', learnedFrom: ['r3_potato_mayo'], at: '2026-11-21T08:15Z' });
   assert.equal(kb.repairs.r3_potato_mayo.after, 'crave');
@@ -556,7 +558,7 @@ test('repair ingest: a class repair becomes a rule the whole class inherits', ()
 });
 
 test('repair ingest: idempotent, byte for byte', () => {
-  const once = mergeRepairs(PIERRE_RAW, repairsFromBench(EXPORT));
+  const once = mergeRepairs(BASE, repairsFromBench(EXPORT));
   const twice = mergeRepairs(once, repairsFromBench(EXPORT));
   assert.equal(renderBrainFile(twice), renderBrainFile(once));
   assert.doesNotThrow(() => new Function(renderBrainFile(once).replace(/^export /m, '')));
@@ -564,7 +566,7 @@ test('repair ingest: idempotent, byte for byte', () => {
 
 test('repair ingest: dish scope keeps the verdict and teaches no rule; a fix that did not lift teaches nothing', () => {
   const dish = repairsFromBench(EXPORT.replace('scope=class', 'scope=dish'));
-  const kb = mergeRepairs(PIERRE_RAW, dish);
+  const kb = mergeRepairs(BASE, dish);
   assert.deepEqual(kb.rules, {});
   assert.equal(tierOf([{ id: 'potato', technique: 'air_fried' }], 'bowl', { modifiers: ['mayo', 'chilli_flakes', 'salt', 'oil'], kb }).tier, 'crave');
   const flat = mergeRepairs(PIERRE_RAW, repairsFromBench(EXPORT.replace('after=crave', 'after=floor')));
