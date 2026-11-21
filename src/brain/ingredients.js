@@ -326,18 +326,21 @@ export function dishProfile(parts, kb = PIERRE_RAW, techniques = TECHNIQUES, mod
 
 // ── Fat roles (Step 5, SFAH §2.2) ───────────────────────────────────────────
 // A pure fat in a dish does one of three jobs. Oil named as a modifier is the cooking medium.
-// A fat with a cooked aromatic (garlic, onion) is the medium of a tadka. A raw fat tossed
+// A fat beside a part cooked in fat (sautéed, pan-fried, scrambled) is that part's medium. A raw fat tossed
 // through a hot grain base is the binder (butter swirled into pasta). Otherwise it's seasoning
 // (butter on toast, ghee on dal). Reported, so Pierre and White can say what the fat is doing.
 export function fatRolesOf(parts, modifiers = [], kb = PIERRE_RAW) {
   const ps = parts.map((p) => (typeof p === 'string' ? { id: p } : p));
-  const bloomed = ps.some((p) => BLOOM_AROMATICS.includes(p.id) && inFat(p.technique));
+  // A part fried, sautéed or scrambled needs a fat to cook in: a named fat is that medium.
+  const bloomed = ps.some((p) => inFat(p.technique) && !COATING_FATS.includes(p.id));
   const base = ps.some((p) => p.technique && isGrainBase(p.id, centreOf(p.id, kb) ?? 0));
   const roles = {};
   for (const o of OIL_MODIFIERS) if (modifiers.includes(o)) roles[o] = 'cooking_medium';
   for (const p of ps.filter((x) => COATING_FATS.includes(x.id))) {
     roles[p.id] = p.technique || bloomed ? 'cooking_medium' : base ? 'main_binder' : 'seasoning';
   }
+  // Mayo is a condiment: a cold emulsion spooned on or mixed in, never a cooking fat.
+  for (const id of ['mayo']) if (ps.some((p) => p.id === id) || modifiers.includes(id)) roles[id] = 'seasoning';
   return roles;
 }
 
