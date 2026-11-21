@@ -239,10 +239,12 @@ function predictPick(theta, outside, c, lam) {
  * Fits Marco's weights from choices.
  * @param {Array<{xa: number[], xb: number[], pick: 'a'|'b'|'either'|'neither', mood?: string}>} choices
  *        xa/xb are featureVector()s, Pierre already filled in.
+ * @param {{prior?: number[]}} [opts] prior: θ to start from and pull toward (default FEATURES priors).
  * @returns {{theta, outside, lambdas, hits, looHits, priorHits, n}}
  */
-export function fitMarco(choices, { alpha = 2, moods = ['fresh', 'okay', 'tired'], minPerMood = 4 } = {}) {
-  const prior = [...FEATURES.map((f) => f.prior), 0];
+export function fitMarco(choices, { alpha = 2, moods = ['fresh', 'okay', 'tired'], minPerMood = 4, prior: start } = {}) {
+  // `start` (FEATURES order) replaces the priors, e.g. the weights the app runs on now.
+  const prior = [...(start ?? FEATURES.map((f) => f.prior)), 0];
   const lambdas = Object.fromEntries(moods.map((m) => [m, 1]));
   const fit = (cs, lams) => fitLogistic(choiceRows(cs, lams), prior, { alpha });
   let all = fit(choices, lambdas);
