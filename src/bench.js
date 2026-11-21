@@ -6,7 +6,7 @@ import { encodeBench, editSlot, setRepairTier, setRepairScope, clearRepairs } fr
 import { toDishChain, applyChainEdits, slotValue, CHAIN_SLOTS } from './brain/ingredients.js';
 import { foodClassOf, FOOD_CLASS } from './brain/ontology.js';
 
-const VERSION = '1.18.2';
+const VERSION = '1.18.3';
 // ?sheet=holdout opens the Step 4c holdout sheet, ?sheet=round3 the third blind sheet; each
 // sheet keeps its own answers.
 const SHEETS = { benchmark: 'harveys.bench.v1', holdout: 'harveys.holdout.v1', round3: 'harveys.round3.v1' };

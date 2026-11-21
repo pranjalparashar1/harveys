@@ -157,3 +157,15 @@ test('5B: the fitted-weights payload is ready for config.js (protein-scaled fric
   // Round trip: the ranker reads the same keys from config.frictionTheta.
   assert.doesNotThrow(() => JSON.parse(JSON.stringify(p)));
 });
+
+test('"Equivalent" pulls two dishes toward equal utility', () => {
+  const a = CATALOGUE.find((d) => d.id === 'airfryer_protein_cheese_toast');
+  const b = CATALOGUE.find((d) => d.id === 'stovetop_paneer_bhurji');
+  const xa = featureVector(rawFeatures(a), 0.75);
+  const xb = featureVector(rawFeatures(b), 0.75);
+  const prior = FEATURES.map((f) => f.prior);
+  const gap = (th) => Math.abs(utility(th, xa) - utility(th, xb));
+  const fit = fitMarco(Array.from({ length: 12 }, () => ({ xa, xb, pick: 'either', mood: 'okay' })));
+  assert.ok(gap(fit.theta) < gap(prior), `gap ${gap(fit.theta).toFixed(3)} < prior ${gap(prior).toFixed(3)}`);
+  assert.ok(fit.outside < 0.5, 'you would cook either');
+});

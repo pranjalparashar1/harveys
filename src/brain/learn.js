@@ -210,6 +210,13 @@ function choiceRows(choices, lambdas) {
       rows.push({ x: withOutside(c.xb, lam, 1), y: 0 });
       continue;
     }
+    if (c.pick === 'either') {
+      // Equivalent: either is as good as the other (a 50/50 label), and you'd cook either.
+      rows.push({ x: [...c.xa.map((v, j) => (v - c.xb[j]) * (FRICTION_MASK[j] ? lam : 1)), 0], y: 0.5 });
+      rows.push({ x: withOutside(c.xa, lam, 1), y: 1, w: 0.25 });
+      rows.push({ x: withOutside(c.xb, lam, 1), y: 1, w: 0.25 });
+      continue;
+    }
     const [win, lose] = c.pick === 'a' ? [c.xa, c.xb] : [c.xb, c.xa];
     rows.push({ x: [...win.map((v, j) => (v - lose[j]) * (FRICTION_MASK[j] ? lam : 1)), 0], y: 1 });
     rows.push({ x: withOutside(win, lam, 1), y: 1, w: 0.5 }); // picking it = would cook it, softly
@@ -217,16 +224,20 @@ function choiceRows(choices, lambdas) {
   return rows;
 }
 
+/** Utility gap under which Marco calls two dishes equivalent (P(pick A) within 0.45–0.55). */
+export const EITHER_GAP = 0.2;
+
 function predictPick(theta, outside, c, lam) {
   const ua = utility(theta, c.xa, lam);
   const ub = utility(theta, c.xb, lam);
   if (Math.max(ua, ub) < outside) return 'neither';
+  if (c.pick === 'either' && Math.abs(ua - ub) < EITHER_GAP) return 'either';
   return ua >= ub ? 'a' : 'b';
 }
 
 /**
  * Fits Marco's weights from choices.
- * @param {Array<{xa: number[], xb: number[], pick: 'a'|'b'|'neither', mood?: string}>} choices
+ * @param {Array<{xa: number[], xb: number[], pick: 'a'|'b'|'either'|'neither', mood?: string}>} choices
  *        xa/xb are featureVector()s, Pierre already filled in.
  * @returns {{theta, outside, lambdas, hits, looHits, priorHits, n}}
  */

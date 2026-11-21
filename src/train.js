@@ -14,7 +14,7 @@ import { PIERRE_SEED, TECHNIQUE_OVERLAY, TRAINING_EXTRAS, FORM_TOOLS, PRE_PREP_O
 import { validateMeal } from './brain/validate.js';
 import { callModel, parseJsonObject } from './ai/providers.js';
 
-const VERSION = '1.18.2';
+const VERSION = '1.18.3';
 const $ = (id) => document.getElementById(id);
 
 // ── Storage (this browser only) ─────────────────────────────────────────────
@@ -649,6 +649,7 @@ function init() {
   $('d-prePrep').replaceChildren(...PRE_PREP_OPTIONS.map(([v, l]) => h('option', { value: String(v) }, l)));
   renderToolChips();
   $('neither').addEventListener('click', () => choose('neither'));
+  $('either').addEventListener('click', () => choose('either'));
   $('skip').addEventListener('click', () => { pickNewPair(); state.undo = null; renderPair(); addHaptics(); });
   $('undo').addEventListener('click', () => { undo(); addHaptics(); });
   $('d-verdict').addEventListener('click', (e) => {

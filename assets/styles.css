@@ -290,7 +290,7 @@ details.how ol { margin: 0 0 6px; padding-left: 22px; font-weight: 400; font-siz
 .segmented.verdict button[data-value=fail][aria-checked=true] { color: var(--no); }
 .why { margin-top: 8px; }
 .pair-actions { display: flex; align-items: center; gap: 8px; margin: 4px 0 0; }
-.pair-actions #neither { flex: 1; }
+.pair-actions #neither, .pair-actions #either { flex: 1; }
 .quiet-left { color: var(--muted); font-weight: 500; }
 #tally { margin: 10px 0 22px; }
 .reasons span.like { background: var(--ok-soft); color: var(--ok); }
