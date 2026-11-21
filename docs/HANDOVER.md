@@ -13,6 +13,8 @@ You have the code but none of the old project's memory, chat or files. Everythin
 
 ---
 
+> **1.29.0 (open-ended pantry):** any named ingredient now works. See [`docs/catalogue-prompt.md`](catalogue-prompt.md) for the cataloguing prompt, `src/brain/pantry.js` for profiles and `scripts/import-kitchens.mjs` for importing other people's kitchens.
+
 ## 0. Read this first (60-second version)
 
 - **What it is:** "What should I cook right now, from what I already have, that I will actually make?" Photograph your kitchen, an AI lists what's there, and a deterministic brain picks the dish and explains why.

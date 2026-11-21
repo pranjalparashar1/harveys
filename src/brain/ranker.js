@@ -76,11 +76,39 @@ export function checkMeal(meal, inventory) {
   const ingredients = [];
   for (const ing of meal.ingredients) {
     const r = resolveIngredient(ing, have);
-    if (r.ok) ingredients.push({ ...ing, id: r.id });
+    if (r.ok) ingredients.push(asUsed(ing, r.id, inventory));
     else if (!ing.optional) missing.ingredients.push(r.options);
   }
   const ok = missing.equipment.length === 0 && missing.ingredients.length === 0;
   return { ok, equipment, utensils: meal.utensils.filter((u) => !missingBasics.has(u)), ingredients, missing };
+}
+
+/**
+ * The ingredient as it will be made. A role slot ('role:acid') becomes the item that fills it
+ * (vinegar), keeping the role so Pierre tastes it; an open-ended item keeps its own name.
+ */
+function asUsed(ing, id, inventory) {
+  if (id.startsWith('role:')) {
+    const source = inventory.roles?.get(id.slice(5))?.[0] ?? id;
+    return { ...ing, id: source, role: id, label: inventory.labels?.get(source) ?? labelFor(source) };
+  }
+  const label = inventory.labels?.get(id);
+  return label ? { ...ing, id, label } : { ...ing, id };
+}
+
+/** The meal's macros and name as made: a swap (plain bread for protein bread) adjusts them (ESTIMATE). */
+export function macrosAsMade(meal, used) {
+  const m = { ...meal.macros };
+  let name = meal.name;
+  let swapped = false;
+  for (const ing of used.ingredients) {
+    const d = ing.swap?.[ing.id];
+    if (!d) continue;
+    swapped = true;
+    if (d.name) name = d.name;
+    for (const k of ['protein', 'kcal', 'fiber']) m[k] = Math.max(0, (m[k] ?? 0) + (d[k] ?? 0));
+  }
+  return swapped ? { macros: m, name, source: 'estimate' } : null;
 }
 
 /**
@@ -147,7 +175,8 @@ export function judgeMeal(meal, used, inventory, verdicts = PIERRE_SEED) {
     return { tier: 'pass', computed: null, source: 'untested', why: ['not judged: no Pierre parts'], hint: null, untested: true, finish: {} };
   }
   const t = pierreTier(meal.parts, meal.form, {
-    modifiers: used.ingredients.map((i) => i.id),
+    // A role-filled or open-ended seasoning tastes like its roles to Pierre (ingredients.js MODIFIERS).
+    modifiers: used.ingredients.flatMap((i) => (i.role ? [i.role] : i.id?.startsWith('x:') ? (inventory.extras?.find((e) => e.id === i.id)?.roles ?? []).map((r) => `role:${r}`) : [i.id])),
     inventory: [...inventory.have],
     verdict: verdicts[meal.id] ?? null,
   });
@@ -306,7 +335,7 @@ export function rank({ inventory, targets, context = {}, catalogue, config = DEF
   const ranked = [];
   const filtered = [];
   const vetoed = [];
-  for (const meal of catalogue) {
+  for (let meal of catalogue) {
     if (kind !== 'any' && meal.kind !== kind) continue;
     if (!inDiet(meal)) continue; // vegetarian + eggs, whatever the scan or the AI says
     if (nutritionProblems(meal, config).length) continue; // not food worth suggesting
@@ -315,6 +344,8 @@ export function rank({ inventory, targets, context = {}, catalogue, config = DEF
       filtered.push({ meal, missing: used.missing });
       continue;
     }
+    const swapped = macrosAsMade(meal, used);
+    if (swapped) meal = { ...meal, ...swapped };
     const pierre = judgeMeal(meal, used, inventory, verdicts);
     if (pierre.tier === 'veto') {
       vetoed.push({ meal, pierre });

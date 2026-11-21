@@ -5,6 +5,7 @@ import {
   buildInventory, matchName, rank, contextLambda,
 } from '../src/brain/index.js';
 import { DEMO_KITCHEN } from '../src/demo-kitchen.js';
+import { ROLES } from '../src/brain/pantry.js';
 
 const TARGETS = { protein: 40, calories: 800, fiber: 15 };
 const TIRED_WEEKNIGHT = { mood: 'tired', hour: 22, weekday: 2 }; // Tuesday 10 pm
@@ -141,7 +142,7 @@ test('catalogue only uses known ids and valid prep kinds', () => {
     for (const e of meal.equipment) assert.ok(kit.has(e), `${meal.id}: unknown equipment ${e}`);
     for (const u of meal.utensils) assert.ok(ASSUMED_BASICS[u], `${meal.id}: unknown utensil ${u}`);
     for (const ing of meal.ingredients) {
-      for (const id of ing.anyOf ?? [ing.id]) assert.ok(FOODS[id], `${meal.id}: unknown food ${id}`);
+      for (const id of ing.anyOf ?? [ing.id]) assert.ok(FOODS[id] || ROLES.includes(id.replace(/^role:/, '')), `${meal.id}: unknown food ${id}`);
       assert.ok(PREP_KINDS.includes(ing.prep), `${meal.id}: unknown prep ${ing.prep}`);
     }
     assert.ok(['meal', 'snack'].includes(meal.kind));

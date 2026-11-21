@@ -9,3 +9,5 @@ export { validateMeal } from './validate.js';
 export { inDiet, NOT_IN_DIET } from './learn.js';
 export { cookLogEntry, liveRepairEntry, liveVerdicts } from './log.js';
 export { PIERRE_SEED } from './train-data.js';
+export { profileOf, ROLES, CATEGORIES, classifyPrompt, parseClassification, cacheKey } from './pantry.js';
+export { importKitchens, looksLikeKitchenJson } from './kitchens.js';
