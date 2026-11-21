@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { PREP_QUIZ, encodePrep, parsePrep, prepChoices, fitPrep, prepFacts, PREP_HEADER } from '../src/quiz/prep.js';
+import { PREP_QUIZ, PREP_ROUNDS, PREP_ALL, encodePrep, parsePrep, prepChoices, fitPrep, prepFacts, PREP_HEADER } from '../src/quiz/prep.js';
 import { FEATURES, featureVector } from '../src/brain/learn.js';
 
 test('40 questions, unique ids, a quarter held out, three energies', () => {
@@ -23,13 +23,27 @@ test('40 questions, unique ids, a quarter held out, three energies', () => {
   }
 });
 
+test('round 2: 40 more, ids unique across rounds, sound counts', () => {
+  const r2 = PREP_ROUNDS[2];
+  assert.equal(r2.length, 40);
+  assert.equal(r2.filter((q) => q.holdout).length, 10);
+  assert.equal(new Set(PREP_ALL.map((q) => q.id)).size, 80);
+  for (const q of r2) {
+    assert.equal(q.round, 2);
+    assert.notDeepEqual(q.a.raw, q.b.raw, q.id);
+    for (const side of ['a', 'b']) assert.ok(q[side].raw.attention >= 0 && q[side].raw.attention <= 3, q.id);
+  }
+});
+
 test('repeats sit apart from their originals', () => {
-  const pos = new Map(PREP_QUIZ.map((q, i) => [q.id, i]));
-  for (const q of PREP_QUIZ.filter((x) => x.of)) assert.ok(Math.abs(pos.get(q.id) - pos.get(q.of)) > 3, q.id);
+  for (const quiz of Object.values(PREP_ROUNDS)) {
+    const pos = new Map(quiz.map((q, i) => [q.id, i]));
+    for (const q of quiz.filter((x) => x.of)) assert.ok(Math.abs(pos.get(q.id) - pos.get(q.of)) > 3, q.id);
+  }
 });
 
 test('pranjal’s cooking rules: no microwaved eggs, dal or legumes; no butter tadka', () => {
-  for (const q of PREP_QUIZ) for (const o of [q.a, q.b]) {
+  for (const q of PREP_ALL) for (const o of [q.a, q.b]) {
     const text = `${q.dish} ${o.name} ${o.how}`.toLowerCase();
     if (/microwave/.test(text)) assert.doesNotMatch(text, /egg|dal|chana|chickpea|rajma|khichdi/, q.id);
     assert.doesNotMatch(text, /tadka.*butter|butter.*tadka/, q.id);
@@ -87,4 +101,14 @@ test('fit-prep script prints a config block and never edits config', () => {
   assert.match(out, /Held out: predicted \d+\/10/);
   assert.match(out, /frictionTheta: Object\.freeze\(/);
   assert.equal(readFileSync('src/brain/config.js', 'utf8'), before);
+});
+
+test('answers from both rounds fit together', () => {
+  const answers = {};
+  for (const q of PREP_ALL) answers[q.id] = { pick: q.a.raw.handsOn <= q.b.raw.handsOn ? 'a' : 'b', at: null };
+  const r = fitPrep(answers);
+  assert.equal(r.answered, 80);
+  assert.equal(r.held, 20);
+  assert.ok(r.heldHits >= 14, `held-out ${r.heldHits}/20`);
+  assert.equal(encodePrep(answers, PREP_ROUNDS[2]).split('\n').length, 41);
 });

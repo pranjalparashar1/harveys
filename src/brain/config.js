@@ -37,7 +37,9 @@ export const DEFAULT_CONFIG = Object.freeze({
 
   // λ_context = mood × time of day × day of week.
   lambda: Object.freeze({
-    mood: Object.freeze({ fresh: 0.6, okay: 1.0, tired: 1.6 }),
+    // FITTED (1.26.0) from the prep quiz: fresh 0.4, tired 2.5 (was 0.6 / 1.6, provisional).
+    // Only applies when a mood is passed; the main page doesn't ask for one yet.
+    mood: Object.freeze({ fresh: 0.4, okay: 1.0, tired: 2.5 }),
     lateNight: 1.25, // 21:00–05:00
     weeknight: 1.15, // Mon–Fri
     weekend: 0.85, // Sat–Sun

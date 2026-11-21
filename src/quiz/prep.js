@@ -125,21 +125,128 @@ const REPEATS = [
   ['p21', '10:30 PM', 'tired'], ['p24', '10 PM', 'tired'],
 ];
 
+// Round 2 (1.26.0): more dishes, more prep steps (grating, marinating, kneading, rinsing,
+// weighing, boiling milk, batches, mashing, garnishes, batch cooking).
+const PAIRS_2 = [
+  { id: 'p31', dish: 'Paneer for a sandwich', protein: 20, when: '8 PM', energy: 'okay',
+    a: o('Grated', 'Grate the paneer, mix with salt and pepper.', { tools: 2, handsOn: 5, steps: 2, attention: 0, cleanup: 2 }),
+    b: o('Sliced', 'Two thick slices straight from the block.', { tools: 1, handsOn: 2, cuts: 1, steps: 1, attention: 0, cleanup: 1 }) },
+  { id: 'p32', dish: 'Paneer tikka', protein: 22, when: 'Saturday 6 PM', energy: 'fresh',
+    a: o('Marinated 30 min', 'Curd and spice on the cubes, rest 30 min, air-fry.', { tools: 3, handsOn: 5, waiting: 15, prePrepMinutes: 30, cuts: 1, steps: 4, attention: 0, cleanup: 2.5 }),
+    b: o('Straight in', 'Curd and spice on the cubes, air-fry now.', { tools: 3, handsOn: 4, waiting: 15, cuts: 1, steps: 3, attention: 0, cleanup: 2.5 }) },
+  { id: 'p33', dish: 'Rice', protein: 4, when: '8 PM', energy: 'okay',
+    a: o('Rinsed three times', 'Rinse until the water runs clear, then cook.', { tools: 2, handsOn: 5, waiting: 20, steps: 3, attention: 1, cleanup: 1.5 }),
+    b: o('Not rinsed', 'Straight into the cooker.', { tools: 1, handsOn: 2, waiting: 20, steps: 2, attention: 1, cleanup: 1 }) },
+  { id: 'p34', dish: 'Protein oats', protein: 30, when: '8 AM', energy: 'okay',
+    a: o('Weighed on the scale', '50 g oats, 30 g whey, 200 ml milk, weighed.', { tools: 2, handsOn: 4, waiting: 3, steps: 3, attention: 1, cleanup: 1.5 }),
+    b: o('Eyeballed', 'A handful of oats, a scoop of whey, milk to cover.', { tools: 1, handsOn: 2, waiting: 3, steps: 2, attention: 1, cleanup: 1 }) },
+  { id: 'p35', dish: 'Roti with dal', protein: 16, when: 'Sunday 1 PM', energy: 'fresh',
+    a: o('Fresh rotis', 'Knead atta, roll and cook 4 rotis on the tawa.', { tools: 4, handsOn: 25, steps: 5, attention: 3, cleanup: 4 }),
+    b: o('Rice instead', 'Rice from the cooker with the dal.', { tools: 1, handsOn: 2, waiting: 20, steps: 2, attention: 1, cleanup: 1 }), taste: true },
+  { id: 'p36', dish: 'Hot chocolate protein', protein: 25, when: '10 PM', energy: 'tired',
+    a: o('Milk boiled on the stove', 'Heat milk in a pot, whisk in cocoa and whey.', { tools: 2, handsOn: 5, waiting: 4, steps: 3, attention: 2, cleanup: 2 }),
+    b: o('Microwaved mug', 'Milk in a mug, 2 min, stir in cocoa and whey.', { tools: 1, handsOn: 2, waiting: 2, steps: 2, attention: 0, cleanup: 1 }) },
+  { id: 'p37', dish: 'Poha', protein: 8, when: '9 AM', energy: 'okay',
+    a: o('Rinsed in a strainer', 'Rinse the poha in the strainer, drain 5 min.', { tools: 3, handsOn: 10, waiting: 5, peels: 1, cuts: 1, steps: 5, attention: 2, cleanup: 3.5 }),
+    b: o('Soaked in a bowl', 'Soak 2 min in a bowl, squeeze out by hand.', { tools: 3, handsOn: 11, waiting: 2, peels: 1, cuts: 1, steps: 5, attention: 2, cleanup: 3.5 }) },
+  { id: 'p38', dish: 'Masala chickpeas', protein: 15, when: '8 PM', energy: 'okay',
+    a: o('Tempered in oil', 'Heat oil, crackle chilli flakes, toss the boiled chickpeas.', { tools: 2, handsOn: 6, steps: 3, attention: 2, cleanup: 2.5 }),
+    b: o('Tossed cold', 'Boiled chickpeas, lemon, chaat masala in a bowl.', { tools: 1, handsOn: 2, steps: 2, attention: 0, cleanup: 1 }), taste: true },
+  { id: 'p39', dish: 'Air-fried potato', protein: 4, when: '9 PM', energy: 'tired',
+    a: o('Wedges, peeled', 'Peel, cut wedges, oil and salt, 18 min.', { tools: 3, handsOn: 7, waiting: 18, peels: 1, cuts: 1, steps: 3, attention: 0, cleanup: 2.5 }),
+    b: o('Wedges, skin on', 'Scrub, cut wedges, oil and salt, 18 min.', { tools: 3, handsOn: 5, waiting: 18, cuts: 1, steps: 3, attention: 0, cleanup: 2.5 }) },
+  { id: 'p40', dish: 'Aloo paratha night', protein: 10, when: 'Sunday 7 PM', energy: 'fresh',
+    a: o('Potato mashed by hand', 'Mash boiled potato with a fork, season, stuff.', { tools: 4, handsOn: 30, waiting: 15, peels: 1, steps: 6, attention: 3, cleanup: 4.5 }),
+    b: o('Cheese toast instead', 'Cheese slices on protein bread in the air fryer.', { tools: 1, handsOn: 1, waiting: 5, steps: 2, attention: 0, cleanup: 0.5 }), taste: true },
+  { id: 'p41', dish: 'Raita', protein: 6, when: '8 PM', energy: 'okay',
+    a: o('Grated cucumber', 'Grate a cucumber, squeeze, stir into curd.', { tools: 2, handsOn: 6, steps: 3, attention: 0, cleanup: 2 }),
+    b: o('Chopped cucumber', 'Dice a cucumber into the curd.', { tools: 2, handsOn: 4, cuts: 1, steps: 2, attention: 0, cleanup: 2 }) },
+  { id: 'p42', dish: 'Garlic for aglio olio', protein: 12, when: '8 PM', energy: 'okay',
+    a: o('Peeled now', 'Peel and slice 4 cloves.', { tools: 2, handsOn: 6, peels: 1, cuts: 1, steps: 2, attention: 0, cleanup: 1.5 }),
+    b: o('Peeled on Sunday', 'A jar of cloves you peeled at the weekend, sliced.', { tools: 2, handsOn: 3, cuts: 1, steps: 2, attention: 0, cleanup: 1.5 }) },
+  { id: 'p43', dish: 'Boiled eggs for the week', protein: 18, when: 'Sunday 11 AM', energy: 'fresh',
+    a: o('Boil 10 on Sunday', 'Boil a batch, peel 2 each night from the fridge.', { tools: 1, handsOn: 2, steps: 2, attention: 0, cleanup: 0.5 }),
+    b: o('Boil 2 each night', 'Boil, cool and peel 2 eggs every night.', { tools: 1, handsOn: 4, waiting: 12, steps: 3, attention: 1, cleanup: 1 }) },
+  { id: 'p44', dish: 'Egg bhurji', protein: 18, when: '10 PM', energy: 'tired',
+    a: o('Whisked in a bowl first', 'Whisk the eggs in a bowl, pour into the pan.', { tools: 2, handsOn: 5, steps: 3, attention: 2, cleanup: 2.5 }),
+    b: o('Cracked into the pan', 'Crack straight into the butter, scramble there.', { tools: 1, handsOn: 4, steps: 2, attention: 2, cleanup: 1.5 }) },
+  { id: 'p45', dish: 'Tawa paneer sandwich', protein: 22, when: '9 PM', energy: 'tired',
+    a: o('Pan, weighed down', 'Butter both sides, press with a plate, flip.', { tools: 2, handsOn: 7, steps: 3, attention: 2, cleanup: 2.5 }),
+    b: o('Air fryer', 'Assemble, 6 min in the basket.', { tools: 1, handsOn: 3, waiting: 6, steps: 2, attention: 0, cleanup: 1 }) },
+  { id: 'p46', dish: 'Masala makhana', protein: 5, when: 'Saturday 5 PM', energy: 'fresh',
+    a: o('One big batch', 'Roast 200 g, keep the rest in a jar for the week.', { tools: 2, handsOn: 6, waiting: 10, steps: 3, attention: 1, cleanup: 2 }),
+    b: o('A bowl each time', 'Roast one bowl now, again next time.', { tools: 2, handsOn: 3, waiting: 8, steps: 2, attention: 0, cleanup: 1.5 }) },
+  { id: 'p47', dish: 'Pasta in cream', protein: 14, when: '8 PM', energy: 'okay',
+    a: o('Sauce in a second pan', 'Warm cream and cheese in a pan, toss the pasta in.', { tools: 3, handsOn: 6, waiting: 12, steps: 4, attention: 2, cleanup: 3.5 }),
+    b: o('Back in the pot', 'Drain, return to the pot, stir cream and cheese in.', { tools: 2, handsOn: 4, waiting: 12, steps: 3, attention: 1, cleanup: 2 }) },
+  { id: 'p48', dish: 'Chilli soya', protein: 25, when: '8 PM', energy: 'okay',
+    a: o('Chunks fried in batches', 'Fry the chunks in two batches so they crisp.', { tools: 2, handsOn: 12, prePrepMinutes: 15, steps: 4, attention: 3, cleanup: 3 }),
+    b: o('All at once', 'Everything in one go, toss in the sauces.', { tools: 2, handsOn: 7, prePrepMinutes: 15, steps: 3, attention: 2, cleanup: 3 }) },
+  { id: 'p49', dish: 'Egg fried rice', protein: 16, when: '9 PM', energy: 'tired',
+    a: o('Eggs scrambled apart', 'Scramble eggs, set aside, fry rice, combine.', { tools: 2, handsOn: 9, steps: 4, attention: 3, cleanup: 3 }),
+    b: o('Eggs pushed to the side', 'Rice in, push aside, crack eggs into the gap.', { tools: 1, handsOn: 7, steps: 3, attention: 2, cleanup: 2 }) },
+  { id: 'p50', dish: 'Aloo chaat', protein: 6, when: '7 PM', energy: 'okay', taste: true,
+    a: o('With onion and tomato', 'Peel and chop onion, chop tomato, coriander.', { tools: 3, handsOn: 12, waiting: 6, peels: 2, cuts: 3, steps: 5, attention: 1, cleanup: 2.5 }),
+    b: o('Potato only', 'Potato cubes, lemon, chaat masala.', { tools: 2, handsOn: 5, waiting: 6, peels: 1, cuts: 1, steps: 3, attention: 1, cleanup: 1.5 }) },
+  { id: 'p51', dish: 'Dal', protein: 14, when: '7 PM', energy: 'okay', taste: true,
+    a: o('Tadka in ghee', 'Second pan: ghee, chilli flakes, poured over.', { tools: 2, handsOn: 6, waiting: 20, steps: 3, attention: 2, cleanup: 2.5 }),
+    b: o('Ghee stirred in', 'A spoon of ghee stirred into the cooker.', { tools: 1, handsOn: 3, waiting: 20, steps: 2, attention: 1, cleanup: 1.5 }) },
+  { id: 'p52', dish: 'Cheese Maggi', protein: 10, when: '11 PM', energy: 'tired',
+    a: o('In a bowl to eat', 'Cook, pour into a bowl.', { tools: 1, handsOn: 3, waiting: 3, steps: 2, attention: 1, cleanup: 2 }),
+    b: o('From the pot', 'Cook, eat straight from the pot.', { tools: 1, handsOn: 3, waiting: 3, steps: 2, attention: 1, cleanup: 1 }) },
+  { id: 'p53', dish: 'Whey shake', protein: 25, when: '6 PM', energy: 'fresh',
+    a: o('Banana sliced in', 'Peel and slice a banana into the blender.', { tools: 1, handsOn: 3, peels: 1, cuts: 1, steps: 2, attention: 0, cleanup: 2 }),
+    b: o('Banana on the side', 'Shake whey and milk, eat the banana as it is.', { tools: 1, handsOn: 1, steps: 1, attention: 0, cleanup: 1 }) },
+  { id: 'p54', dish: 'Rajma', protein: 15, when: 'Sunday 12 PM', energy: 'fresh',
+    a: o('Cook for 3 days', 'One big cooker, three days in the fridge.', { tools: 1, handsOn: 6, waiting: 35, prePrepMinutes: 480, steps: 3, attention: 1, cleanup: 2 }),
+    b: o('Cook for today', 'A small cooker, today only.', { tools: 1, handsOn: 4, waiting: 30, prePrepMinutes: 480, steps: 3, attention: 1, cleanup: 1.5 }) },
+  { id: 'p55', dish: 'Besan chilla', protein: 14, when: '9 PM', energy: 'tired',
+    a: o('Batter whisked smooth', 'Whisk out every lump, rest 10 min.', { tools: 3, handsOn: 9, prePrepMinutes: 10, steps: 4, attention: 2, cleanup: 3 }),
+    b: o('Lumpy is fine', 'Quick stir, straight on the pan.', { tools: 3, handsOn: 6, steps: 3, attention: 2, cleanup: 3 }) },
+  { id: 'p56', dish: 'Curd rice', protein: 10, when: '10 PM', energy: 'tired',
+    a: o('Rice cooked fresh', 'Cook rice, cool, mix with curd.', { tools: 1, handsOn: 3, waiting: 30, steps: 3, attention: 1, cleanup: 1.5 }),
+    b: o('Leftover rice', 'Cold rice from the fridge, mix with curd.', { tools: 0, handsOn: 2, steps: 1, attention: 0, cleanup: 1 }) },
+  { id: 'p57', dish: 'Paneer bhurji', protein: 20, when: '8 PM', energy: 'okay',
+    a: o('Onion chopped by hand', 'Peel and chop an onion fine on the board.', { tools: 3, handsOn: 12, peels: 1, cuts: 1, steps: 4, attention: 2, cleanup: 3 }),
+    b: o('Onion pulsed in the blender', 'Peel, quarter, pulse 3 times.', { tools: 3, handsOn: 9, peels: 1, cuts: 1, steps: 4, attention: 2, cleanup: 3.5 }) },
+  { id: 'p58', dish: 'Scrambled eggs on toast', protein: 22, when: '8 AM', energy: 'okay',
+    a: o('Toast in the pan first', 'Toast the bread in the pan, then the eggs.', { tools: 1, handsOn: 6, steps: 3, attention: 2, cleanup: 1.5 }),
+    b: o('Toast in the air fryer', 'Bread in the air fryer while you scramble.', { tools: 2, handsOn: 5, waiting: 4, steps: 3, attention: 3, cleanup: 2 }) },
+  { id: 'p59', dish: 'Khichdi', protein: 14, when: '9 PM', energy: 'tired',
+    a: o('Dal and rice soaked', 'Soak 30 min, then 2 whistles.', { tools: 1, handsOn: 3, waiting: 14, prePrepMinutes: 30, steps: 3, attention: 1, cleanup: 1.5 }),
+    b: o('No soak, more whistles', 'Straight in, 4 whistles.', { tools: 1, handsOn: 3, waiting: 24, steps: 2, attention: 1, cleanup: 1.5 }) },
+  { id: 'p60', dish: 'Mint for raita', protein: 6, when: '7 PM', energy: 'okay', taste: true,
+    a: o('Mint chopped fine', 'Pick and chop a handful of mint.', { tools: 2, handsOn: 5, cuts: 1, steps: 2, attention: 0, cleanup: 2 }),
+    b: o('Mint torn by hand', 'Tear a few leaves straight in.', { tools: 0, handsOn: 2, steps: 1, attention: 0, cleanup: 1 }) },
+];
+
+const REPEATS_2 = [
+  ['p31', '10 PM', 'tired'], ['p33', '10 PM', 'tired'], ['p36', 'Saturday 5 PM', 'fresh'], ['p42', '10 PM', 'tired'],
+  ['p44', 'Sunday 10 AM', 'fresh'], ['p45', 'Saturday 1 PM', 'fresh'], ['p47', '10:30 PM', 'tired'], ['p49', 'Saturday 7 PM', 'fresh'],
+  ['p52', 'Sunday 2 PM', 'fresh'], ['p57', '10 PM', 'tired'],
+];
+
 const DEFAULTS = { tools: 0, handsOn: 0, waiting: 0, prePrepMinutes: 0, peels: 0, cuts: 0, steps: 2, attention: 1, cleanup: 1 };
 const withDefaults = (opt, protein) => ({ ...opt, raw: { ...DEFAULTS, ...opt.c, protein } });
 
-// Every 4th question is held out of the training fit and used only to check it.
-const all = [
-  ...PAIRS,
-  ...REPEATS.map(([id, when, energy], k) => ({ ...PAIRS.find((p) => p.id === id), id: `r${String(k + 1).padStart(2, '0')}`, of: id, when, energy })),
-];
-// A fixed interleave so repeats don't sit next to their originals.
-const order = all.map((p, i) => [p, (i * 13) % all.length]).sort((x, y) => x[1] - y[1]).map(([p]) => p);
+/** One round: pairs plus repeats at the other energy, interleaved; every 4th question held out. */
+function buildRound(pairs, repeats, firstRepeat, round) {
+  const all = [
+    ...pairs,
+    ...repeats.map(([id, when, energy], k) => ({ ...pairs.find((p) => p.id === id), id: `r${String(firstRepeat + k).padStart(2, '0')}`, of: id, when, energy })),
+  ];
+  // A fixed interleave so repeats don't sit next to their originals.
+  const order = all.map((p, i) => [p, (i * 13) % all.length]).sort((x, y) => x[1] - y[1]).map(([p]) => p);
+  return Object.freeze(order.map((p, i) => Object.freeze({
+    ...p, round, n: i + 1, holdout: i % 4 === 3, a: withDefaults(p.a, p.protein), b: withDefaults(p.b, p.protein),
+  })));
+}
 
-/** The quiz, in the order it is shown. */
-export const PREP_QUIZ = Object.freeze(order.map((p, i) => Object.freeze({
-  ...p, n: i + 1, holdout: i % 4 === 3, a: withDefaults(p.a, p.protein), b: withDefaults(p.b, p.protein),
-})));
+/** Round 1, in the order it is shown. */
+export const PREP_QUIZ = buildRound(PAIRS, REPEATS, 1, 1);
+export const PREP_ROUNDS = Object.freeze({ 1: PREP_QUIZ, 2: buildRound(PAIRS_2, REPEATS_2, 11, 2) });
+/** Every question of every round: what the fitter reads answers against. */
+export const PREP_ALL = Object.freeze(Object.values(PREP_ROUNDS).flat());
 
 /** Plain words for an option's effort, for the card. */
 export function prepFacts(opt) {
@@ -184,7 +291,7 @@ export function parsePrep(text) {
 // ── Fitting ─────────────────────────────────────────────────────────────────
 
 /** Answers → fitMarco choices. Pierre is held equal (1) inside a pair: same dish. */
-export function prepChoices(answers, { quiz = PREP_QUIZ, noTaste = false } = {}) {
+export function prepChoices(answers, { quiz = PREP_ALL, noTaste = false } = {}) {
   const out = [];
   for (const q of quiz) {
     const a = answers[q.id];
@@ -198,7 +305,7 @@ export function prepChoices(answers, { quiz = PREP_QUIZ, noTaste = false } = {})
  * Fits on the training questions, scores the held-out ones, then fits on everything for the
  * weights to ship. `current` (config.frictionTheta) is the prior the fit is pulled toward.
  */
-export function fitPrep(answers, { current = {}, noTaste = false, quiz = PREP_QUIZ } = {}) {
+export function fitPrep(answers, { current = {}, noTaste = false, quiz = PREP_ALL } = {}) {
   const choices = prepChoices(answers, { quiz, noTaste });
   const prior = FEATURES.map((f) => (f.payoff ? f.prior : current[f.key] ?? f.prior));
   const strip = ({ xa, xb, pick, mood }) => ({ xa, xb, pick, mood });
