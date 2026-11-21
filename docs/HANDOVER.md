@@ -326,6 +326,12 @@ Shipped as `config.frictionTheta` (rescaled so protein stays 1 per 30 g): tools 
 
 ---
 
+### 9.4 Marco prep quiz (21 Nov, rounds 1 and 2)
+- **Round 1** (issue #59, `data/prep-answers-2026-11-21.txt`) set today's `config.frictionTheta` (1.25.0): 20/26 clear picks vs 14/26 for the 5C weights, held-out 7/10.
+- **Round 2** (issue #62, `data/prep-answers-round2-2026-11-21.txt`): the friction features don't explain it. The current weights get 21/39 clear picks, and a refit on both rounds also gets 21/39, with held-out 10/20 (chance). So config was **not** changed.
+- **Why:** of the 18 misses, almost all are pranjal choosing the more careful technique when it makes the food better, even at "wiped out": rinse rice, marinate paneer, tadka in ghee, garlic peeled fresh, batter whisked smooth, a separate pan for cream sauce, knife over blender for onion, oats weighed, a bowl rather than eating from the pot. The quiz holds taste equal inside a pair, so these read as "more effort preferred".
+- **Lesson:** a technique that changes the result is a Pierre (quality) question, not just a Marco (effort) one. Future prep pairs should keep the result truly identical, or carry a quality rating for each side.
+
 ## 10. Backlog (agreed or raised, not built)
 
 1. **Staples as catalogue dishes** (offered 21 Nov, waiting on pranjal): dal (pressure cooker), rice, Maggi, chole, noodles, kala chana etc. Ask pranjal which they actually cook and the usual method for each. Helps both the trainer and real dinners; the ladder is thin without them.
