@@ -78,6 +78,18 @@ export const DEFAULT_CONFIG = Object.freeze({
     // Chaat masala is not on the savoury side (fruit chaat is a real dish).
     sweetSide: Object.freeze(['banana', 'mango', 'apple', 'raisins', 'honey', 'sugar', 'peanut_butter', 'whey']),
     savourySide: Object.freeze(['onion', 'garlic', 'spring_onion']),
+    // Dry heat needs a cooking fat (tap-to-repair, 21 Nov). PROVISIONAL physics prior, not
+    // pranjal's rating: a raw starch that must be cooked through (cook-first potato) blasted in
+    // dry air with no fat dries out before it crisps. Bread and roti are already cooked, so a dry
+    // air-fried toast is fine. Learned rules from pranjal's repairs (pierre-raw.js `rules`) sit on
+    // top of this and win; set `on: false` to judge with learned rules only.
+    dryHeatNeedsFat: Object.freeze({
+      on: true,
+      techniques: Object.freeze(['air_fried', 'roasted']),
+      classes: Object.freeze(['hydrated_starch']),
+      cookFirstOnly: true,
+      provisional: true,
+    }),
   }),
 
   // Meals one missing ingredient away are offered as "buy X to unlock".

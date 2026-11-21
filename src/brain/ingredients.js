@@ -494,6 +494,9 @@ function belowFloor(p, floor, done = false) {
  * `computed` is the tier before the verdict, so the two can be compared.
  */
 export function pierreTier(parts, form, { modifiers = [], inventory = [], verdict = null, kb = PIERRE_RAW, techniques = TECHNIQUES, floor = DEFAULT_CONFIG.pierreFloor, rules = DEFAULT_CONFIG.pierreRules } = {}) {
+  // pranjal's own tier for this exact dish, from a bench repair (pierre-raw.js `dishes`).
+  const owned = verdict ? null : kb.dishes?.[chainKey(parts, modifiers)] ?? null;
+  const asGiven = { parts, modifiers };
   // A rated food named among the modifiers and not among the parts (garlic) is a part of the
   // dish, as it comes. Unrated ones (turmeric) stay ignored, as before.
   const named = new Set(parts.map((x) => (typeof x === 'string' ? x : x.id)));
@@ -509,6 +512,7 @@ export function pierreTier(parts, form, { modifiers = [], inventory = [], verdic
   // Raw garlic vetoes a dish where nothing is cooked (pranjal, 20 Nov: "for now").
   const sharp = slotted.some((x) => x.state !== 'raw') ? [] : slotted.filter((x) => kb.foods?.[x.id]?.vetoUncooked).map((x) => x.id);
   let computed;
+  let repairs = [];
   if (p?.inedible.length || raw.length || sharp.length || physics.length) {
     computed = 'veto';
     why.push(...physics);
@@ -528,6 +532,10 @@ export function pierreTier(parts, form, { modifiers = [], inventory = [], verdic
     if (p?.unfinished.length) why.push(`needs another cooking step: ${p.unfinished.join(', ')}`);
     if (p?.unscored.length) why.push(`can't judge ${p.unscored.join(', ')}: not rated that way`);
     if (p) why.push(...structureOf(slotted, form, modifiers, kb, techniques, rules));
+    // Tap-to-repair: a dry-heated raw starch with no fat (PROVISIONAL prior), and every rule
+    // pranjal taught by fixing a dish of the same class. Each names the slot to fix.
+    repairs = repairHintsOf(asGiven.parts, asGiven.modifiers, kb, rules);
+    why.push(...repairs.map((h) => h.reason));
     if (p) why.push(...harmonyOf(slotted, p, kb, techniques, modifiers, rules));
     const anchor = slotted.find((x) => x.slot === 'anchor') ?? slotted.find((x) => x.anchors);
     // Round 3: a base that is done as it is (Maggi cooked with its masala) carries its flavour
@@ -557,9 +565,9 @@ export function pierreTier(parts, form, { modifiers = [], inventory = [], verdic
     const all = [...spices, ...foods];
     if (all.length) upgrade = { add: all[0], options: all };
   }
-  const mine = verdictTier(verdict);
+  const mine = verdictTier(verdict) ?? owned?.tier ?? null;
   const tier = mine ?? computed;
-  return { tier, computed, source: mine ? 'verdict' : 'computed', why, upgrade, untested: !!grammar.untested, profile: p };
+  return { tier, computed, source: mine ? 'verdict' : 'computed', why, upgrade, repairs, untested: !!grammar.untested, profile: p };
 }
 
 // ── Ratings in, brain file out ──────────────────────────────────────────────
@@ -665,4 +673,228 @@ export function mergeRatings(kb, ratings, { exclude = [], centres = {}, merges =
 function clamp(x, lo, hi) {
   const n = Number(x);
   return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo;
+}
+
+// ── The dish chain (tap-to-repair, 21 Nov) ──────────────────────────────────
+// Every dish read as a pseudo-flowchart of food nodes and connectors, so pranjal can tap one
+// slot on a bench card, swap it, and teach Pierre the exact change that lifted it:
+//   [potato] → seasoned with [salt, chilli flakes] → cooked with [none] → technique [air fried]
+//            → topped with [nothing] → served with [mayo]
+// Plain JSON both ways (Codable in MarcoCore). Parts that fit no slot (onion and tomato in a
+// bhurji, a toast's bread) ride along in `with`, so nothing is lost on the way back.
+export const CHAIN_SLOTS = ['anchor', 'seasonedWith', 'cookedWith', 'technique', 'toppedWith', 'servedWith'];
+// Fats that can be the medium a food cooks in (cream and mayo never are).
+export const MEDIUM_FATS = ['oil', 'olive_oil', 'ghee', 'butter'];
+// Sides and dips on the round-3 pantry (hung curd is out, pranjal 21 Nov).
+export const SERVED_WITH = ['mayo', 'tomato_sauce', 'chilli_sauce', 'curd'];
+export const TOPPED_WITH = ['coriander', 'onion', 'spring_onion', 'cheese_slices', 'mozzarella', 'lemon', 'peanuts', 'mint'];
+// Condiments that sheets list as modifiers, not parts (mayo on the side, a squirt of ketchup).
+const CONDIMENT_MODS = ['mayo', 'tomato_sauce', 'chilli_sauce'];
+const asMod = (id) => OIL_MODIFIERS.includes(id) || CONDIMENT_MODS.includes(id);
+const toPart = (p) => {
+  if (typeof p !== 'string') return p.technique ? { id: p.id, technique: p.technique } : { id: p.id };
+  const [id, technique] = p.split('@');
+  return technique ? { id, technique } : { id };
+};
+
+/** The items of any dish shape: a sheet dish ({ items }) or a generator/catalogue row ({ parts, modifiers }). */
+function itemsOf(dish) {
+  if (dish.items) return dish.items.map((it) => (it.mod ? { id: it.id, mod: true } : toPart(it)));
+  return [...(dish.parts ?? []).map(toPart), ...(dish.modifiers ?? []).map((id) => ({ id, mod: true }))];
+}
+
+/** A dish as its 6-slot chain. `dish` is a sheet dish, a generator row or a catalogue meal. */
+export function toDishChain(dish, kb = PIERRE_RAW) {
+  const items = itemsOf(dish);
+  const parts = items.filter((x) => !x.mod);
+  let mods = items.filter((x) => x.mod).map((x) => x.id);
+  const roles = fatRolesOf(parts, mods, kb);
+  // The anchor is the part pierreTier anchors on: the anchor slot, else a base that is the meal.
+  const slotted = slotParts(parts, kb);
+  const found = slotted.findIndex((x) => x.slot === 'anchor');
+  const ai = found >= 0 ? found : Math.max(0, slotted.findIndex((x) => x.anchors));
+  let rest = parts.filter((_, i) => i !== ai);
+  const anchor = parts[ai] ?? null;
+  // A part first; a modifier only when it is a condiment a sheet lists as one (mayo on the side).
+  const take = (pred, fromMods = false) => {
+    const p = rest.findIndex((x) => pred(x));
+    if (p >= 0) { const x = rest[p]; rest = rest.filter((_, i) => i !== p); return x; }
+    const m = fromMods ? mods.findIndex((id) => CONDIMENT_MODS.includes(id) && pred({ id })) : -1;
+    if (m >= 0) { const id = mods[m]; mods = mods.filter((_, i) => i !== m); return { id }; }
+    return null;
+  };
+  // Cooked with: an oil named as a modifier, else a fat beside a part cooked in it.
+  const oil = mods.find((id) => OIL_MODIFIERS.includes(id));
+  let cookedWith = null;
+  if (oil) { cookedWith = oil; mods = mods.filter((id) => id !== oil); } else {
+    const fat = rest.find((x) => MEDIUM_FATS.includes(x.id) && !x.technique && roles[x.id] === 'cooking_medium');
+    if (fat) { cookedWith = fat.id; rest = rest.filter((x) => x !== fat); }
+  }
+  const served = take((x) => SERVED_WITH.includes(x.id) && !x.technique, true);
+  const topped = take((x) => TOPPED_WITH.includes(x.id) && !x.technique);
+  return {
+    ...(dish.id ? { id: dish.id } : {}),
+    form: dish.form ?? null,
+    anchor: anchor ? { id: anchor.id } : null,
+    seasonedWith: mods,
+    cookedWith,
+    technique: anchor?.technique ?? null,
+    toppedWith: topped ? { id: topped.id } : null,
+    servedWith: served ? { id: served.id, role: served.id === 'curd' ? 'side' : 'dip' } : null,
+    with: rest,
+  };
+}
+
+/** A chain back to a dish: { form, parts, modifiers }, the shape pierreTier takes. */
+export function fromDishChain(chain) {
+  const parts = [];
+  const modifiers = [...(chain.seasonedWith ?? [])];
+  if (chain.anchor) parts.push(chain.technique ? { id: chain.anchor.id, technique: chain.technique } : { id: chain.anchor.id });
+  parts.push(...(chain.with ?? []).map(toPart));
+  for (const id of [chain.cookedWith, chain.toppedWith?.id, chain.servedWith?.id]) {
+    if (!id) continue;
+    if (asMod(id)) modifiers.push(id); else parts.push({ id });
+  }
+  return { ...(chain.id ? { id: chain.id } : {}), form: chain.form ?? null, parts, modifiers };
+}
+
+/** A dish's identity for owner verdicts, whatever order its parts come in. */
+export function chainKey(parts, modifiers = []) {
+  return [...parts.map((p) => (typeof p === 'string' ? p : techKey(p.id, p.technique))), ...modifiers].sort().join('+');
+}
+
+// A slot's value as a plain comparable: an id, null, or a sorted list.
+export function slotValue(chain, slot) {
+  const v = chain?.[slot];
+  if (slot === 'seasonedWith') return [...(v ?? [])].sort();
+  if (v && typeof v === 'object') return v.id ?? null;
+  return v ?? null;
+}
+export const sameSlotValue = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+/** A chain with edits ({ slot, to }) applied. */
+export function applyChainEdits(chain, edits = []) {
+  const out = { ...chain, seasonedWith: [...(chain.seasonedWith ?? [])], with: [...(chain.with ?? [])] };
+  for (const e of edits) {
+    const to = e.to ?? null;
+    if (e.slot === 'seasonedWith') out.seasonedWith = [...(to ?? [])];
+    else if (e.slot === 'anchor') out.anchor = to ? { id: to } : null;
+    else if (e.slot === 'toppedWith') out.toppedWith = to ? { id: to } : null;
+    else if (e.slot === 'servedWith') out.servedWith = to ? { id: to, role: chain.servedWith?.role ?? (to === 'curd' ? 'side' : 'dip') } : null;
+    else if (e.slot === 'cookedWith' || e.slot === 'technique') out[e.slot] = to;
+  }
+  return out;
+}
+
+// ── Learned repair rules (from pranjal's repairs only, via scripts/ingest-pierre.mjs) ──
+/** The class rules pranjal taught for a food class cooked one way ('raw' when as it comes). */
+export function learnedRulesFor(foodClass, technique, kb = PIERRE_RAW) {
+  const t = technique ?? 'raw';
+  return Object.values(kb.rules ?? {}).filter((r) => r.foodClass === foodClass && r.technique === t);
+}
+
+/** Does a chain break a rule? Returns the repair hint, or null. */
+function ruleHint(chain, r) {
+  const v = slotValue(chain, r.slot);
+  const label = (id) => String(id).replace(/_/g, ' ');
+  let broken = false;
+  if (r.slot === 'seasonedWith') {
+    broken = (r.requireAny?.length && !r.requireAny.some((id) => v.includes(id))) || (r.avoid?.length && r.avoid.some((id) => v.includes(id)));
+  } else {
+    broken = (r.requireNonNull && v == null) || (r.avoid != null && v === r.avoid);
+  }
+  if (!broken) return null;
+  return { slot: r.slot, suggest: r.preferred ?? null, reason: `you fixed ${r.learnedFrom.join(', ')} this way: ${label(r.foodClass)} ${label(r.technique)} wants ${r.slot.replace(/[A-Z]/g, (c) => ` ${c.toLowerCase()}`)} ${label(r.preferred ?? 'something')}`, source: 'learned', rule: r.id };
+}
+
+/** A chain with every learned rule for its anchor applied: what a generator should pitch. */
+export function applyLearnedRules(chain, kb = PIERRE_RAW) {
+  if (!chain.anchor) return chain;
+  let out = chain;
+  for (const r of learnedRulesFor(foodClassOf(chain.anchor.id), chain.technique, kb)) {
+    if (!ruleHint(out, r)) continue;
+    const to = r.slot === 'seasonedWith' ? [...slotValue(out, r.slot).filter((id) => !(r.avoid ?? []).includes(id)), ...(r.preferred ? [r.preferred] : [])] : r.preferred ?? null;
+    out = applyChainEdits(out, [{ slot: r.slot, to }]);
+  }
+  return out;
+}
+
+/** Generator rows ({ parts, modifiers, form, … }) with learned rules applied; `learned` lists what changed. */
+export function withLearnedRules(rows, kb = PIERRE_RAW) {
+  return rows.map((row) => {
+    const chain = toDishChain(row, kb);
+    const fixed = applyLearnedRules(chain, kb);
+    if (fixed === chain) return row;
+    const back = fromDishChain(fixed);
+    return { ...row, parts: back.parts, modifiers: back.modifiers, learned: learnedRulesFor(foodClassOf(chain.anchor.id), chain.technique, kb).map((r) => r.id) };
+  });
+}
+
+/**
+ * Cooking-medium and learned-rule repairs a dish needs (used by pierreTier). Each is a floor
+ * with a hint at the slot to fix: { slot, suggest, reason, source: 'provisional' | 'learned' }.
+ */
+export function repairHintsOf(parts, modifiers = [], kb = PIERRE_RAW, rules = DEFAULT_CONFIG.pierreRules) {
+  const hints = [];
+  const chain = toDishChain({ parts, modifiers }, kb);
+  const learned = chain.anchor ? learnedRulesFor(foodClassOf(chain.anchor.id), chain.technique, kb) : [];
+  for (const r of learned) { const h = ruleHint(chain, r); if (h) hints.push(h); }
+  const dry = rules.dryHeatNeedsFat;
+  const hasFat = modifiers.some((id) => MEDIUM_FATS.includes(id)) || parts.some((p) => MEDIUM_FATS.includes(typeof p === 'string' ? p : p.id));
+  if (dry?.on && !hasFat && !hints.some((h) => h.slot === 'cookedWith')) {
+    const dried = parts.map(toPart).filter((p) => dry.techniques.includes(p.technique) && dry.classes.includes(foodClassOf(p.id)) && (!dry.cookFirstOnly || cookFirst(p.id, kb)));
+    for (const p of dried) hints.push({ slot: 'cookedWith', suggest: 'oil', reason: `dry: ${techKey(p.id, p.technique)} has no cooking fat, so it dries out instead of crisping`, source: 'provisional' });
+  }
+  return hints;
+}
+
+/**
+ * Pulls bench repair pairs into the brain file. Each repair is
+ *   { dishId, dish (a sheet dish), before, edits: [{ slot, from, to }], after, scope, at }.
+ *   repairs  every repair, by dish id (newer wins): the provenance trail
+ *   dishes   pranjal's tier for the dish as suggested and as fixed, by chainKey, so pierreTier
+ *            reproduces both (crave only ever comes from here)
+ *   rules    scope 'class', the fix lifted veto/floor to pass/crave: one rule per
+ *            foodClass × technique × slot, which every food of the class inherits
+ * Pure and deterministic: ingesting the same repairs twice gives the same brain.
+ */
+export function mergeRepairs(kb, repairs) {
+  const LOW = ['veto', 'floor'];
+  const HIGH = ['pass', 'crave'];
+  const out = { repairs: { ...(kb.repairs ?? {}) }, dishes: { ...(kb.dishes ?? {}) }, rules: { ...(kb.rules ?? {}) } };
+  const ordered = [...repairs].sort((a, b) => String(a.at ?? '').localeCompare(String(b.at ?? '')) || a.dishId.localeCompare(b.dishId));
+  for (const r of ordered) {
+    const old = out.repairs[r.dishId];
+    if (old?.at && r.at && old.at > r.at) continue;
+    out.repairs[r.dishId] = { before: r.before, edits: r.edits, after: r.after, scope: r.scope, ...(r.at ? { at: r.at } : {}) };
+    const chain = toDishChain(r.dish, kb);
+    const fixed = fromDishChain(applyChainEdits(chain, r.edits));
+    const orig = fromDishChain(chain);
+    if (r.before) out.dishes[chainKey(orig.parts, orig.modifiers)] = { tier: r.before, from: r.dishId, ...(r.at ? { at: r.at } : {}) };
+    if (r.after) out.dishes[chainKey(fixed.parts, fixed.modifiers)] = { tier: r.after, from: r.dishId, fixed: true, ...(r.at ? { at: r.at } : {}) };
+    if (r.scope !== 'class' || !LOW.includes(r.before) || !HIGH.includes(r.after) || !chain.anchor) continue;
+    const foodClass = foodClassOf(chain.anchor.id);
+    if (!foodClass) continue;
+    for (const e of r.edits) {
+      if (e.slot === 'anchor') continue;
+      const technique = (e.slot === 'technique' ? e.from : chain.technique) ?? 'raw';
+      const rule = { foodClass, technique, slot: e.slot };
+      if (e.slot === 'seasonedWith') {
+        const added = (e.to ?? []).filter((id) => !(e.from ?? []).includes(id));
+        const dropped = (e.from ?? []).filter((id) => !(e.to ?? []).includes(id));
+        if (!added.length && !dropped.length) continue;
+        Object.assign(rule, added.length ? { requireAny: added } : {}, dropped.length ? { avoid: dropped } : {}, { preferred: added[0] ?? null });
+      } else if (e.from == null) {
+        if (e.to == null) continue;
+        Object.assign(rule, { requireNonNull: true, preferred: e.to });
+      } else {
+        Object.assign(rule, { avoid: e.from, preferred: e.to ?? null });
+      }
+      const id = `${foodClass}@${technique}:${e.slot}`;
+      const prev = out.rules[id];
+      out.rules[id] = { id, ...rule, learnedFrom: [...new Set([...(prev?.learnedFrom ?? []), r.dishId])].sort(), ...(r.at ? { at: r.at } : {}) };
+    }
+  }
+  const sorted = (o) => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]));
+  return { ...kb, repairs: sorted(out.repairs), dishes: sorted(out.dishes), rules: sorted(out.rules) };
 }

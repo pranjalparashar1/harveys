@@ -513,3 +513,60 @@ test('all dals are one food, "dal"; chole, rajma and chana stay separate (pranja
   assert.equal(later.foods.dal.texture.creamy, 3);
   assert.ok(!later.foods.toor_dal);
 });
+
+// ── Tap-to-repair: learning from repair pairs (1.16) ────────────────────────
+import { mergeRepairs, learnedRulesFor, pierreTier as tierOf, applyLearnedRules, toDishChain as chainOf, withLearnedRules } from '../src/brain/ingredients.js';
+import { repairsFromBench } from '../scripts/ingest-pierre.mjs';
+import { DEFAULT_CONFIG } from '../src/brain/config.js';
+import { PIERRE_RAW } from '../src/brain/pierre-raw.js';
+
+const r3 = JSON.parse(readFileSync(new URL('../src/quiz/round3.json', import.meta.url), 'utf8'));
+const EXPORT = ['#harveys benchmark v1', `seed ${r3.seed}`, 'r3_potato_mayo | floor | texture | 2026-11-21T08:10Z',
+  'repair r3_potato_mayo | before=floor | edit=cookedWith:none->oil | after=crave | scope=class | at=2026-11-21T08:15Z'].join('\n');
+const noPrior = { ...DEFAULT_CONFIG.pierreRules, dryHeatNeedsFat: { ...DEFAULT_CONFIG.pierreRules.dryHeatNeedsFat, on: false } };
+
+test('repair ingest: a class repair becomes a rule the whole class inherits', () => {
+  const repairs = repairsFromBench(EXPORT);
+  assert.equal(repairs[0].dish.id, 'r3_potato_mayo');
+  const kb = mergeRepairs(PIERRE_RAW, repairs);
+  const rule = kb.rules['hydrated_starch@air_fried:cookedWith'];
+  assert.deepEqual(rule, { id: 'hydrated_starch@air_fried:cookedWith', foodClass: 'hydrated_starch', technique: 'air_fried', slot: 'cookedWith', requireNonNull: true, preferred: 'oil', learnedFrom: ['r3_potato_mayo'], at: '2026-11-21T08:15Z' });
+  assert.equal(kb.repairs.r3_potato_mayo.after, 'crave');
+  assert.deepEqual(learnedRulesFor('hydrated_starch', 'air_fried', kb), [rule]);
+  // With the physics prior off, only what you taught decides.
+  const dry = tierOf([{ id: 'potato', technique: 'air_fried' }], 'bowl', { modifiers: ['mayo', 'chilli_flakes', 'salt'], kb, rules: noPrior });
+  assert.equal(dry.tier, 'floor', 'your tier for the dish as suggested');
+  assert.equal(dry.computed, 'floor');
+  assert.equal(dry.repairs[0].source, 'learned');
+  const oiled = tierOf([{ id: 'potato', technique: 'air_fried' }], 'bowl', { modifiers: ['mayo', 'chilli_flakes', 'salt', 'oil'], kb, rules: noPrior });
+  assert.equal(oiled.computed, 'pass');
+  assert.equal(oiled.tier, 'crave', 'crave only from your verdict on the fixed dish');
+  // Another food of the class, never repaired: dry air-fried bread now wants oil too.
+  const toast = [{ id: 'bread', technique: 'air_fried' }, { id: 'cheese_slices', technique: 'melted' }];
+  assert.equal(tierOf(toast, 'toast', { kb: PIERRE_RAW, rules: noPrior }).repairs.length, 0, 'before the repair');
+  const after = tierOf(toast, 'toast', { kb, rules: noPrior });
+  assert.equal(after.computed, 'floor');
+  assert.deepEqual(after.repairs.map((h) => [h.slot, h.suggest, h.source]), [['cookedWith', 'oil', 'learned']]);
+  // A generator pitches it with oil.
+  const fixed = applyLearnedRules(chainOf({ parts: toast, modifiers: [] }), kb);
+  assert.equal(fixed.cookedWith, 'oil');
+  const [row] = withLearnedRules([{ id: 'x', form: 'toast', parts: toast, modifiers: [] }], kb);
+  assert.ok(row.modifiers.includes('oil'));
+  assert.deepEqual(row.learned, ['hydrated_starch@air_fried:cookedWith']);
+});
+
+test('repair ingest: idempotent, byte for byte', () => {
+  const once = mergeRepairs(PIERRE_RAW, repairsFromBench(EXPORT));
+  const twice = mergeRepairs(once, repairsFromBench(EXPORT));
+  assert.equal(renderBrainFile(twice), renderBrainFile(once));
+  assert.doesNotThrow(() => new Function(renderBrainFile(once).replace(/^export /m, '')));
+});
+
+test('repair ingest: dish scope keeps the verdict and teaches no rule; a fix that did not lift teaches nothing', () => {
+  const dish = repairsFromBench(EXPORT.replace('scope=class', 'scope=dish'));
+  const kb = mergeRepairs(PIERRE_RAW, dish);
+  assert.deepEqual(kb.rules, {});
+  assert.equal(tierOf([{ id: 'potato', technique: 'air_fried' }], 'bowl', { modifiers: ['mayo', 'chilli_flakes', 'salt', 'oil'], kb }).tier, 'crave');
+  const flat = mergeRepairs(PIERRE_RAW, repairsFromBench(EXPORT.replace('after=crave', 'after=floor')));
+  assert.deepEqual(flat.rules, {});
+});

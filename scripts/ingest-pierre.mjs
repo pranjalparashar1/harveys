@@ -7,13 +7,30 @@
 //   node scripts/ingest-pierre.mjs --cook-first oats,pasta   (never eaten as it comes, Step 4b)
 //   node scripts/ingest-pierre.mjs --veto-uncooked garlic   (raw, vetoes a dish with nothing cooked)
 // A retest export is refused: compare it with scripts/retest-report.mjs instead.
+// A bench export (#harveys benchmark v1) with repair lines teaches Pierre from your fixes
+// (tap-to-repair): each repair is kept under `repairs`, both tiers under `dishes`, and a
+// class-scoped fix that lifted veto/floor to pass/crave becomes a rule under `rules`.
+//   node scripts/ingest-pierre.mjs round3-answers.txt
 // Rewrites src/brain/pierre-raw.js. Newer ratings of the same food win.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { decodePayload, isRetest } from '../src/quiz/quiz.js';
-import { mergeRatings } from '../src/brain/ingredients.js';
+import { mergeRatings, mergeRepairs } from '../src/brain/ingredients.js';
+import { BENCH_HEADER, decodeBench } from '../src/quiz/bench.js';
 import { PIERRE_RAW } from '../src/brain/pierre-raw.js';
 
 const FILE = new URL('../src/brain/pierre-raw.js', import.meta.url);
+const SHEETS = ['benchmark', 'holdout', 'round3'];
+
+/** The repairs in a bench export, each with its sheet dish (found by the export's seed). */
+export function repairsFromBench(text, sheets = SHEETS.map((n) => JSON.parse(readFileSync(new URL(`../src/quiz/${n}.json`, import.meta.url), 'utf8')))) {
+  const { answers, seed, repairs } = decodeBench(text);
+  const sheet = sheets.find((s) => s.seed === seed) ?? null;
+  return repairs.map((r) => {
+    const dish = (sheet ? [sheet] : sheets).flatMap((s) => s.dishes).find((d) => d.id === r.dishId);
+    if (!dish) throw new Error(`repair for ${r.dishId}: no sheet has that dish`);
+    return { ...r, before: r.before ?? answers[r.dishId]?.tier ?? null, dish };
+  });
+}
 
 export function renderBrainFile(kb) {
   const src = readFileSync(FILE, 'utf8');
@@ -37,6 +54,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const vetoUncooked = vu >= 0 ? args.splice(vu, 2)[1].split(',').map((s) => s.trim()).filter(Boolean) : [];
   const flagsOnly = vetoUncooked.length || cookFirst.length || exclude.length || Object.keys(centres).length || Object.keys(merges).length || Object.keys(classes).length;
   const text = args[0] || !flagsOnly ? readFileSync(args[0] ?? 0, 'utf8') : '';
+  if (text && text.includes(BENCH_HEADER)) {
+    const repairs = repairsFromBench(text);
+    if (!repairs.length) throw new Error('no repair lines in that bench export (dish tiers are scored with scripts/score-sheets.mjs)');
+    const kb = mergeRepairs(PIERRE_RAW, repairs);
+    writeFileSync(FILE, renderBrainFile(kb));
+    console.log(`ingested ${repairs.length} repairs; the brain file now has ${Object.keys(kb.rules).length} learned rules, ${Object.keys(kb.dishes).length} dish verdicts`);
+    process.exit(0);
+  }
   if (text && isRetest(text)) throw new Error('that is a retest export: run scripts/retest-report.mjs on it; retests never change the brain');
   const ratings = text ? decodePayload(text) : {};
   const n = Object.keys(ratings).length;

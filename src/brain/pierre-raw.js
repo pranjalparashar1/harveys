@@ -22,6 +22,12 @@
 //   tadka or masala, 3 another cooking step (roasted suji). veto: never (microwaved
 //   eggs), with no distance. Its centre is the food's own.
 // excluded: foods set aside for now (too much work, or unfamiliar). Not trained on.
+// repairs: bench tap-to-repair pairs by dish id (1.16): the tier as suggested, the slot edits,
+//   the tier with the fix, and its scope. The provenance trail of every correction.
+// dishes: pranjal's tier for an exact dish, by chainKey (both sides of each repair). pierreTier
+//   returns it as the verdict; crave only ever comes from here.
+// rules: class rules learned from scope=class repairs that lifted veto/floor to pass/crave, one per
+//   foodClass@technique:slot. Every food of that class inherits them (learnedRulesFor).
 export const PIERRE_RAW = {
   version: 1,
   ratedBy: 'pranjal',
