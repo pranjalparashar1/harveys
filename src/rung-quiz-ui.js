@@ -5,6 +5,7 @@
 import { buildRungQuiz, encodeRungResult, CRITERIA } from './brain/rung-quiz.js';
 import { confirmCandidates, withConfirmed } from './brain/confirm.js';
 import { sendResult, flush, setToken, outbox } from './send.js';
+import { startFresh } from './fresh.js';
 import { CHIPS, FOLLOW_UPS, WOULDNT_WHY, CONFUSING, blankFeedback, quickDishes, splitIdeas, norm } from './brain/feedback.js';
 
 const KEY = 'harveys.rq.v1';
@@ -51,7 +52,7 @@ function loadStore() {
 let store = loadStore();
 const newTesterId = () => `t-${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
 /** A new run: a new person holding the phone, so a new tester id. */
-const freshRun = (name = '') => ({ testerId: newTesterId(), runNo: ++store.seq, name, answers: { marco: {}, pierre: {}, white: {}, feedback: blankFeedback() }, at: 0, sent: false });
+const freshRun = (name = '') => ({ testerId: newTesterId(), runNo: ++store.seq, name, v: opts.version, answers: { marco: {}, pierre: {}, white: {}, feedback: blankFeedback() }, at: 0, sent: false });
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch { /* private mode: keep going in memory */ } };
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -95,7 +96,10 @@ export function startRungQuiz({ kitchen, inventory, version, source, name = '', 
   run = store.runs[quiz.id];
   // 1.39.0: "Did Harvey miss anything?" needs the list itself, so only when the page passes it.
   ask = items ? confirmCandidates(items, { cache, missingBasics }) : [];
-  if (run && !run.sent && run.answers?.confirm?.have?.length) rebuild(run.answers.confirm.have);
+  if (run && !run.sent && run.v === version && run.answers?.confirm?.have?.length) rebuild(run.answers.confirm.have);
+  // 1.40.0: a run saved by an older version starts again: its screens no longer line up
+  // (1.39.0 put the check before Round 1, so a saved spot skipped it).
+  if (run && !run.sent && run.v !== version) run = null;
   // A sent run belongs to the last person: whoever opens it next is someone new.
   if (!run || run.sent) run = store.runs[quiz.id] = freshRun(name);
   // 1.35.0: the name in the link (share.html) greets the tester and labels their result.
@@ -177,7 +181,7 @@ function render(enter = false) {
         <p class="rq-eyebrow">Quick check</p>
         <h1 class="rq-q">Do you have any of these?</h1>
         <p class="rq-hint">A video can’t see inside jars or cupboards. Tap what’s in your kitchen, and Harvey can suggest more dishes.</p>
-        <div class="rq-tags rq-check" role="group" aria-label="Things you have">${ask.map((a) => `<button class="rq-tag" data-act="have" data-id="${esc(a.id)}" type="button" aria-pressed="false">${HX}<span>${esc(a.label)}</span></button>`).join('')}</div>
+        <div class="rq-tags rq-have" role="group" aria-label="Things you have">${ask.map((a) => `<button class="rq-tag" data-act="have" data-id="${esc(a.id)}" type="button" aria-pressed="false">${HX}<span>${esc(a.label)}</span></button>`).join('')}</div>
       </div>`;
     foot = `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>None of these</span></button>`;
   } else if (s.kind === 'cover') {
@@ -234,6 +238,7 @@ function render(enter = false) {
     <header class="rq-top">
       <button class="rq-icon" data-act="close" type="button" aria-label="Close">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       ${ghost ? '<div class="rq-bar"></div>' : bar(list)}
+      <button class="rq-fresh" data-act="fresh" type="button">Start fresh</button>
     </header>
     <main class="rq-body${enter ? '' : ' in'}" data-kind="${s.kind}">${body}</main>
     <footer class="rq-foot">${foot}</footer>`;
@@ -244,7 +249,7 @@ function render(enter = false) {
 }
 
 function syncHave() {
-  for (const b of root.querySelectorAll('.rq-check .rq-tag')) {
+  for (const b of root.querySelectorAll('.rq-have .rq-tag')) {
     const on = haveNow.includes(b.dataset.id);
     b.classList.toggle('on', on);
     b.setAttribute('aria-pressed', String(on));
@@ -492,6 +497,12 @@ function onClick(e) {
   const list = screens();
   const s = list[run.at];
   if (act === 'close') return close();
+  // 1.40.0: one tap on the first screen; mid-test a second tap, so a stray thumb loses nothing.
+  if (act === 'fresh') {
+    if (run.at > 0 && !el.classList.contains('armed')) { el.classList.add('armed'); el.textContent = 'Tap again'; setTimeout(() => { el.classList.remove('armed'); el.textContent = 'Start fresh'; }, 4000); return; }
+    el.textContent = 'Starting…';
+    return startFresh();
+  }
   if (act === 'back') { commit(s); run.at = Math.max(0, run.at - 1); save(); return render(); }
   if (act === 'next' && el.classList.contains('ask')) { root.querySelector('.rq-why').scrollIntoView({ behavior: 'smooth', block: 'center' }); root.querySelector('.rq-why').classList.add('nudge'); setTimeout(() => root.querySelector('.rq-why')?.classList.remove('nudge'), 700); return; }
   if (act === 'next') { commit(s); run.at = Math.min(list.length - 1, run.at + 1); save(); return render(); }

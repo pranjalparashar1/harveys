@@ -174,3 +174,7 @@
 .rq-note textarea { width: 100%; min-height: 96px; padding: 12px 14px; font: 500 16px/1.45 var(--font); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; resize: vertical; }
 .rq-group { margin: 14px 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .rq-hint + .rq-group { margin-top: 6px; }
+/* 1.40.0: Start fresh, top right on every screen */
+.rq-fresh { flex: none; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: 500 14px var(--font); cursor: pointer; }
+.rq-fresh.armed { background: var(--ink); color: var(--bg); }
+.rq-fresh:active { transform: scale(.95); }

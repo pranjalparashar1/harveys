@@ -14,8 +14,9 @@ import { DEMO_KITCHEN } from './demo-kitchen.js';
 import { startRungQuiz } from './rung-quiz-ui.js';
 import { buildRungQuiz } from './brain/rung-quiz.js';
 import { decodeKitchen, linkCode, linkName } from './brain/share-link.js';
+import { startFresh, reloadIfStale } from './fresh.js';
 
-const VERSION = '1.39.0';
+const VERSION = '1.40.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -874,6 +875,9 @@ function init() {
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   window.scrollTo(0, 0);
   addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); }); // Safari back/forward cache
+  // 1.40.0: an old copy of the page reloads itself, and "Start fresh" clears this phone's state.
+  reloadIfStale();
+  document.getElementById('start-fresh')?.addEventListener('click', () => startFresh());
   $('version').textContent = VERSION;
   addHaptics();
 
