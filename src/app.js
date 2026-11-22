@@ -345,6 +345,36 @@ function setItems(items) {
   classifyUnknown();
 }
 
+// After "Use this list": what Harvey read, in two groups, before going on to the picks.
+const KIT_CATEGORIES = new Set(['cookware', 'appliance', 'appliances', 'utensil', 'utensils', 'equipment', 'tool', 'tools']);
+function showPasteSummary(items) {
+  state.reviewingPaste = true;
+  const food = [];
+  const kit = [];
+  for (const item of items) {
+    let isKit = KIT_CATEGORIES.has(String(item.category ?? '').toLowerCase());
+    if (!isKit) {
+      const one = buildInventory([item], { cache: state.pantry });
+      const id = one.matched[0]?.id;
+      const extra = one.extras[0];
+      isKit = id ? kindOf(id) !== 'food' : Boolean(extra && !one.unmatched.length && extra.kind !== 'food');
+    }
+    (isKit ? kit : food).push(item.name);
+  }
+  const group = (title, names) => h('div', { class: 'group' },
+    h('h3', {}, `${title} · ${names.length}`),
+    names.length ? h('div', { class: 'chips' }, names.map((n) => h('span', { class: 'chip' }, n))) : h('p', { class: 'muted' }, 'None'));
+  $('paste-groups').replaceChildren(group('Food items spotted', food), group('Cookware & appliances spotted', kit));
+  show($('paste-list'), false);
+  show($('paste-summary'), true);
+  show($('step-context'), false);
+}
+
+function endPasteReview() {
+  state.reviewingPaste = false;
+  show($('paste-summary'), false);
+}
+
 function inventory() {
   return buildInventory(state.items, { missingBasics: state.missingBasics, cache: state.pantry });
 }
@@ -373,7 +403,7 @@ async function classifyUnknown() {
 function renderInventory() {
   const has = state.items.length > 0;
   show($('step-inventory'), has);
-  show($('step-context'), has);
+  show($('step-context'), has && !state.reviewingPaste);
   if (!has) return;
   const groups = { food: [], kit: [], other: [] };
   state.items.forEach((item, index) => {
@@ -820,6 +850,8 @@ function init() {
   $('copy-debug')?.addEventListener('click', copyDebug);
   $('use-demo').addEventListener('click', () => {
     state.pickSource = 'inventory';
+    endPasteReview();
+    show($('paste-list'), true);
     setItems(DEMO_KITCHEN.map((i) => ({ ...i, source: 'demo' })));
     $('step-inventory').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
@@ -831,8 +863,9 @@ function init() {
     const kitchen = looksLikeKitchenJson(text) ? importKitchens(text)[0] : null;
     if (kitchen) {
       state.pickSource = 'inventory';
+      state.reviewingPaste = true;
       setItems(kitchen.items);
-      $('step-context').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showPasteSummary(kitchen.items);
       return;
     }
     // JSON that would not parse even after repair: take its "name" values, never its braces.
@@ -840,8 +873,26 @@ function init() {
     const items = names.length ? [...new Set(names)] : parseItemList(text);
     if (!items.length) return;
     state.pickSource = 'inventory';
-    setItems(items.map((name) => ({ name, canonical: null, category: 'other', source: 'paste' })));
-    $('step-context').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const list = items.map((name) => ({ name, canonical: null, category: 'other', source: 'paste' }));
+    state.reviewingPaste = true;
+    setItems(list);
+    showPasteSummary(list);
+  });
+  $('paste-edit').addEventListener('click', () => {
+    endPasteReview();
+    show($('step-context'), false);
+    show($('result'), false);
+    const box = $('paste-list');
+    show(box, true);
+    box.open = true;
+    $('paste-text').focus();
+  });
+  $('paste-proceed').addEventListener('click', () => {
+    endPasteReview();
+    show($('paste-list'), true);
+    $('paste-list').open = false;
+    show($('step-context'), state.items.length > 0);
+    $('decide').click();
   });
 
   $('add-form').addEventListener('submit', (e) => {

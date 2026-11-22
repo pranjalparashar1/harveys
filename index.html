@@ -68,6 +68,13 @@
         <textarea id="paste-text" rows="5" placeholder="eggs&#10;paneer, butter, protein bread&#10;air fryer&#10;&#10;or a kitchen JSON" aria-label="Kitchen items, one per line or comma-separated"></textarea>
         <button class="btn wide" id="paste-go" data-haptic type="button">Use this list</button>
       </details>
+      <div id="paste-summary" hidden>
+        <div id="paste-groups"></div>
+        <div class="paste-actions">
+          <button class="btn" id="paste-edit" data-haptic type="button">Edit list</button>
+          <button class="btn primary" id="paste-proceed" data-haptic type="button">Proceed</button>
+        </div>
+      </div>
       <p class="error" id="scan-error" role="alert" hidden></p>
     </section>
 
