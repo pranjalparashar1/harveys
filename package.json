@@ -1,7 +1,7 @@
 {
   "name": "marco",
   "private": true,
-  "version": "1.31.0",
+  "version": "1.32.0",
   "type": "module",
   "description": "Marco web prototype: scan your kitchen, get the meal you will actually cook.",
   "scripts": {

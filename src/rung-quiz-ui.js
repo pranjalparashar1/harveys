@@ -1,7 +1,9 @@
-// Rung quiz screens (1.31.0): what a tester sees after Proceed. Kiron's rules: one question
+// Rung quiz screens (1.31.0; one-tap send, a fresh tester per run 1.32.0): what a tester sees
+// after Proceed. Kiron's rules: one question
 // per screen, a story bar with no numbers, drag to sort, tap to pick, haptics on every tap.
 // The brain work is src/brain/rung-quiz.js; this file is screens, drag, storage and sending.
 import { buildRungQuiz, encodeRungResult, CRITERIA } from './brain/rung-quiz.js';
+import { sendResult, flush, setToken, outbox } from './send.js';
 
 const KEY = 'harveys.rq.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
@@ -32,22 +34,28 @@ const RUNG_HINT = {
   3: 'You stand at the stove',
   4: 'Two things cooking at once',
 };
+const rungHint = (g) => (g.rungs ?? [g.rung]).map((n, i) => (i ? RUNG_HINT[n].replace(/^./, (c) => c.toLowerCase()) : RUNG_HINT[n])).join(', or ');
 
 // ── Storage ─────────────────────────────────────────────────────────────────
 function loadStore() {
   let s = {};
   try { s = JSON.parse(localStorage.getItem(KEY)) ?? {}; } catch { /* fresh */ }
-  if (!s.testerId) s.testerId = `t-${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
-  s.tester ??= '';
+  delete s.testerId; // 1.31 kept one id per phone; testers share the phone, so it's one per run now
+  delete s.tester;
   s.runs ??= {};
+  s.seq ??= 0;
   return s;
 }
 let store = loadStore();
+const newTesterId = () => `t-${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
+/** A new run: a new person holding the phone, so a new tester id. */
+const freshRun = () => ({ testerId: newTesterId(), runNo: ++store.seq, answers: { marco: {}, pierre: {}, white: {} }, at: 0, sent: false });
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch { /* private mode: keep going in memory */ } };
 
 // ── State ───────────────────────────────────────────────────────────────────
 let quiz = null;
-let run = null; // { answers: {marco, pierre, white}, at: screen index, sent }
+let run = null; // { testerId, runNo, answers: {marco, pierre, white}, at: screen index, sent }
+let sendState = ''; // '', 'sending', 'sent', 'queued', 'auth', 'setup', 'bad'
 let root = null;
 let opts = {};
 let shownAt = 0;
@@ -70,8 +78,14 @@ export function startRungQuiz({ kitchen, inventory, version, source, onExit }) {
   opts = { version, source, onExit };
   quiz = buildRungQuiz({ kitchen, inventory });
   store = loadStore();
-  run = store.runs[quiz.id] ??= { answers: { marco: {}, pierre: {}, white: {} }, at: 0, sent: false };
+  run = store.runs[quiz.id];
+  // A sent run belongs to the last person: whoever opens it next is someone new.
+  if (!run || run.sent) run = store.runs[quiz.id] = freshRun();
+  run.testerId ??= newTesterId();
   if (run.at >= screens().length) run.at = 0;
+  sendState = '';
+  save();
+  flush(); // anything left over from a send with no signal
   if (!root) {
     root = document.createElement('div');
     root.className = 'rq';
@@ -80,7 +94,6 @@ export function startRungQuiz({ kitchen, inventory, version, source, onExit }) {
     document.body.append(root);
     root.addEventListener('click', onClick);
     root.addEventListener('pointerdown', onPointerDown);
-    root.addEventListener('input', (e) => { if (e.target.id === 'rq-name') { store.tester = e.target.value.slice(0, 60); save(); } });
   }
   root.hidden = false;
   document.documentElement.classList.add('rq-open');
@@ -93,7 +106,7 @@ function close() {
   opts.onExit?.();
 }
 
-const resultOf = () => encodeRungResult(quiz, run.answers, { version: opts.version, at: new Date().toISOString(), testerId: store.testerId, tester: store.tester, source: opts.source });
+const resultOf = () => encodeRungResult(quiz, run.answers, { version: opts.version, at: new Date().toISOString(), testerId: run.testerId, runNo: run.runNo, source: opts.source });
 
 // ── Render ──────────────────────────────────────────────────────────────────
 function bar(list) {
@@ -149,7 +162,8 @@ function render(enter = false) {
       <p class="rq-end top">${sec.top}</p>
       <ol class="rq-sort" data-section="${s.section}">${order.map((id, i) => sortRow(id, i)).join('')}</ol>
       <p class="rq-end">${sec.bottom}</p>`;
-    foot = `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Next</span></button>`;
+    // Until a row moves, Next reads "Keep this order": leaving it is then a choice, not a skip.
+    foot = `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>${sortGoLabel(s, g)}</span></button>`;
   } else if (s.kind === 'white') {
     const g = quiz.rungs.find((x) => x.rung === s.rung);
     const saved = run.answers.white[s.rung];
@@ -167,22 +181,7 @@ function render(enter = false) {
       </div>`;
     foot = `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Next</span></button>`;
   } else {
-    body = `
-      <div class="rq-hero end">
-        <div class="rq-tick" aria-hidden="true"><svg viewBox="0 0 52 52"><path d="M14 27l8 8 16-17"/></svg></div>
-        <h1 class="rq-title">${run.sent ? 'Sent. Thank you!' : 'That’s all. Thank you!'}</h1>
-        <p class="rq-lead">${run.sent ? 'Your answers are on their way. You can send them again if it didn’t go through.' : 'One last tap sends your answers to Harvey’s, so it learns how real people cook.'}</p>
-        <label class="rq-field"><span>Your name (optional)</span><input id="rq-name" type="text" autocomplete="given-name" autocapitalize="words" maxlength="60" value="${esc(store.tester)}" placeholder="So we know who to thank"></label>
-      </div>`;
-    foot = `
-      <div class="rq-sendbox">
-        <button class="btn primary xl rq-go" data-act="send" type="button">${HX}<span>${run.sent ? 'Send again' : 'Send to Harvey’s'}</span></button>
-        <div class="rq-alt">
-          <button class="btn link" data-act="github" type="button">Post on GitHub</button>
-          <button class="btn link" data-act="file" type="button">Save the file</button>
-          <button class="btn link" data-act="restart" type="button">Start over</button>
-        </div>
-      </div>`;
+    ({ body, foot } = endScreen());
   }
 
   const ghost = s.kind === 'intro' || s.kind === 'end';
@@ -198,7 +197,48 @@ function render(enter = false) {
 }
 
 function rungHead(g) {
-  return `<p class="rq-rung"><span class="rq-dot"></span>${esc(g.name)}<span class="rq-rung-hint">${RUNG_HINT[g.rung]}</span></p>`;
+  return `<p class="rq-rung"><span class="rq-dot"></span>${esc(g.name)}<span class="rq-rung-hint">${esc(rungHint(g))}</span></p>`;
+}
+
+function sortGoLabel(s, g) {
+  const moved = run.answers[s.section][s.rung]?.moved || (order && order.some((id, i) => id !== g.shown[s.section][i]));
+  return moved ? 'Next' : 'Keep this order';
+}
+
+/** The last screen: one Send, then "Next person" so the phone can be handed on. */
+function endScreen() {
+  const waiting = outbox().length;
+  const st = sendState || (run.sent ? 'sent' : '');
+  const copy = {
+    '': ['That’s all. Thank you!', 'One tap sends your answers to Harvey’s.'],
+    sending: ['Sending…', 'Putting your answers in Harvey’s.'],
+    sent: ['Sent. Thank you!', 'Your answers are in Harvey’s. Hand the phone to the next person.'],
+    queued: ['Saved. Thank you!', `No signal, so your answers wait on this phone${waiting > 1 ? ` with ${waiting - 1} more` : ''} and send themselves next time. Hand the phone on.`],
+    auth: ['Almost there', 'This phone isn’t set up to send yet. Your answers are saved here and go as soon as it is.'],
+    setup: ['Set up sending', 'Paste the GitHub token for Harvey’s once. Every send after is one tap, for everyone using this phone.'],
+    bad: ['That token didn’t work', 'It needs write access to the harveys repo (Contents: read and write). Your answers are still saved here.'],
+  }[st];
+  const done = st === 'sent' || st === 'queued';
+  const ask = st === 'auth' || st === 'setup' || st === 'bad';
+  const body = `
+      <div class="rq-hero end">
+        <div class="rq-tick${done || !st ? '' : ' wait'}" aria-hidden="true"><svg viewBox="0 0 52 52"><path d="M14 27l8 8 16-17"/></svg></div>
+        <h1 class="rq-title">${copy[0]}</h1>
+        <p class="rq-lead">${copy[1]}</p>
+        ${ask ? `<label class="rq-field"><span>GitHub token</span><input id="rq-token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…"></label>` : ''}
+      </div>`;
+  const main = done
+    ? `<button class="btn primary xl rq-go" data-act="nextperson" type="button">${HX}<span>Next person</span></button>`
+    : ask
+      ? `<button class="btn primary xl rq-go" data-act="token" type="button">${HX}<span>Save and send</span></button>`
+      : `<button class="btn primary xl rq-go" data-act="send" type="button"${st === 'sending' ? ' disabled' : ''}>${HX}<span>${st === 'sending' ? 'Sending…' : 'Send to Harvey’s'}</span></button>`;
+  const alt = [
+    done ? '<button class="btn link" data-act="close" type="button">Done for now</button>' : '',
+    ask ? '<button class="btn link" data-act="github" type="button">Post on GitHub instead</button>' : '',
+    '<button class="btn link" data-act="file" type="button">Save the file</button>',
+    done ? '' : '<button class="btn link" data-act="restart" type="button">Start over</button>',
+  ].join('');
+  return { body, foot: `<div class="rq-sendbox">${main}<div class="rq-alt">${alt}</div></div>` };
 }
 
 function sortRow(id, i) {
@@ -264,11 +304,14 @@ function onClick(e) {
   if (act === 'why') { toggleIn(picks.criteria, el.dataset.id); return syncPicks(); }
   if (act === 'none') { picks.none = !picks.none; if (picks.none) { picks.picks = []; picks.criteria = []; } return syncPicks(); }
   if (act === 'send') return send();
-  if (act === 'github') { const res = resultOf(); window.open(issueHref(res), '_blank', 'noopener'); markSent(); return; }
+  if (act === 'github') { const res = resultOf(); window.open(issueHref(res), '_blank', 'noopener'); sendState = 'sent'; markSent(); return; }
+  if (act === 'token') return saveToken();
+  if (act === 'nextperson') { store.runs[quiz.id] = run = freshRun(); sendState = ''; save(); return render(); }
   if (act === 'file') { download(resultOf()); return; }
   if (act === 'restart') {
     if (!el.classList.contains('armed')) { el.classList.add('armed'); el.textContent = 'Tap again to start over'; setTimeout(() => { el.classList.remove('armed'); el.textContent = 'Start over'; }, 4000); return; }
-    store.runs[quiz.id] = run = { answers: { marco: {}, pierre: {}, white: {} }, at: 0, sent: false };
+    store.runs[quiz.id] = run = freshRun();
+    sendState = '';
     save();
     return render();
   }
@@ -354,7 +397,7 @@ function onPointerDown(e) {
     li.removeEventListener('pointerup', up);
     li.removeEventListener('pointercancel', up);
     li.classList.remove('lift');
-    if (to === from) { li.style.transform = ''; ol.classList.remove('sorting'); return; }
+    if (to === from) { li.style.transform = ''; ol.classList.remove('sorting'); renumber(rows, from, from); return; }
     li.classList.add('drop');
     li.style.transform = `translate3d(0, ${(to - from) * step}px, 0)`;
     setTimeout(() => {
@@ -363,6 +406,9 @@ function onPointerDown(e) {
       ol.classList.remove('sorting');
       ol.innerHTML = order.map((x, i) => sortRow(x, i)).join('');
       ol.children[to].classList.add('settled');
+      const s = screens()[run.at];
+      const go = root.querySelector('.rq-foot [data-act="next"] span');
+      if (go) go.textContent = sortGoLabel(s, quiz.rungs.find((x) => x.rung === s.rung));
     }, 160);
   };
   li.addEventListener('pointermove', move);
@@ -381,7 +427,7 @@ function renumber(rows, from, to) {
 const fileName = (res) => `harveys-taste-test-${res.kitchenId}-${res.testerId}.json`;
 
 function issueHref(result) {
-  const title = `Taste test: ${result.kitchen.kitchen}${result.tester ? ` (${result.tester})` : ''}`;
+  const title = `Taste test: ${result.kitchen.kitchen} (${result.testerId})`;
   const make = (res) => `${REPO_ISSUE}?${new URLSearchParams({ title, labels: 'kitchen-test', body: '```json\n' + JSON.stringify(res) + '\n```' })}`;
   let href = make(result);
   // GitHub drops very long URLs: the kitchen's items go first, the file keeps them.
@@ -405,24 +451,27 @@ function markSent() {
   render();
 }
 
-/** The phone's own share sheet (WhatsApp, Messages, Mail…) with the file; else save it and copy it. */
+/** One tap: straight into the repo (src/send.js). No signal keeps it on the phone; no token asks once. */
 async function send() {
   const res = resultOf();
-  const text = JSON.stringify(res);
-  const file = typeof File === 'function' ? new File([JSON.stringify(res, null, 1)], fileName(res), { type: 'application/json' }) : null;
-  try {
-    if (file && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'Harvey’s taste test' });
-      return markSent();
-    }
-    if (navigator.share) {
-      await navigator.share({ title: 'Harvey’s taste test', text: '```json\n' + text + '\n```' });
-      return markSent();
-    }
-  } catch (err) {
-    if (err?.name === 'AbortError') return; // closed the share sheet
-  }
-  download(res);
-  try { await navigator.clipboard?.writeText(text); } catch { /* not allowed */ }
-  markSent();
+  sendState = 'sending';
+  render();
+  const r = await sendResult(res);
+  sendState = r;
+  if (r === 'sent' || r === 'queued') { buzz(20); return markSent(); }
+  save();
+  render();
+  root.querySelector('#rq-token')?.focus();
+}
+
+async function saveToken() {
+  const input = root.querySelector('#rq-token');
+  const t = input?.value ?? '';
+  if (!t.trim()) { input?.focus(); return; }
+  sendState = 'sending';
+  render();
+  const ok = await setToken(t);
+  if (ok === 'bad') { sendState = 'bad'; render(); root.querySelector('#rq-token')?.focus(); return; }
+  if (ok === 'offline') { sendState = 'queued'; return markSent(); } // token kept unchecked; answers wait for signal
+  return send();
 }

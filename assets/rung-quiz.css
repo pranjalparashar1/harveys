@@ -134,3 +134,5 @@
 /* the rung's plain words sit beside its name when there's room, under it when there isn't */
 @media (min-width: 400px) { .rq-rung-hint::before { content: "· "; } }
 @media (max-width: 399px) { .rq-rung-hint { flex-basis: 100%; padding-left: 16px; } }
+.rq-tick.wait { background: var(--surface2); }
+.rq-tick.wait svg { stroke: var(--muted); animation: none; stroke-dashoffset: 0; opacity: .5; }

@@ -1,9 +1,9 @@
-// Rung quiz (1.31.0): the user-testing flow after Proceed.
+// Rung quiz (1.31.0, groups and one-tap send 1.32.0): the user-testing flow after Proceed.
 //
 //   kitchen ─► buildRungQuiz ─► Marco section  (sort each rung: easiest on top)
 //                             ─► Pierre section (sort each rung: tastiest on top)
 //                             ─► White section  (tap what you'd actually cook, in order, and why)
-//   answers ─► encodeRungResult ─► "Send to Harvey's" (share sheet, file, or GitHub issue)
+//   answers ─► encodeRungResult ─► "Send to Harvey's" (straight into the repo, see src/send.js)
 //   scripts/kitchen-tests.mjs score reads these files next to the kitchen-test ones.
 //
 // A full ranking of n dishes is n(n−1)/2 pairwise choices, so one drag gives Marco many more
@@ -54,33 +54,56 @@ const shortHow = (meal) => {
 };
 
 /**
- * An inventory (buildInventory's) → the quiz: rungs with up to PER_RUNG dishes in Harvey's own
- * order, plus a shown order per section. Rungs with one dish skip the sorts but stay in White.
+ * An inventory (buildInventory's) → the quiz: groups of up to PER_RUNG dishes in Harvey's own
+ * order (easier rung first, then byRungOrder), plus a shown order per section.
+ *
+ * Sorting or picking from one dish tells us nothing, so a rung with a single dish is merged
+ * into its neighbour (the smaller one; the easier one on a tie). A merged group keeps the
+ * lower rung as its key and lists every rung it spans in `rungs`, and its Marco pairs cross
+ * the rung line, which also tests the ladder itself. A merged group may hold PER_RUNG + 1
+ * dishes; past that the bigger rung's last dish makes room. Only a kitchen with one dish in
+ * all leaves a group of one (White only, no sorts).
  */
 export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdicts = PIERRE_SEED, config = DEFAULT_CONFIG }) {
   const id = kitchenId(kitchen);
   const go = (kind) => rank({ inventory, targets: TARGETS, context: { hour: MOMENT.hour, weekday: MOMENT.weekday, kind }, catalogue, verdicts, config });
   let r = go('meal');
   if (!r.ranked.length) r = go('any');
-  const dishes = {};
-  const rungs = [];
+  const byRung = {};
+  let groups = [];
   for (const rung of [1, 2, 3, 4]) {
     const items = r.ranked.filter((x) => x.rung === rung).sort(byRungOrder).slice(0, PER_RUNG);
     if (!items.length) continue;
-    items.forEach((x, i) => {
+    byRung[rung] = items;
+    groups.push({ rungs: [rung], items });
+  }
+  // Merge every one-dish group into a neighbour until none is left (or only one group).
+  for (let i = groups.findIndex((g) => g.items.length < 2); i >= 0 && groups.length > 1; i = groups.findIndex((g) => g.items.length < 2)) {
+    const prev = groups[i - 1];
+    const next = groups[i + 1];
+    const j = !next || (prev && prev.items.length <= next.items.length) ? i - 1 : i + 1;
+    const [a, b] = j < i ? [groups[j], groups[i]] : [groups[i], groups[j]];
+    const big = a.items.length >= b.items.length ? a : b;
+    while (a.items.length + b.items.length > PER_RUNG + 1) big.items.pop();
+    groups.splice(Math.min(i, j), 2, { rungs: [...a.rungs, ...b.rungs], items: [...a.items, ...b.items] });
+  }
+  const dishes = {};
+  const rungs = groups.map((grp) => {
+    grp.items.forEach((x) => {
       dishes[x.meal.id] = {
-        id: x.meal.id, name: x.meal.name, rung, how: shortHow(x.meal), facts: effortFacts(x.raw),
+        id: x.meal.id, name: x.meal.name, rung: x.rung, how: shortHow(x.meal), facts: effortFacts(x.raw),
         protein: x.meal.macros?.protein ?? null, kcal: x.meal.macros?.kcal ?? null,
-        harveys: { order: i, tier: x.pierre.tier, friction: round(x.friction), score: round(x.score) },
+        harveys: { order: byRung[x.rung].indexOf(x), tier: x.pierre.tier, friction: round(x.friction), score: round(x.score) },
         raw: compactRaw(x.raw),
       };
     });
-    const ids = items.map((x) => x.meal.id);
-    rungs.push({
-      rung, name: RUNGS[rung], dishes: ids,
-      shown: { marco: seededShuffle(ids, `${id}|marco|${rung}`), pierre: seededShuffle(ids, `${id}|pierre|${rung}`), white: seededShuffle(ids, `${id}|white|${rung}`) },
-    });
-  }
+    const ids = grp.items.map((x) => x.meal.id);
+    const key = grp.rungs[0];
+    return {
+      rung: key, rungs: grp.rungs, name: grp.rungs.map((n) => RUNGS[n]).join(' + '), dishes: ids,
+      shown: { marco: seededShuffle(ids, `${id}|marco|${key}`), pierre: seededShuffle(ids, `${id}|pierre|${key}`), white: seededShuffle(ids, `${id}|white|${key}`) },
+    };
+  });
   const sortable = rungs.filter((g) => g.dishes.length > 1);
   const steps = [
     ...sortable.map((g) => ({ section: 'marco', rung: g.rung })),
@@ -100,24 +123,26 @@ function compactRaw(raw) {
  * Answers → the file a tester sends. answers: { marco: {rung: {ranking, ms, moved}},
  * pierre: {…same}, white: {rung: {picks, none, criteria, ms}} }.
  */
-export function encodeRungResult(quiz, answers, { version, at, testerId, tester = '', source = 'paste' } = {}) {
+export function encodeRungResult(quiz, answers, { version, at, testerId, runNo = null, source = 'paste' } = {}) {
   const shownOf = (g, s) => g.shown[s];
   const sortRows = (section) => quiz.rungs.filter((g) => answers[section]?.[g.rung]).map((g) => {
     const a = answers[section][g.rung];
-    return { rung: g.rung, harveys: g.dishes, shown: shownOf(g, section), ranking: a.ranking, moved: !!a.moved, ms: a.ms ?? null };
+    return { rung: g.rung, rungs: g.rungs ?? [g.rung], harveys: g.dishes, shown: shownOf(g, section), ranking: a.ranking, moved: !!a.moved, ms: a.ms ?? null };
   });
   return {
     format: RUNG_FORMAT, version, at, source,
-    kitchenId: quiz.id, testerId, tester,
+    kitchenId: quiz.id, testerId, runNo,
     kitchen: { kitchen: quiz.kitchen.kitchen, diet: quiz.kitchen.diet ?? 'unknown', notes: quiz.kitchen.notes ?? '', items: (quiz.kitchen.items ?? []).map((i) => ({ name: i.name, category: i.category })) },
     moment: MOMENT.label, targets: TARGETS,
     directions: { marco: 'easiest first', pierre: 'tastiest first', white: 'tap order = preference' },
+    // From 1.32.0 an unmoved sort was confirmed with a "Keep this order" tap, so it is a real answer.
+    unmovedConfirmed: true,
     dishes: Object.fromEntries(Object.values(quiz.dishes).map((d) => [d.id, { name: d.name, rung: d.rung, harveys: d.harveys, raw: d.raw }])),
     marco: sortRows('marco'),
     pierre: sortRows('pierre'),
     white: quiz.rungs.filter((g) => answers.white?.[g.rung]).map((g) => {
       const a = answers.white[g.rung];
-      return { rung: g.rung, harveys: g.dishes[0], shown: g.shown.white, picks: a.none ? [] : a.picks, none: !!a.none, criteria: a.criteria ?? [], ms: a.ms ?? null };
+      return { rung: g.rung, rungs: g.rungs ?? [g.rung], harveys: g.dishes[0], shown: g.shown.white, picks: a.none ? [] : a.picks, none: !!a.none, criteria: a.criteria ?? [], ms: a.ms ?? null };
     }),
   };
 }
@@ -155,8 +180,9 @@ export function rungMarcoChoices(result) {
 
 /** How Harvey's did on one rung-quiz result. */
 export function scoreRungResult(r) {
-  const easyOrder = (ids) => [...ids].sort((x, y) => r.dishes[x].harveys.friction - r.dishes[y].harveys.friction || x.localeCompare(y));
-  const tasteOrder = (ids) => [...ids].sort((x, y) => TIER_ORDER[r.dishes[y].harveys.tier] - TIER_ORDER[r.dishes[x].harveys.tier] || r.dishes[x].harveys.order - r.dishes[y].harveys.order);
+  // Harvey's easiest-first is the ladder: rung first (merged groups cross rungs), then friction.
+  const easyOrder = (ids) => [...ids].sort((x, y) => r.dishes[x].rung - r.dishes[y].rung || r.dishes[x].harveys.friction - r.dishes[y].harveys.friction || x.localeCompare(y));
+  const tasteOrder = (ids) => [...ids].sort((x, y) => TIER_ORDER[r.dishes[y].harveys.tier] - TIER_ORDER[r.dishes[x].harveys.tier] || r.dishes[x].rung - r.dishes[y].rung || r.dishes[x].harveys.order - r.dishes[y].harveys.order);
   const mean = (xs) => { const v = xs.filter((x) => x != null); return v.length ? round(v.reduce((s, x) => s + x, 0) / v.length) : null; };
   const marco = r.marco.map((m) => ({ rung: m.rung, tau: kendall(easyOrder(m.ranking), m.ranking), moved: m.moved }));
   const pierre = r.pierre.map((p) => ({ rung: p.rung, tau: kendall(tasteOrder(p.ranking), p.ranking), moved: p.moved }));
@@ -164,7 +190,7 @@ export function scoreRungResult(r) {
   const criteria = {};
   for (const w of r.white) w.criteria.forEach((c, i) => { criteria[c] = (criteria[c] ?? 0) + (w.criteria.length - i); });
   return {
-    kitchen: r.kitchen.kitchen, kitchenId: r.kitchenId, testerId: r.testerId, tester: r.tester,
+    kitchen: r.kitchen.kitchen, kitchenId: r.kitchenId, testerId: r.testerId, tester: r.tester ?? '', unmovedConfirmed: !!r.unmovedConfirmed,
     marco: { rungs: marco, tau: mean(marco.map((x) => x.tau)), pairs: rungMarcoChoices(r).length },
     pierre: { rungs: pierre, tau: mean(pierre.map((x) => x.tau)) },
     white: { rungs: white, hits: white.filter((x) => x.hit).length, inPicks: white.filter((x) => x.inPicks).length, n: white.length, criteria },
