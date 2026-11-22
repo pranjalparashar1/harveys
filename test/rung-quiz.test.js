@@ -115,8 +115,11 @@ test('a steel pot cooks milk oats and a boiled-egg sandwich, not just boiled egg
   for (const id of ['boiled_eggs', 'pot_milk_oats', 'boiled_egg_sandwich']) assert.ok(real.includes(id), id);
 });
 
+// 1.38.0: the pot egg bhurji lifts BANANA to four dishes, so the thin case drops the ghee and oats.
+const THIN = { kitchen: 'Thin pot kitchen', items: ['eggs', 'milk', 'brown bread', 'gas stove', 'steel pot'].map((name) => ({ name })) };
+
 test('a thin kitchen gets one-away dishes for Marco, marked, and White shows only cookable ones', () => {
-  const q = buildRungQuiz({ kitchen: BANANA, inventory: buildInventory(BANANA.items) });
+  const q = buildRungQuiz({ kitchen: THIN, inventory: buildInventory(THIN.items) });
   const all = Object.values(q.dishes);
   assert.ok(all.filter((d) => !d.away).length < THIN_KITCHEN);
   const away = all.filter((d) => d.away);
