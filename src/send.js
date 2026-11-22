@@ -27,7 +27,7 @@ export const getToken = () => read(TOKEN_KEY, null);
 export const hasToken = () => !!getToken();
 export const forgetToken = () => write(TOKEN_KEY, null);
 export const outbox = () => read(OUTBOX_KEY, []);
-export const relayUrl = () => read(RELAY_KEY, null) || RELAY_URL || null;
+export const relayUrl = () => { const v = read(RELAY_KEY, null); return v === 'off' ? null : v || RELAY_URL || null; };
 /** Can this phone send without asking anyone for anything? */
 export const canSend = () => !!(relayUrl() || getToken());
 
@@ -38,7 +38,7 @@ export function captureToken(loc = globalThis.location, hist = globalThis.histor
   const r = /(?:^#|&)relay=([^&]+)/.exec(hash);
   if (!t && !r) return false;
   if (t) write(TOKEN_KEY, decodeURIComponent(t[1]).trim());
-  if (r) { const v = decodeURIComponent(r[1]).trim(); write(RELAY_KEY, v === 'off' ? null : v); }
+  if (r) { const v = decodeURIComponent(r[1]).trim(); write(RELAY_KEY, v); }
   try { hist?.replaceState(null, '', loc.pathname + loc.search); } catch { /* old browser */ }
   return true;
 }

@@ -53,6 +53,8 @@ test('send: through the relay with no token, refused files stop blocking the out
   const mem = {};
   globalThis.localStorage = { getItem: (k) => mem[k] ?? null, setItem: (k, v) => { mem[k] = String(v); }, removeItem: (k) => { delete mem[k]; } };
   const { captureToken, canSend, sendResult, outbox, getToken } = await import('../src/send.js');
+  assert.equal(canSend(), true); // the live relay is the default
+  captureToken({ hash: '#relay=off', pathname: '/', search: '' }, { replaceState() {} });
   assert.equal(canSend(), false);
   captureToken({ hash: '#relay=https%3A%2F%2Frelay.example%2F', pathname: '/harveys/', search: '' }, { replaceState() {} });
   assert.equal(canSend(), true);
