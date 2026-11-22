@@ -107,3 +107,20 @@ From pranjal's "The staples and their processes": dal tadka with rice, pressure-
 ### Soaked or not (1.21.0)
 
 Dishes that need soaking (dal, rice, chole, rajma, kala chana) list those foods in `prePrep.soak`. Under "Right now", tick what's already soaked; the ticks last until midnight. A dish whose foods are all soaked ranks with no soaking cost. Any other soak dish leaves tonight's ladder for a "For tomorrow" card ("Soak the rajma tonight"). Poha's 15-minute soak stays an "If you have time" note. Egg fried rice is pass without spring onion and crave with it, as a separate dish (new food id `spring_onion`).
+
+### Kitchen test mode (1.30.0)
+
+`test.html` (the **Kitchen test** card on Train) runs Harvey's against any kitchen, so many kitchens can be tested fast and the three brains improved one at a time.
+
+```
+kitchen JSON ─► Pierre quiz   tier for each dish this kitchen can make (veto, floor, pass, crave)
+             ─► Marco quiz    two dishes from this kitchen, weeknight 9 PM tired: which would you make?
+             ─► White quiz    rank() again with your Pierre tiers and a Marco fit from your picks,
+                              then "would you make this?" for each rung, and what you'd make instead
+             ─► Send to Harvey's: a kitchen-test GitHub issue, a .json download, and the clipboard
+```
+
+- **Kitchens:** `data/test-kitchens/kitchens.json` (one or many, the 1.29.0 format: `{kitchen, items: [{name, category}], diet, notes}`), anything pasted on the page, or `test.html?kitchens=<url>`. Each kitchen has a stable id and keeps its own answers in the browser.
+- **Pure core:** `src/brain/kitchen-test.js` (`buildKitchenTest`, `whiteFor`, `encodeResult`, `parseResults`, `scoreResult`). Quiz sizes follow the kitchen: up to 24 Pierre dishes, 12 Marco pairs, 4 White rungs.
+- **Results** (`harveys-kitchen-test/1`): kitchen, persona, Pierre answers next to Harvey's tier, Marco picks, the per-kitchen fit, and White's ladder before and after. Save them to `data/kitchen-tests/` and run `node scripts/kitchen-tests.mjs score`. It scores each brain per kitchen, then fits Marco on all kitchens together and prints a proposed `frictionTheta` and the Pierre disagreements. It never edits config. `node scripts/kitchen-tests.mjs plan` prints each kitchen's quizzes.
+- **Persona answers train Harvey's** (pranjal, 22 Nov). pranjal plays a novice who only knows instant noodles, to show Marco what low friction really means; the pooled fit goes into Marco's shared weights.
