@@ -14,7 +14,7 @@
 export const REPO = 'pranjalparashar1/harveys';
 export const DIR = 'data/kitchen-tests';
 /** The relay's address (relay/README.md). #relay=<url> overrides it on one phone, for testing. */
-export const RELAY_URL = '';
+export const RELAY_URL = 'https://harveys-send.pranjalparashar1.workers.dev/';
 const TOKEN_KEY = 'harveys.gh.v1';
 const RELAY_KEY = 'harveys.relay.v1';
 const OUTBOX_KEY = 'harveys.outbox.v1';

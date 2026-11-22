@@ -14,7 +14,7 @@ import { DEMO_KITCHEN } from './demo-kitchen.js';
 import { startRungQuiz } from './rung-quiz-ui.js';
 import { buildRungQuiz } from './brain/rung-quiz.js';
 
-const VERSION = '1.33.0';
+const VERSION = '1.33.1';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
