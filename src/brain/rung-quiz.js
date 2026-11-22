@@ -38,6 +38,24 @@ export const CRITERIA = [
   { id: 'taste', label: 'Taste' },
 ];
 const PIERRE_VALUE = { veto: 0, floor: 0.5, pass: 1, crave: 1 };
+/**
+ * 1.42.0 meal cards: after the quick check the tester sees each dish on a card ("Would you make
+ * this?", yes or no), then can rate how hard each one is. A "no" may carry why. Levels are for a
+ * tired weeknight, 9 PM; any two dishes rated apart are one Marco pair (lower = easier).
+ */
+export const WHY_NOT = [
+  { id: 'effort', label: 'Too much effort' },
+  { id: 'taste', label: 'Not my taste' },
+  { id: 'missing', label: 'Missing something' },
+  { id: 'unknown', label: 'Don’t know it' },
+];
+export const DIFFICULTY = [
+  { level: 1, label: 'Effortless', hint: 'Barely cooking' },
+  { level: 2, label: 'Easy', hint: 'A few minutes' },
+  { level: 3, label: 'Some effort', hint: 'Doable tonight' },
+  { level: 4, label: 'Hard work', hint: 'Only if I must' },
+  { level: 5, label: 'Too much tonight', hint: 'Not when tired' },
+];
 
 /** Seeded shuffle (mulberry32 over an FNV hash of `seed`), never left in the order given. */
 export function seededShuffle(list, seed) {
@@ -132,7 +150,11 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdi
   ];
   // 1.33.0: every listed item, used or not, and why not (src/brain/usage.js).
   const usage = ingredientUsage({ items: kitchen.items ?? [], inventory, ranking: r, shown: Object.keys(dishes), catalogue, kind, config });
-  return { id, kitchen, rungs, dishes, steps, usage };
+  // 1.42.0: the card stack, in Harvey's order (easiest rung first, cookable before one-away),
+  // and a seeded shuffle for rating, so ratings aren't read off the order Harvey showed.
+  const deck = Object.values(dishes).sort((a, b) => a.rung - b.rung || (a.away ? 1 : 0) - (b.away ? 1 : 0) || a.harveys.order - b.harveys.order || a.id.localeCompare(b.id)).map((d) => d.id);
+  const rateOrder = seededShuffle(deck, `${id}|rate`);
+  return { id, kitchen, rungs, dishes, steps, usage, deck, rateOrder, cookable: deck.filter((d) => !dishes[d].away).length };
 }
 
 /**
@@ -167,6 +189,22 @@ const confirmOut = (c) => {
     burners: [1, 2, 3].includes(c.burners) ? c.burners : null,
     noStove: !!c.noStove,
     ms: c.ms ?? null,
+  };
+};
+
+const cardsOut = (quiz, answers) => {
+  const deck = quiz.deck ?? Object.keys(quiz.dishes);
+  const why = new Set(WHY_NOT.map((w) => w.id));
+  const cards = deck.filter((id) => answers.cards[id]).map((id) => {
+    const a = answers.cards[id];
+    return { id, yes: !!a.yes, why: !a.yes && why.has(a.why) ? a.why : null, ms: a.ms ?? null };
+  });
+  const d = answers.difficulty;
+  const rated = d?.levels ? (quiz.rateOrder ?? deck).filter((id) => [1, 2, 3, 4, 5].includes(d.levels[id]?.level)) : [];
+  return {
+    flow: 'cards',
+    cards,
+    difficulty: d && !d.skipped ? { scale: DIFFICULTY.map((x) => x.label), ratings: rated.map((id) => ({ id, level: d.levels[id].level, ms: d.levels[id].ms ?? null })), stoppedEarly: rated.length < deck.length } : null,
   };
 };
 
@@ -205,6 +243,10 @@ export function encodeRungResult(quiz, answers, { version, at, testerId, runNo =
       const a = answers.white[g.rung];
       return { rung: g.rung, rungs: g.rungs ?? [g.rung], harveys: g.pick === undefined ? g.dishes[0] : g.pick, shown: g.shown.white, picks: a.none ? [] : a.picks, none: !!a.none, criteria: a.criteria ?? [], ms: a.ms ?? null };
     }),
+    // 1.42.0 meal cards (flow 'cards'): marco/pierre/white stay empty. cards = the deck in the
+    // order shown, yes/no and why not; difficulty = 1 (effortless) … 5 (too much tonight), in the
+    // order rated, null when skipped. rungMarcoChoices turns ratings into pairs.
+    ...(answers.cards ? cardsOut(quiz, answers) : {}),
     // 1.34.0: what the tester said went wrong (src/brain/feedback.js). null: never reached it.
     feedback: cleanFeedback(answers.feedback, quiz),
   };
@@ -238,6 +280,19 @@ export function rungMarcoChoices(result) {
       out.push({ id: `${row.rung}:${r[i]}>${r[j]}`, pick: flip ? 'b' : 'a', mood: 'okay', xa: flip ? xh : xe, xb: flip ? xe : xh });
     }
   }
+  // 1.42.0: difficulty ratings. Every two dishes rated at different levels are one pair; ties say nothing.
+  const rated = result.difficulty?.ratings ?? [];
+  for (let i = 0; i < rated.length; i++) for (let j = i + 1; j < rated.length; j++) {
+    if (rated[i].level === rated[j].level) continue;
+    const [e, h] = rated[i].level < rated[j].level ? [rated[i], rated[j]] : [rated[j], rated[i]];
+    const easier = result.dishes[e.id];
+    const harder = result.dishes[h.id];
+    if (!easier?.raw || !harder?.raw) continue;
+    const xe = featureVector(easier.raw, PIERRE_VALUE[easier.harveys.tier] ?? 1);
+    const xh = featureVector(harder.raw, PIERRE_VALUE[harder.harveys.tier] ?? 1);
+    const flip = out.length % 2 === 1;
+    out.push({ id: `d:${e.id}>${h.id}`, pick: flip ? 'b' : 'a', mood: 'okay', xa: flip ? xh : xe, xb: flip ? xe : xh });
+  }
   return out;
 }
 
@@ -247,16 +302,34 @@ export function scoreRungResult(r) {
   const easyOrder = (ids) => [...ids].sort((x, y) => r.dishes[x].rung - r.dishes[y].rung || r.dishes[x].harveys.friction - r.dishes[y].harveys.friction || x.localeCompare(y));
   const tasteOrder = (ids) => [...ids].sort((x, y) => TIER_ORDER[r.dishes[y].harveys.tier] - TIER_ORDER[r.dishes[x].harveys.tier] || r.dishes[x].rung - r.dishes[y].rung || r.dishes[x].harveys.order - r.dishes[y].harveys.order);
   const mean = (xs) => { const v = xs.filter((x) => x != null); return v.length ? round(v.reduce((s, x) => s + x, 0) / v.length) : null; };
-  const marco = r.marco.map((m) => ({ rung: m.rung, tau: kendall(easyOrder(m.ranking), m.ranking), moved: m.moved }));
-  const pierre = r.pierre.map((p) => ({ rung: p.rung, tau: kendall(tasteOrder(p.ranking), p.ranking), moved: p.moved }));
-  const white = r.white.map((w) => ({ rung: w.rung, harveys: w.harveys, first: w.picks[0] ?? null, hit: w.picks[0] === w.harveys, inPicks: w.picks.includes(w.harveys), criteria: w.criteria }));
+  const marco = (r.marco ?? []).map((m) => ({ rung: m.rung, tau: kendall(easyOrder(m.ranking), m.ranking), moved: m.moved }));
+  const pierre = (r.pierre ?? []).map((p) => ({ rung: p.rung, tau: kendall(tasteOrder(p.ranking), p.ranking), moved: p.moved }));
+  const white = (r.white ?? []).map((w) => ({ rung: w.rung, harveys: w.harveys, first: w.picks[0] ?? null, hit: w.picks[0] === w.harveys, inPicks: w.picks.includes(w.harveys), criteria: w.criteria }));
+  // 1.42.0 cards: how many Harvey's suggestions they'd make, and whether Harvey's first card was one.
+  const cardsIn = r.cards ?? [];
+  const firstCookable = cardsIn.find((c) => !r.dishes[c.id]?.away);
+  const whyNot = {};
+  for (const c of cardsIn) if (!c.yes && c.why) whyNot[c.why] = (whyNot[c.why] ?? 0) + 1;
+  const cards = { n: cardsIn.length, yes: cardsIn.filter((c) => c.yes).length, firstYes: firstCookable ? firstCookable.yes : null, whyNot };
+  // Difficulty: of the pairs rated apart, how many Harvey's easiest-first puts the same way.
+  const rated = r.difficulty?.ratings ?? [];
+  let agree = 0;
+  let pairsApart = 0;
+  for (let i = 0; i < rated.length; i++) for (let j = i + 1; j < rated.length; j++) {
+    if (rated[i].level === rated[j].level || !r.dishes[rated[i].id] || !r.dishes[rated[j].id]) continue;
+    pairsApart++;
+    const [e, h] = rated[i].level < rated[j].level ? [rated[i].id, rated[j].id] : [rated[j].id, rated[i].id];
+    if (easyOrder([e, h])[0] === e) agree++;
+  }
+  const difficulty = { n: rated.length, pairs: pairsApart, agree: pairsApart ? round(agree / pairsApart) : null, skipped: !!r.cards && !r.difficulty };
   const criteria = {};
-  for (const w of r.white) w.criteria.forEach((c, i) => { criteria[c] = (criteria[c] ?? 0) + (w.criteria.length - i); });
+  for (const w of r.white ?? []) w.criteria.forEach((c, i) => { criteria[c] = (criteria[c] ?? 0) + (w.criteria.length - i); });
   return {
     kitchen: r.kitchen.kitchen, kitchenId: r.kitchenId, testerId: r.testerId, tester: r.tester ?? '', unmovedConfirmed: !!r.unmovedConfirmed,
     marco: { rungs: marco, tau: mean(marco.map((x) => x.tau)), pairs: rungMarcoChoices(r).length },
     pierre: { rungs: pierre, tau: mean(pierre.map((x) => x.tau)) },
     white: { rungs: white, hits: white.filter((x) => x.hit).length, inPicks: white.filter((x) => x.inPicks).length, n: white.length, criteria },
+    flow: r.flow ?? 'rounds', cards, difficulty,
   };
 }
 

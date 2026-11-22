@@ -140,3 +140,38 @@ test('latestRuns keeps a named tester’s last run per kitchen, never merges unn
   const runs = [r('Banana Singh', 'a', '2026-11-22T14:02'), r('banana singh', 'b', '2026-11-22T14:03'), r('', 'c', '1'), r('', 'd', '2'), r('Banana Singh', 'e', '3', 'k2')];
   assert.deepEqual(latestRuns(runs).map((x) => x.testerId), ['b', 'c', 'd', 'e']);
 });
+
+test('1.42.0 meal cards: a deck in Harvey’s order, yes/no and difficulty ratings become Marco pairs', () => {
+  assert.equal(quiz.deck.length, Object.keys(quiz.dishes).length);
+  const rungs = quiz.deck.map((id) => quiz.dishes[id].rung);
+  assert.deepEqual(rungs, [...rungs].sort((a, b) => a - b), 'easiest rung first');
+  assert.deepEqual([...quiz.rateOrder].sort(), [...quiz.deck].sort());
+  assert.notDeepEqual(quiz.rateOrder, quiz.deck, 'ratings are asked in a shuffled order');
+  const cards = Object.fromEntries(quiz.deck.map((id, i) => [id, { yes: i % 2 === 0, why: i % 2 ? 'taste' : 'effort', ms: 900 }]));
+  // levels: Harvey's deck order gives 1,1,2,2,3,…; one tie per level
+  const levels = Object.fromEntries(quiz.deck.map((id, i) => [id, { level: Math.min(5, 1 + Math.floor(i / 2)), ms: 700 }]));
+  const res = encodeRungResult(quiz, { marco: {}, pierre: {}, white: {}, cards, difficulty: { levels, skipped: false } }, { version: 'test', testerId: 't-c' });
+  assert.equal(res.format, RUNG_FORMAT, 'same format: the live relay takes it unchanged');
+  assert.equal(res.flow, 'cards');
+  assert.equal(res.cards.length, quiz.deck.length);
+  assert.equal(res.cards[0].why, null, 'a yes carries no why');
+  assert.equal(res.cards[1].why, 'taste');
+  assert.equal(res.difficulty.ratings.length, quiz.deck.length);
+  assert.deepEqual(res.difficulty.ratings.map((r) => r.id), quiz.rateOrder);
+  const n = quiz.deck.length;
+  const ties = quiz.deck.reduce((t, id) => { t[levels[id].level] = (t[levels[id].level] ?? 0) + 1; return t; }, {});
+  const apart = n * (n - 1) / 2 - Object.values(ties).reduce((s, k) => s + k * (k - 1) / 2, 0);
+  const pairs = rungMarcoChoices(res);
+  assert.equal(pairs.length, apart, 'every two dishes rated apart, ties left out');
+  assert.ok(pairs.every((p) => p.id.startsWith('d:')));
+  const s = scoreRungResult(res);
+  assert.equal(s.flow, 'cards');
+  assert.equal(s.cards.yes, Math.ceil(n / 2));
+  assert.equal(s.cards.firstYes, true);
+  assert.equal(s.difficulty.pairs, apart);
+  assert.ok(s.difficulty.agree > 0.5, 'ratings that follow Harvey’s order mostly agree with it');
+  const skipped = encodeRungResult(quiz, { marco: {}, pierre: {}, white: {}, cards, difficulty: { levels: {}, skipped: true } }, { testerId: 't-s' });
+  assert.equal(skipped.difficulty, null);
+  assert.equal(scoreRungResult(skipped).difficulty.skipped, true);
+  assert.equal(rungMarcoChoices(skipped).length, 0);
+});

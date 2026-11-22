@@ -12,6 +12,8 @@
 // score reads both kinds of result: test.html's kitchen tests (harveys-kitchen-test/1) and the
 // taste test after Proceed on the main page (harveys-rung-quiz/1, 1.31.0). A taste test's
 // Marco rankings become every pair inside each rung, pooled into the same frictionTheta fit.
+// From 1.42.0 the taste test is meal cards (flow 'cards'): yes/no per dish, then difficulty
+// ratings 1-5; every two dishes rated apart become one Marco pair in the same fit.
 //
 // --persona is optional and only for looking: by default every result is pooled, persona
 // role-plays included, because they calibrate Marco's shared effort weights for everyone.
@@ -91,18 +93,33 @@ for (const r of results) {
 const pct = (x) => (x == null ? '-' : x.toFixed(2));
 const tastePlace = {}; // dish → { name, tier, places: [0 = top … 1 = bottom] }
 const criteria = {};
+const cardTally = {}; // 1.42.0: dish → yes/no counts, why-nots and difficulty levels across testers
 for (const r of tastes) {
   const s = scoreRungResult(r);
   console.log(`## Taste test: ${s.kitchen}  [${s.kitchenId}]  tester ${s.tester || s.testerId}`);
+  if (s.flow === 'cards') {
+    // 1.42.0 meal cards: yes/no per dish, then difficulty ratings (pairs feed the Marco fit).
+    console.log(`   Cards:  would make ${s.cards.yes}/${s.cards.n}; Harvey's first card ${s.cards.firstYes == null ? '-' : s.cards.firstYes ? 'yes' : 'no'}; why not: ${Object.entries(s.cards.whyNot).map(([k, v]) => `${k} ${v}`).join(', ') || '-'}`);
+    console.log(`   Effort: ${s.difficulty.skipped ? 'rating skipped' : `${s.difficulty.n} rated, ${s.difficulty.pairs} pairs apart, Harvey agrees on ${pct(s.difficulty.agree)}`}; ${s.marco.pairs} Marco pairs`);
+    for (const c of r.cards ?? []) {
+      const d = r.dishes[c.id];
+      if (!d) continue;
+      cardTally[c.id] ??= { name: d.name, tier: d.harveys.tier, yes: 0, no: 0, why: {}, level: [] };
+      cardTally[c.id][c.yes ? 'yes' : 'no']++;
+      if (c.why) cardTally[c.id].why[c.why] = (cardTally[c.id].why[c.why] ?? 0) + 1;
+    }
+    for (const x of r.difficulty?.ratings ?? []) if (cardTally[x.id]) cardTally[x.id].level.push(x.level);
+  } else {
   console.log(`   Marco:  agreement ${pct(s.marco.tau)} (Kendall, 1 = same order) over ${s.marco.rungs.length} rung(s), ${s.marco.pairs} pairs; ${s.marco.rungs.filter((x) => !x.moved).length} left as shown`);
   console.log(`   Pierre: agreement ${pct(s.pierre.tau)} over ${s.pierre.rungs.length} rung(s)`);
   console.log(`   White:  Harvey's pick was first on ${s.white.hits}/${s.white.n} rungs, picked at all on ${s.white.inPicks}/${s.white.n}; why: ${Object.entries(s.white.criteria).sort((a, b) => b[1] - a[1]).map(([k]) => k).join(' > ') || '-'}`);
+  }
   const f = r.feedback;
   const c = r.confirm;
   if (c) console.log(`   Check:  has ${[...(c.have ?? []), ...(c.typed ?? []).filter((t) => t.id).map((t) => t.id)].join(', ') || 'nothing tapped'}${c.burners ? `; ${c.burners === 3 ? '3+' : c.burners} burner(s)` : ''}${c.noStove ? '; no stove on the list' : ''}${(c.unmatched ?? []).length ? `; NEW: ${c.unmatched.join(', ')}` : ''}`);
   if (f) console.log(`   Said:   ${f.skipped ? 'skipped' : [...f.chips, ...(f.dishIdeas ?? []).map((d) => `+${d.name}`), ...(f.wrongItems ?? []).map((x) => `-${x}`)].join(', ')}${f.note ? ` · "${f.note.slice(0, 80)}${f.note.length > 80 ? '…' : ''}"` : ''}`);
   for (const [k, v] of Object.entries(s.white.criteria)) criteria[k] = (criteria[k] ?? 0) + v;
-  for (const row of r.pierre) row.ranking.forEach((id, i) => {
+  for (const row of r.pierre ?? []) row.ranking.forEach((id, i) => {
     const d = r.dishes[id];
     tastePlace[id] ??= { name: d.name, tier: d.harveys.tier, places: [] };
     tastePlace[id].places.push(row.ranking.length > 1 ? i / (row.ranking.length - 1) : 0);
@@ -114,6 +131,13 @@ if (tastes.length) {
   const rows = Object.values(tastePlace).map((d) => ({ ...d, place: avg(d.places) }));
   const flag = rows.filter((d) => (['crave', 'pass'].includes(d.tier) && d.place >= 0.75) || (['veto', 'floor'].includes(d.tier) && d.place <= 0.25));
   console.log(flag.length ? `Taste vs Pierre: ${flag.map((d) => `${d.name} (${d.tier}, placed ${pct(d.place)} down)`).join('; ')}` : 'Taste vs Pierre: no strong disagreements.');
+  const ct = Object.values(cardTally);
+  if (ct.length) {
+    const avgL = (d) => (d.level.length ? (d.level.reduce((a, b) => a + b, 0) / d.level.length).toFixed(1) : '-');
+    console.log(`Cards, most said no: ${ct.filter((d) => d.no).sort((a, b) => b.no / (b.yes + b.no) - a.no / (a.yes + a.no) || b.no - a.no).slice(0, 8).map((d) => `${d.name} ${d.no}/${d.yes + d.no}${Object.keys(d.why).length ? ` [${Object.entries(d.why).map(([k, v]) => `${k} ${v}`).join(', ')}]` : ''}`).join('; ') || '-'}`);
+    console.log(`Cards, said no for taste on a dish Pierre likes: ${ct.filter((d) => d.why.taste && ['crave', 'pass'].includes(d.tier)).map((d) => `${d.name} (${d.tier})`).join('; ') || '-'}`);
+    console.log(`Rated hardest (1 effortless … 5 too much): ${ct.filter((d) => d.level.length).sort((a, b) => avgL(b) - avgL(a)).slice(0, 8).map((d) => `${d.name} ${avgL(d)}`).join(', ') || '-'}`);
+  }
   console.log(`What decided White's picks (points, most first): ${Object.entries(criteria).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ') || '-'}`);
 
   // Ingredient check (1.33.0): items kitchens had that no shown dish used. A file from before
