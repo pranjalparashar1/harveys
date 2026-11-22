@@ -389,7 +389,7 @@ function renderInventory() {
     h('div', { class: 'group' },
       h('h3', {}, titles[key]),
       h('div', { class: 'chips' }, list.map(({ item, index, id }) =>
-        h('span', { class: `chip${id ? '' : ' unknown'}`, title: id ? `Counts as: ${labelFor(id)}` : 'Not in Marco’s vocabulary yet' },
+        h('span', { class: `chip${id ? '' : ' unknown'}`, title: id ? `Counts as: ${labelFor(id)}` : 'Not in Harvey’s vocabulary yet' },
           item.name,
           item.quantity ? h('small', {}, ` · ${item.quantity}`) : null,
           h('button', { type: 'button', 'aria-label': `Remove ${item.name}`, onclick: () => setItems(state.items.filter((_, i) => i !== index)) }, '×')))))));
@@ -832,16 +832,16 @@ function init() {
     if (kitchen) {
       state.pickSource = 'inventory';
       setItems(kitchen.items);
-      $('paste-list').open = false;
-      $('step-inventory').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      $('step-context').scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
-    const items = parseItemList(text);
+    // JSON that would not parse even after repair: take its "name" values, never its braces.
+    const names = looksLikeKitchenJson(text) ? [...text.matchAll(/"name"\s*:\s*"([^"]+)"/g)].map((m) => m[1].replace(/\s+/g, ' ').trim()) : [];
+    const items = names.length ? [...new Set(names)] : parseItemList(text);
     if (!items.length) return;
     state.pickSource = 'inventory';
     setItems(items.map((name) => ({ name, canonical: null, category: 'other', source: 'paste' })));
-    $('paste-list').open = false;
-    $('step-inventory').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('step-context').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   $('add-form').addEventListener('submit', (e) => {

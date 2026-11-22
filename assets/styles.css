@@ -252,6 +252,7 @@ table.parts td.num, table.parts th.num { text-align: right; font-variant-numeric
 .debug td.num { white-space: nowrap; }
 .debug td:first-child { font-size: 13px; overflow-wrap: anywhere; }
 [hidden] { display: none !important; }
+.testing .t-hide { display: none !important; }
 
 /* Motion: transform and opacity only, Kiron's curves */
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }

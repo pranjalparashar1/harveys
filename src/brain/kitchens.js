@@ -3,6 +3,7 @@
 // ({items: [{name, category}]} or plain names). Pure: no DOM, no network.
 
 import { FOODS, EQUIPMENT, ASSUMED_BASICS, labelFor } from './vocabulary.js';
+import { profileOf } from './pantry.js';
 
 const KNOWN = (id) => FOODS[id] || EQUIPMENT[id] || ASSUMED_BASICS[id];
 
@@ -45,9 +46,63 @@ function parseLoose(text) {
     const a = s.indexOf(open);
     const b = s.lastIndexOf(close);
     if (a < 0 || b <= a) continue;
-    try { return JSON.parse(s.slice(a, b + 1)); } catch { /* try the other shape */ }
+    const body = s.slice(a, b + 1);
+    try { return JSON.parse(body); } catch { /* try a repaired copy */ }
+    try { return tidyKeys(JSON.parse(repairJson(body))); } catch { /* try the other shape */ }
   }
   return null;
+}
+
+/**
+ * Mends JSON that a chat app or PDF hard-wrapped on copy: line breaks inside strings
+ * ("cate\ngory", "induction\ncooktop"), smart quotes, trailing commas.
+ */
+export function repairJson(text) {
+  const s = String(text ?? '').replace(/[\u201c\u201d\u201e\u2033]/g, '"').replace(/[\u2018\u2019]/g, "'");
+  let out = '';
+  let inString = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inString) {
+      if (c === '\\') { out += c + (s[++i] ?? ''); continue; }
+      if (c === '"') inString = false;
+      if (c === '\n' || c === '\r' || c === '\t') { if (!out.endsWith(WRAP)) out += WRAP; continue; }
+      out += c;
+    } else {
+      if (c === '"') inString = true;
+      out += c;
+    }
+  }
+  return out.replace(/,\s*([\]}])/g, '$1');
+}
+
+const WRAP = '\uE000'; // marks where a line break sat inside a string
+
+// Keys never hold spaces, so a wrap mid-key ("cate|gory") just closes up.
+function tidyKeys(v) {
+  if (Array.isArray(v)) return v.map(tidyKeys);
+  if (typeof v === 'string') return unwrap(v);
+  if (!v || typeof v !== 'object') return v;
+  return Object.fromEntries(Object.entries(v).map(([k, x]) => {
+    const key = k.replace(/[\s\uE000]+/g, '');
+    // Categories are single tokens too ("nuts_seeds"), so a wrap in one closes up as well.
+    return [key, key === 'category' && typeof x === 'string' ? x.replace(/[\s\uE000]+/g, '') : tidyKeys(x)];
+  }));
+}
+
+// In a value a wrap was either a space ("induction|cooktop") or mid-word ("alm|onds").
+// Close it up when a side is a tiny fragment, or when only the joined name is a known food.
+function unwrap(text) {
+  const parts = text.split(/\s*\uE000\s*/);
+  let out = parts[0];
+  for (const next of parts.slice(1)) {
+    const left = out.match(/\S*$/)[0];
+    const right = next.match(/^\S*/)[0];
+    const known = (s) => profileOf(s)?.source !== 'unknown';
+    const join = !/\s$/.test(out) && right && left && (left.length <= 2 || right.length <= 2 || (known(out + next) && !known(`${out} ${next}`)));
+    out = join ? out + next : `${out} ${next}`;
+  }
+  return out.replace(/\s+/g, ' ').trim();
 }
 
 /** True when pasted text looks like a catalogued-kitchen JSON rather than a plain list. */
