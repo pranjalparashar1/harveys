@@ -2,7 +2,11 @@
 // Kitchen test mode (1.30.0): read results back and score Harvey's three brains.
 //
 //   node scripts/kitchen-tests.mjs plan [kitchens.json …]   print each kitchen's three quizzes
-//   node scripts/kitchen-tests.mjs score [results …]        score each result, then fit Marco on all
+//   node scripts/kitchen-tests.mjs score [results …] [--persona <text>]
+//                                                           score each result, then fit Marco on all
+//
+// --persona is optional and only for looking: by default every result is pooled, persona
+// role-plays included, because they calibrate Marco's shared effort weights for everyone.
 //
 // plan defaults to data/test-kitchens/kitchens.json; score defaults to data/kitchen-tests/*.json.
 // Results are the downloaded files, the copied text, or a kitchen-test issue body.
@@ -13,14 +17,18 @@ import { loadKitchens, buildKitchenTest, whiteFor, parseResults, scoreResult, ma
 import { DEFAULT_CONFIG } from '../src/brain/config.js';
 
 const [cmd = 'score', ...rest] = process.argv.slice(2);
-const files = rest.filter((a) => !a.startsWith('--'));
+const pi = rest.indexOf('--persona');
+const personaFilter = pi >= 0 ? String(rest[pi + 1] ?? '').toLowerCase() : '';
+const files = rest.filter((a, i) => !a.startsWith('--') && !(pi >= 0 && i === pi + 1));
+let cache = {};
+try { cache = JSON.parse(readFileSync(new URL('../data/ingredient-cache.json', import.meta.url), 'utf8')); } catch { /* empty cache */ }
 const dir = new URL('../data/kitchen-tests/', import.meta.url);
 const allKitchens = () => loadKitchens(readFileSync(new URL('../data/test-kitchens/kitchens.json', import.meta.url), 'utf8'));
 
 if (cmd === 'plan') {
   const ks = files.length ? files.flatMap((f) => loadKitchens(readFileSync(f, 'utf8'))) : allKitchens();
   for (const k of ks) {
-    const t = buildKitchenTest(k);
+    const t = buildKitchenTest(k, { cache });
     console.log(`## ${k.kitchen}  [${t.id}]  ${t.summary.items} items, ${t.summary.cookable} dishes`);
     console.log(`Pierre (${t.pierre.length}): ${t.pierre.map((p) => `${p.name} (${p.harveys})`).join('; ')}`);
     console.log(`Marco (${t.marco.length}):`);
@@ -31,8 +39,9 @@ if (cmd === 'plan') {
 }
 
 const paths = files.length ? files : readdirSync(dir).filter((n) => n.endsWith('.json')).map((n) => new URL(n, dir));
-const results = paths.flatMap((p) => parseResults(readFileSync(p, 'utf8')));
-if (!results.length) { console.log('No kitchen-test results found.'); process.exit(0); }
+const results = paths.flatMap((p) => parseResults(readFileSync(p, 'utf8')))
+  .filter((r) => !personaFilter || String(r.persona ?? '').toLowerCase().includes(personaFilter));
+if (!results.length) { console.log(`No kitchen-test results found${personaFilter ? ` for persona "${personaFilter}"` : ''}.`); process.exit(0); }
 const known = Object.fromEntries(allKitchens().map((k) => [k.id, k]));
 
 const pooled = [];
@@ -47,14 +56,14 @@ for (const r of results) {
   // Rebuild the pairs' features from the kitchen, so the pooled fit uses today's catalogue.
   const k = known[r.kitchenId] ?? (Array.isArray(r.kitchen.items) ? loadKitchens({ ...r.kitchen })[0] : null);
   if (!k) { console.log('   (kitchen items not in the file or kitchens.json: left out of the pooled fit)'); continue; }
-  const t = buildKitchenTest(k);
+  const t = buildKitchenTest(k, { cache });
   const pierre = Object.fromEntries(r.pierre.map((p) => [p.dish, p.answer]));
   const marco = Object.fromEntries(r.marco.filter((m) => t.marco.some((q) => q.id === m.q && q.a === m.a && q.b === m.b)).map((m) => [m.q, m.pick]));
   pooled.push(...marcoChoices(t, marco, pierre));
 }
 
 const fit = fitFrom(pooled);
-console.log(`\n# Pooled over ${results.length} kitchen test(s)`);
+console.log(`\n# Pooled over ${results.length} kitchen test(s)${personaFilter ? `, persona contains "${personaFilter}"` : ', all personas'}`);
 if (fit) {
   console.log(`Marco: ${fit.n} picks, fit ${fit.hits}, leave-one-out ${fit.looHits ?? '-'}, today's weights ${fit.priorHits}`);
   console.log('feature     now      proposed');

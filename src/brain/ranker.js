@@ -6,8 +6,8 @@
 //   3. Pierre (v2 Step 5A): a vetoed dish is dropped; the rest sort by tier
 //      (crave > pass > floor) first, then by score.
 //   4. White v2 (Step 5B): the ladder. Each dish sits on one attention rung (nothing
-//      to watch, walk away, stand at it, juggle); inside a rung, tier → payoff →
-//      friction. One pick per rung, so an easy dish never buries a better one.
+//      to watch, walk away, stand at it, juggle); inside a rung, tier → score
+//      (payoff − λ × friction) → friction. One pick per rung, so an easy dish never buries a better one.
 //   5. Every score comes back as named parts, so the UI can say why it won.
 //
 // Pure: no DOM, no network, no randomness, no clock (the caller passes the time).
@@ -234,10 +234,10 @@ export function assemblyStepOf(meal, pierre, used) {
   return `Finish the ${what} with ${withWhat}.`;
 }
 
-/** Inside a rung: tier, then payoff (macros win), then friction, then id. */
+/** Inside a rung: tier, then Marco's score (payoff − λ × friction), then friction, then id. */
 export function byRungOrder(a, b) {
   return TIER_ORDER[b.pierre.tier] - TIER_ORDER[a.pierre.tier]
-    || b.payoff.value - a.payoff.value
+    || b.score - a.score
     || a.friction - b.friction
     || a.meal.id.localeCompare(b.meal.id);
 }

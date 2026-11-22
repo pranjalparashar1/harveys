@@ -18,7 +18,7 @@ import { buildInventory } from './inventory.js';
 import { importKitchens } from './kitchens.js';
 import { rank, RUNGS, TIER_ORDER } from './ranker.js';
 import { PIERRE_SEED } from './train-data.js';
-import { FEATURES, featureVector, fitMarco } from './learn.js';
+import { FEATURES, featureVector, fitMarco, fittedWeightsPayload } from './learn.js';
 import { slug } from './pantry.js';
 
 export const RESULT_FORMAT = 'harveys-kitchen-test/1';
@@ -129,8 +129,8 @@ export function buildKitchenTest(kitchen, { cache = {}, limits = LIMITS } = {}) 
   };
 }
 
-/** Pierre answers ({dishId: tier}) → rank()'s verdicts, over pranjal's seed. */
-export function verdictsFrom(pierreAnswers = {}, base = PIERRE_SEED) {
+/** Pierre answers ({dishId: tier}) → rank()'s verdicts, over `base` (default none: Pierre's computed tiers). */
+export function verdictsFrom(pierreAnswers = {}, base = {}) {
   const out = { ...base };
   for (const [id, tier] of Object.entries(pierreAnswers)) if (TIERS.includes(tier)) out[id] = { tier, verdict: { veto: 'fail', floor: 'meh' }[tier] ?? 'pass', why: 'kitchen test' };
   return out;
@@ -153,17 +153,16 @@ export function fitFrom(choices, config = DEFAULT_CONFIG) {
   if (choices.length < 3) return null;
   const prior = FEATURES.map((f) => (f.payoff ? f.prior : config.frictionTheta?.[f.key] ?? f.prior));
   const fit = fitMarco(choices.map(({ xa, xb, pick, mood }) => ({ xa, xb, pick, mood })), { prior });
-  const frictionTheta = Object.fromEntries(FEATURES.filter((f) => !f.payoff).map((f, _i) => {
-    const j = FEATURES.indexOf(f);
-    return [f.key, +Math.min(0, fit.theta[j]).toFixed(3)];
-  }));
+  // In protein-prior units, like learn.js and refit.js; a positive (effort-is-good) weight is clamped to 0.
+  const payload = fittedWeightsPayload(fit);
+  const frictionTheta = Object.fromEntries(Object.entries(payload.frictionTheta).map(([k, v]) => [k, v > 0 ? 0 : v]));
   return { n: choices.length, hits: fit.hits, looHits: fit.looHits, priorHits: fit.priorHits, frictionTheta };
 }
 
 /** White's answer for this kitchen: the ladder and the one dish it leads with. */
-export function whiteFor(test, { pierreAnswers = {}, fit = null } = {}) {
+export function whiteFor(test, { pierreAnswers = {}, fit = null, baseVerdicts = {} } = {}) {
   const config = fit ? { ...DEFAULT_CONFIG, frictionTheta: fit.frictionTheta } : DEFAULT_CONFIG;
-  const verdicts = verdictsFrom(pierreAnswers);
+  const verdicts = verdictsFrom(pierreAnswers, baseVerdicts);
   let r = rankIn(test.inventory, { verdicts, config });
   if (!r.ladder.length) r = rankIn(test.inventory, { verdicts, config, kind: 'any' });
   // Easiest first after macros: the lowest rung leads.

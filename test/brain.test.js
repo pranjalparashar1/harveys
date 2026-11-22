@@ -342,6 +342,17 @@ test('5B within a rung: a higher-protein pass beats a lower-protein pass with sl
   assert.equal(r.ladder.find((g) => g.rung === 3).pick.meal.id, 'rich');
 });
 
+test('5B within a rung: Marco\'s frictionTheta picks the easier dish when macros are close', () => {
+  const base = meal('stovetop_paneer_bhurji');
+  const peely = { ...base, id: 'peely', macros: { ...base.macros, protein: base.macros.protein + 2 } };
+  const easy = { ...base, id: 'easy', ingredients: base.ingredients.filter((i) => !['onion', 'tomato', 'green_chilli'].includes(i.id)) };
+  const inv = buildInventory([...DEMO_KITCHEN, 'onion']);
+  const pickWith = (config) => rank({ inventory: inv, targets: BIG, context: WED_7PM, catalogue: [peely, easy], verdicts: {}, config }).ladder.find((g) => g.rung === 3).pick.meal.id;
+  assert.equal(pickWith(DEFAULT_CONFIG), 'peely', 'today\'s weights: a little more protein wins');
+  const heavy = { ...DEFAULT_CONFIG, frictionTheta: { ...DEFAULT_CONFIG.frictionTheta, peels: -3, cleanup: -3 } };
+  assert.equal(pickWith(heavy), 'easy', 'heavy peel weight: the no-peel dish wins the rung');
+});
+
 test('5B small pantry: only no-cook dishes gives a rung-1-only ladder', () => {
   const r = rank({ inventory: buildInventory(['whey', 'milk', 'makhana']), targets: BIG, context: { ...WED_7PM, kind: 'any' }, catalogue: CATALOGUE });
   assert.ok(r.ladder.length >= 1);
