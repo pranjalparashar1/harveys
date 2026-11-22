@@ -24,7 +24,7 @@
     <section class="card" aria-labelledby="in-title">
       <h2 id="in-title">Kitchen list</h2>
       <p class="mini">Paste what the video agent returned, or upload its file. One link per kitchen.</p>
-      <textarea id="kitchens" rows="6" spellcheck="false" placeholder='[{"kitchen": "Riya, Bandra", "items": [{"name": "eggs", "category": "protein"}, …]}]' aria-label="Kitchen JSON"></textarea>
+      <textarea id="kitchens" autocomplete="off" rows="6" spellcheck="false" placeholder='[{"kitchen": "Riya, Bandra", "items": [{"name": "eggs", "category": "protein"}, …]}]' aria-label="Kitchen JSON"></textarea>
       <div class="row">
         <button class="btn primary" id="make" data-haptic type="button">Make links</button>
         <label class="btn" for="file">Upload<input id="file" type="file" accept=".json,.txt,application/json,text/plain" hidden></label>

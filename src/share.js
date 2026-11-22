@@ -45,7 +45,6 @@ async function make() {
     $('out').replaceChildren();
     return;
   }
-  set(KEYS.text, text);
   made = await Promise.all(kitchens.map(async (k) => ({ k, code: await encodeKitchen(k), name: names[k.kitchen] ?? guessName(k.kitchen), ...preview(k) })));
   render();
 }
@@ -140,5 +139,7 @@ $('msg').value = get(KEYS.msg) ?? DEFAULT_MSG;
 $('msg').addEventListener('input', () => { set(KEYS.msg, $('msg').value === DEFAULT_MSG ? null : $('msg').value); made.forEach((_, i) => paint(i)); });
 $('msg-reset').addEventListener('click', () => { $('msg').value = DEFAULT_MSG; set(KEYS.msg, null); made.forEach((_, i) => paint(i)); });
 
-const last = get(KEYS.text);
-if (last) { $('kitchens').value = last; make(); }
+// 1.36.1: a refresh starts with an empty box (pranjal), so the last kitchen never leaks into the next one.
+// The browser restores textarea text on reload too, so clear it explicitly; drop the old saved copy.
+$('kitchens').value = '';
+set(KEYS.text, null);
