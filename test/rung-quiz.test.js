@@ -89,7 +89,7 @@ test('send: one file per run, and #send= saves the token once', async () => {
   const { pathFor, captureToken, getToken, sendResult, outbox } = await import('../src/send.js');
   assert.equal(pathFor({ at: '2026-11-22T11:00:00Z', kitchenId: 'k-1', testerId: 't-9' }), 'data/kitchen-tests/taste-2026-11-22-k-1-t-9.json');
   let replaced = null;
-  assert.equal(captureToken({ hash: '#send=github_pat_x', pathname: '/harveys/', search: '' }, { replaceState: (a, b, u) => { replaced = u; } }), true);
+  assert.equal(captureToken({ hash: '#send=github_pat_x&relay=off', pathname: '/harveys/', search: '' }, { replaceState: (a, b, u) => { replaced = u; } }), true);
   assert.equal(getToken(), 'github_pat_x');
   assert.equal(replaced, '/harveys/');
   // No signal: the result waits in the outbox instead of being lost.

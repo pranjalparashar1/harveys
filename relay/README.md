@@ -20,7 +20,7 @@ What the Worker allows: only requests from `pranjalparashar1.github.io`, only a 
 
 **5. Check it:** open the Worker's address (shown on its page, like `https://harveys-send.<you>.workers.dev`). It should say `{"ok":true,"relay":"harveys","ready":true}`.
 
-**6. Turn it on in the app:** send Claude that address. It goes into `RELAY_URL` in [`src/send.js`](../src/send.js), and from then on every phone sends through it. To try it on your phone before that, open
+**6. Turn it on in the app:** done in 1.33.1: `RELAY_URL` in [`src/send.js`](../src/send.js) is `https://harveys-send.pranjalparashar1.workers.dev/`. To point one phone at another relay, open
 `https://pranjalparashar1.github.io/harveys/#relay=<the address>`.
 
 ## After that
