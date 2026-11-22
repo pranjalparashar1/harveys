@@ -1,0 +1,578 @@
+{
+ "format": "harveys-rung-quiz/1",
+ "version": "1.41.0",
+ "at": "2026-11-22T16:40:02.567Z",
+ "source": "link",
+ "kitchenId": "kitchen_video_1-1n287",
+ "testerId": "t-qs6fccq2g",
+ "runNo": 1,
+ "tester": "Banana Singh",
+ "kitchen": {
+  "kitchen": "Kitchen, video_1",
+  "diet": "veg+eggs",
+  "notes": "many clipped or unlabelled bags and containers; no fridge visible",
+  "items": [
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "ghee",
+    "category": "dairy"
+   },
+   {
+    "name": "oats",
+    "category": "grain"
+   },
+   {
+    "name": "brown bread",
+    "category": "bread"
+   },
+   {
+    "name": "rusk",
+    "category": "bread"
+   },
+   {
+    "name": "black salt",
+    "category": "spice"
+   },
+   {
+    "name": "cashews",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "almonds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "peanuts",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "dish soap",
+    "category": "other"
+   },
+   {
+    "name": "blender",
+    "category": "appliance"
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance"
+   },
+   {
+    "name": "gas stove",
+    "category": "appliance"
+   },
+   {
+    "name": "water purifier",
+    "category": "appliance"
+   },
+   {
+    "name": "steel pot",
+    "category": "cookware"
+   }
+  ]
+ },
+ "moment": "Weeknight, 9 PM, tired",
+ "targets": {
+  "protein": 60,
+  "calories": 1200,
+  "fiber": 20
+ },
+ "directions": {
+  "marco": "easiest first",
+  "pierre": "tastiest first",
+  "white": "tap order = preference"
+ },
+ "unmovedConfirmed": true,
+ "confirm": {
+  "asked": [
+   "maggi",
+   "tea",
+   "rice",
+   "dal",
+   "poha",
+   "curd",
+   "onion",
+   "tomato",
+   "frying_pan",
+   "kadai",
+   "tawa",
+   "air_fryer",
+   "pressure_cooker",
+   "microwave",
+   "sandwich_maker",
+   "toaster",
+   "oven",
+   "induction"
+  ],
+  "have": [
+   "frying_pan",
+   "kadai",
+   "tawa",
+   "pressure_cooker",
+   "maggi",
+   "tea",
+   "rice",
+   "dal",
+   "poha",
+   "onion",
+   "tomato",
+   "curd"
+  ],
+  "typed": [],
+  "unmatched": [],
+  "burners": 2,
+  "noStove": false,
+  "ms": 42812
+ },
+ "ingredients": {
+  "used": [
+   "eggs",
+   "milk",
+   "oats",
+   "black salt",
+   "peanuts",
+   "electric kettle",
+   "gas stove",
+   "steel pot"
+  ],
+  "unused": [
+   {
+    "name": "ghee",
+    "category": "dairy",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Butter omelette",
+      "why": "made with Cooking oil instead"
+     },
+     {
+      "dish": "Open-pot dal",
+      "why": "cookable, but #24 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Plain egg bhurji (no chopping)",
+      "why": "cookable, but #13 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Open-pot dal khichdi",
+      "why": "cookable, but #21 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "brown bread",
+    "category": "bread",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Boiled egg sandwich",
+      "why": "cookable, but #14 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Plain egg bhurji (no chopping)",
+      "why": "cookable, but #13 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Bread omelette",
+      "why": "cookable, but #12 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Chai and buttered toast",
+      "why": "cookable, but #11 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "rusk",
+    "category": "bread",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "cashews",
+    "category": "nuts_seeds",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "made with Peanuts instead"
+     },
+     {
+      "dish": "Curd, banana and peanut bowl",
+      "why": "missing Banana"
+     }
+    ]
+   },
+   {
+    "name": "almonds",
+    "category": "nuts_seeds",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "made with Peanuts instead"
+     },
+     {
+      "dish": "Curd, banana and peanut bowl",
+      "why": "missing Banana"
+     }
+    ]
+   },
+   {
+    "name": "dish soap",
+    "category": "other",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "blender",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "water purifier",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   }
+  ],
+  "gaps": [
+   "rusk",
+   "dish soap",
+   "blender",
+   "water purifier"
+  ],
+  "blockers": [
+   {
+    "thing": "Microwave",
+    "dishes": [
+     "Microwave mug omelette",
+     "Microwave peanut poha"
+    ]
+   },
+   {
+    "thing": "Paneer",
+    "dishes": [
+     "Classic paneer bhurji",
+     "Pressure-cooker paneer pulao"
+    ]
+   },
+   {
+    "thing": "Air fryer",
+    "dishes": [
+     "Air-fryer egg-in-a-hole on protein bread"
+    ]
+   },
+   {
+    "thing": "Banana",
+    "dishes": [
+     "Curd, banana and peanut bowl"
+    ]
+   },
+   {
+    "thing": "Besan",
+    "dishes": [
+     "Besan chilla"
+    ]
+   }
+  ]
+ },
+ "dishes": {
+  "kettle_oats": {
+   "name": "Kettle oats with milk and peanuts",
+   "rung": 2,
+   "harveys": {
+    "order": 0,
+    "tier": "floor",
+    "friction": 0.876,
+    "score": -0.022
+   },
+   "raw": {
+    "protein": 16,
+    "tools": 2,
+    "handsOn": 2,
+    "waiting": 5,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 0,
+    "cleanup": 1
+   }
+  },
+  "egg_drop_maggi": {
+   "name": "Maggi with an egg stirred in",
+   "rung": 3,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 1.066,
+    "score": -0.31
+   },
+   "raw": {
+    "protein": 18,
+    "tools": 2,
+    "handsOn": 2,
+    "waiting": 5,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 1,
+    "cleanup": 1
+   }
+  },
+  "maggi": {
+   "name": "Maggi",
+   "rung": 3,
+   "harveys": {
+    "order": 1,
+    "tier": "pass",
+    "friction": 1.071,
+    "score": -0.969
+   },
+   "raw": {
+    "protein": 6,
+    "tools": 2,
+    "handsOn": 1,
+    "waiting": 4,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 1,
+    "attention": 1,
+    "cleanup": 2
+   }
+  },
+  "curd_rice": {
+   "name": "Curd rice",
+   "rung": 3,
+   "harveys": {
+    "order": 2,
+    "tier": "pass",
+    "friction": 1.759,
+    "score": -1.58
+   },
+   "raw": {
+    "protein": 14,
+    "tools": 2,
+    "handsOn": 4,
+    "waiting": 15,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 1,
+    "cleanup": 2
+   }
+  },
+  "plain_omelette": {
+   "name": "Butter omelette",
+   "rung": 3,
+   "harveys": {
+    "order": 3,
+    "tier": "pass",
+    "friction": 2.077,
+    "score": -1.935
+   },
+   "raw": {
+    "protein": 19,
+    "tools": 3,
+    "handsOn": 5,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 2,
+    "cleanup": 4.5
+   }
+  },
+  "maggi_fried_egg": {
+   "name": "Maggi with a fried egg",
+   "rung": 4,
+   "harveys": {
+    "order": 0,
+    "tier": "crave",
+    "friction": 2.335,
+    "score": -2.427
+   },
+   "raw": {
+    "protein": 12,
+    "tools": 4,
+    "handsOn": 4.5,
+    "waiting": 4,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 2,
+    "cleanup": 4.5
+   }
+  }
+ },
+ "marco": [
+  {
+   "rung": 2,
+   "rungs": [
+    2,
+    3,
+    4
+   ],
+   "harveys": [
+    "kettle_oats",
+    "egg_drop_maggi",
+    "maggi",
+    "curd_rice",
+    "plain_omelette",
+    "maggi_fried_egg"
+   ],
+   "shown": [
+    "maggi_fried_egg",
+    "curd_rice",
+    "maggi",
+    "egg_drop_maggi",
+    "kettle_oats",
+    "plain_omelette"
+   ],
+   "ranking": [
+    "maggi",
+    "curd_rice",
+    "kettle_oats",
+    "plain_omelette",
+    "maggi_fried_egg",
+    "egg_drop_maggi"
+   ],
+   "moved": true,
+   "ms": 60154
+  }
+ ],
+ "pierre": [
+  {
+   "rung": 2,
+   "rungs": [
+    2,
+    3,
+    4
+   ],
+   "harveys": [
+    "kettle_oats",
+    "egg_drop_maggi",
+    "maggi",
+    "curd_rice",
+    "plain_omelette",
+    "maggi_fried_egg"
+   ],
+   "shown": [
+    "maggi",
+    "kettle_oats",
+    "egg_drop_maggi",
+    "curd_rice",
+    "plain_omelette",
+    "maggi_fried_egg"
+   ],
+   "ranking": [
+    "maggi",
+    "kettle_oats",
+    "egg_drop_maggi",
+    "curd_rice",
+    "plain_omelette",
+    "maggi_fried_egg"
+   ],
+   "moved": false,
+   "ms": 1827
+  }
+ ],
+ "white": [
+  {
+   "rung": 2,
+   "rungs": [
+    2,
+    3,
+    4
+   ],
+   "harveys": "kettle_oats",
+   "shown": [
+    "kettle_oats",
+    "maggi_fried_egg",
+    "plain_omelette",
+    "egg_drop_maggi",
+    "curd_rice",
+    "maggi"
+   ],
+   "picks": [
+    "maggi_fried_egg",
+    "egg_drop_maggi",
+    "plain_omelette",
+    "curd_rice",
+    "kettle_oats",
+    "maggi"
+   ],
+   "none": false,
+   "criteria": [
+    "taste"
+   ],
+   "ms": 46746
+  }
+ ],
+ "feedback": {
+  "chips": [
+   "missing_dishes",
+   "confusing"
+  ],
+  "skipped": false,
+  "allGood": false,
+  "wrongItems": [],
+  "missedItems": [],
+  "dishIdeas": [
+   {
+    "name": "Khichdi",
+    "quick": true
+   },
+   {
+    "name": "Dal chawal",
+    "quick": true
+   },
+   {
+    "name": "I’d order in",
+    "quick": true
+   }
+  ],
+  "tooHard": [],
+  "wouldntEat": [],
+  "wouldntWhy": [],
+  "confusing": [
+   "long"
+  ],
+  "note": "",
+  "ms": 64754
+ }
+}
