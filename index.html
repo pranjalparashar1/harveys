@@ -95,6 +95,21 @@
       </details>
     </section>
 
+    <!-- Ingredient check (?debug, 1.33.0): every listed item, used by the taste test's dishes or not, and why -->
+    <section class="card rise t-hide usage" id="usage" aria-labelledby="usage-title" hidden>
+      <div class="card-head"><h2 id="usage-title">Ingredient check</h2></div>
+      <p class="mini" id="usage-sum"></p>
+      <div class="segmented" id="usage-tabs" role="radiogroup" aria-label="Used or not">
+        <button type="button" role="radio" data-haptic data-value="unused" aria-checked="true">Not used</button>
+        <button type="button" role="radio" data-haptic data-value="used" aria-checked="false">Used</button>
+      </div>
+      <div id="usage-body"></div>
+      <div class="usage-actions">
+        <button class="btn" id="usage-copy" data-haptic type="button">Copy for Claude</button>
+        <button class="btn" id="usage-quiz" data-haptic type="button">Taste test</button>
+      </div>
+    </section>
+
     <!-- Right now -->
     <section class="card rise" id="step-context" aria-label="Right now" hidden>
       <div class="segmented t-hide" id="kind" role="radiogroup" aria-label="Meal or snack">
@@ -125,7 +140,7 @@
     <section id="result" aria-live="polite" hidden></section>
 
     <details class="debug t-hide" id="debug">
-      <summary><span>Debug · <span id="version">1.32.0</span></span></summary>
+      <summary><span>Debug · <span id="version">1.33.0</span></span></summary>
       <div id="debug-body"></div>
       <button class="btn" id="copy-debug" type="button">Copy for Claude</button>
     </details>

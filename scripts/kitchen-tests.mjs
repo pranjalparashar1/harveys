@@ -19,7 +19,9 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { loadKitchens, buildKitchenTest, whiteFor, parseResults, scoreResult, marcoChoices, fitFrom } from '../src/brain/kitchen-test.js';
 import { DEFAULT_CONFIG } from '../src/brain/config.js';
-import { parseRungResults, scoreRungResult, rungMarcoChoices } from '../src/brain/rung-quiz.js';
+import { parseRungResults, scoreRungResult, rungMarcoChoices, buildRungQuiz } from '../src/brain/rung-quiz.js';
+import { buildInventory } from '../src/brain/inventory.js';
+import { usageForResult } from '../src/brain/usage.js';
 
 const [cmd = 'score', ...rest] = process.argv.slice(2);
 const pi = rest.indexOf('--persona');
@@ -93,6 +95,30 @@ if (tastes.length) {
   const flag = rows.filter((d) => (['crave', 'pass'].includes(d.tier) && d.place >= 0.75) || (['veto', 'floor'].includes(d.tier) && d.place <= 0.25));
   console.log(flag.length ? `Taste vs Pierre: ${flag.map((d) => `${d.name} (${d.tier}, placed ${pct(d.place)} down)`).join('; ')}` : 'Taste vs Pierre: no strong disagreements.');
   console.log(`What decided White's picks (points, most first): ${Object.entries(criteria).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ') || '-'}`);
+
+  // Ingredient check (1.33.0): items kitchens had that no shown dish used. A file from before
+  // 1.33.0 has no record, so it's rebuilt from its items with today's catalogue.
+  const byKitchen = new Map();
+  for (const r of tastes) {
+    if (byKitchen.has(r.kitchenId)) continue;
+    let u = r.ingredients;
+    if (!u && Array.isArray(r.kitchen?.items)) {
+      const k = { ...r.kitchen, items: r.kitchen.items };
+      u = usageForResult(buildRungQuiz({ kitchen: k, inventory: buildInventory(k.items, { cache }) }).usage);
+    }
+    if (u) byKitchen.set(r.kitchenId, u);
+  }
+  const tally = (pick) => {
+    const m = new Map();
+    for (const u of byKitchen.values()) for (const x of pick(u)) m.set(x, (m.get(x) ?? 0) + 1);
+    return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([x, n]) => (byKitchen.size > 1 ? `${x} (${n})` : x)).join(', ');
+  };
+  if (byKitchen.size) {
+    console.log(`\n# Ingredient check over ${byKitchen.size} kitchen(s)`);
+    console.log(`No recipe uses it: ${tally((u) => u.gaps) || '-'}`);
+    console.log(`Named by a dish, but out: ${tally((u) => u.unused.filter((x) => x.reasons[0]?.dish).map((x) => `${x.name} [${x.reasons[0].why}]`)) || '-'}`);
+    console.log(`One thing away: ${tally((u) => (u.blockers ?? []).map((b) => `${b.thing} → ${b.dishes.join(' / ')}`)) || '-'}`);
+  }
 }
 
 const fit = fitFrom(pooled);

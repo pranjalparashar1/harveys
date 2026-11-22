@@ -1,4 +1,4 @@
-// Rung quiz screens (1.31.0; one-tap send, a fresh tester per run 1.32.0): what a tester sees
+// Rung quiz screens (1.31.0; one-tap send, a fresh tester per run 1.32.0; relay send 1.33.0): what a tester sees
 // after Proceed. Kiron's rules: one question
 // per screen, a story bar with no numbers, drag to sort, tap to pick, haptics on every tap.
 // The brain work is src/brain/rung-quiz.js; this file is screens, drag, storage and sending.
@@ -55,7 +55,7 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } c
 // ── State ───────────────────────────────────────────────────────────────────
 let quiz = null;
 let run = null; // { testerId, runNo, answers: {marco, pierre, white}, at: screen index, sent }
-let sendState = ''; // '', 'sending', 'sent', 'queued', 'auth', 'setup', 'bad'
+let sendState = ''; // '', 'sending', 'sent', 'queued', 'failed', 'auth', 'setup', 'bad'
 let root = null;
 let opts = {};
 let shownAt = 0;
@@ -213,7 +213,8 @@ function endScreen() {
     '': ['That’s all. Thank you!', 'One tap sends your answers to Harvey’s.'],
     sending: ['Sending…', 'Putting your answers in Harvey’s.'],
     sent: ['Sent. Thank you!', 'Your answers are in Harvey’s. Hand the phone to the next person.'],
-    queued: ['Saved. Thank you!', `No signal, so your answers wait on this phone${waiting > 1 ? ` with ${waiting - 1} more` : ''} and send themselves next time. Hand the phone on.`],
+    queued: ['Saved. Thank you!', `Your answers are safe on this phone${waiting > 1 ? ` with ${waiting - 1} more` : ''} and send themselves as soon as they can. Leave this page open for a minute if you can.`],
+    failed: ['Not sent', 'Something went wrong sending this. Tap Save the file and send it to whoever gave you the link.'],
     auth: ['Almost there', 'This phone isn’t set up to send yet. Your answers are saved here and go as soon as it is.'],
     setup: ['Set up sending', 'Paste the GitHub token for Harvey’s once. Every send after is one tap, for everyone using this phone.'],
     bad: ['That token didn’t work', 'It needs write access to the harveys repo (Contents: read and write). Your answers are still saved here.'],
@@ -451,7 +452,7 @@ function markSent() {
   render();
 }
 
-/** One tap: straight into the repo (src/send.js). No signal keeps it on the phone; no token asks once. */
+/** One tap: through the relay into the repo (src/send.js). No signal keeps it on the phone; no relay and no token asks for one. */
 async function send() {
   const res = resultOf();
   sendState = 'sending';
@@ -459,6 +460,7 @@ async function send() {
   const r = await sendResult(res);
   sendState = r;
   if (r === 'sent' || r === 'queued') { buzz(20); return markSent(); }
+  if (r === 'failed') download(res); // the file is the last way home
   save();
   render();
   root.querySelector('#rq-token')?.focus();

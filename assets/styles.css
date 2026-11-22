@@ -457,3 +457,23 @@ h2 .badge.tier { vertical-align: 2px; text-transform: none; letter-spacing: 0; }
 .alts { margin-top: 12px; }
 .alts > summary { cursor: pointer; font-size: 14px; color: var(--muted); }
 .baseline { font-size: 15px; color: var(--muted); text-align: center; margin: 4px 8px 12px; }
+
+/* Ingredient check (?debug, 1.33.0) */
+.usage #usage-tabs { margin: 14px 0 6px; }
+.usage-group { margin-top: 18px; }
+.usage-group h3 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 8px; }
+.usage-list { list-style: none; margin: 0; padding: 0; }
+.usage-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.usage-row:last-child { border-bottom: none; }
+.usage-row > b { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; }
+.usage-row.not_veg > b, .usage-row.unknown > b { color: var(--muted); }
+.usage-tag { font-size: 11px; font-weight: 600; color: var(--blue); background: var(--blue-soft); border-radius: 6px; padding: 2px 6px; }
+.usage-row ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+.usage-row li { font-size: 14px; line-height: 1.35; display: grid; gap: 1px; }
+.usage-dish { color: var(--ink); font-weight: 500; }
+.usage-why { color: var(--muted); }
+.usage-more summary { min-height: 32px; font-size: 14px; color: var(--blue); }
+.usage-more summary::after { font-size: 16px; }
+.chip.static { padding: 8px 12px; }
+.usage-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+.usage-actions .btn { flex: 1; }
