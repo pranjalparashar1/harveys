@@ -175,3 +175,32 @@ test('1.42.0 meal cards: a deck in Harvey’s order, yes/no and difficulty ratin
   assert.equal(scoreRungResult(skipped).difficulty.skipped, true);
   assert.equal(rungMarcoChoices(skipped).length, 0);
 });
+
+test('1.43.0 recipe test: effort and taste stars, can’t-make reasons, effort stars become Marco pairs', () => {
+  const n = quiz.deck.length;
+  // Effort follows Harvey's deck order: first dish 5 stars (effortless), later ones fewer.
+  const stars = Object.fromEntries(quiz.deck.map((id, i) => [id, { effort: Math.max(1, 5 - Math.floor(i / 2)), taste: 1 + (i % 5), ms: 1200 }]));
+  stars[quiz.deck[n - 1]] = { cant: 'equipment', cantOpen: true, ms: 400 };
+  stars.not_a_dish = { effort: 3, taste: 3 };
+  const res = encodeRungResult(quiz, { marco: {}, pierre: {}, white: {}, stars }, { version: 'test', testerId: 't-st' });
+  assert.equal(res.format, RUNG_FORMAT, 'same format: the live relay takes it unchanged');
+  assert.equal(res.flow, 'stars');
+  assert.equal(res.stars.length, n, 'only dishes in the quiz');
+  assert.deepEqual(res.stars.map((x) => x.id), quiz.deck, 'in the order shown');
+  assert.equal(res.stars[n - 1].cant, 'equipment');
+  assert.equal(res.stars[n - 1].effort, null);
+  assert.ok(!('cantOpen' in res.stars[0]));
+  assert.equal(res.difficulty.ratings.length, n - 1, 'a dish they can’t make has no effort level');
+  assert.equal(res.difficulty.ratings[0].level, 1, '5 stars = level 1, effortless');
+  const pairs = rungMarcoChoices(res);
+  assert.ok(pairs.length > 0 && pairs.every((p) => p.id.startsWith('d:')));
+  const s = scoreRungResult(res);
+  assert.equal(s.flow, 'stars');
+  assert.equal(s.stars.n, n);
+  assert.equal(s.stars.both, n - 1);
+  assert.deepEqual(s.stars.cant, { equipment: 1 });
+  assert.ok(s.difficulty.agree > 0.5, 'stars that follow Harvey’s order agree with it');
+  const empty = encodeRungResult(quiz, { marco: {}, pierre: {}, white: {}, stars: {} }, { testerId: 't-e' });
+  assert.equal(empty.difficulty, null);
+  assert.deepEqual(empty.stars, []);
+});

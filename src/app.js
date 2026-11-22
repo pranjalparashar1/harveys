@@ -16,7 +16,7 @@ import { buildRungQuiz } from './brain/rung-quiz.js';
 import { decodeKitchen, linkCode, linkName } from './brain/share-link.js';
 import { startFresh, reloadIfStale } from './fresh.js';
 
-const VERSION = '1.42.0';
+const VERSION = '1.43.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -1024,10 +1024,10 @@ function greet(dishes = null) {
   hi.textContent = name ? `Hi, ${name}` : 'Hi there';
   document.title = name ? `Hi, ${name} · Harvey’s` : 'Harvey’s';
   $('hi-lead').textContent = dishes == null
-    ? 'Tell Harvey what’s in your kitchen. It finds what you can cook tonight, easiest first.'
+    ? 'Paste what’s in your kitchen, then tap Use this list.'
     : dishes
-      ? `Harvey went through your kitchen and found ${dishes} dish${dishes === 1 ? '' : 'es'} you can make. Your taste test teaches it which ones you’d actually cook on a tired night.`
-      : 'Harvey couldn’t find a dish in this kitchen yet. Ask for a new link, or add a few things below.';
+      ? `Rate ${dishes} recipe${dishes === 1 ? '' : 's'} from your kitchen for effort and taste.`
+      : 'No recipes for this kitchen yet. Ask for a new link.';
 }
 
 // Share links (1.34.0): #k=… carries a whole kitchen (src/brain/share-link.js, made on
@@ -1054,7 +1054,7 @@ async function openSharedKitchen() {
   state.linked = true;
   setItems(kitchen.items);
   showPasteSummary(kitchen.items);
-  $('paste-proceed').textContent = 'Start the taste test';
+  $('paste-proceed').textContent = 'Rate the recipes';
   greet(Object.keys(buildRungQuiz({ kitchen, inventory: inventory() }).dishes).length);
   startRungQuiz({ kitchen, inventory: inventory(), items: state.items, cache: state.pantry, missingBasics: state.missingBasics, version: VERSION, source: 'link', name: testerName() });
 }

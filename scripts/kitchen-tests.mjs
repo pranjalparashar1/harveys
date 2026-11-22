@@ -14,6 +14,9 @@
 // Marco rankings become every pair inside each rung, pooled into the same frictionTheta fit.
 // From 1.42.0 the taste test is meal cards (flow 'cards'): yes/no per dish, then difficulty
 // ratings 1-5; every two dishes rated apart become one Marco pair in the same fit.
+// From 1.43.0 it is a recipe list (flow 'stars'): effort and taste stars per dish (5 = effortless,
+// delicious), or "can't make it" (missing ingredients / equipment). Effort stars become
+// difficulty levels (6 - stars), so they feed Marco the same way.
 //
 // --persona is optional and only for looking: by default every result is pooled, persona
 // role-plays included, because they calibrate Marco's shared effort weights for everyone.
@@ -93,11 +96,24 @@ for (const r of results) {
 const pct = (x) => (x == null ? '-' : x.toFixed(2));
 const tastePlace = {}; // dish → { name, tier, places: [0 = top … 1 = bottom] }
 const criteria = {};
+const starTally = {}; // 1.43.0: dish → effort and taste stars, can't-make reasons across testers
 const cardTally = {}; // 1.42.0: dish → yes/no counts, why-nots and difficulty levels across testers
 for (const r of tastes) {
   const s = scoreRungResult(r);
   console.log(`## Taste test: ${s.kitchen}  [${s.kitchenId}]  tester ${s.tester || s.testerId}`);
-  if (s.flow === 'cards') {
+  if (s.flow === 'stars') {
+    console.log(`   Stars:  ${s.stars.both}/${s.stars.n} rated for both; can't make: ${Object.entries(s.stars.cant).map(([k, v]) => `${k} ${v}`).join(', ') || '-'}`);
+    console.log(`   Effort: ${s.difficulty.n} rated, ${s.difficulty.pairs} pairs apart, Harvey agrees on ${pct(s.difficulty.agree)}; ${s.marco.pairs} Marco pairs`);
+    console.log(`   Taste:  ${s.stars.tastePairs} pairs apart on Pierre's tiers, Pierre agrees on ${pct(s.stars.tasteAgree)}`);
+    for (const x of r.stars ?? []) {
+      const d = r.dishes[x.id];
+      if (!d) continue;
+      starTally[x.id] ??= { name: d.name, tier: d.harveys.tier, effort: [], taste: [], cant: {} };
+      if (x.effort) starTally[x.id].effort.push(x.effort);
+      if (x.taste) starTally[x.id].taste.push(x.taste);
+      if (x.cant) starTally[x.id].cant[x.cant] = (starTally[x.id].cant[x.cant] ?? 0) + 1;
+    }
+  } else if (s.flow === 'cards') {
     // 1.42.0 meal cards: yes/no per dish, then difficulty ratings (pairs feed the Marco fit).
     console.log(`   Cards:  would make ${s.cards.yes}/${s.cards.n}; Harvey's first card ${s.cards.firstYes == null ? '-' : s.cards.firstYes ? 'yes' : 'no'}; why not: ${Object.entries(s.cards.whyNot).map(([k, v]) => `${k} ${v}`).join(', ') || '-'}`);
     console.log(`   Effort: ${s.difficulty.skipped ? 'rating skipped' : `${s.difficulty.n} rated, ${s.difficulty.pairs} pairs apart, Harvey agrees on ${pct(s.difficulty.agree)}`}; ${s.marco.pairs} Marco pairs`);
@@ -137,6 +153,15 @@ if (tastes.length) {
     console.log(`Cards, most said no: ${ct.filter((d) => d.no).sort((a, b) => b.no / (b.yes + b.no) - a.no / (a.yes + a.no) || b.no - a.no).slice(0, 8).map((d) => `${d.name} ${d.no}/${d.yes + d.no}${Object.keys(d.why).length ? ` [${Object.entries(d.why).map(([k, v]) => `${k} ${v}`).join(', ')}]` : ''}`).join('; ') || '-'}`);
     console.log(`Cards, said no for taste on a dish Pierre likes: ${ct.filter((d) => d.why.taste && ['crave', 'pass'].includes(d.tier)).map((d) => `${d.name} (${d.tier})`).join('; ') || '-'}`);
     console.log(`Rated hardest (1 effortless … 5 too much): ${ct.filter((d) => d.level.length).sort((a, b) => avgL(b) - avgL(a)).slice(0, 8).map((d) => `${d.name} ${avgL(d)}`).join(', ') || '-'}`);
+  }
+  const stl = Object.values(starTally);
+  if (stl.length) {
+    const avg5 = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+    const fmt = (d, k) => `${d.name} ${avg5(d[k]).toFixed(1)}★ (${d[k].length})`;
+    console.log(`Stars, hardest (fewest effort stars): ${stl.filter((d) => d.effort.length).sort((a, b) => avg5(a.effort) - avg5(b.effort)).slice(0, 8).map((d) => fmt(d, 'effort')).join(', ') || '-'}`);
+    console.log(`Stars, least tasty: ${stl.filter((d) => d.taste.length).sort((a, b) => avg5(a.taste) - avg5(b.taste)).slice(0, 8).map((d) => fmt(d, 'taste')).join(', ') || '-'}`);
+    console.log(`Stars, low taste on a dish Pierre likes: ${stl.filter((d) => d.taste.length && avg5(d.taste) <= 2.5 && ['crave', 'pass'].includes(d.tier)).map((d) => `${fmt(d, 'taste')} [${d.tier}]`).join('; ') || '-'}`);
+    console.log(`Can't make: ${stl.filter((d) => Object.keys(d.cant).length).map((d) => `${d.name} [${Object.entries(d.cant).map(([k, v]) => `${k} ${v}`).join(', ')}]`).join('; ') || '-'}`);
   }
   console.log(`What decided White's picks (points, most first): ${Object.entries(criteria).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ') || '-'}`);
 
