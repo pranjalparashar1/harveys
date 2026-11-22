@@ -136,3 +136,41 @@
 @media (max-width: 399px) { .rq-rung-hint { flex-basis: 100%; padding-left: 16px; } }
 .rq-tick.wait { background: var(--surface2); }
 .rq-tick.wait svg { stroke: var(--muted); animation: none; stroke-dashoffset: 0; opacity: .5; }
+
+/* feedback (1.34.0): chips, then one tap-first follow-up per chip */
+.rq-small { margin: 4px 0 0; font-size: 14px; line-height: 1.45; color: var(--muted); }
+.rq-body[data-kind="feedback"] .rq-eyebrow, .rq-body[data-kind="fb"] .rq-eyebrow { margin-top: 4px; }
+.rq-fb { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+.rq-fbchip, .rq-tag, .rq-note-open, .rq-add-go { position: relative; font: inherit; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.rq-fbchip { display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 14px; min-height: 96px; padding: 12px 14px; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; font-size: 16px; font-weight: 600; line-height: 1.25; transition: transform .34s var(--pop), border-color .15s, background-color .15s; }
+.rq-fbchip:active, .rq-tag:active { transform: scale(.96); transition: none; }
+.rq-fbchip.good { grid-column: 1 / -1; min-height: 60px; flex-direction: row; align-items: center; justify-content: flex-start; }
+.rq-check { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; }
+.rq-check svg { width: 16px; height: 16px; fill: none; stroke: var(--accent-ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.rq-fbchip.on { border-color: var(--accent); background: var(--accent-soft); }
+.rq-fbchip.on .rq-check { background: var(--accent); border-color: var(--accent); animation: rq-pop .34s var(--pop); }
+.rq-fbchip.on .rq-check svg { opacity: 1; }
+.rq-fbchip.good.on { border-color: var(--ok); background: var(--ok-soft); }
+.rq-fbchip.good.on .rq-check { background: var(--ok); border-color: var(--ok); }
+
+.rq-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.rq-tag { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; font-size: 15px; font-weight: 500; line-height: 1.2; text-align: left; transition: transform .3s var(--pop), border-color .15s, background-color .15s; }
+.rq-tag.on { border-color: var(--accent); background: var(--accent-soft); animation: rq-settle .3s var(--pop); }
+.rq-tag[data-strike].on span { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--muted); }
+.rq-tag[data-strike].on { border-color: var(--no, var(--accent)); background: var(--surface2); }
+.rq-tag.typed svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; opacity: .7; }
+.rq-added:empty { display: none; }
+.rq-added { margin-top: 10px; }
+.rq-sub { margin: 22px 0 8px; font-size: 17px; font-weight: 700; }
+.rq-add { display: flex; gap: 8px; }
+.rq-add input { flex: 1; min-width: 0; min-height: 50px; padding: 0 14px; font: 500 16px var(--font); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.rq-add input:focus, .rq-note textarea:focus { outline: none; border-color: var(--blue); }
+.rq-add-go { flex: none; width: 50px; height: 50px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface2); display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.rq-add-go svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+.rq-note-open { align-self: flex-start; margin-top: 16px; min-height: 44px; padding: 0 16px; background: none; border: 1px dashed var(--line); border-radius: 22px; color: var(--muted); font-size: 15px; }
+.rq-note { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.rq-note.appear { animation: rq-in .32s var(--settle) both; }
+.rq-note span { font-size: 15px; color: var(--muted); }
+.rq-note textarea { width: 100%; min-height: 96px; padding: 12px 14px; font: 500 16px/1.45 var(--font); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; resize: vertical; }
+.rq-group { margin: 14px 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.rq-hint + .rq-group { margin-top: 6px; }

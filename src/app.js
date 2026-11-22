@@ -13,8 +13,9 @@ import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 import { startRungQuiz } from './rung-quiz-ui.js';
 import { buildRungQuiz } from './brain/rung-quiz.js';
+import { decodeKitchen, linkCode } from './brain/share-link.js';
 
-const VERSION = '1.33.1';
+const VERSION = '1.34.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -925,6 +926,7 @@ function init() {
   // So does a catalogued kitchen's JSON (1.29.0): the first kitchen in it.
   $('paste-go').addEventListener('click', () => {
     const text = $('paste-text').value;
+    state.linked = false;
     const kitchen = looksLikeKitchenJson(text) ? importKitchens(text)[0] : null;
     if (kitchen) {
       state.pickSource = 'inventory';
@@ -947,6 +949,7 @@ function init() {
   });
   $('paste-edit').addEventListener('click', () => {
     endPasteReview();
+    state.linked = false;
     show($('step-context'), false);
     show($('result'), false);
     const box = $('paste-list');
@@ -958,7 +961,7 @@ function init() {
   // ?debug keeps the old ladder of picks.
   $('paste-proceed').addEventListener('click', () => {
     if (document.body.classList.contains('testing')) {
-      startRungQuiz({ kitchen: state.kitchen ?? { kitchen: 'Pasted list', items: state.items }, inventory: inventory(), version: VERSION, source: 'paste' });
+      startRungQuiz({ kitchen: state.kitchen ?? { kitchen: 'Pasted list', items: state.items }, inventory: inventory(), version: VERSION, source: state.linked ? 'link' : 'paste' });
       return;
     }
     endPasteReview();
@@ -995,6 +998,32 @@ function init() {
   renderThumbs();
   renderInventory();
   renderContext();
+  openSharedKitchen();
+  addEventListener('hashchange', openSharedKitchen);
+}
+
+// Share links (1.34.0): #k=… carries a whole kitchen (src/brain/share-link.js, made on
+// share.html). Opening one goes straight into the taste test: no paste, no Proceed.
+// Closing the test leaves the kitchen on the page, so Proceed opens it again.
+async function openSharedKitchen() {
+  const code = linkCode(location.hash);
+  if (!code) return;
+  const raw = await decodeKitchen(code);
+  const kitchen = raw ? importKitchens([raw])[0] : null;
+  if (!kitchen) {
+    const err = $('scan-error');
+    err.textContent = 'This link didn’t open, maybe it was cut short. Ask whoever sent it for a new one.';
+    show(err, true);
+    return;
+  }
+  state.pickSource = 'inventory';
+  state.reviewingPaste = true;
+  state.kitchen = kitchen;
+  state.linked = true;
+  setItems(kitchen.items);
+  showPasteSummary(kitchen.items);
+  $('paste-proceed').textContent = 'Start the taste test';
+  startRungQuiz({ kitchen, inventory: inventory(), version: VERSION, source: 'link' });
 }
 
 init();

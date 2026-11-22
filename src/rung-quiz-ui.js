@@ -4,6 +4,7 @@
 // The brain work is src/brain/rung-quiz.js; this file is screens, drag, storage and sending.
 import { buildRungQuiz, encodeRungResult, CRITERIA } from './brain/rung-quiz.js';
 import { sendResult, flush, setToken, outbox } from './send.js';
+import { CHIPS, FOLLOW_UPS, WOULDNT_WHY, CONFUSING, blankFeedback, quickDishes, splitIdeas, norm } from './brain/feedback.js';
 
 const KEY = 'harveys.rq.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
@@ -49,7 +50,7 @@ function loadStore() {
 let store = loadStore();
 const newTesterId = () => `t-${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
 /** A new run: a new person holding the phone, so a new tester id. */
-const freshRun = () => ({ testerId: newTesterId(), runNo: ++store.seq, answers: { marco: {}, pierre: {}, white: {} }, at: 0, sent: false });
+const freshRun = () => ({ testerId: newTesterId(), runNo: ++store.seq, answers: { marco: {}, pierre: {}, white: {}, feedback: blankFeedback() }, at: 0, sent: false });
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch { /* private mode: keep going in memory */ } };
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -61,6 +62,7 @@ let opts = {};
 let shownAt = 0;
 let order = null; // the list being sorted on screen
 let picks = null; // White: { picks: [], criteria: [], none }
+let fb = null; // the feedback screens: run.answers.feedback, edited in place
 
 /** screens: intro, a cover per section, each step, end. */
 function screens() {
@@ -69,6 +71,12 @@ function screens() {
   for (const s of quiz.steps) {
     if (s.section !== last) { out.push({ kind: 'cover', section: s.section }); last = s.section; }
     out.push({ kind: s.section === 'white' ? 'white' : 'sort', ...s });
+  }
+  // 1.34.0: what went wrong, then one short screen for each chip tapped.
+  if (quiz.steps.length) {
+    out.push({ kind: 'feedback' });
+    const chips = run.answers.feedback?.chips ?? [];
+    for (const chip of FOLLOW_UPS) if (chips.includes(chip)) out.push({ kind: 'fb', chip });
   }
   out.push({ kind: 'end' });
   return out;
@@ -82,6 +90,7 @@ export function startRungQuiz({ kitchen, inventory, version, source, onExit }) {
   // A sent run belongs to the last person: whoever opens it next is someone new.
   if (!run || run.sent) run = store.runs[quiz.id] = freshRun();
   run.testerId ??= newTesterId();
+  run.answers.feedback ??= blankFeedback();
   if (run.at >= screens().length) run.at = 0;
   sendState = '';
   save();
@@ -94,6 +103,8 @@ export function startRungQuiz({ kitchen, inventory, version, source, onExit }) {
     document.body.append(root);
     root.addEventListener('click', onClick);
     root.addEventListener('pointerdown', onPointerDown);
+    root.addEventListener('submit', (e) => { const f = e.target.closest('.rq-add'); if (f && fb) { e.preventDefault(); fbAdd(f); } });
+    root.addEventListener('input', (e) => { if (fb && e.target.matches('.rq-note textarea')) { fb.note = e.target.value.slice(0, 2000); save(); syncFb(); } });
   }
   root.hidden = false;
   document.documentElement.classList.add('rq-open');
@@ -111,7 +122,7 @@ const resultOf = () => encodeRungResult(quiz, run.answers, { version: opts.versi
 // ── Render ──────────────────────────────────────────────────────────────────
 function bar(list) {
   // One segment per question (covers and the end screen don't count), filled as you go.
-  const qs = list.map((s, i) => [s, i]).filter(([s]) => s.kind === 'sort' || s.kind === 'white');
+  const qs = list.map((s, i) => [s, i]).filter(([s]) => s.kind === 'sort' || s.kind === 'white' || s.kind === 'feedback');
   return `<div class="rq-bar" aria-hidden="true">${qs.map(([s, i]) => `<i class="${i < run.at ? 'done' : i === run.at ? 'now' : ''}"></i>`).join('')}</div>`;
 }
 
@@ -121,6 +132,7 @@ function render(enter = false) {
   shownAt = performance.now();
   order = null;
   picks = null;
+  fb = null;
   let body = '';
   let foot = '';
   const back = run.at > 0 ? `<button class="rq-icon" data-act="back" type="button" aria-label="Back">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>` : '<span class="rq-icon ghost"></span>';
@@ -130,12 +142,13 @@ function render(enter = false) {
       <div class="rq-hero">
         <p class="rq-eyebrow">Taste test</p>
         <h1 class="rq-title">Teach Harvey how you cook</h1>
-        <p class="rq-lead">${Object.keys(quiz.dishes).length ? 'Harvey found dishes you can make with your kitchen.' : 'Harvey couldn’t find a dish in this kitchen yet.'} Picture a weeknight, 9 PM. You’re tired.</p>
+        <p class="rq-lead">${Object.keys(quiz.dishes).length ? (opts.source === 'link' ? `Harvey looked through your kitchen and found ${Object.keys(quiz.dishes).length} dishes you can make.` : 'Harvey found dishes you can make with your kitchen.') : 'Harvey couldn’t find a dish in this kitchen yet.'} Picture a weeknight, 9 PM. You’re tired.</p>
         <ol class="rq-rounds">
           <li><b>Easiest first</b><span>Sort by effort</span></li>
           <li><b>Tastiest first</b><span>Sort by taste</span></li>
           <li><b>What you’d cook</b><span>Pick your favourites</span></li>
         </ol>
+        <p class="rq-small">All taps, a few minutes. At the end you can tell Harvey what it got wrong.</p>
       </div>`;
     foot = Object.keys(quiz.dishes).length
       ? `<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Start</span></button>`
@@ -180,6 +193,11 @@ function render(enter = false) {
         <div class="rq-chips">${CRITERIA.map((c) => `<button class="rq-chip" data-act="why" data-id="${c.id}" type="button">${HX}<span class="rq-num" aria-hidden="true"></span><span>${c.label}</span></button>`).join('')}</div>
       </div>`;
     foot = `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Next</span></button>`;
+  } else if (s.kind === 'feedback' || s.kind === 'fb') {
+    fb = run.answers.feedback;
+    fb.seen = true;
+    body = s.kind === 'feedback' ? feedbackScreen() : followUp(s.chip);
+    foot = `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Next</span></button>`;
   } else {
     ({ body, foot } = endScreen());
   }
@@ -194,6 +212,7 @@ function render(enter = false) {
     <footer class="rq-foot">${foot}</footer>`;
   root.scrollTop = 0;
   if (picks) syncPicks();
+  if (fb) syncFb();
 }
 
 function rungHead(g) {
@@ -287,6 +306,139 @@ function syncPicks() {
   go.querySelector('span').textContent = needWhy ? 'What decided it?' : 'Next';
 }
 
+// ── Feedback (1.34.0) ───────────────────────────────────────────────────────
+// One screen of chips, then one short screen per chip, answered with taps on the tester's
+// own list and dishes. Typing is only ever an extra. Every screen can be skipped.
+const tag = (field, id, label, extra = '') => `<button class="rq-tag" data-act="fbtag" data-field="${field}" data-id="${esc(id)}"${extra} type="button" aria-pressed="false">${HX}<span>${esc(label)}</span></button>`;
+const dishesByRung = (dir = 1) => Object.values(quiz.dishes).sort((a, b) => dir * (a.rung - b.rung) || a.name.localeCompare(b.name));
+const KIT = new Set(['appliance', 'appliances', 'cookware', 'utensil', 'utensils', 'equipment', 'tool', 'tools']);
+const typed = (field) => (field === 'dishIdeas' ? fb.dishIdeas.filter((d) => !d.quick).map((d) => d.name) : fb[field]);
+const adder = (field, placeholder, label) => `
+      <form class="rq-add" data-field="${field}">
+        <input type="text" enterkeyhint="done" autocomplete="off" autocapitalize="sentences" placeholder="${esc(placeholder)}" aria-label="${esc(label)}">
+        <button class="rq-add-go" data-act="fbadd" type="button" aria-label="Add">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      </form>
+      <div class="rq-tags rq-added" data-field="${field}"></div>`;
+const noteBox = (open) => `
+      <button class="rq-note-open" data-act="fbnote" type="button"${open ? ' hidden' : ''}>${HX}<span>+ Add a note</span></button>
+      <label class="rq-note"${open ? '' : ' hidden'}><span>Anything else? Say it however you like.</span><textarea rows="3" maxlength="2000" placeholder="e.g. I never use the oven, and I always have leftover dal">${esc(fb.note)}</textarea></label>`;
+
+function feedbackScreen() {
+  return `
+      <p class="rq-eyebrow">Last bit</p>
+      <h1 class="rq-q">How did Harvey do?</h1>
+      <p class="rq-hint">Tap any that apply. Each one asks one quick thing.</p>
+      <div class="rq-fb">${CHIPS.map((c) => `<button class="rq-fbchip${c.id === 'all_good' ? ' good' : ''}" data-act="fbchip" data-id="${c.id}" type="button" aria-pressed="false">${HX}<span class="rq-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>${c.label}</span></button>`).join('')}</div>
+      ${noteBox(!!fb.note)}`;
+}
+
+function followUp(chip) {
+  const head = (q, hint) => `<p class="rq-eyebrow">${esc(CHIPS.find((c) => c.id === chip).label)}</p><h1 class="rq-q">${q}</h1><p class="rq-hint">${hint}</p>`;
+  if (chip === 'wrong_items') {
+    return `${head('Which of these aren’t in your kitchen?', 'Tap them. Skip if the list was right.')}
+      ${[['Food', (i) => !KIT.has(String(i.category).toLowerCase())], ['Kitchen kit', (i) => KIT.has(String(i.category).toLowerCase())]].map(([label, pick]) => {
+        const items = (quiz.kitchen.items ?? []).filter(pick);
+        return items.length ? `<p class="rq-group">${label}</p><div class="rq-tags">${items.map((i) => tag('wrongItems', i.name, i.name, ' data-strike')).join('')}</div>` : '';
+      }).join('')}
+      <p class="rq-sub">Anything we missed?</p>
+      ${adder('missedItems', 'e.g. rice, pressure cooker', 'Something you have that wasn’t listed')}`;
+  }
+  if (chip === 'missing_dishes') {
+    return `${head('What do you make on a night like this?', 'Tap any, or add your own.')}
+      <div class="rq-tags">${quickDishes(quiz).map((q) => tag('quick', q, q)).join('')}</div>
+      <p class="rq-sub">Something else?</p>
+      ${adder('dishIdeas', 'e.g. aloo paratha, cold coffee', 'A dish you make')}`;
+  }
+  if (chip === 'too_hard') {
+    return `${head('Which ones are too much work?', 'Tap every dish you’d skip on a tired night.')}
+      <div class="rq-tags">${dishesByRung(-1).map((d) => tag('tooHard', d.id, d.name)).join('')}</div>`;
+  }
+  if (chip === 'wouldnt_eat') {
+    return `${head('Which wouldn’t you eat?', 'Tap the dishes.')}
+      <div class="rq-tags">${dishesByRung().map((d) => tag('wouldntEat', d.id, d.name)).join('')}</div>
+      <p class="rq-sub">Mostly because</p>
+      <div class="rq-tags">${WOULDNT_WHY.map((x) => tag('wouldntWhy', x.id, x.label)).join('')}</div>`;
+  }
+  return `${head('What was confusing?', 'Tap any.')}
+      <div class="rq-tags">${CONFUSING.map((x) => tag('confusing', x.id, x.label)).join('')}</div>
+      ${noteBox(true)}`;
+}
+
+const fbHas = (field, id) => (field === 'quick' ? fb.dishIdeas.some((d) => d.quick && d.name === id) : (fb[field] ?? []).includes(id));
+
+/** Reflect `fb` on the screen without re-rendering it (keeps the keyboard and the scroll). */
+function syncFb() {
+  for (const c of root.querySelectorAll('.rq-fbchip')) {
+    const on = fb.chips.includes(c.dataset.id);
+    c.classList.toggle('on', on);
+    c.setAttribute('aria-pressed', String(on));
+  }
+  for (const t of root.querySelectorAll('.rq-tag[data-field]:not(.typed)')) {
+    const on = fbHas(t.dataset.field, t.dataset.id);
+    t.classList.toggle('on', on);
+    t.setAttribute('aria-pressed', String(on));
+  }
+  for (const box of root.querySelectorAll('.rq-added')) {
+    const f = box.dataset.field;
+    box.innerHTML = typed(f).map((n) => `<button class="rq-tag typed on" data-act="fbdrop" data-field="${f}" data-id="${esc(n)}" type="button" aria-label="Remove ${esc(n)}">${HX}<span>${esc(n)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>`).join('');
+  }
+  const s = screens()[run.at];
+  const go = root.querySelector('.rq-foot [data-act="next"] span');
+  if (!go) return;
+  if (s.kind === 'feedback') go.textContent = fb.chips.length || fb.note.trim() ? 'Next' : 'Skip';
+  else {
+    const field = { wrong_items: ['wrongItems', 'missedItems'], missing_dishes: ['dishIdeas'], too_hard: ['tooHard'], wouldnt_eat: ['wouldntEat', 'wouldntWhy'], confusing: ['confusing'] }[s.chip];
+    go.textContent = field.some((f) => fb[f].length) || (s.chip === 'confusing' && fb.note.trim()) ? 'Next' : 'Skip';
+  }
+}
+
+function fbTap(act, el) {
+  const id = el.dataset.id;
+  if (act === 'fbchip') {
+    if (id === 'all_good') fb.chips = fb.chips.includes(id) ? [] : [id];
+    else { fb.chips = fb.chips.filter((c) => c !== 'all_good'); toggleIn(fb.chips, id); }
+    // the bar's last segments are the follow-ups: redraw it so it matches
+    const top = root.querySelector('.rq-top .rq-bar');
+    if (top) top.outerHTML = bar(screens());
+  }
+  if (act === 'fbtag') {
+    const f = el.dataset.field;
+    if (f === 'quick') {
+      const i = fb.dishIdeas.findIndex((d) => d.quick && d.name === id);
+      if (i >= 0) fb.dishIdeas.splice(i, 1); else fb.dishIdeas.push({ name: id, quick: true });
+    } else toggleIn(fb[f], id);
+  }
+  if (act === 'fbdrop') {
+    const f = el.dataset.field;
+    if (f === 'dishIdeas') fb.dishIdeas = fb.dishIdeas.filter((d) => d.quick || d.name !== id);
+    else fb[f] = fb[f].filter((x) => x !== id);
+  }
+  if (act === 'fbadd') return fbAdd(el.closest('.rq-add'));
+  if (act === 'fbnote') {
+    el.hidden = true;
+    const box = root.querySelector('.rq-note');
+    box.hidden = false;
+    box.classList.add('appear');
+    box.querySelector('textarea').focus();
+  }
+  save();
+  syncFb();
+}
+
+/** Typed adds: "maggi, poha" becomes two. Anything already there isn't added twice. */
+function fbAdd(form) {
+  const input = form.querySelector('input');
+  const f = form.dataset.field;
+  const names = splitIdeas(input.value);
+  if (!names.length) { input.focus(); return; }
+  const have = new Set(f === 'dishIdeas' ? fb.dishIdeas.map((d) => norm(d.name)) : fb[f].map(norm));
+  for (const n of names) if (!have.has(norm(n))) { if (f === 'dishIdeas') fb.dishIdeas.push({ name: n, quick: false }); else fb[f].push(n); }
+  input.value = '';
+  buzz(10);
+  save();
+  syncFb();
+}
+
 // ── Taps ────────────────────────────────────────────────────────────────────
 const toggleIn = (list, id) => { const i = list.indexOf(id); if (i >= 0) list.splice(i, 1); else list.push(id); };
 
@@ -304,6 +456,7 @@ function onClick(e) {
   if (act === 'pick') { toggleIn(picks.picks, el.dataset.id); picks.none = false; if (!picks.picks.length) picks.criteria = []; return syncPicks(); }
   if (act === 'why') { toggleIn(picks.criteria, el.dataset.id); return syncPicks(); }
   if (act === 'none') { picks.none = !picks.none; if (picks.none) { picks.picks = []; picks.criteria = []; } return syncPicks(); }
+  if (act.startsWith('fb')) return fbTap(act, el);
   if (act === 'send') return send();
   if (act === 'github') { const res = resultOf(); window.open(issueHref(res), '_blank', 'noopener'); sendState = 'sent'; markSent(); return; }
   if (act === 'token') return saveToken();
@@ -326,6 +479,11 @@ function commit(s) {
     const prev = run.answers[s.section][s.rung];
     const shown = g.shown[s.section];
     run.answers[s.section][s.rung] = { ranking: [...order], moved: (prev?.moved ?? false) || order.some((id, i) => id !== shown[i]), ms: (prev?.ms ?? 0) + ms };
+  }
+  if ((s.kind === 'feedback' || s.kind === 'fb') && fb) {
+    // an "Add" typed but never tapped still counts
+    for (const form of root.querySelectorAll('.rq-add')) if (form.querySelector('input').value.trim()) fbAdd(form);
+    fb.ms = (fb.ms ?? 0) + ms;
   }
   if (s.kind === 'white' && picks) {
     const prev = run.answers.white[s.rung];

@@ -130,6 +130,23 @@ pasted kitchen ─► Round 1, Marco   each rung with 2+ dishes: drag the easies
 - **Results** (`harveys-rung-quiz/1`), one file per kitchen and tester: `kitchenId`, `testerId` (random, new for every run), `runNo`, the kitchen's items, and every dish's rung, Harvey's tier, friction, score, order and raw effort features. Then per rung: Marco and Pierre `{shown, ranking, moved, ms}` (ranking is top first) and White `{shown, picks (tap order), none, criteria (tap order), ms}`. Answers resume if the tester closes the page.
 - **Scoring:** drop the files (or issue bodies, or pasted messages) in `data/kitchen-tests/` and run `node scripts/kitchen-tests.mjs score`. Per tester: Marco's and Pierre's agreement with Harvey's order (Kendall's tau), how often White's pick was the tester's first pick, and what decided it. Pooled: dishes testers placed far from Pierre's tier, and a Marco fit where each ranking of n dishes adds n(n−1)/2 pairs to the same `frictionTheta` fit as kitchen tests.
 
+### Share links and tester feedback (1.34.0)
+
+Testing in other people's kitchens, end to end:
+
+```
+ask for a kitchen video ─► run it through a cheap agent with docs/catalogue-prompt.md
+  ─► paste or upload its JSON on share.html ─► one link per kitchen (Share, WhatsApp, Messages)
+  ─► the tester taps it: the taste test opens with their kitchen loaded, no pasting
+  ─► three rounds ─► "How did Harvey do?" ─► Send (the relay commits it to data/kitchen-tests/)
+  ─► node scripts/kitchen-tests.mjs feedback   (Markdown report across every tester)
+```
+
+- **Links** (`src/brain/share-link.js`, page `share.html`): the kitchen rides in the URL fragment, `#k=` + deflate-raw + base64url, so nothing is stored anywhere and a link works the moment it's made. A 58-item kitchen is about 850 characters. A link cut short by a chat app shows "ask for a new one" instead of a half kitchen. The same items give the same `kitchenId`, so a linked result lines up with a pasted one. share.html shows each kitchen's dish and question count first and warns when a list is too thin to test. WhatsApp and iMessage show the preview card `assets/og.png`.
+- **Feedback** (`src/brain/feedback.js`, screens in `src/rung-quiz-ui.js`): one screen of chips (Wrong ingredients, Missing dishes I'd make, Too much effort, Wouldn't eat this, Confusing, All good), then one short screen per chip, answered by tapping the tester's own items or dishes. Typing is only ever an extra: a quick "Add" for missing items and dishes, and an optional note. Each screen can be skipped.
+- **In the result:** `feedback: { chips, skipped, allGood, wrongItems (names from their list), missedItems, dishIdeas [{name, quick}], tooHard, wouldntEat (dish ids), wouldntWhy, confusing, note, ms }`, or `null` if the tester never reached it. Results stay `harveys-rung-quiz/1`, so the live relay takes them unchanged.
+- **Report:** `node scripts/kitchen-tests.mjs feedback [--out report.md]` counts the chips, sorts dish ideas into *new for the catalogue*, *in the catalogue but not offered* and *already on screen*, lists what the video agent listed wrongly or missed, tabulates dishes flagged as too much effort or not edible against their rung and Pierre tier, and quotes every note. `score` prints a three-line summary of the same.
+
 ### Kitchen test mode (1.30.0)
 
 `test.html` (the **Kitchen test** card on Train) runs Harvey's against any kitchen, so many kitchens can be tested fast and the three brains improved one at a time.
