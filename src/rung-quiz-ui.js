@@ -2,7 +2,8 @@
 // after Proceed. Kiron's rules: one question
 // per screen, a story bar with no numbers, drag to sort, tap to pick, haptics on every tap.
 // The brain work is src/brain/rung-quiz.js; this file is screens, drag, storage and sending.
-import { buildRungQuiz, encodeRungResult, CRITERIA, WHY_NOT, DIFFICULTY } from './brain/rung-quiz.js';
+import { buildRungQuiz, encodeRungResult, CRITERIA, CANT, EFFORT_STARS, TASTE_STARS } from './brain/rung-quiz.js';
+import { labelFor } from './brain/vocabulary.js';
 import { CATALOGUE } from './brain/catalogue.js';
 import { confirmCandidates, kitCandidates, withConfirmed, matchTyped, STOVES, BURNERS } from './brain/confirm.js';
 import { sendResult, flush, setToken, outbox } from './send.js';
@@ -53,7 +54,7 @@ function loadStore() {
 let store = loadStore();
 const newTesterId = () => `t-${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
 /** A new run: a new person holding the phone, so a new tester id. */
-const freshRun = (name = '') => ({ testerId: newTesterId(), runNo: ++store.seq, name, v: opts.version, answers: { marco: {}, pierre: {}, white: {}, cards: {}, difficulty: null, feedback: blankFeedback() }, at: 0, sent: false });
+const freshRun = (name = '') => ({ testerId: newTesterId(), runNo: ++store.seq, name, v: opts.version, answers: { marco: {}, pierre: {}, white: {}, stars: {}, feedback: blankFeedback() }, at: 0, sent: false });
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch { /* private mode: keep going in memory */ } };
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -74,14 +75,14 @@ let burnersNow = null; // 1.41.0: how many can cook at once, 1 | 2 | 3 (3 or mor
 let kitchenIn = null;
 
 /**
- * screens (1.42.0): intro, the quick check, Harvey thinking, the count, the meal cards, an offer
- * to rate how hard they are, the ratings, feedback, end. The sorting rounds are gone.
+ * screens (1.43.0): intro, the quick check, Harvey thinking, the count, the recipe list (effort
+ * and taste stars per dish), feedback, end. The 1.42.0 cards and swipes are gone.
  */
 function screens() {
   const out = [{ kind: 'intro' }];
   if (ask.length || kit.kit.length || opts.items) out.push({ kind: 'check' });
   out.push({ kind: 'think' }, { kind: 'reveal' });
-  if (quiz.deck.length) out.push({ kind: 'cards' }, { kind: 'rateask' }, { kind: 'rate' });
+  if (quiz.deck.length) out.push({ kind: 'stars' });
   // 1.34.0: what went wrong, then one short screen for each chip tapped.
   out.push({ kind: 'feedback' });
   const chips = run.answers.feedback?.chips ?? [];
@@ -89,8 +90,8 @@ function screens() {
   out.push({ kind: 'end' });
   return out;
 }
-/** Screens Back passes over: the thinking pause, and the ratings when they were skipped. */
-const passOver = (s) => s.kind === 'think' || (s.kind === 'rate' && run.answers.difficulty?.skipped);
+/** Screens Back passes over: the thinking pause. */
+const passOver = (s) => s.kind === 'think';
 
 export function startRungQuiz({ kitchen, inventory, version, source, name = '', onExit, items = null, cache = {}, missingBasics = [] }) {
   opts = { version, source, name, onExit, items, cache, missingBasics, inventory };
@@ -111,7 +112,7 @@ export function startRungQuiz({ kitchen, inventory, version, source, name = '', 
   if (name && run.name == null) run.name = name; // a 1.34 run in progress; a "next person" run stays nameless
   run.testerId ??= newTesterId();
   run.answers.feedback ??= blankFeedback();
-  run.answers.cards ??= {};
+  run.answers.stars ??= {};
   if (run.at >= screens().length) run.at = 0;
   sendState = '';
   save();
@@ -157,8 +158,8 @@ const resultOf = () => encodeRungResult(quiz, run.answers, { version: opts.versi
 // ── Render ──────────────────────────────────────────────────────────────────
 function bar(list) {
   // One segment per question (covers and the end screen don't count), filled as you go.
-  const qs = list.map((s, i) => [s, i]).filter(([s]) => ['check', 'cards', 'rate', 'feedback'].includes(s.kind));
-  const part = (s) => (s.kind === 'cards' ? cardsDone() / quiz.deck.length : s.kind === 'rate' ? ratedCount() / quiz.deck.length : 0.45);
+  const qs = list.map((s, i) => [s, i]).filter(([s]) => ['check', 'stars', 'feedback'].includes(s.kind));
+  const part = (s) => (s.kind === 'stars' ? doneCount() / quiz.deck.length : 0.45);
   return `<div class="rq-bar" aria-hidden="true">${qs.map(([s, i]) => `<i class="${i < run.at ? 'done' : i === run.at ? 'now' : ''}"${i === run.at ? ` style="--p:${Math.max(0.06, part(s)).toFixed(3)}"` : ''}></i>`).join('')}</div>`;
 }
 
@@ -174,19 +175,20 @@ function render(enter = false) {
   const back = run.at > 0 ? `<button class="rq-icon" data-act="back" type="button" aria-label="Back">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>` : '<span class="rq-icon ghost"></span>';
 
   if (s.kind === 'intro') {
+    const can = Object.keys(quiz.dishes).length || ask.length || kit.kit.length;
+    const mini = (n) => `<span class="rq-sw demo">${[1, 2, 3, 4, 5].map((k) => `<i class="${k <= n ? 'on' : ''}">${STAR}</i>`).join('')}</span>`;
     body = `
       <div class="rq-hero">
         <p class="rq-eyebrow">${run.name ? `Hi, ${esc(run.name)}` : 'Taste test'}</p>
-        <h1 class="rq-title">What would you cook tonight?</h1>
-        <p class="rq-lead">${Object.keys(quiz.dishes).length || ask.length || kit.kit.length ? 'Harvey looks at your kitchen and suggests dishes, easiest first.' : 'Harvey couldn’t find a dish in this kitchen yet.'} Picture a weeknight, 9 PM. You’re tired.</p>
-        <ol class="rq-rounds">
+        <h1 class="rq-title">${can ? 'Test Harvey’s recipes' : 'No recipes yet'}</h1>
+        ${can ? '<p class="rq-lead">For effort and taste.</p>' : ''}
+        ${can ? `<ol class="rq-rounds">
           <li><b>Quick check</b><span>Tap what Harvey missed</span></li>
-          <li><b>Yes or no</b><span>Would you make each dish?</span></li>
-          <li><b>How hard?</b><span>Rate the effort, if you like</span></li>
-        </ol>
-        <p class="rq-small">All taps, about two minutes. At the end you can tell Harvey what it got wrong.</p>
+          <li><b>Rate each recipe</b><span class="rq-mini-rate"><span>Effort ${mini(4)}</span><span>Taste ${mini(3)}</span></span></li>
+          <li><b>Send</b><span>One tap</span></li>
+        </ol>` : ''}
       </div>`;
-    foot = Object.keys(quiz.dishes).length || ask.length || kit.kit.length
+    foot = can
       ? `<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Start</span></button>`
       : `<p class="rq-lead">Add a few more things to your list and try again.</p><button class="btn xl rq-go" data-act="close" type="button">${HX}<span>Back to my list</span></button>`;
   } else if (s.kind === 'check') {
@@ -197,7 +199,7 @@ function render(enter = false) {
     // No stove on the list: cookware first, since nothing on the stove counts without one.
     const kitBlock = kit.kit.length ? `
         <p class="rq-group">${kit.noStove ? 'How do you cook?' : 'Cookware'}</p>
-        ${kit.noStove ? '<p class="rq-hint tight">Harvey didn’t spot a stove. Tap yours, and any pots or appliances.</p>' : ''}
+        ${kit.noStove ? '<p class="rq-hint tight">Tap your stove, and any pots or appliances.</p>' : ''}
         <div class="rq-tags rq-have" role="group" aria-label="Cookware you have">${kit.kit.map(chip).join('')}</div>` : '';
     const burners = `
         <div class="rq-burners" hidden>
@@ -211,7 +213,7 @@ function render(enter = false) {
       <div class="rq-hero check">
         <p class="rq-eyebrow">Quick check</p>
         <h1 class="rq-q">Do you have any of these?</h1>
-        <p class="rq-hint">A video can’t see inside jars or cupboards. Tap what’s in your kitchen, and Harvey can suggest more dishes.</p>
+        <p class="rq-hint">Tap what’s in your kitchen.</p>
         ${kit.noStove ? kitBlock + burners + foodBlock : foodBlock + kitBlock + burners}
         <p class="rq-group">Anything else?</p>
         <form class="rq-add rq-have-add">
@@ -265,13 +267,8 @@ function render(enter = false) {
     ({ body, foot } = thinkScreen());
   } else if (s.kind === 'reveal') {
     ({ body, foot } = revealScreen(back));
-  } else if (s.kind === 'cards') {
-    ({ body, foot } = cardsScreen(back));
-  } else if (s.kind === 'rateask') {
-    ({ body, foot } = rateAskScreen(back));
-  } else if (s.kind === 'rate') {
-    run.answers.difficulty ??= { levels: {}, skipped: false };
-    ({ body, foot } = rateScreen(back));
+  } else if (s.kind === 'stars') {
+    ({ body, foot } = starsScreen(back));
   } else if (s.kind === 'feedback' || s.kind === 'fb') {
     fb = run.answers.feedback;
     fb.seen = true;
@@ -282,6 +279,8 @@ function render(enter = false) {
   }
 
   const ghost = ['intro', 'end', 'think', 'reveal'].includes(s.kind);
+  sheetId = null;
+  document.documentElement.classList.remove('rq-sheet-open');
   root.innerHTML = `
     <header class="rq-top">
       <button class="rq-icon" data-act="close" type="button" aria-label="Close">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -297,7 +296,7 @@ function render(enter = false) {
   clearTimeout(thinkTimer);
   if (s.kind === 'think') thinkTimer = setTimeout(() => { if (screens()[run.at]?.kind === 'think' && !root.hidden) { run.at++; save(); render(); } }, THINK_MS);
   if (s.kind === 'reveal') countUp();
-  if (s.kind === 'cards') syncCards(false);
+  if (s.kind === 'stars') syncStars();
 }
 
 function syncHave() {
@@ -351,11 +350,11 @@ function endScreen() {
   const who = run.name ? `, ${esc(run.name)}` : '';
   const own = opts.source === 'link' && !!run.name; // their own phone, from their own link
   const copy = {
-    '': ['That’s all. Thank you!', 'One tap sends your answers to Harvey’s.'],
+    '': ['That’s all. Thank you!', 'Tap Send.'],
     sending: ['Sending…', 'Putting your answers in Harvey’s.'],
-    sent: [`Sent. Thank you${who}!`, own ? 'Your answers are in Harvey’s. That’s a real help: every tap teaches Harvey how people actually cook.' : 'Your answers are in Harvey’s. Hand the phone to the next person.'],
-    queued: [`Saved. Thank you${who}!`, `Your answers are safe on this phone${waiting > 1 ? ` with ${waiting - 1} more` : ''} and send themselves as soon as they can. Leave this page open for a minute if you can.`],
-    failed: ['Not sent', 'Something went wrong sending this. Tap Save the file and send it to whoever gave you the link.'],
+    sent: [`Sent. Thank you${who}!`, own ? 'Your ratings are in Harvey’s.' : 'Hand the phone to the next person.'],
+    queued: [`Saved. Thank you${who}!`, `Leave this page open for a minute so it can send${waiting > 1 ? ` (${waiting} waiting)` : ''}.`],
+    failed: ['Not sent', 'Tap Save the file, then send it to whoever gave you the link.'],
     auth: ['Almost there', 'This phone isn’t set up to send yet. Your answers are saved here and go as soon as it is.'],
     setup: ['Set up sending', 'Paste the GitHub token for Harvey’s once. Every send after is one tap, for everyone using this phone.'],
     bad: ['That token didn’t work', 'It needs write access to the harveys repo (Contents: read and write). Your answers are still saved here.'],
@@ -434,6 +433,8 @@ function syncPicks() {
 // ── Feedback (1.34.0) ───────────────────────────────────────────────────────
 // One screen of chips, then one short screen per chip, answered with taps on the tester's
 // own list and dishes. Typing is only ever an extra. Every screen can be skipped.
+// The stars already say "too much effort" and "wouldn't eat", so those chips aren't asked again.
+const STARRED = ['too_hard', 'wouldnt_eat'];
 const tag = (field, id, label, extra = '') => `<button class="rq-tag" data-act="fbtag" data-field="${field}" data-id="${esc(id)}"${extra} type="button" aria-pressed="false">${HX}<span>${esc(label)}</span></button>`;
 const dishesByRung = (dir = 1) => Object.values(quiz.dishes).sort((a, b) => dir * (a.rung - b.rung) || a.name.localeCompare(b.name));
 const KIT = new Set(['appliance', 'appliances', 'cookware', 'utensil', 'utensils', 'equipment', 'tool', 'tools']);
@@ -452,8 +453,8 @@ function feedbackScreen() {
   return `
       <p class="rq-eyebrow">Last bit</p>
       <h1 class="rq-q">How did Harvey do?</h1>
-      <p class="rq-hint">Tap any that apply. Each one asks one quick thing.</p>
-      <div class="rq-fb">${CHIPS.map((c) => `<button class="rq-fbchip${c.id === 'all_good' ? ' good' : ''}" data-act="fbchip" data-id="${c.id}" type="button" aria-pressed="false">${HX}<span class="rq-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>${c.label}</span></button>`).join('')}</div>
+      <p class="rq-hint">Tap any that apply.</p>
+      <div class="rq-fb">${CHIPS.filter((c) => !STARRED.includes(c.id)).map((c) => `<button class="rq-fbchip${c.id === 'all_good' ? ' good' : ''}" data-act="fbchip" data-id="${c.id}" type="button" aria-pressed="false">${HX}<span class="rq-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>${c.label}</span></button>`).join('')}</div>
       ${noteBox(!!fb.note)}`;
 }
 
@@ -575,21 +576,21 @@ function onClick(e) {
   const list = screens();
   const s = list[run.at];
   if (act === 'close') return close();
+  if (act === 'back' && sheetId) return closeRecipe();
   // 1.40.0: one tap on the first screen; mid-test a second tap, so a stray thumb loses nothing.
   if (act === 'fresh') {
     if (run.at > 0 && !el.classList.contains('armed')) { el.classList.add('armed'); el.textContent = 'Tap again'; setTimeout(() => { el.classList.remove('armed'); el.textContent = 'Start fresh'; }, 4000); return; }
     el.textContent = 'Starting…';
     return startFresh();
   }
-  if (act === 'back' && s.kind === 'cards' && cardsDone()) return undoCard();
-  if (act === 'back' && s.kind === 'rate' && ratedCount()) return undoRate();
   if (act === 'back') { commit(s); run.at = Math.max(0, run.at - 1); while (run.at > 0 && passOver(list[run.at])) run.at--; save(); return render(); }
-  if (act === 'yes' || act === 'no') return decide(act === 'yes');
-  if (act === 'whynot') return whyNot(el.dataset.id);
-  if (act === 'rate') return rate(Number(el.dataset.level), el);
-  if (act === 'rateskip') { run.answers.difficulty = { levels: {}, skipped: true }; run.at += 2; save(); return render(); }
-  if (act === 'ratego') { run.answers.difficulty = { levels: { ...(run.answers.difficulty?.levels ?? {}) }, skipped: false }; run.at++; save(); return render(); }
-  if (act === 'ratestop') { run.at++; save(); return render(); }
+  if (act === 'recipe') return openRecipe(el.dataset.id);
+  if (act === 'recipeclose') return closeRecipe();
+  if (act === 'star') return setStar(el.dataset.id, el.dataset.kind, Number(el.dataset.n));
+  if (act === 'cant') return cantTap(el.dataset.id);
+  if (act === 'cantwhy') return cantTap(el.dataset.id, el.dataset.why);
+  if (act === 'finish') { commit(s); run.at++; save(); return render(); }
+  if (act === 'next' && s.kind === 'stars' && el.classList.contains('ask')) return nudgeNext();
   if (act === 'next' && el.classList.contains('ask')) { root.querySelector('.rq-why').scrollIntoView({ behavior: 'smooth', block: 'center' }); root.querySelector('.rq-why').classList.add('nudge'); setTimeout(() => root.querySelector('.rq-why')?.classList.remove('nudge'), 700); return; }
   if (act === 'next') { commit(s); run.at = Math.min(list.length - 1, run.at + 1); save(); return render(); }
   if (act === 'have') { toggleIn(haveNow, el.dataset.id); return syncHave(); }
@@ -629,7 +630,7 @@ function commit(s) {
       rebuild(next);
       // New dishes, so sorts and picks made on the old ones start again.
       run.answers.marco = {}; run.answers.pierre = {}; run.answers.white = {};
-      run.answers.cards = {}; run.answers.difficulty = null;
+      run.answers.stars = {};
     }
   }
   if (s.kind === 'sort' && order) {
@@ -653,7 +654,6 @@ function commit(s) {
 // A finger on a row lifts it at once. The row follows the finger; the others slide out of
 // its way; letting go drops it in the gap. Transform only, so it stays smooth on a phone.
 function onPointerDown(e) {
-  if (e.target.closest('.rq-card.top')) return cardDrag(e);
   const li = e.target.closest('.rq-sort li');
   if (!li || e.button > 0 || !order) return;
   e.preventDefault();
@@ -741,27 +741,21 @@ function renumber(rows, from, to) {
   ids.forEach((r, i) => { r.querySelector('.rq-pos').textContent = String(i + 1); });
 }
 
-// ── Meal cards (1.42.0) ─────────────────────────────────────────────────────
-// After the quick check: a short "thinking" pause, the count, then one dish per card, yes or
-// no (tap or swipe), then an offer to rate how hard each one is. Kiron's rules still hold: one
-// question at a time, the action at the thumb, haptics on every tap, no numbers in the bar.
+// ── Recipe test (1.43.0) ────────────────────────────────────────────────────
+// After the quick check: a short "thinking" pause, the count, then every dish in one list, the
+// way a Kiron question lists its options. Each dish has two rows of stars, effort and taste
+// (5 = effortless, delicious), and "Can't make it" with a reason. Tapping a dish opens its recipe.
 const THINK_MS = 3200;
 let thinkTimer = 0;
-let flying = false;
-let lastNo = null; // the card just turned down: "Why not?" stays open under the next one
+let sheetId = null; // the recipe open on top of the list
 
 const ingredientsOf = (d) => (d.away ? d.how.split(' · ').slice(1).join(' · ') : d.how);
 const METHOD = { 1: 'No cooking', 2: 'One appliance', 3: 'On the stove', 4: 'Two things at once' };
-const ICON = {
-  1: '<path d="M4 12h16a8 8 0 0 1-16 0z"/><path d="M9 8c0-1.5 1-2 1-3.5M14 8c0-1.5 1-2 1-3.5"/>',
-  2: '<rect x="3" y="6" width="18" height="13" rx="2.5"/><rect x="6" y="9" width="9" height="7" rx="1"/><path d="M18 10v.01M18 13v.01"/>',
-  3: '<path d="M5 11h14v3a6 6 0 0 1-6 6h-2a6 6 0 0 1-6-6z"/><path d="M19 12h2M12 4c1.5 1.5 1.5 3 0 4.5"/>',
-  4: '<path d="M2 12h9v2.5a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4zM13 12h9v2.5a4 4 0 0 1-4 4h-1a4 4 0 0 1-4-4z"/><path d="M6.5 5c1 1 1 2 0 3M17.5 5c1 1 1 2 0 3"/>',
-};
-const icon = (rung) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[rung] ?? ICON[3]}</svg>`;
-const cardsDone = () => quiz.deck.filter((id) => run.answers.cards?.[id]).length;
-const ratedCount = () => quiz.rateOrder.filter((id) => run.answers.difficulty?.levels?.[id]).length;
-const yesCount = () => quiz.deck.filter((id) => run.answers.cards?.[id]?.yes).length;
+const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.75 5.6 6.15.9-4.45 4.33 1.05 6.12L12 16.87l-5.5 2.88 1.05-6.12L3.1 9.3l6.15-.9z"/></svg>';
+const KINDS = { effort: { label: 'Effort', words: EFFORT_STARS, empty: '5 = easiest' }, taste: { label: 'Taste', words: TASTE_STARS, empty: '5 = tastiest' } };
+const starOf = (id) => run.answers.stars?.[id] ?? {};
+const isDone = (id) => { const a = starOf(id); return !!((a.effort && a.taste) || a.cant); };
+const doneCount = () => quiz.deck.filter(isDone).length;
 
 function thinkScreen() {
   const items = (quiz.kitchen.items ?? []).length + (run.answers.confirm?.have?.length ?? 0) + (run.answers.confirm?.typed?.length ?? 0);
@@ -791,22 +785,24 @@ function revealScreen(back) {
       <div class="rq-hero reveal">
         <p class="rq-eyebrow">Harvey’s came up with</p>
         <h1 class="rq-title">Nothing yet</h1>
-        <p class="rq-lead">Harvey couldn’t find a dish for this kitchen. Tell it what you do cook, and it’ll learn.</p>
+        <p class="rq-lead">Tell Harvey what you cook.</p>
       </div>`,
       foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Tell Harvey</span></button>`,
     };
   }
-  const fan = quiz.deck.slice(0, 3).map((id, i) => `<div class="rq-mini r${quiz.dishes[id].rung}" style="--i:${i}">${icon(quiz.dishes[id].rung)}<b>${esc(quiz.dishes[id].name)}</b></div>`).join('');
   return {
     body: `
       <div class="rq-hero reveal">
         <p class="rq-eyebrow">Harvey’s came up with</p>
-        <h1 class="rq-count"><span class="rq-num-big" data-to="${n}">${n}</span><span>${n === 1 ? 'thing you can cook' : 'things you can cook'}</span></h1>
-        ${more ? `<p class="rq-lead">plus ${more} that need${more === 1 ? 's' : ''} just one more thing.</p>` : ''}
-        <div class="rq-fan" aria-hidden="true">${fan}</div>
-        <p class="rq-lead">Easiest first. For each one: would you make it tonight? Tap yes or no, or swipe.</p>
+        <h1 class="rq-count"><span class="rq-num-big" data-to="${quiz.deck.length}">${quiz.deck.length}</span><span>${quiz.deck.length === 1 ? 'recipe' : 'recipes'} for your kitchen</span></h1>
+        ${more ? `<p class="rq-lead">${n} you can cook now, ${more} need${more === 1 ? 's' : ''} one more thing.</p>` : ''}
+        <div class="rq-demo-row" aria-hidden="true">
+          <div class="rq-starrow"><b>Effort</b><span class="rq-sw demo">${[1, 2, 3, 4, 5].map((k) => `<i class="${k <= 4 ? 'on' : ''}" style="--i:${k}">${STAR}</i>`).join('')}</span></div>
+          <div class="rq-starrow"><b>Taste</b><span class="rq-sw demo">${[1, 2, 3, 4, 5].map((k) => `<i class="${k <= 3 ? 'on' : ''}" style="--i:${k + 5}">${STAR}</i>`).join('')}</span></div>
+        </div>
+        <p class="rq-lead strong">Rate each one for effort and taste.</p>
       </div>`,
-    foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Show me</span></button>`,
+    foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Start rating</span></button>`,
   };
 }
 
@@ -825,198 +821,200 @@ function countUp() {
   requestAnimationFrame(tick);
 }
 
-function cardHtml(id, depth) {
-  const d = quiz.dishes[id];
-  const meta = [d.protein != null ? `${Math.round(d.protein)} g protein` : '', d.kcal != null ? `${Math.round(d.kcal)} kcal` : ''].filter(Boolean);
-  return `<article class="rq-card r${d.rung}${depth ? '' : ' top'}" data-id="${esc(id)}" style="--k:${depth}"${depth ? ' aria-hidden="true"' : ''}>
-      <div class="rq-card-art">${icon(d.rung)}<span>${METHOD[d.rung] ?? ''}</span></div>
-      <h2 class="rq-card-name">${esc(d.name)}</h2>
-      <p class="rq-card-ing">${esc(ingredientsOf(d))}</p>
-      <div class="rq-card-meta">${meta.map((m) => `<span>${esc(m)}</span>`).join('')}${d.away ? `<span class="away">Needs ${esc(d.away)}</span>` : ''}</div>
-      <span class="rq-stamp yes" aria-hidden="true">Yes</span><span class="rq-stamp no" aria-hidden="true">No</span>
-    </article>`;
+/** One row of five stars. The words beside it say what the tap meant. */
+function starRow(id, kind) {
+  const k = KINDS[kind];
+  return `<div class="rq-starrow" data-id="${esc(id)}" data-kind="${kind}">
+      <span class="rq-sl"><b>${k.label}</b><small class="rq-sv"></small></span>
+      <span class="rq-sw" role="radiogroup" aria-label="${k.label}">${[1, 2, 3, 4, 5].map((n) => `<button class="rq-star" data-act="star" data-id="${esc(id)}" data-kind="${kind}" data-n="${n}" type="button" role="radio" aria-checked="false" aria-label="${k.label} ${n} of 5: ${esc(k.words[n - 1])}">${HX}${STAR}</button>`).join('')}</span>
+    </div>`;
 }
 
-function cardsScreen(back) {
-  lastNo = null;
+function cantBlock(id) {
+  return `<div class="rq-cantbox" data-id="${esc(id)}">
+      <button class="rq-cant" data-act="cant" data-id="${esc(id)}" type="button" aria-expanded="false">${HX}<span>Can’t make it</span></button>
+      <div class="rq-cantwhy" hidden role="group" aria-label="Why not">${CANT.map((c) => `<button class="rq-tag" data-act="cantwhy" data-id="${esc(id)}" data-why="${c.id}" type="button" aria-pressed="false">${HX}<span>${esc(c.label)}</span></button>`).join('')}</div>
+    </div>`;
+}
+
+function rowHtml(id, i) {
+  const d = quiz.dishes[id];
+  return `<li class="rq-r" data-id="${esc(id)}">
+      <button class="rq-r-head" data-act="recipe" data-id="${esc(id)}" type="button" aria-label="${esc(d.name)}: see the recipe">${HX}
+        <span class="rq-r-n" aria-hidden="true"><span>${i + 1}</span><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+        <span class="rq-dish"><b>${esc(d.name)}</b><small>${esc(ingredientsOf(d))}</small>${d.away ? `<em>Needs ${esc(d.away)}</em>` : ''}</span>
+        <span class="rq-r-how">Recipe<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span>
+      </button>
+      ${starRow(id, 'effort')}
+      ${starRow(id, 'taste')}
+      ${cantBlock(id)}
+    </li>`;
+}
+
+function starsScreen(back) {
   return {
     body: `
-      <p class="rq-eyebrow center">Would you make this tonight?</p>
-      <div class="rq-stack" aria-live="polite"></div>
-      <div class="rq-whynot" hidden></div>`,
-    foot: `${back}<div class="rq-yn">
-        <button class="rq-vote no" data-act="no" type="button" aria-label="No">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><span>No</span></button>
-        <button class="rq-vote yes" data-act="yes" type="button" aria-label="Yes">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Yes</span></button>
-      </div>`,
+      <p class="rq-eyebrow">Recipe test</p>
+      <h1 class="rq-q">How easy? How tasty?</h1>
+      <p class="rq-hint">Rate every recipe. Tap a name to see how it’s made.</p>
+      <ol class="rq-rlist">${quiz.deck.map(rowHtml).join('')}</ol>
+      <button class="rq-none rq-finish" data-act="finish" type="button" hidden>Finish without the rest</button>`,
+    foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Next</span></button>`,
   };
 }
 
-/** The stack, the "Why not?" tray and the bar, without re-rendering the screen. */
-function syncCards(enter = true) {
-  const left = quiz.deck.filter((id) => !run.answers.cards[id]);
-  const stack = root.querySelector('.rq-stack');
-  if (!stack) return;
-  if (left.length) {
-    stack.innerHTML = left.slice(0, 3).map((id, i) => cardHtml(id, i)).reverse().join('');
-    if (enter) stack.querySelector('.rq-card.top')?.classList.add('in');
-  } else {
-    const y = yesCount();
-    stack.innerHTML = `<div class="rq-card done"><div class="rq-tick" aria-hidden="true"><svg viewBox="0 0 52 52"><path d="M14 27l8 8 16-17"/></svg></div><h2 class="rq-card-name">${y ? `You’d make ${y} of ${quiz.deck.length}` : 'None of these, got it'}</h2><p class="rq-card-ing">${y ? 'Harvey will remember.' : 'That helps Harvey too.'}</p></div>`;
+/** Stars, reasons, ticks, the button and the bar, everywhere a dish shows (list and recipe). */
+function syncStars() {
+  for (const box of root.querySelectorAll('.rq-starrow[data-id]')) {
+    const a = starOf(box.dataset.id);
+    const v = a[box.dataset.kind] ?? 0;
+    const k = KINDS[box.dataset.kind];
+    box.classList.toggle('set', !!v);
+    for (const b of box.querySelectorAll('.rq-star')) {
+      const n = Number(b.dataset.n);
+      b.classList.toggle('on', n <= v);
+      b.setAttribute('aria-checked', String(n === v));
+    }
+    box.querySelector('.rq-sv').textContent = v ? k.words[v - 1] : k.empty;
   }
-  const tray = root.querySelector('.rq-whynot');
-  if (lastNo && run.answers.cards[lastNo] && !run.answers.cards[lastNo].yes) {
-    const a = run.answers.cards[lastNo];
-    tray.innerHTML = `<p>Why not <b>${esc(quiz.dishes[lastNo].name)}</b>? <small>Optional</small></p><div class="rq-tags">${WHY_NOT.map((w) => `<button class="rq-tag${a.why === w.id ? ' on' : ''}" data-act="whynot" data-id="${w.id}" type="button" aria-pressed="${a.why === w.id}">${HX}<span>${esc(w.label)}</span></button>`).join('')}</div>`;
-    if (tray.hidden) { tray.hidden = false; tray.classList.add('appear'); }
-  } else tray.hidden = true;
-  const yn = root.querySelector('.rq-yn');
-  if (!left.length && yn) yn.outerHTML = `<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Next</span></button>`;
+  for (const box of root.querySelectorAll('.rq-cantbox')) {
+    const a = starOf(box.dataset.id);
+    const open = !!(a.cantOpen || a.cant);
+    const why = box.querySelector('.rq-cantwhy');
+    if (open && why.hidden) { why.hidden = false; why.classList.add('appear'); }
+    if (!open) why.hidden = true;
+    const btn = box.querySelector('.rq-cant');
+    btn.classList.toggle('on', open);
+    btn.setAttribute('aria-expanded', String(open));
+    for (const t of why.querySelectorAll('.rq-tag')) {
+      const on = a.cant === t.dataset.why;
+      t.classList.toggle('on', on);
+      t.setAttribute('aria-pressed', String(on));
+    }
+  }
+  const next = quiz.deck.find((id) => !isDone(id));
+  for (const li of root.querySelectorAll('.rq-r')) {
+    li.classList.toggle('done', isDone(li.dataset.id));
+    li.classList.toggle('now', li.dataset.id === next);
+    li.classList.toggle('cant', !!starOf(li.dataset.id).cant);
+  }
+  const left = quiz.deck.length - doneCount();
+  const go = root.querySelector('.rq-foot [data-act="next"]');
+  if (go) {
+    go.classList.toggle('ask', left > 0);
+    go.querySelector('span').textContent = left ? `${left} left to rate` : 'Next';
+  }
+  const fin = root.querySelector('.rq-finish');
+  if (fin) fin.hidden = !(left > 0 && doneCount() >= 3);
   const top = root.querySelector('.rq-top .rq-bar');
   if (top) top.outerHTML = bar(screens());
 }
 
-function decide(yes, fromDrag = false) {
-  if (flying) return;
-  const card = root.querySelector('.rq-card.top');
-  if (!card) return;
-  const id = card.dataset.id;
-  const ms = Math.round(performance.now() - shownAt);
-  shownAt = performance.now();
-  run.answers.cards[id] = { yes, why: null, ms };
+function setStar(id, kind, n) {
+  run.answers.stars ??= {};
+  const a = (run.answers.stars[id] ??= {});
+  const was = isDone(id);
+  a[kind] = a[kind] === n ? 0 : n; // tap the same star again to clear it
+  a.ms = Math.round(performance.now() - shownAt);
   save();
-  buzz(yes ? 12 : 8);
-  lastNo = yes ? null : id;
-  flying = true;
-  card.classList.add('gone', yes ? 'right' : 'left');
-  if (!fromDrag) card.style.transform = '';
-  setTimeout(() => { flying = false; syncCards(); }, 240);
+  buzz(n >= 4 ? 12 : 8);
+  syncStars();
+  const b = root.querySelector(`.rq-starrow[data-id="${CSS.escape(id)}"][data-kind="${kind}"] .rq-star[data-n="${n}"]`);
+  b?.classList.add('pop');
+  if (!was && isDone(id) && !sheetId) towardNext(id);
 }
 
-function whyNot(why) {
-  const a = run.answers.cards[lastNo];
-  if (!a) return;
-  a.why = a.why === why ? null : why;
+/** Just finished a dish: bring the next unrated one into view if it isn't. */
+function towardNext(id) {
+  const next = quiz.deck.find((x) => !isDone(x));
+  if (!next) return;
+  const li = root.querySelector(`.rq-r[data-id="${CSS.escape(next)}"]`);
+  if (!li) return;
+  const r = li.getBoundingClientRect();
+  const foot = root.querySelector('.rq-foot')?.getBoundingClientRect().top ?? innerHeight;
+  if (r.top > 70 && r.bottom < foot - 8) return;
+  setTimeout(() => li.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }), 280);
+}
+
+function cantTap(id, why = null) {
+  run.answers.stars ??= {};
+  const a = (run.answers.stars[id] ??= {});
+  const was = isDone(id);
+  if (why) a.cant = a.cant === why ? null : why;
+  else if (a.cant || a.cantOpen) { a.cant = null; a.cantOpen = false; } else a.cantOpen = true;
+  a.ms = Math.round(performance.now() - shownAt);
   save();
-  syncCards(false);
+  syncStars();
+  if (!was && isDone(id) && !sheetId) towardNext(id);
 }
 
-function undoCard() {
-  const done = quiz.deck.filter((id) => run.answers.cards[id]);
-  const id = done[done.length - 1];
-  delete run.answers.cards[id];
-  lastNo = null;
-  save();
-  if (!root.querySelector('.rq-yn')) return render();
-  syncCards();
+/** "3 left": take them to the first dish still to rate. */
+function nudgeNext() {
+  const next = quiz.deck.find((x) => !isDone(x));
+  const li = next && root.querySelector(`.rq-r[data-id="${CSS.escape(next)}"]`);
+  if (!li) return;
+  li.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  li.classList.remove('nudge');
+  void li.offsetWidth;
+  li.classList.add('nudge');
 }
 
-/** Swipe the top card: it follows the finger and tilts; past a third of the way it goes. */
-function cardDrag(e) {
-  if (flying || e.button > 0) return;
-  const card = e.target.closest('.rq-card.top');
-  const x0 = e.clientX;
-  const y0 = e.clientY;
-  const t0 = performance.now();
-  const pid = e.pointerId;
-  const w = card.getBoundingClientRect().width;
-  let dx = 0;
-  try { card.setPointerCapture(pid); } catch { /* old browsers */ }
-  card.classList.add('drag');
-  const move = (ev) => {
-    if (ev.pointerId !== pid) return;
-    dx = ev.clientX - x0;
-    const dy = (ev.clientY - y0) * 0.25;
-    card.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${dx / 18}deg)`;
-    card.style.setProperty('--sy', String(Math.max(0, Math.min(1, dx / (w * 0.3)))));
-    card.style.setProperty('--sn', String(Math.max(0, Math.min(1, -dx / (w * 0.3)))));
-  };
-  const up = (ev) => {
-    if (ev.pointerId !== pid) return;
-    card.removeEventListener('pointermove', move);
-    card.removeEventListener('pointerup', up);
-    card.removeEventListener('pointercancel', up);
-    card.classList.remove('drag');
-    const fast = Math.abs(dx) / Math.max(1, performance.now() - t0) > 0.6 && Math.abs(dx) > 40;
-    if (Math.abs(dx) > w * 0.3 || fast) return decide(dx > 0, true);
-    card.style.transform = '';
-    card.style.removeProperty('--sy');
-    card.style.removeProperty('--sn');
-  };
-  card.addEventListener('pointermove', move);
-  card.addEventListener('pointerup', up);
-  card.addEventListener('pointercancel', up);
-}
+// ── The recipe, over the list ───────────────────────────────────────────────
+const ingName = (i) => {
+  const ids = (i.anyOf ?? [i.id]).filter((x) => x && !String(x).startsWith('role:'));
+  return ids.map((x, n) => (n ? labelFor(x).toLowerCase() : labelFor(x))).join(' or ');
+};
 
-function rateAskScreen(back) {
-  const y = yesCount();
-  return {
-    body: `
-      <div class="rq-hero">
-        <p class="rq-eyebrow">${y ? `You’d make ${y} of ${quiz.deck.length}` : 'Thanks, noted'}</p>
-        <h1 class="rq-title">How hard is each one?</h1>
-        <p class="rq-lead">Rate them for a tired night, even the ones you said no to. It teaches Harvey what “easy” means to you.</p>
-        <div class="rq-scale-demo" aria-hidden="true">${DIFFICULTY.map((d) => `<i class="l${d.level}"></i>`).join('')}</div>
-        <p class="rq-small">One tap each, about ${Math.max(1, Math.round(quiz.deck.length * 3 / 60))} minute${quiz.deck.length * 3 >= 90 ? 's' : ''}.</p>
-      </div>`,
-    foot: `${back}<div class="rq-sendbox"><button class="btn primary xl rq-go" data-act="ratego" type="button">${HX}<span>Rate them</span></button><div class="rq-alt"><button class="btn link" data-act="rateskip" type="button">Skip</button></div></div>`,
-  };
-}
-
-function rateScreen(back) {
-  const levels = run.answers.difficulty?.levels ?? {};
-  const id = quiz.rateOrder.find((x) => !levels[x]);
-  if (!id) {
-    return {
-      body: '<div class="rq-hero"><h1 class="rq-title">All rated</h1><p class="rq-lead">Thank you. One last screen.</p></div>',
-      foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Next</span></button>`,
-    };
-  }
+function openRecipe(id) {
   const d = quiz.dishes[id];
-  const said = run.answers.cards?.[id];
-  const left = quiz.rateOrder.length - ratedCount();
-  return {
-    body: `
-      <p class="rq-eyebrow center">How hard, on a tired night?</p>
-      <div class="rq-card solo r${d.rung}">
-        <div class="rq-card-art">${icon(d.rung)}<span>${METHOD[d.rung] ?? ''}</span>${said ? `<em class="${said.yes ? 'y' : 'n'}">${said.yes ? 'You’d make it' : 'You said no'}</em>` : ''}</div>
-        <h2 class="rq-card-name">${esc(d.name)}</h2>
-        <p class="rq-card-ing">${esc(ingredientsOf(d))}</p>
+  const meal = CATALOGUE.find((m) => m.id === id);
+  if (!d || !meal) return;
+  sheetId = id;
+  const meta = [METHOD[d.rung], d.protein != null ? `${Math.round(d.protein)} g protein` : '', d.kcal != null ? `${Math.round(d.kcal)} kcal` : ''].filter(Boolean);
+  const ings = (meal.ingredients ?? []).map((i) => ({ name: ingName(i), amount: i.amount ?? '', optional: !!i.optional })).filter((i) => i.name);
+  const sheet = document.createElement('div');
+  sheet.className = 'rq-sheet';
+  sheet.innerHTML = `
+    <div class="rq-scrim" data-act="recipeclose"></div>
+    <section class="rq-sheet-in" role="dialog" aria-modal="true" aria-label="${esc(d.name)} recipe">
+      <header class="rq-sheet-top">
+        <div class="rq-sheet-meta">${meta.map((m) => `<span>${esc(m)}</span>`).join('')}${d.away ? `<span class="away">Needs ${esc(d.away)}</span>` : ''}</div>
+        <button class="rq-icon" data-act="recipeclose" type="button" aria-label="Close recipe">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </header>
+      <div class="rq-sheet-body">
+        <h2 class="rq-sheet-name">${esc(d.name)}</h2>
+        <p class="rq-group">You need</p>
+        <ul class="rq-ings">${ings.map((i) => `<li><b>${esc(i.name)}</b><span>${esc(i.amount)}${i.optional ? ' · optional' : ''}</span></li>`).join('')}</ul>
+        <p class="rq-group">Steps</p>
+        <ol class="rq-steps-list">${(meal.steps ?? []).map((s) => `<li>${esc(s.text)}</li>`).join('')}</ol>
+        <div class="rq-sheet-rate">
+          ${starRow(id, 'effort')}
+          ${starRow(id, 'taste')}
+        </div>
       </div>
-      <div class="rq-levels" role="group" aria-label="How hard">${DIFFICULTY.map((x) => `<button class="rq-level l${x.level}" data-act="rate" data-level="${x.level}" type="button">${HX}<i aria-hidden="true"></i><b>${esc(x.label)}</b><small>${esc(x.hint)}</small></button>`).join('')}</div>
-      ${ratedCount() >= 2 && left > 1 ? '<button class="rq-none" data-act="ratestop" type="button">That’s enough for now</button>' : ''}`,
-    foot: back ? `${back}<span class="rq-left">${left === 1 ? 'Last one' : `${left} to go`}</span>` : '',
-  };
+      <footer class="rq-sheet-foot"><button class="btn primary xl rq-go" data-act="recipeclose" type="button">${HX}<span>Close recipe</span></button></footer>
+    </section>`;
+  root.append(sheet);
+  document.documentElement.classList.add('rq-sheet-open');
+  syncStars();
+  sheet.querySelector('.rq-sheet-foot .rq-go').focus({ preventScroll: true });
 }
 
-function rate(level, el) {
-  if (flying) return;
-  const id = quiz.rateOrder.find((x) => !run.answers.difficulty.levels[x]);
-  if (!id) return;
-  run.answers.difficulty.levels[id] = { level, ms: Math.round(performance.now() - shownAt) };
-  save();
-  el.classList.add('on');
-  buzz(10);
-  flying = true;
-  setTimeout(() => {
-    flying = false;
-    if (!quiz.rateOrder.some((x) => !run.answers.difficulty.levels[x])) run.at++;
-    save();
-    render();
-  }, 260);
-}
-
-function undoRate() {
-  const done = quiz.rateOrder.filter((x) => run.answers.difficulty.levels[x]);
-  delete run.answers.difficulty.levels[done[done.length - 1]];
-  save();
-  render();
+function closeRecipe() {
+  const sheet = root.querySelector('.rq-sheet');
+  const id = sheetId;
+  sheetId = null;
+  document.documentElement.classList.remove('rq-sheet-open');
+  if (!sheet) return;
+  sheet.classList.add('out');
+  setTimeout(() => sheet.remove(), 200);
+  root.querySelector(`.rq-r-head[data-id="${CSS.escape(id)}"]`)?.focus({ preventScroll: true });
+  if (id && isDone(id)) towardNext(id);
 }
 
 function onKey(e) {
-  if (!root || root.hidden || e.target.matches('input, textarea')) return;
-  const s = screens()[run.at];
-  if (s?.kind === 'cards' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); decide(e.key === 'ArrowRight'); }
-  if (s?.kind === 'rate' && /^[1-5]$/.test(e.key)) { const b = root.querySelector(`.rq-level[data-level="${e.key}"]`); if (b) rate(Number(e.key), b); }
+  if (!root || root.hidden) return;
+  if (e.key === 'Escape' && sheetId) { e.preventDefault(); closeRecipe(); }
 }
 
 // ── Send ────────────────────────────────────────────────────────────────────

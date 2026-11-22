@@ -49,6 +49,17 @@ export const WHY_NOT = [
   { id: 'missing', label: 'Missing something' },
   { id: 'unknown', label: 'Don’t know it' },
 ];
+/**
+ * 1.43.0 recipe test: no cards. Every dish is a row with two star rows, effort and taste
+ * (5 = effortless / delicious), and "Can't make it" with a reason. Effort stars fold into the
+ * difficulty scale below (level = 6 − stars), so they make the same Marco pairs.
+ */
+export const CANT = [
+  { id: 'ingredients', label: 'Missing ingredients' },
+  { id: 'equipment', label: 'Missing equipment' },
+];
+export const EFFORT_STARS = ['Too much work', 'Hard work', 'Some effort', 'Easy', 'Effortless'];
+export const TASTE_STARS = ['Wouldn’t eat it', 'Meh', 'Fine', 'Tasty', 'Delicious'];
 export const DIFFICULTY = [
   { level: 1, label: 'Effortless', hint: 'Barely cooking' },
   { level: 2, label: 'Easy', hint: 'A few minutes' },
@@ -208,6 +219,23 @@ const cardsOut = (quiz, answers) => {
   };
 };
 
+const starsOut = (quiz, answers) => {
+  const deck = quiz.deck ?? Object.keys(quiz.dishes);
+  const ok = (n) => ([1, 2, 3, 4, 5].includes(n) ? n : null);
+  const cant = new Set(CANT.map((c) => c.id));
+  const stars = deck.filter((id) => answers.stars[id]).map((id) => {
+    const a = answers.stars[id];
+    return { id, effort: ok(a.effort), taste: ok(a.taste), cant: cant.has(a.cant) ? a.cant : null, ms: a.ms ?? null };
+  }).filter((x) => x.effort || x.taste || x.cant);
+  const rated = stars.filter((x) => x.effort);
+  return {
+    flow: 'stars',
+    stars,
+    // Effort stars on the old difficulty scale, so rungMarcoChoices and the reports read them as before.
+    difficulty: rated.length ? { scale: DIFFICULTY.map((x) => x.label), from: 'effort stars, level = 6 - stars', ratings: rated.map((x) => ({ id: x.id, level: 6 - x.effort, ms: x.ms })), stoppedEarly: rated.length < deck.length } : null,
+  };
+};
+
 /**
  * Answers → the file a tester sends. answers: { marco: {rung: {ranking, ms, moved}},
  * pierre: {…same}, white: {rung: {picks, none, criteria, ms}} }.
@@ -246,7 +274,9 @@ export function encodeRungResult(quiz, answers, { version, at, testerId, runNo =
     // 1.42.0 meal cards (flow 'cards'): marco/pierre/white stay empty. cards = the deck in the
     // order shown, yes/no and why not; difficulty = 1 (effortless) … 5 (too much tonight), in the
     // order rated, null when skipped. rungMarcoChoices turns ratings into pairs.
-    ...(answers.cards ? cardsOut(quiz, answers) : {}),
+    // 1.43.0 recipe test (flow 'stars'): stars = per dish effort and taste 1-5 (5 = effortless,
+    // delicious) and cant ('ingredients' | 'equipment'); difficulty is the effort stars as levels.
+    ...(answers.stars ? starsOut(quiz, answers) : answers.cards ? cardsOut(quiz, answers) : {}),
     // 1.34.0: what the tester said went wrong (src/brain/feedback.js). null: never reached it.
     feedback: cleanFeedback(answers.feedback, quiz),
   };
@@ -322,6 +352,23 @@ export function scoreRungResult(r) {
     if (easyOrder([e, h])[0] === e) agree++;
   }
   const difficulty = { n: rated.length, pairs: pairsApart, agree: pairsApart ? round(agree / pairsApart) : null, skipped: !!r.cards && !r.difficulty };
+  // 1.43.0 stars: taste pairs rated apart, and how often Pierre's tiers put them the same way.
+  const st = r.stars ?? [];
+  let tAgree = 0;
+  let tPairs = 0;
+  for (let i = 0; i < st.length; i++) for (let j = i + 1; j < st.length; j++) {
+    const a = st[i];
+    const b = st[j];
+    if (!a.taste || !b.taste || a.taste === b.taste || !r.dishes[a.id] || !r.dishes[b.id]) continue;
+    const ta = TIER_ORDER[r.dishes[a.id].harveys.tier] ?? 0;
+    const tb = TIER_ORDER[r.dishes[b.id].harveys.tier] ?? 0;
+    if (ta === tb) continue;
+    tPairs++;
+    if ((a.taste > b.taste) === (ta > tb)) tAgree++;
+  }
+  const cant = {};
+  for (const x of st) if (x.cant) cant[x.cant] = (cant[x.cant] ?? 0) + 1;
+  const stars = { n: st.length, both: st.filter((x) => x.effort && x.taste).length, cant, tastePairs: tPairs, tasteAgree: tPairs ? round(tAgree / tPairs) : null };
   const criteria = {};
   for (const w of r.white ?? []) w.criteria.forEach((c, i) => { criteria[c] = (criteria[c] ?? 0) + (w.criteria.length - i); });
   return {
@@ -329,7 +376,7 @@ export function scoreRungResult(r) {
     marco: { rungs: marco, tau: mean(marco.map((x) => x.tau)), pairs: rungMarcoChoices(r).length },
     pierre: { rungs: pierre, tau: mean(pierre.map((x) => x.tau)) },
     white: { rungs: white, hits: white.filter((x) => x.hit).length, inPicks: white.filter((x) => x.inPicks).length, n: white.length, criteria },
-    flow: r.flow ?? 'rounds', cards, difficulty,
+    flow: r.flow ?? 'rounds', cards, difficulty, stars,
   };
 }
 

@@ -32,7 +32,8 @@ export const WOULDNT_WHY = [
   { id: 'healthy', label: 'Not filling' },
 ];
 export const CONFUSING = [
-  { id: 'drag', label: 'Dragging to sort' },
+  { id: 'stars', label: 'The stars' },
+  { id: 'recipe', label: 'Reading a recipe' },
   { id: 'task', label: 'What to do' },
   { id: 'names', label: 'Dish names' },
   { id: 'long', label: 'Too many questions' },
