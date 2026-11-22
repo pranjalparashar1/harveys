@@ -15,7 +15,7 @@ import { startRungQuiz } from './rung-quiz-ui.js';
 import { buildRungQuiz } from './brain/rung-quiz.js';
 import { decodeKitchen, linkCode, linkName } from './brain/share-link.js';
 
-const VERSION = '1.38.0';
+const VERSION = '1.39.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -912,7 +912,7 @@ function init() {
     navigator.clipboard?.writeText(JSON.stringify({ version: VERSION, ingredientCheck: lastUsage }, null, 1)).then(() => { $('usage-copy').textContent = 'Copied'; }, () => {});
   });
   $('usage-quiz')?.addEventListener('click', () => {
-    startRungQuiz({ kitchen: testKitchen(), inventory: inventory(), version: VERSION, source: 'paste' });
+    startRungQuiz({ kitchen: testKitchen(), inventory: inventory(), items: state.items, cache: state.pantry, missingBasics: state.missingBasics, version: VERSION, source: 'paste' });
   });
   $('use-demo').addEventListener('click', () => {
     state.pickSource = 'inventory';
@@ -961,7 +961,7 @@ function init() {
   // ?debug keeps the old ladder of picks.
   $('paste-proceed').addEventListener('click', () => {
     if (document.body.classList.contains('testing')) {
-      startRungQuiz({ kitchen: state.kitchen ?? { kitchen: 'Pasted list', items: state.items }, inventory: inventory(), version: VERSION, source: state.linked ? 'link' : 'paste', name: state.linked ? testerName() : '' });
+      startRungQuiz({ kitchen: state.kitchen ?? { kitchen: 'Pasted list', items: state.items }, inventory: inventory(), items: state.items, cache: state.pantry, missingBasics: state.missingBasics, version: VERSION, source: state.linked ? 'link' : 'paste', name: state.linked ? testerName() : '' });
       return;
     }
     endPasteReview();
@@ -1052,7 +1052,7 @@ async function openSharedKitchen() {
   showPasteSummary(kitchen.items);
   $('paste-proceed').textContent = 'Start the taste test';
   greet(Object.keys(buildRungQuiz({ kitchen, inventory: inventory() }).dishes).length);
-  startRungQuiz({ kitchen, inventory: inventory(), version: VERSION, source: 'link', name: testerName() });
+  startRungQuiz({ kitchen, inventory: inventory(), items: state.items, cache: state.pantry, missingBasics: state.missingBasics, version: VERSION, source: 'link', name: testerName() });
 }
 
 init();
