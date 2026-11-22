@@ -9,6 +9,9 @@
 // item names straight from the kitchen's list, dish ids straight from the quiz, chip ids.
 // `summariseFeedback` pools every tester; `feedbackReport` turns that into Markdown.
 
+import { matchTyped } from './confirm.js';
+import { labelFor } from './vocabulary.js';
+
 export const CHIPS = [
   { id: 'wrong_items', label: 'Wrong ingredients' },
   { id: 'missing_dishes', label: 'Missing dishes I’d make' },
@@ -102,6 +105,58 @@ export function placeIdea(name, { shown = [], catalogue = [] } = {}) {
   return { status: 'new' };
 }
 
+/**
+ * The quick check (1.39.0, cookware and typed items 1.41.0) over every result: what testers
+ * tapped (what videos miss), stoves and burners, and anything typed that Harvey's list has no
+ * close match for. `fresh` is what pranjal wants to hear about first: each new thing, with who said it.
+ */
+export function summariseCheck(results) {
+  const checked = results.filter((r) => r.confirm);
+  const who = (r) => r.tester || r.testerId;
+  const where = (r) => r.kitchen?.kitchen ?? r.kitchenId;
+  const tally = new Map();
+  const add = (key, r, extra = {}) => {
+    const e = tally.get(key) ?? { n: 0, testers: [], kitchens: new Set(), ...extra };
+    e.n++;
+    e.testers.push(who(r));
+    e.kitchens.add(where(r));
+    tally.set(key, e);
+  };
+  const fresh = new Map();
+  for (const r of checked) {
+    const c = r.confirm;
+    for (const id of new Set([...(c.have ?? []), ...(c.typed ?? []).filter((t) => t.id).map((t) => t.id)])) add(id, r);
+    for (const t of c.typed ?? []) if (!t.id) {
+      const k = norm(t.text);
+      const e = fresh.get(k) ?? { name: t.text, n: 0, from: [], testers: [], kitchens: new Set() };
+      e.n++;
+      e.from.push('quick check');
+      e.testers.push(who(r));
+      e.kitchens.add(where(r));
+      fresh.set(k, e);
+    }
+  }
+  // "In the kitchen but not listed" on the feedback screen is typed too: same test.
+  for (const r of results) for (const name of r.feedback?.missedItems ?? []) {
+    if (matchTyped(name).id) continue;
+    const k = norm(name);
+    const e = fresh.get(k) ?? { name, n: 0, from: [], testers: [], kitchens: new Set() };
+    e.n++;
+    e.from.push('feedback');
+    e.testers.push(who(r));
+    e.kitchens.add(where(r));
+    fresh.set(k, e);
+  }
+  const list = (m) => [...m.entries()].map(([key, e]) => ({ key, ...e, kitchens: [...e.kitchens] })).sort((a, b) => b.n - a.n || String(a.key).localeCompare(String(b.key)));
+  return {
+    checked: checked.length,
+    have: list(tally).map((e) => ({ id: e.key, label: labelFor(e.key), n: e.n, testers: e.testers, kitchens: e.kitchens })),
+    noStove: checked.filter((r) => r.confirm.noStove).map((r) => ({ tester: who(r), kitchen: where(r), stove: [...(r.confirm.have ?? []), ...(r.confirm.typed ?? []).map((t) => t.id)].filter((id) => id === 'gas_stove' || id === 'induction').map(labelFor) })),
+    burners: checked.filter((r) => r.confirm.burners).map((r) => ({ tester: who(r), kitchen: where(r), n: r.confirm.burners })),
+    fresh: list(fresh).map((e) => ({ name: e.name, n: e.n, from: [...new Set(e.from)], testers: e.testers, kitchens: e.kitchens })),
+  };
+}
+
 /** Every rung-quiz result with feedback → one pooled summary. */
 export function summariseFeedback(results, { catalogue = [] } = {}) {
   const withFb = results.filter((r) => r.feedback);
@@ -128,6 +183,7 @@ export function summariseFeedback(results, { catalogue = [] } = {}) {
   const dishVotes = (field) => count((r) => (r.feedback[field] ?? []).map((id) => `${id}\t${dishName(r, id)}\t${r.dishes?.[id]?.rung ?? ''}\t${r.dishes?.[id]?.harveys?.tier ?? ''}`))
     .map(({ key, n }) => { const [id, name, rung, tier] = key.split('\t'); return { id, name, rung: Number(rung) || null, tier: tier || null, n }; });
   return {
+    check: summariseCheck(results),
     testers: results.length,
     answered: withFb.length,
     skipped: withFb.filter((r) => r.feedback.skipped).length,
@@ -143,12 +199,32 @@ export function summariseFeedback(results, { catalogue = [] } = {}) {
   };
 }
 
+/** The quick-check part of the report. New things lead: they're what pranjal asked to hear about. */
+export function checkReport(c) {
+  if (!c) return [];
+  const L = [];
+  const by = (e) => `${e.testers.join(', ')}${e.kitchens.length ? `; ${e.kitchens.join(', ')}` : ''}`;
+  if (c.fresh.length) {
+    L.push('## New from testers (not in Harvey’s list)', '');
+    L.push('Typed by testers with no close match. Add to the vocabulary (and a dish) if it matters.', '');
+    for (const e of c.fresh) L.push(`- **${e.name}** (${e.n}) from ${e.from.join(' and ')}: ${by(e)}`);
+    L.push('');
+  }
+  if (!c.checked) return L;
+  L.push(`## Quick check: what the videos missed (${c.checked} tester(s))`, '');
+  L.push(c.have.length ? c.have.map((e) => `${e.label} (${e.n})`).join(', ') : 'Nobody tapped anything.', '');
+  if (c.noStove.length) L.push(`**No stove on the list:** ${c.noStove.map((x) => `${x.tester} (${x.kitchen}) → ${x.stove.join(' + ') || 'none tapped'}`).join('; ')}`, '');
+  if (c.burners.length) L.push(`**Burners at once:** ${c.burners.map((x) => `${x.tester} ${x.n === 3 ? '3+' : x.n}`).join(', ')}`, '');
+  return L;
+}
+
 /** The pooled summary → a Markdown report for pranjal and for Claude. */
 export function feedbackReport(s, { title = 'Tester feedback' } = {}) {
   const L = [];
   const list = (xs, f) => (xs.length ? xs.map(f).join(', ') : '-');
   L.push(`# ${title}`, '');
   L.push(`${s.testers} taste test(s); ${s.answered} reached the feedback screen; ${s.skipped} skipped it.`, '');
+  L.push(...checkReport(s.check));
   if (!s.answered) { L.push('No feedback yet. It starts with results from 1.34.0.'); return L.join('\n') + '\n'; }
 
   L.push('## What went wrong', '');
@@ -170,7 +246,7 @@ export function feedbackReport(s, { title = 'Tester feedback' } = {}) {
 
   L.push('## The kitchen list (what the video agent got wrong)', '');
   L.push(`**Listed but not in the kitchen:** ${list(s.wrongItems, (x) => `${x.name} (${x.n})`)}`);
-  L.push(`**In the kitchen but not listed:** ${list(s.missedItems, (x) => `${x.name} (${x.n})`)}`, '');
+  L.push(`**In the kitchen but not listed:** ${list(s.missedItems, (x) => `${x.name} (${x.n})${matchTyped(x.name).id ? '' : ' (new)'}`)}`, '');
 
   if (s.tooHard.length || s.wouldntEat.length) {
     L.push('## Dishes flagged', '');

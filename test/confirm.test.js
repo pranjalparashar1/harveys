@@ -1,8 +1,10 @@
-// 1.39.0: the quick check before Round 1, bare-kitchen dishes, and a strainer that is assumed.
+// 1.39.0 (cookware and typed items 1.41.0): the quick check before Round 1, bare-kitchen dishes, and a strainer that is assumed.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { confirmCandidates, withConfirmed, CONFIRM_LIMIT } from '../src/brain/confirm.js';
+import { confirmCandidates, kitCandidates, withConfirmed, matchTyped, CONFIRM_LIMIT } from '../src/brain/confirm.js';
+import { summariseFeedback, feedbackReport } from '../src/brain/feedback.js';
+import { kindOf } from '../src/brain/vocabulary.js';
 import { buildRungQuiz, encodeRungResult } from '../src/brain/rung-quiz.js';
 import { CATALOGUE, buildInventory, checkMeal, rank } from '../src/brain/index.js';
 
@@ -22,10 +24,54 @@ test('the check asks about what unlocks the most dishes, never what the list alr
   for (let i = 1; i < ask.length; i++) assert.ok(ask[i - 1].alone >= ask[i].alone);
 });
 
-test('a pan, a tawa and a kadai that unlock the same dishes are asked about once', () => {
-  const kit = confirmCandidates(BANANA).filter((a) => ['frying_pan', 'kadai', 'tawa'].includes(a.id));
-  assert.equal(kit.length, 1);
-  assert.equal(kit[0].label, 'A pan, tawa or kadai');
+test('the food row is food only; cookware has its own row, stoves first when none was seen', () => {
+  for (const a of confirmCandidates(BANANA)) assert.equal(kindOf(a.id), 'food', a.id);
+  // Purujeet's case (22 Nov): no stove on the list, but he cooks on induction.
+  const bare = names(['eggs', 'milk', 'bread', 'maggi', 'rice', 'steel pot']);
+  const k = kitCandidates(bare);
+  assert.ok(k.noStove);
+  assert.deepEqual(k.kit.slice(0, 2).map((a) => a.id), ['gas_stove', 'induction']);
+  assert.ok(!k.kit.some((a) => a.id === 'saucepan'), 'a pot was already listed');
+  const h = kitCandidates(HARSH);
+  assert.ok(!h.noStove && h.hasStove);
+  for (const id of ['induction', 'microwave', 'kettle', 'tawa', 'saucepan']) assert.ok(!h.kit.some((a) => a.id === id), id);
+  const after = buildInventory([...bare, { name: 'Induction cooktop', canonical: 'induction' }]);
+  assert.ok(meals(after) > meals(buildInventory(bare)) + 2, 'tapping induction unlocks the stove dishes');
+});
+
+test('typed items go to the closest known thing; nothing close stays as typed', () => {
+  const id = (t) => matchTyped(t).id;
+  assert.equal(id('induction'), 'induction');
+  assert.equal(id('indction'), 'induction');
+  assert.equal(id('kettel'), 'kettle');
+  assert.equal(id('presure cooker'), 'pressure_cooker');
+  assert.equal(id('kadhai'), 'kadai');
+  assert.equal(id('tava'), 'tawa');
+  assert.equal(id('gas'), 'gas_stove');
+  assert.equal(matchTyped('indction').how, 'fuzzy');
+  for (const t of ['soy sauce', 'hing', 'jeera', 'a', '']) assert.equal(id(t), null, t);
+  assert.equal(matchTyped('  Soy   sauce ').text, 'Soy sauce');
+});
+
+test('the result records cookware, burners and typed items, and the reports flag what is new', () => {
+  const bare = names(['eggs', 'milk', 'bread', 'maggi', 'steel pot']);
+  const conf = { asked: ['gas_stove', 'induction'], have: ['induction'], typed: [{ text: 'indction', id: 'induction', how: 'fuzzy' }, { text: 'Hing', id: null, how: null }], burners: 2, noStove: true, ms: 1200 };
+  const inv = withConfirmed(bare, ['induction'], {}, ['Hing']);
+  const quiz = buildRungQuiz({ kitchen: { kitchen: 'Purujeet', items: bare }, inventory: inv });
+  const res = encodeRungResult(quiz, { marco: {}, pierre: {}, white: {}, confirm: conf }, { version: 't', at: 'x', testerId: 't1', tester: 'Purujeet' });
+  assert.deepEqual(res.confirm.unmatched, ['Hing']);
+  assert.equal(res.confirm.burners, 2);
+  assert.ok(res.confirm.noStove);
+  const s = summariseFeedback([{ ...res, feedback: { chips: ['wrong_items'], missedItems: ['Rice', 'Makhana chaat masala'], wrongItems: [], dishIdeas: [] } }]);
+  assert.deepEqual(s.check.fresh.map((e) => e.name), ['Hing', 'Makhana chaat masala'].filter((n) => !matchTyped(n).id));
+  assert.ok(s.check.have.some((e) => e.id === 'induction'));
+  const md = feedbackReport(s);
+  assert.match(md, /New from testers/);
+  assert.match(md, /\*\*Hing\*\* \(1\) from quick check: Purujeet/);
+  assert.match(md, /No stove on the list:\*\* Purujeet \(Purujeet\) → Induction cooktop/);
+  assert.match(md, /Burners at once:\*\* Purujeet 2/);
+  // An older file with no check still reports fine.
+  assert.doesNotMatch(feedbackReport(summariseFeedback([{ ...res, confirm: null, feedback: null }])), /New from testers/);
 });
 
 test('tapping what you have adds dishes, and the result records the check', () => {

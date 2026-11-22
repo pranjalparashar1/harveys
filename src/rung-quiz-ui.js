@@ -3,7 +3,7 @@
 // per screen, a story bar with no numbers, drag to sort, tap to pick, haptics on every tap.
 // The brain work is src/brain/rung-quiz.js; this file is screens, drag, storage and sending.
 import { buildRungQuiz, encodeRungResult, CRITERIA } from './brain/rung-quiz.js';
-import { confirmCandidates, withConfirmed } from './brain/confirm.js';
+import { confirmCandidates, kitCandidates, withConfirmed, matchTyped, STOVES, BURNERS } from './brain/confirm.js';
 import { sendResult, flush, setToken, outbox } from './send.js';
 import { startFresh } from './fresh.js';
 import { CHIPS, FOLLOW_UPS, WOULDNT_WHY, CONFUSING, blankFeedback, quickDishes, splitIdeas, norm } from './brain/feedback.js';
@@ -67,12 +67,15 @@ let picks = null; // White: { picks: [], criteria: [], none }
 let fb = null; // the feedback screens: run.answers.feedback, edited in place
 let ask = []; // 1.39.0: what Harvey asks about before Round 1 (confirm.js)
 let haveNow = null; // the check screen's taps, until Next
+let kit = { kit: [], noStove: false, hasStove: false }; // 1.41.0: the cookware row
+let typedNow = null; // 1.41.0: "Add something else", [{ text, id, label, how }]
+let burnersNow = null; // 1.41.0: how many can cook at once, 1 | 2 | 3 (3 or more)
 let kitchenIn = null;
 
 /** screens: intro, a cover per section, each step, end. */
 function screens() {
   const out = [{ kind: 'intro' }];
-  if (ask.length) out.push({ kind: 'check' });
+  if (ask.length || kit.kit.length || opts.items) out.push({ kind: 'check' });
   let last = null;
   for (const s of quiz.steps) {
     if (s.section !== last) { out.push({ kind: 'cover', section: s.section }); last = s.section; }
@@ -96,7 +99,8 @@ export function startRungQuiz({ kitchen, inventory, version, source, name = '', 
   run = store.runs[quiz.id];
   // 1.39.0: "Did Harvey miss anything?" needs the list itself, so only when the page passes it.
   ask = items ? confirmCandidates(items, { cache, missingBasics }) : [];
-  if (run && !run.sent && run.v === version && run.answers?.confirm?.have?.length) rebuild(run.answers.confirm.have);
+  kit = items ? kitCandidates(items, { cache, missingBasics }) : { kit: [], noStove: false, hasStove: false };
+  if (run && !run.sent && run.v === version && run.answers?.confirm) rebuild(run.answers.confirm);
   // 1.40.0: a run saved by an older version starts again: its screens no longer line up
   // (1.39.0 put the check before Round 1, so a saved spot skipped it).
   if (run && !run.sent && run.v !== version) run = null;
@@ -118,7 +122,10 @@ export function startRungQuiz({ kitchen, inventory, version, source, name = '', 
     document.body.append(root);
     root.addEventListener('click', onClick);
     root.addEventListener('pointerdown', onPointerDown);
-    root.addEventListener('submit', (e) => { const f = e.target.closest('.rq-add'); if (f && fb) { e.preventDefault(); fbAdd(f); } });
+    root.addEventListener('submit', (e) => {
+      const f = e.target.closest('.rq-add');
+      if (f?.classList.contains('rq-have-add') && haveNow) { e.preventDefault(); haveAdd(f); } else if (f && fb) { e.preventDefault(); fbAdd(f); }
+    });
     root.addEventListener('input', (e) => { if (fb && e.target.matches('.rq-note textarea')) { fb.note = e.target.value.slice(0, 2000); save(); syncFb(); } });
   }
   root.hidden = false;
@@ -133,10 +140,14 @@ function close() {
 }
 
 /** The quiz again with what the tester said they have. Answers to the old dishes no longer fit. */
-function rebuild(have) {
-  const inv = have.length && opts.items ? withConfirmed(opts.items, have, { cache: opts.cache, missingBasics: opts.missingBasics }) : opts.inventory;
+function rebuild(conf) {
+  const typed = conf?.typed ?? [];
+  const ids = [...new Set([...(conf?.have ?? []), ...typed.filter((t) => t.id).map((t) => t.id)])];
+  const extras = typed.filter((t) => !t.id).map((t) => t.text);
+  const inv = (ids.length || extras.length) && opts.items ? withConfirmed(opts.items, ids, { cache: opts.cache, missingBasics: opts.missingBasics }, extras) : opts.inventory;
   quiz = buildRungQuiz({ kitchen: kitchenIn, inventory: inv });
 }
+const confKey = (c) => JSON.stringify([[...(c?.have ?? [])].sort(), (c?.typed ?? []).map((t) => t.id ?? t.text).sort()]);
 
 const resultOf = () => encodeRungResult(quiz, run.answers, { version: opts.version, at: new Date().toISOString(), testerId: run.testerId, runNo: run.runNo, source: opts.source, tester: run.name || '' });
 
@@ -171,17 +182,39 @@ function render(enter = false) {
         </ol>
         <p class="rq-small">All taps, a few minutes. At the end you can tell Harvey what it got wrong.</p>
       </div>`;
-    foot = Object.keys(quiz.dishes).length || ask.length
+    foot = Object.keys(quiz.dishes).length || ask.length || kit.kit.length
       ? `<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Start</span></button>`
       : `<p class="rq-lead">Add a few more things to your list and try again.</p><button class="btn xl rq-go" data-act="close" type="button">${HX}<span>Back to my list</span></button>`;
   } else if (s.kind === 'check') {
     haveNow = [...(run.answers.confirm?.have ?? [])];
+    typedNow = (run.answers.confirm?.typed ?? []).map((t) => ({ ...t }));
+    burnersNow = run.answers.confirm?.burners ?? null;
+    const chip = (a) => `<button class="rq-tag" data-act="have" data-id="${esc(a.id)}" type="button" aria-pressed="false">${HX}<span>${esc(a.label)}</span></button>`;
+    // No stove on the list: cookware first, since nothing on the stove counts without one.
+    const kitBlock = kit.kit.length ? `
+        <p class="rq-group">${kit.noStove ? 'How do you cook?' : 'Cookware'}</p>
+        ${kit.noStove ? '<p class="rq-hint tight">Harvey didn’t spot a stove. Tap yours, and any pots or appliances.</p>' : ''}
+        <div class="rq-tags rq-have" role="group" aria-label="Cookware you have">${kit.kit.map(chip).join('')}</div>` : '';
+    const burners = `
+        <div class="rq-burners" hidden>
+          <p class="rq-group">How many things can cook on it at once?</p>
+          <div class="rq-tags" role="group" aria-label="Burners">${BURNERS.map((b) => `<button class="rq-tag" data-act="burners" data-n="${b.n}" type="button" aria-pressed="false">${HX}<span>${esc(b.label)}</span></button>`).join('')}</div>
+        </div>`;
+    const foodBlock = ask.length ? `
+        <p class="rq-group">Food</p>
+        <div class="rq-tags rq-have" role="group" aria-label="Food you have">${ask.map(chip).join('')}</div>` : '';
     body = `
       <div class="rq-hero check">
         <p class="rq-eyebrow">Quick check</p>
         <h1 class="rq-q">Do you have any of these?</h1>
         <p class="rq-hint">A video can’t see inside jars or cupboards. Tap what’s in your kitchen, and Harvey can suggest more dishes.</p>
-        <div class="rq-tags rq-have" role="group" aria-label="Things you have">${ask.map((a) => `<button class="rq-tag" data-act="have" data-id="${esc(a.id)}" type="button" aria-pressed="false">${HX}<span>${esc(a.label)}</span></button>`).join('')}</div>
+        ${kit.noStove ? kitBlock + burners + foodBlock : foodBlock + kitBlock + burners}
+        <p class="rq-group">Anything else?</p>
+        <form class="rq-add rq-have-add">
+          <input type="text" enterkeyhint="done" autocomplete="off" autocapitalize="sentences" placeholder="e.g. atta, soy sauce, toaster" aria-label="Add something else you have">
+          <button class="rq-add-go" data-act="haveadd" type="button" aria-label="Add">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+        </form>
+        <div class="rq-tags rq-typed"></div>
       </div>`;
     foot = `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>None of these</span></button>`;
   } else if (s.kind === 'cover') {
@@ -254,7 +287,33 @@ function syncHave() {
     b.classList.toggle('on', on);
     b.setAttribute('aria-pressed', String(on));
   }
-  root.querySelector('.rq-foot [data-act="next"] span').textContent = haveNow.length ? 'Next' : 'None of these';
+  // Burners: once there's a stove, on the list or tapped here.
+  const stove = kit.hasStove || haveNow.some((id) => STOVES.includes(id)) || typedNow.some((t) => STOVES.includes(t.id));
+  const bx = root.querySelector('.rq-burners');
+  if (stove && bx.hidden) { bx.hidden = false; bx.classList.add('appear'); }
+  if (!stove) { bx.hidden = true; burnersNow = null; }
+  for (const b of bx.querySelectorAll('.rq-tag')) {
+    const on = Number(b.dataset.n) === burnersNow;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', String(on));
+  }
+  root.querySelector('.rq-typed').innerHTML = typedNow.map((t, i) => `<button class="rq-tag typed on${t.id ? '' : ' new'}" data-act="havedrop" data-i="${i}" type="button" aria-label="Remove ${esc(t.text)}">${HX}<span>${esc(t.id ? t.label : t.text)}${t.how === 'fuzzy' ? ` <small>(${esc(t.text)})</small>` : ''}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>`).join('');
+  root.querySelector('.rq-foot [data-act="next"] span').textContent = haveNow.length || typedNow.length || burnersNow ? 'Next' : 'None of these';
+}
+
+/** "Anything else?": each typed thing goes to its closest known item; a chip on screen just lights up. */
+function haveAdd(form) {
+  const input = form.querySelector('input');
+  for (const text of splitIdeas(input.value)) {
+    const m = matchTyped(text);
+    if (!m.text) continue;
+    if (m.id && root.querySelector(`.rq-have .rq-tag[data-id="${m.id}"]`)) { if (!haveNow.includes(m.id)) haveNow.push(m.id); continue; }
+    if (typedNow.some((t) => (m.id ? t.id === m.id : !t.id && norm(t.text) === norm(m.text)))) continue;
+    typedNow.push({ text: m.text, id: m.id, label: m.label, how: m.how });
+  }
+  input.value = '';
+  buzz();
+  syncHave();
 }
 
 function rungHead(g) {
@@ -507,6 +566,9 @@ function onClick(e) {
   if (act === 'next' && el.classList.contains('ask')) { root.querySelector('.rq-why').scrollIntoView({ behavior: 'smooth', block: 'center' }); root.querySelector('.rq-why').classList.add('nudge'); setTimeout(() => root.querySelector('.rq-why')?.classList.remove('nudge'), 700); return; }
   if (act === 'next') { commit(s); run.at = Math.min(list.length - 1, run.at + 1); save(); return render(); }
   if (act === 'have') { toggleIn(haveNow, el.dataset.id); return syncHave(); }
+  if (act === 'burners') { const n = Number(el.dataset.n); burnersNow = burnersNow === n ? null : n; return syncHave(); }
+  if (act === 'haveadd') return haveAdd(el.closest('.rq-add'));
+  if (act === 'havedrop') { typedNow.splice(Number(el.dataset.i), 1); return syncHave(); }
   if (act === 'pick') { toggleIn(picks.picks, el.dataset.id); picks.none = false; if (!picks.picks.length) picks.criteria = []; return syncPicks(); }
   if (act === 'why') { toggleIn(picks.criteria, el.dataset.id); return syncPicks(); }
   if (act === 'none') { picks.none = !picks.none; if (picks.none) { picks.picks = []; picks.criteria = []; } return syncPicks(); }
@@ -514,12 +576,12 @@ function onClick(e) {
   if (act === 'send') return send();
   if (act === 'github') { const res = resultOf(); window.open(issueHref(res), '_blank', 'noopener'); sendState = 'sent'; markSent(); return; }
   if (act === 'token') return saveToken();
-  if (act === 'nextperson') { store.runs[quiz.id] = run = freshRun(); rebuild([]); sendState = ''; save(); return render(); }
+  if (act === 'nextperson') { store.runs[quiz.id] = run = freshRun(); rebuild(null); sendState = ''; save(); return render(); }
   if (act === 'file') { download(resultOf()); return; }
   if (act === 'restart') {
     if (!el.classList.contains('armed')) { el.classList.add('armed'); el.textContent = 'Tap again to start over'; setTimeout(() => { el.classList.remove('armed'); el.textContent = 'Start over'; }, 4000); return; }
     store.runs[quiz.id] = run = freshRun(run.name); // same person, same name
-    rebuild([]);
+    rebuild(null);
     sendState = '';
     save();
     return render();
@@ -530,11 +592,14 @@ function onClick(e) {
 function commit(s) {
   const ms = Math.round(performance.now() - shownAt);
   if (s.kind === 'check' && haveNow) {
+    const form = root.querySelector('.rq-have-add');
+    if (form?.querySelector('input').value.trim()) haveAdd(form); // typed but never tapped Add
     const prev = run.answers.confirm;
-    const changed = [...haveNow].sort().join() !== [...(prev?.have ?? [])].sort().join();
-    run.answers.confirm = { asked: ask.map((a) => a.id), have: [...haveNow], ms: (prev?.ms ?? 0) + ms };
+    const next = { asked: [...ask, ...kit.kit].map((a) => a.id), have: [...haveNow], typed: typedNow.map((t) => ({ ...t })), burners: burnersNow, noStove: kit.noStove, ms: (prev?.ms ?? 0) + ms };
+    const changed = confKey(next) !== confKey(prev);
+    run.answers.confirm = next;
     if (changed) {
-      rebuild(haveNow);
+      rebuild(next);
       // New dishes, so sorts and picks made on the old ones start again.
       run.answers.marco = {}; run.answers.pierre = {}; run.answers.white = {};
     }

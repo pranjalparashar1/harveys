@@ -159,6 +159,17 @@ function compactRaw(raw) {
   return Object.fromEntries(Object.entries(raw).filter(([, v]) => typeof v === 'number').map(([k, v]) => [k, round(v)]));
 }
 
+const confirmOut = (c) => {
+  const typed = (c.typed ?? []).map((t) => ({ text: String(t.text ?? '').slice(0, 60), id: t.id ?? null, how: t.how ?? null })).filter((t) => t.text).slice(0, 30);
+  return {
+    asked: [...(c.asked ?? [])], have: [...(c.have ?? [])], typed,
+    unmatched: typed.filter((t) => !t.id).map((t) => t.text),
+    burners: [1, 2, 3].includes(c.burners) ? c.burners : null,
+    noStove: !!c.noStove,
+    ms: c.ms ?? null,
+  };
+};
+
 /**
  * Answers → the file a tester sends. answers: { marco: {rung: {ranking, ms, moved}},
  * pierre: {…same}, white: {rung: {picks, none, criteria, ms}} }.
@@ -181,7 +192,10 @@ export function encodeRungResult(quiz, answers, { version, at, testerId, runNo =
     unmovedConfirmed: true,
     // 1.39.0: the quick check before Round 1: what Harvey asked about, and what the tester has.
     // The dishes below already count what they tapped; null: no check was shown.
-    confirm: answers.confirm ? { asked: [...(answers.confirm.asked ?? [])], have: [...(answers.confirm.have ?? [])], ms: answers.confirm.ms ?? null } : null,
+    // 1.41.0: cookware is asked too; typed = "Anything else?" ({ text, id, how }: id null when
+    // nothing in Harvey's list was close, and those are what the reports flag as new);
+    // burners = how many things can cook at once (3 = 3 or more); noStove = the list had none.
+    confirm: answers.confirm ? confirmOut(answers.confirm) : null,
     // 1.33.0: what the kitchen had that no shown dish used, and why: catalogue gaps across kitchens.
     ingredients: quiz.usage ? usageForResult(quiz.usage) : null,
     dishes: Object.fromEntries(Object.values(quiz.dishes).map((d) => [d.id, { name: d.name, rung: d.rung, harveys: d.harveys, raw: d.raw, ...(d.away ? { away: d.away } : {}) }])),
