@@ -4,6 +4,7 @@
 //   node scripts/kitchen-tests.mjs plan [kitchens.json …]   print each kitchen's three quizzes
 //   node scripts/kitchen-tests.mjs score [results …] [--persona <text>]
 //                                                           score each result, then fit Marco on all
+//   (score and feedback keep only each named tester's latest run per kitchen; --all keeps every run)
 //   node scripts/kitchen-tests.mjs feedback [results …] [--out <file.md>]
 //                                                           testers' feedback (1.34.0) as Markdown:
 //                                                           what went wrong, dishes to add, list errors
@@ -22,7 +23,7 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { loadKitchens, buildKitchenTest, whiteFor, parseResults, scoreResult, marcoChoices, fitFrom } from '../src/brain/kitchen-test.js';
 import { DEFAULT_CONFIG } from '../src/brain/config.js';
-import { parseRungResults, scoreRungResult, rungMarcoChoices, buildRungQuiz } from '../src/brain/rung-quiz.js';
+import { parseRungResults, latestRuns, scoreRungResult, rungMarcoChoices, buildRungQuiz } from '../src/brain/rung-quiz.js';
 import { buildInventory } from '../src/brain/inventory.js';
 import { usageForResult } from '../src/brain/usage.js';
 import { summariseFeedback, feedbackReport } from '../src/brain/feedback.js';
@@ -56,7 +57,10 @@ const paths = files.length ? files : readdirSync(dir).filter((n) => n.endsWith('
 const texts = paths.map((p) => readFileSync(p, 'utf8'));
 const results = texts.flatMap(parseResults)
   .filter((r) => !personaFilter || String(r.persona ?? '').toLowerCase().includes(personaFilter));
-const tastes = personaFilter ? [] : texts.flatMap(parseRungResults);
+const parsedTastes = personaFilter ? [] : texts.flatMap(parseRungResults);
+// 1.37.0: only each tester's latest run per kitchen, unless --all.
+const tastes = rest.includes('--all') ? parsedTastes : latestRuns(parsedTastes);
+if (tastes.length < parsedTastes.length) console.log(`(${parsedTastes.length - tastes.length} earlier run(s) by the same tester left out; --all keeps them)`);
 if (cmd === 'feedback') {
   const md = feedbackReport(summariseFeedback(tastes, { catalogue: CATALOGUE }));
   if (outFile) { writeFileSync(outFile, md); console.log(`Wrote ${outFile}`); } else process.stdout.write(md);
