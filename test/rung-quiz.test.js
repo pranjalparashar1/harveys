@@ -73,7 +73,7 @@ test('a rung with one dish joins its neighbour, so every group can be sorted (ro
   const q = buildRungQuiz({ kitchen: k, inventory: buildInventory(k.items, { cache }) });
   for (const g of q.rungs) assert.ok(g.dishes.length >= 2, `rung ${g.rung} has ${g.dishes.length}`);
   const merged = q.rungs.find((g) => g.dishes.includes('airfryer_soya_chunks'));
-  assert.deepEqual(merged.rungs, [3, 4]);
+  assert.ok(merged.rungs.includes(4)); // 1.39.0: rung 4 has egg fried rice too now, so it may stand alone
   assert.equal(q.dishes.airfryer_soya_chunks.rung, 4); // each dish keeps its own rung
   assert.ok(q.steps.some((s) => s.section === 'marco' && s.rung === merged.rung));
 });

@@ -3,6 +3,7 @@
 // per screen, a story bar with no numbers, drag to sort, tap to pick, haptics on every tap.
 // The brain work is src/brain/rung-quiz.js; this file is screens, drag, storage and sending.
 import { buildRungQuiz, encodeRungResult, CRITERIA } from './brain/rung-quiz.js';
+import { confirmCandidates, withConfirmed } from './brain/confirm.js';
 import { sendResult, flush, setToken, outbox } from './send.js';
 import { CHIPS, FOLLOW_UPS, WOULDNT_WHY, CONFUSING, blankFeedback, quickDishes, splitIdeas, norm } from './brain/feedback.js';
 
@@ -63,10 +64,14 @@ let shownAt = 0;
 let order = null; // the list being sorted on screen
 let picks = null; // White: { picks: [], criteria: [], none }
 let fb = null; // the feedback screens: run.answers.feedback, edited in place
+let ask = []; // 1.39.0: what Harvey asks about before Round 1 (confirm.js)
+let haveNow = null; // the check screen's taps, until Next
+let kitchenIn = null;
 
 /** screens: intro, a cover per section, each step, end. */
 function screens() {
   const out = [{ kind: 'intro' }];
+  if (ask.length) out.push({ kind: 'check' });
   let last = null;
   for (const s of quiz.steps) {
     if (s.section !== last) { out.push({ kind: 'cover', section: s.section }); last = s.section; }
@@ -82,11 +87,15 @@ function screens() {
   return out;
 }
 
-export function startRungQuiz({ kitchen, inventory, version, source, name = '', onExit }) {
-  opts = { version, source, name, onExit };
+export function startRungQuiz({ kitchen, inventory, version, source, name = '', onExit, items = null, cache = {}, missingBasics = [] }) {
+  opts = { version, source, name, onExit, items, cache, missingBasics, inventory };
+  kitchenIn = kitchen;
   quiz = buildRungQuiz({ kitchen, inventory });
   store = loadStore();
   run = store.runs[quiz.id];
+  // 1.39.0: "Did Harvey miss anything?" needs the list itself, so only when the page passes it.
+  ask = items ? confirmCandidates(items, { cache, missingBasics }) : [];
+  if (run && !run.sent && run.answers?.confirm?.have?.length) rebuild(run.answers.confirm.have);
   // A sent run belongs to the last person: whoever opens it next is someone new.
   if (!run || run.sent) run = store.runs[quiz.id] = freshRun(name);
   // 1.35.0: the name in the link (share.html) greets the tester and labels their result.
@@ -117,6 +126,12 @@ function close() {
   root.hidden = true;
   document.documentElement.classList.remove('rq-open');
   opts.onExit?.();
+}
+
+/** The quiz again with what the tester said they have. Answers to the old dishes no longer fit. */
+function rebuild(have) {
+  const inv = have.length && opts.items ? withConfirmed(opts.items, have, { cache: opts.cache, missingBasics: opts.missingBasics }) : opts.inventory;
+  quiz = buildRungQuiz({ kitchen: kitchenIn, inventory: inv });
 }
 
 const resultOf = () => encodeRungResult(quiz, run.answers, { version: opts.version, at: new Date().toISOString(), testerId: run.testerId, runNo: run.runNo, source: opts.source, tester: run.name || '' });
@@ -152,9 +167,19 @@ function render(enter = false) {
         </ol>
         <p class="rq-small">All taps, a few minutes. At the end you can tell Harvey what it got wrong.</p>
       </div>`;
-    foot = Object.keys(quiz.dishes).length
+    foot = Object.keys(quiz.dishes).length || ask.length
       ? `<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Start</span></button>`
       : `<p class="rq-lead">Add a few more things to your list and try again.</p><button class="btn xl rq-go" data-act="close" type="button">${HX}<span>Back to my list</span></button>`;
+  } else if (s.kind === 'check') {
+    haveNow = [...(run.answers.confirm?.have ?? [])];
+    body = `
+      <div class="rq-hero check">
+        <p class="rq-eyebrow">Quick check</p>
+        <h1 class="rq-q">Do you have any of these?</h1>
+        <p class="rq-hint">A video can’t see inside jars or cupboards. Tap what’s in your kitchen, and Harvey can suggest more dishes.</p>
+        <div class="rq-tags rq-check" role="group" aria-label="Things you have">${ask.map((a) => `<button class="rq-tag" data-act="have" data-id="${esc(a.id)}" type="button" aria-pressed="false">${HX}<span>${esc(a.label)}</span></button>`).join('')}</div>
+      </div>`;
+    foot = `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>None of these</span></button>`;
   } else if (s.kind === 'cover') {
     const sec = SECTIONS[s.section];
     body = `
@@ -215,6 +240,16 @@ function render(enter = false) {
   root.scrollTop = 0;
   if (picks) syncPicks();
   if (fb) syncFb();
+  if (s.kind === 'check') syncHave();
+}
+
+function syncHave() {
+  for (const b of root.querySelectorAll('.rq-check .rq-tag')) {
+    const on = haveNow.includes(b.dataset.id);
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', String(on));
+  }
+  root.querySelector('.rq-foot [data-act="next"] span').textContent = haveNow.length ? 'Next' : 'None of these';
 }
 
 function rungHead(g) {
@@ -460,6 +495,7 @@ function onClick(e) {
   if (act === 'back') { commit(s); run.at = Math.max(0, run.at - 1); save(); return render(); }
   if (act === 'next' && el.classList.contains('ask')) { root.querySelector('.rq-why').scrollIntoView({ behavior: 'smooth', block: 'center' }); root.querySelector('.rq-why').classList.add('nudge'); setTimeout(() => root.querySelector('.rq-why')?.classList.remove('nudge'), 700); return; }
   if (act === 'next') { commit(s); run.at = Math.min(list.length - 1, run.at + 1); save(); return render(); }
+  if (act === 'have') { toggleIn(haveNow, el.dataset.id); return syncHave(); }
   if (act === 'pick') { toggleIn(picks.picks, el.dataset.id); picks.none = false; if (!picks.picks.length) picks.criteria = []; return syncPicks(); }
   if (act === 'why') { toggleIn(picks.criteria, el.dataset.id); return syncPicks(); }
   if (act === 'none') { picks.none = !picks.none; if (picks.none) { picks.picks = []; picks.criteria = []; } return syncPicks(); }
@@ -467,11 +503,12 @@ function onClick(e) {
   if (act === 'send') return send();
   if (act === 'github') { const res = resultOf(); window.open(issueHref(res), '_blank', 'noopener'); sendState = 'sent'; markSent(); return; }
   if (act === 'token') return saveToken();
-  if (act === 'nextperson') { store.runs[quiz.id] = run = freshRun(); sendState = ''; save(); return render(); }
+  if (act === 'nextperson') { store.runs[quiz.id] = run = freshRun(); rebuild([]); sendState = ''; save(); return render(); }
   if (act === 'file') { download(resultOf()); return; }
   if (act === 'restart') {
     if (!el.classList.contains('armed')) { el.classList.add('armed'); el.textContent = 'Tap again to start over'; setTimeout(() => { el.classList.remove('armed'); el.textContent = 'Start over'; }, 4000); return; }
     store.runs[quiz.id] = run = freshRun(run.name); // same person, same name
+    rebuild([]);
     sendState = '';
     save();
     return render();
@@ -481,6 +518,16 @@ function onClick(e) {
 /** Keeps what's on screen. Time adds up if a tester comes back to a question. */
 function commit(s) {
   const ms = Math.round(performance.now() - shownAt);
+  if (s.kind === 'check' && haveNow) {
+    const prev = run.answers.confirm;
+    const changed = [...haveNow].sort().join() !== [...(prev?.have ?? [])].sort().join();
+    run.answers.confirm = { asked: ask.map((a) => a.id), have: [...haveNow], ms: (prev?.ms ?? 0) + ms };
+    if (changed) {
+      rebuild(haveNow);
+      // New dishes, so sorts and picks made on the old ones start again.
+      run.answers.marco = {}; run.answers.pierre = {}; run.answers.white = {};
+    }
+  }
   if (s.kind === 'sort' && order) {
     const g = quiz.rungs.find((x) => x.rung === s.rung);
     const prev = run.answers[s.section][s.rung];

@@ -179,6 +179,9 @@ export function encodeRungResult(quiz, answers, { version, at, testerId, runNo =
     directions: { marco: 'easiest first', pierre: 'tastiest first', white: 'tap order = preference' },
     // From 1.32.0 an unmoved sort was confirmed with a "Keep this order" tap, so it is a real answer.
     unmovedConfirmed: true,
+    // 1.39.0: the quick check before Round 1: what Harvey asked about, and what the tester has.
+    // The dishes below already count what they tapped; null: no check was shown.
+    confirm: answers.confirm ? { asked: [...(answers.confirm.asked ?? [])], have: [...(answers.confirm.have ?? [])], ms: answers.confirm.ms ?? null } : null,
     // 1.33.0: what the kitchen had that no shown dish used, and why: catalogue gaps across kitchens.
     ingredients: quiz.usage ? usageForResult(quiz.usage) : null,
     dishes: Object.fromEntries(Object.values(quiz.dishes).map((d) => [d.id, { name: d.name, rung: d.rung, harveys: d.harveys, raw: d.raw, ...(d.away ? { away: d.away } : {}) }])),

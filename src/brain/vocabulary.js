@@ -98,7 +98,6 @@ export const EQUIPMENT = {
   frying_pan: { label: 'Frying pan', kind: 'cookware', synonyms: ['frying pan', 'pan', 'nonstick pan', 'non-stick pan', 'skillet', 'fry pan'] },
   tawa: { label: 'Tawa', kind: 'cookware', synonyms: ['tawa', 'griddle', 'flat pan', 'dosa tawa'] },
   kadai: { label: 'Kadai / wok', kind: 'cookware', synonyms: ['kadai', 'kadhai', 'wok'] },
-  strainer: { label: 'Strainer / colander', kind: 'cookware', synonyms: ['strainer', 'colander', 'sieve', 'channi'] },
 };
 
 /** Small utensils every kitchen is assumed to have unless the user says otherwise. */
@@ -112,6 +111,8 @@ export const ASSUMED_BASICS = {
   knife: { label: 'Kitchen knife', synonyms: ['knife', 'kitchen knife', 'chef knife', 'paring knife'] },
   cutting_board: { label: 'Cutting board', synonyms: ['cutting board', 'chopping board', 'chopping block'] },
   spatula: { label: 'Spatula / ladle', synonyms: ['spatula', 'ladle', 'turner', 'karchi', 'tongs'] },
+  // 1.39.0: assumed, not a hard filter. It blocked 5 dishes in every tester kitchen, and a lid held ajar drains rice.
+  strainer: { label: 'Strainer / colander', synonyms: ['strainer', 'colander', 'sieve', 'channi'] },
 };
 
 /**
