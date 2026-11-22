@@ -7,7 +7,7 @@ import { profileOf, roleToken, ID_ROLES } from './pantry.js';
 const ALL = { ...FOODS, ...EQUIPMENT, ...ASSUMED_BASICS };
 
 /** Synonym index, longest phrase first so "peanut butter" beats "butter". */
-const SYNONYMS = Object.entries(ALL)
+export const SYNONYMS = Object.entries(ALL)
   .flatMap(([id, entry]) => [id.replace(/_/g, ' '), ...(entry.synonyms ?? [])].map((s) => ({ id, phrase: s.toLowerCase() })))
   .sort((a, b) => b.phrase.length - a.phrase.length);
 

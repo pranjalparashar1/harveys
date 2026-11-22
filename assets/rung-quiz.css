@@ -178,3 +178,13 @@
 .rq-fresh { flex: none; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: 500 14px var(--font); cursor: pointer; }
 .rq-fresh.armed { background: var(--ink); color: var(--bg); }
 .rq-fresh:active { transform: scale(.95); }
+
+/* quick check (1.41.0): cookware row, burners, "Anything else?" */
+.rq-hero.check .rq-group { margin-top: 20px; }
+.rq-hint.tight { margin: -2px 0 8px; }
+.rq-burners.appear { animation: rq-in .32s var(--settle) both; }
+.rq-have-add { margin-top: 2px; }
+.rq-typed:empty { display: none; }
+.rq-typed { margin-top: 10px; }
+.rq-tag.typed small { font-weight: 400; color: var(--muted); }
+.rq-tag.typed.new { border-style: dashed; }

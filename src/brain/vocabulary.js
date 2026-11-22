@@ -86,7 +86,7 @@ export const EQUIPMENT = {
   air_fryer: { label: 'Air fryer', kind: 'appliance', synonyms: ['air fryer', 'airfryer', 'philips air fryer', 'air-fryer'] },
   microwave: { label: 'Microwave', kind: 'appliance', synonyms: ['microwave', 'microwave oven', 'convection microwave'] },
   induction: { label: 'Induction cooktop', kind: 'appliance', synonyms: ['induction', 'induction cooktop', 'induction stove', 'induction hob'] },
-  gas_stove: { label: 'Gas stove', kind: 'appliance', synonyms: ['gas stove', 'gas hob', 'stove', 'burner', 'cooktop', 'chulha'] },
+  gas_stove: { label: 'Gas stove', kind: 'appliance', synonyms: ['gas stove', 'gas hob', 'stove', 'burner', 'cooktop', 'chulha', 'gas', 'gas burner', 'lpg stove'] },
   oven: { label: 'Oven / OTG', kind: 'appliance', synonyms: ['oven', 'otg', 'toaster oven'] },
   toaster: { label: 'Pop-up toaster', kind: 'appliance', synonyms: ['toaster', 'pop up toaster', 'bread toaster'] },
   sandwich_maker: { label: 'Sandwich maker', kind: 'appliance', synonyms: ['sandwich maker', 'sandwich toaster', 'grill sandwich maker', 'panini press'] },

@@ -26,7 +26,7 @@ import { DEFAULT_CONFIG } from '../src/brain/config.js';
 import { parseRungResults, latestRuns, scoreRungResult, rungMarcoChoices, buildRungQuiz } from '../src/brain/rung-quiz.js';
 import { buildInventory } from '../src/brain/inventory.js';
 import { usageForResult } from '../src/brain/usage.js';
-import { summariseFeedback, feedbackReport } from '../src/brain/feedback.js';
+import { summariseFeedback, feedbackReport, summariseCheck } from '../src/brain/feedback.js';
 import { CATALOGUE } from '../src/brain/catalogue.js';
 
 const [cmd = 'score', ...rest] = process.argv.slice(2);
@@ -98,6 +98,8 @@ for (const r of tastes) {
   console.log(`   Pierre: agreement ${pct(s.pierre.tau)} over ${s.pierre.rungs.length} rung(s)`);
   console.log(`   White:  Harvey's pick was first on ${s.white.hits}/${s.white.n} rungs, picked at all on ${s.white.inPicks}/${s.white.n}; why: ${Object.entries(s.white.criteria).sort((a, b) => b[1] - a[1]).map(([k]) => k).join(' > ') || '-'}`);
   const f = r.feedback;
+  const c = r.confirm;
+  if (c) console.log(`   Check:  has ${[...(c.have ?? []), ...(c.typed ?? []).filter((t) => t.id).map((t) => t.id)].join(', ') || 'nothing tapped'}${c.burners ? `; ${c.burners === 3 ? '3+' : c.burners} burner(s)` : ''}${c.noStove ? '; no stove on the list' : ''}${(c.unmatched ?? []).length ? `; NEW: ${c.unmatched.join(', ')}` : ''}`);
   if (f) console.log(`   Said:   ${f.skipped ? 'skipped' : [...f.chips, ...(f.dishIdeas ?? []).map((d) => `+${d.name}`), ...(f.wrongItems ?? []).map((x) => `-${x}`)].join(', ')}${f.note ? ` · "${f.note.slice(0, 80)}${f.note.length > 80 ? '…' : ''}"` : ''}`);
   for (const [k, v] of Object.entries(s.white.criteria)) criteria[k] = (criteria[k] ?? 0) + v;
   for (const row of r.pierre) row.ranking.forEach((id, i) => {
@@ -139,6 +141,11 @@ if (tastes.length) {
   }
 }
 
+{
+  const ck = summariseCheck(tastes);
+  if (ck.fresh.length) console.log(`\n# NEW from testers (no match in Harvey's list): ${ck.fresh.map((e) => `${e.name} (${e.testers.join(', ')})`).join('; ')}`);
+  if (ck.checked) console.log(`Quick check over ${ck.checked} tester(s), videos missed: ${ck.have.slice(0, 12).map((e) => `${e.label} ${e.n}`).join(', ') || '-'}`);
+}
 if (tastes.some((r) => r.feedback)) {
   const fs = summariseFeedback(tastes, { catalogue: CATALOGUE });
   const top = (xs, f) => xs.slice(0, 8).map(f).join(', ') || '-';
