@@ -2,7 +2,8 @@
 // after Proceed. Kiron's rules: one question
 // per screen, a story bar with no numbers, drag to sort, tap to pick, haptics on every tap.
 // The brain work is src/brain/rung-quiz.js; this file is screens, drag, storage and sending.
-import { buildRungQuiz, encodeRungResult, CRITERIA } from './brain/rung-quiz.js';
+import { buildRungQuiz, encodeRungResult, CRITERIA, WHY_NOT, DIFFICULTY } from './brain/rung-quiz.js';
+import { CATALOGUE } from './brain/catalogue.js';
 import { confirmCandidates, kitCandidates, withConfirmed, matchTyped, STOVES, BURNERS } from './brain/confirm.js';
 import { sendResult, flush, setToken, outbox } from './send.js';
 import { startFresh } from './fresh.js';
@@ -52,7 +53,7 @@ function loadStore() {
 let store = loadStore();
 const newTesterId = () => `t-${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
 /** A new run: a new person holding the phone, so a new tester id. */
-const freshRun = (name = '') => ({ testerId: newTesterId(), runNo: ++store.seq, name, v: opts.version, answers: { marco: {}, pierre: {}, white: {}, feedback: blankFeedback() }, at: 0, sent: false });
+const freshRun = (name = '') => ({ testerId: newTesterId(), runNo: ++store.seq, name, v: opts.version, answers: { marco: {}, pierre: {}, white: {}, cards: {}, difficulty: null, feedback: blankFeedback() }, at: 0, sent: false });
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch { /* private mode: keep going in memory */ } };
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -72,24 +73,24 @@ let typedNow = null; // 1.41.0: "Add something else", [{ text, id, label, how }]
 let burnersNow = null; // 1.41.0: how many can cook at once, 1 | 2 | 3 (3 or more)
 let kitchenIn = null;
 
-/** screens: intro, a cover per section, each step, end. */
+/**
+ * screens (1.42.0): intro, the quick check, Harvey thinking, the count, the meal cards, an offer
+ * to rate how hard they are, the ratings, feedback, end. The sorting rounds are gone.
+ */
 function screens() {
   const out = [{ kind: 'intro' }];
   if (ask.length || kit.kit.length || opts.items) out.push({ kind: 'check' });
-  let last = null;
-  for (const s of quiz.steps) {
-    if (s.section !== last) { out.push({ kind: 'cover', section: s.section }); last = s.section; }
-    out.push({ kind: s.section === 'white' ? 'white' : 'sort', ...s });
-  }
+  out.push({ kind: 'think' }, { kind: 'reveal' });
+  if (quiz.deck.length) out.push({ kind: 'cards' }, { kind: 'rateask' }, { kind: 'rate' });
   // 1.34.0: what went wrong, then one short screen for each chip tapped.
-  if (quiz.steps.length) {
-    out.push({ kind: 'feedback' });
-    const chips = run.answers.feedback?.chips ?? [];
-    for (const chip of FOLLOW_UPS) if (chips.includes(chip)) out.push({ kind: 'fb', chip });
-  }
+  out.push({ kind: 'feedback' });
+  const chips = run.answers.feedback?.chips ?? [];
+  for (const chip of FOLLOW_UPS) if (chips.includes(chip)) out.push({ kind: 'fb', chip });
   out.push({ kind: 'end' });
   return out;
 }
+/** Screens Back passes over: the thinking pause, and the ratings when they were skipped. */
+const passOver = (s) => s.kind === 'think' || (s.kind === 'rate' && run.answers.difficulty?.skipped);
 
 export function startRungQuiz({ kitchen, inventory, version, source, name = '', onExit, items = null, cache = {}, missingBasics = [] }) {
   opts = { version, source, name, onExit, items, cache, missingBasics, inventory };
@@ -110,6 +111,7 @@ export function startRungQuiz({ kitchen, inventory, version, source, name = '', 
   if (name && run.name == null) run.name = name; // a 1.34 run in progress; a "next person" run stays nameless
   run.testerId ??= newTesterId();
   run.answers.feedback ??= blankFeedback();
+  run.answers.cards ??= {};
   if (run.at >= screens().length) run.at = 0;
   sendState = '';
   save();
@@ -126,6 +128,7 @@ export function startRungQuiz({ kitchen, inventory, version, source, name = '', 
       const f = e.target.closest('.rq-add');
       if (f?.classList.contains('rq-have-add') && haveNow) { e.preventDefault(); haveAdd(f); } else if (f && fb) { e.preventDefault(); fbAdd(f); }
     });
+    document.addEventListener('keydown', onKey);
     root.addEventListener('input', (e) => { if (fb && e.target.matches('.rq-note textarea')) { fb.note = e.target.value.slice(0, 2000); save(); syncFb(); } });
   }
   root.hidden = false;
@@ -154,8 +157,9 @@ const resultOf = () => encodeRungResult(quiz, run.answers, { version: opts.versi
 // ── Render ──────────────────────────────────────────────────────────────────
 function bar(list) {
   // One segment per question (covers and the end screen don't count), filled as you go.
-  const qs = list.map((s, i) => [s, i]).filter(([s]) => s.kind === 'sort' || s.kind === 'white' || s.kind === 'feedback');
-  return `<div class="rq-bar" aria-hidden="true">${qs.map(([s, i]) => `<i class="${i < run.at ? 'done' : i === run.at ? 'now' : ''}"></i>`).join('')}</div>`;
+  const qs = list.map((s, i) => [s, i]).filter(([s]) => ['check', 'cards', 'rate', 'feedback'].includes(s.kind));
+  const part = (s) => (s.kind === 'cards' ? cardsDone() / quiz.deck.length : s.kind === 'rate' ? ratedCount() / quiz.deck.length : 0.45);
+  return `<div class="rq-bar" aria-hidden="true">${qs.map(([s, i]) => `<i class="${i < run.at ? 'done' : i === run.at ? 'now' : ''}"${i === run.at ? ` style="--p:${Math.max(0.06, part(s)).toFixed(3)}"` : ''}></i>`).join('')}</div>`;
 }
 
 function render(enter = false) {
@@ -173,14 +177,14 @@ function render(enter = false) {
     body = `
       <div class="rq-hero">
         <p class="rq-eyebrow">${run.name ? `Hi, ${esc(run.name)}` : 'Taste test'}</p>
-        <h1 class="rq-title">Teach Harvey how you cook</h1>
-        <p class="rq-lead">${Object.keys(quiz.dishes).length ? (opts.source === 'link' ? `Harvey looked through your kitchen and found ${Object.values(quiz.dishes).filter((d) => !d.away).length} dishes you can make${Object.values(quiz.dishes).some((d) => d.away) ? ', plus a few that need one more thing' : ''}.` : 'Harvey found dishes you can make with your kitchen.') : 'Harvey couldn’t find a dish in this kitchen yet.'} Picture a weeknight, 9 PM. You’re tired.</p>
+        <h1 class="rq-title">What would you cook tonight?</h1>
+        <p class="rq-lead">${Object.keys(quiz.dishes).length || ask.length || kit.kit.length ? 'Harvey looks at your kitchen and suggests dishes, easiest first.' : 'Harvey couldn’t find a dish in this kitchen yet.'} Picture a weeknight, 9 PM. You’re tired.</p>
         <ol class="rq-rounds">
-          <li><b>Easiest first</b><span>Sort by effort</span></li>
-          <li><b>Tastiest first</b><span>Sort by taste</span></li>
-          <li><b>What you’d cook</b><span>Pick your favourites</span></li>
+          <li><b>Quick check</b><span>Tap what Harvey missed</span></li>
+          <li><b>Yes or no</b><span>Would you make each dish?</span></li>
+          <li><b>How hard?</b><span>Rate the effort, if you like</span></li>
         </ol>
-        <p class="rq-small">All taps, a few minutes. At the end you can tell Harvey what it got wrong.</p>
+        <p class="rq-small">All taps, about two minutes. At the end you can tell Harvey what it got wrong.</p>
       </div>`;
     foot = Object.keys(quiz.dishes).length || ask.length || kit.kit.length
       ? `<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Start</span></button>`
@@ -257,6 +261,17 @@ function render(enter = false) {
         <div class="rq-chips">${CRITERIA.map((c) => `<button class="rq-chip" data-act="why" data-id="${c.id}" type="button">${HX}<span class="rq-num" aria-hidden="true"></span><span>${c.label}</span></button>`).join('')}</div>
       </div>`;
     foot = `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Next</span></button>`;
+  } else if (s.kind === 'think') {
+    ({ body, foot } = thinkScreen());
+  } else if (s.kind === 'reveal') {
+    ({ body, foot } = revealScreen(back));
+  } else if (s.kind === 'cards') {
+    ({ body, foot } = cardsScreen(back));
+  } else if (s.kind === 'rateask') {
+    ({ body, foot } = rateAskScreen(back));
+  } else if (s.kind === 'rate') {
+    run.answers.difficulty ??= { levels: {}, skipped: false };
+    ({ body, foot } = rateScreen(back));
   } else if (s.kind === 'feedback' || s.kind === 'fb') {
     fb = run.answers.feedback;
     fb.seen = true;
@@ -266,7 +281,7 @@ function render(enter = false) {
     ({ body, foot } = endScreen());
   }
 
-  const ghost = s.kind === 'intro' || s.kind === 'end';
+  const ghost = ['intro', 'end', 'think', 'reveal'].includes(s.kind);
   root.innerHTML = `
     <header class="rq-top">
       <button class="rq-icon" data-act="close" type="button" aria-label="Close">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -279,6 +294,10 @@ function render(enter = false) {
   if (picks) syncPicks();
   if (fb) syncFb();
   if (s.kind === 'check') syncHave();
+  clearTimeout(thinkTimer);
+  if (s.kind === 'think') thinkTimer = setTimeout(() => { if (screens()[run.at]?.kind === 'think' && !root.hidden) { run.at++; save(); render(); } }, THINK_MS);
+  if (s.kind === 'reveal') countUp();
+  if (s.kind === 'cards') syncCards(false);
 }
 
 function syncHave() {
@@ -562,7 +581,15 @@ function onClick(e) {
     el.textContent = 'Starting…';
     return startFresh();
   }
-  if (act === 'back') { commit(s); run.at = Math.max(0, run.at - 1); save(); return render(); }
+  if (act === 'back' && s.kind === 'cards' && cardsDone()) return undoCard();
+  if (act === 'back' && s.kind === 'rate' && ratedCount()) return undoRate();
+  if (act === 'back') { commit(s); run.at = Math.max(0, run.at - 1); while (run.at > 0 && passOver(list[run.at])) run.at--; save(); return render(); }
+  if (act === 'yes' || act === 'no') return decide(act === 'yes');
+  if (act === 'whynot') return whyNot(el.dataset.id);
+  if (act === 'rate') return rate(Number(el.dataset.level), el);
+  if (act === 'rateskip') { run.answers.difficulty = { levels: {}, skipped: true }; run.at += 2; save(); return render(); }
+  if (act === 'ratego') { run.answers.difficulty = { levels: { ...(run.answers.difficulty?.levels ?? {}) }, skipped: false }; run.at++; save(); return render(); }
+  if (act === 'ratestop') { run.at++; save(); return render(); }
   if (act === 'next' && el.classList.contains('ask')) { root.querySelector('.rq-why').scrollIntoView({ behavior: 'smooth', block: 'center' }); root.querySelector('.rq-why').classList.add('nudge'); setTimeout(() => root.querySelector('.rq-why')?.classList.remove('nudge'), 700); return; }
   if (act === 'next') { commit(s); run.at = Math.min(list.length - 1, run.at + 1); save(); return render(); }
   if (act === 'have') { toggleIn(haveNow, el.dataset.id); return syncHave(); }
@@ -602,6 +629,7 @@ function commit(s) {
       rebuild(next);
       // New dishes, so sorts and picks made on the old ones start again.
       run.answers.marco = {}; run.answers.pierre = {}; run.answers.white = {};
+      run.answers.cards = {}; run.answers.difficulty = null;
     }
   }
   if (s.kind === 'sort' && order) {
@@ -625,6 +653,7 @@ function commit(s) {
 // A finger on a row lifts it at once. The row follows the finger; the others slide out of
 // its way; letting go drops it in the gap. Transform only, so it stays smooth on a phone.
 function onPointerDown(e) {
+  if (e.target.closest('.rq-card.top')) return cardDrag(e);
   const li = e.target.closest('.rq-sort li');
   if (!li || e.button > 0 || !order) return;
   e.preventDefault();
@@ -710,6 +739,284 @@ function renumber(rows, from, to) {
   const [x] = ids.splice(from, 1);
   ids.splice(to, 0, x);
   ids.forEach((r, i) => { r.querySelector('.rq-pos').textContent = String(i + 1); });
+}
+
+// ── Meal cards (1.42.0) ─────────────────────────────────────────────────────
+// After the quick check: a short "thinking" pause, the count, then one dish per card, yes or
+// no (tap or swipe), then an offer to rate how hard each one is. Kiron's rules still hold: one
+// question at a time, the action at the thumb, haptics on every tap, no numbers in the bar.
+const THINK_MS = 3200;
+let thinkTimer = 0;
+let flying = false;
+let lastNo = null; // the card just turned down: "Why not?" stays open under the next one
+
+const ingredientsOf = (d) => (d.away ? d.how.split(' · ').slice(1).join(' · ') : d.how);
+const METHOD = { 1: 'No cooking', 2: 'One appliance', 3: 'On the stove', 4: 'Two things at once' };
+const ICON = {
+  1: '<path d="M4 12h16a8 8 0 0 1-16 0z"/><path d="M9 8c0-1.5 1-2 1-3.5M14 8c0-1.5 1-2 1-3.5"/>',
+  2: '<rect x="3" y="6" width="18" height="13" rx="2.5"/><rect x="6" y="9" width="9" height="7" rx="1"/><path d="M18 10v.01M18 13v.01"/>',
+  3: '<path d="M5 11h14v3a6 6 0 0 1-6 6h-2a6 6 0 0 1-6-6z"/><path d="M19 12h2M12 4c1.5 1.5 1.5 3 0 4.5"/>',
+  4: '<path d="M2 12h9v2.5a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4zM13 12h9v2.5a4 4 0 0 1-4 4h-1a4 4 0 0 1-4-4z"/><path d="M6.5 5c1 1 1 2 0 3M17.5 5c1 1 1 2 0 3"/>',
+};
+const icon = (rung) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[rung] ?? ICON[3]}</svg>`;
+const cardsDone = () => quiz.deck.filter((id) => run.answers.cards?.[id]).length;
+const ratedCount = () => quiz.rateOrder.filter((id) => run.answers.difficulty?.levels?.[id]).length;
+const yesCount = () => quiz.deck.filter((id) => run.answers.cards?.[id]?.yes).length;
+
+function thinkScreen() {
+  const items = (quiz.kitchen.items ?? []).length + (run.answers.confirm?.have?.length ?? 0) + (run.answers.confirm?.typed?.length ?? 0);
+  const lines = [
+    items ? `Reading the ${items} things in your kitchen` : 'Reading your kitchen',
+    `Checking ${CATALOGUE.length} recipes against your pots and pans`,
+    'Balancing protein and calories',
+    'Putting the easiest first',
+  ];
+  return {
+    body: `
+      <div class="rq-hero think" role="status" aria-live="polite">
+        <div class="rq-orb" aria-hidden="true"><i></i><i></i><i></i><span>H</span></div>
+        <h1 class="rq-q center">Harvey’s is thinking…</h1>
+        <ul class="rq-steps">${lines.map((l, i) => `<li style="--d:${(i * (THINK_MS - 600)) / lines.length}ms"><span class="rq-tickmini" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>${esc(l)}</li>`).join('')}</ul>
+      </div>`,
+    foot: '',
+  };
+}
+
+function revealScreen(back) {
+  const n = quiz.cookable;
+  const more = quiz.deck.length - n;
+  if (!quiz.deck.length) {
+    return {
+      body: `
+      <div class="rq-hero reveal">
+        <p class="rq-eyebrow">Harvey’s came up with</p>
+        <h1 class="rq-title">Nothing yet</h1>
+        <p class="rq-lead">Harvey couldn’t find a dish for this kitchen. Tell it what you do cook, and it’ll learn.</p>
+      </div>`,
+      foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Tell Harvey</span></button>`,
+    };
+  }
+  const fan = quiz.deck.slice(0, 3).map((id, i) => `<div class="rq-mini r${quiz.dishes[id].rung}" style="--i:${i}">${icon(quiz.dishes[id].rung)}<b>${esc(quiz.dishes[id].name)}</b></div>`).join('');
+  return {
+    body: `
+      <div class="rq-hero reveal">
+        <p class="rq-eyebrow">Harvey’s came up with</p>
+        <h1 class="rq-count"><span class="rq-num-big" data-to="${n}">${n}</span><span>${n === 1 ? 'thing you can cook' : 'things you can cook'}</span></h1>
+        ${more ? `<p class="rq-lead">plus ${more} that need${more === 1 ? 's' : ''} just one more thing.</p>` : ''}
+        <div class="rq-fan" aria-hidden="true">${fan}</div>
+        <p class="rq-lead">Easiest first. For each one: would you make it tonight? Tap yes or no, or swipe.</p>
+      </div>`,
+    foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Show me</span></button>`,
+  };
+}
+
+function countUp() {
+  const el = root.querySelector('.rq-num-big');
+  if (!el) return;
+  const to = Number(el.dataset.to);
+  if (to < 2 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const t0 = performance.now();
+  const tick = (t) => {
+    const k = Math.min(1, (t - t0) / 700);
+    el.textContent = String(Math.round(to * (1 - (1 - k) ** 3)));
+    if (k < 1) requestAnimationFrame(tick); else buzz(12);
+  };
+  el.textContent = '0';
+  requestAnimationFrame(tick);
+}
+
+function cardHtml(id, depth) {
+  const d = quiz.dishes[id];
+  const meta = [d.protein != null ? `${Math.round(d.protein)} g protein` : '', d.kcal != null ? `${Math.round(d.kcal)} kcal` : ''].filter(Boolean);
+  return `<article class="rq-card r${d.rung}${depth ? '' : ' top'}" data-id="${esc(id)}" style="--k:${depth}"${depth ? ' aria-hidden="true"' : ''}>
+      <div class="rq-card-art">${icon(d.rung)}<span>${METHOD[d.rung] ?? ''}</span></div>
+      <h2 class="rq-card-name">${esc(d.name)}</h2>
+      <p class="rq-card-ing">${esc(ingredientsOf(d))}</p>
+      <div class="rq-card-meta">${meta.map((m) => `<span>${esc(m)}</span>`).join('')}${d.away ? `<span class="away">Needs ${esc(d.away)}</span>` : ''}</div>
+      <span class="rq-stamp yes" aria-hidden="true">Yes</span><span class="rq-stamp no" aria-hidden="true">No</span>
+    </article>`;
+}
+
+function cardsScreen(back) {
+  lastNo = null;
+  return {
+    body: `
+      <p class="rq-eyebrow center">Would you make this tonight?</p>
+      <div class="rq-stack" aria-live="polite"></div>
+      <div class="rq-whynot" hidden></div>`,
+    foot: `${back}<div class="rq-yn">
+        <button class="rq-vote no" data-act="no" type="button" aria-label="No">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><span>No</span></button>
+        <button class="rq-vote yes" data-act="yes" type="button" aria-label="Yes">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>Yes</span></button>
+      </div>`,
+  };
+}
+
+/** The stack, the "Why not?" tray and the bar, without re-rendering the screen. */
+function syncCards(enter = true) {
+  const left = quiz.deck.filter((id) => !run.answers.cards[id]);
+  const stack = root.querySelector('.rq-stack');
+  if (!stack) return;
+  if (left.length) {
+    stack.innerHTML = left.slice(0, 3).map((id, i) => cardHtml(id, i)).reverse().join('');
+    if (enter) stack.querySelector('.rq-card.top')?.classList.add('in');
+  } else {
+    const y = yesCount();
+    stack.innerHTML = `<div class="rq-card done"><div class="rq-tick" aria-hidden="true"><svg viewBox="0 0 52 52"><path d="M14 27l8 8 16-17"/></svg></div><h2 class="rq-card-name">${y ? `You’d make ${y} of ${quiz.deck.length}` : 'None of these, got it'}</h2><p class="rq-card-ing">${y ? 'Harvey will remember.' : 'That helps Harvey too.'}</p></div>`;
+  }
+  const tray = root.querySelector('.rq-whynot');
+  if (lastNo && run.answers.cards[lastNo] && !run.answers.cards[lastNo].yes) {
+    const a = run.answers.cards[lastNo];
+    tray.innerHTML = `<p>Why not <b>${esc(quiz.dishes[lastNo].name)}</b>? <small>Optional</small></p><div class="rq-tags">${WHY_NOT.map((w) => `<button class="rq-tag${a.why === w.id ? ' on' : ''}" data-act="whynot" data-id="${w.id}" type="button" aria-pressed="${a.why === w.id}">${HX}<span>${esc(w.label)}</span></button>`).join('')}</div>`;
+    if (tray.hidden) { tray.hidden = false; tray.classList.add('appear'); }
+  } else tray.hidden = true;
+  const yn = root.querySelector('.rq-yn');
+  if (!left.length && yn) yn.outerHTML = `<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Next</span></button>`;
+  const top = root.querySelector('.rq-top .rq-bar');
+  if (top) top.outerHTML = bar(screens());
+}
+
+function decide(yes, fromDrag = false) {
+  if (flying) return;
+  const card = root.querySelector('.rq-card.top');
+  if (!card) return;
+  const id = card.dataset.id;
+  const ms = Math.round(performance.now() - shownAt);
+  shownAt = performance.now();
+  run.answers.cards[id] = { yes, why: null, ms };
+  save();
+  buzz(yes ? 12 : 8);
+  lastNo = yes ? null : id;
+  flying = true;
+  card.classList.add('gone', yes ? 'right' : 'left');
+  if (!fromDrag) card.style.transform = '';
+  setTimeout(() => { flying = false; syncCards(); }, 240);
+}
+
+function whyNot(why) {
+  const a = run.answers.cards[lastNo];
+  if (!a) return;
+  a.why = a.why === why ? null : why;
+  save();
+  syncCards(false);
+}
+
+function undoCard() {
+  const done = quiz.deck.filter((id) => run.answers.cards[id]);
+  const id = done[done.length - 1];
+  delete run.answers.cards[id];
+  lastNo = null;
+  save();
+  if (!root.querySelector('.rq-yn')) return render();
+  syncCards();
+}
+
+/** Swipe the top card: it follows the finger and tilts; past a third of the way it goes. */
+function cardDrag(e) {
+  if (flying || e.button > 0) return;
+  const card = e.target.closest('.rq-card.top');
+  const x0 = e.clientX;
+  const y0 = e.clientY;
+  const t0 = performance.now();
+  const pid = e.pointerId;
+  const w = card.getBoundingClientRect().width;
+  let dx = 0;
+  try { card.setPointerCapture(pid); } catch { /* old browsers */ }
+  card.classList.add('drag');
+  const move = (ev) => {
+    if (ev.pointerId !== pid) return;
+    dx = ev.clientX - x0;
+    const dy = (ev.clientY - y0) * 0.25;
+    card.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${dx / 18}deg)`;
+    card.style.setProperty('--sy', String(Math.max(0, Math.min(1, dx / (w * 0.3)))));
+    card.style.setProperty('--sn', String(Math.max(0, Math.min(1, -dx / (w * 0.3)))));
+  };
+  const up = (ev) => {
+    if (ev.pointerId !== pid) return;
+    card.removeEventListener('pointermove', move);
+    card.removeEventListener('pointerup', up);
+    card.removeEventListener('pointercancel', up);
+    card.classList.remove('drag');
+    const fast = Math.abs(dx) / Math.max(1, performance.now() - t0) > 0.6 && Math.abs(dx) > 40;
+    if (Math.abs(dx) > w * 0.3 || fast) return decide(dx > 0, true);
+    card.style.transform = '';
+    card.style.removeProperty('--sy');
+    card.style.removeProperty('--sn');
+  };
+  card.addEventListener('pointermove', move);
+  card.addEventListener('pointerup', up);
+  card.addEventListener('pointercancel', up);
+}
+
+function rateAskScreen(back) {
+  const y = yesCount();
+  return {
+    body: `
+      <div class="rq-hero">
+        <p class="rq-eyebrow">${y ? `You’d make ${y} of ${quiz.deck.length}` : 'Thanks, noted'}</p>
+        <h1 class="rq-title">How hard is each one?</h1>
+        <p class="rq-lead">Rate them for a tired night, even the ones you said no to. It teaches Harvey what “easy” means to you.</p>
+        <div class="rq-scale-demo" aria-hidden="true">${DIFFICULTY.map((d) => `<i class="l${d.level}"></i>`).join('')}</div>
+        <p class="rq-small">One tap each, about ${Math.max(1, Math.round(quiz.deck.length * 3 / 60))} minute${quiz.deck.length * 3 >= 90 ? 's' : ''}.</p>
+      </div>`,
+    foot: `${back}<div class="rq-sendbox"><button class="btn primary xl rq-go" data-act="ratego" type="button">${HX}<span>Rate them</span></button><div class="rq-alt"><button class="btn link" data-act="rateskip" type="button">Skip</button></div></div>`,
+  };
+}
+
+function rateScreen(back) {
+  const levels = run.answers.difficulty?.levels ?? {};
+  const id = quiz.rateOrder.find((x) => !levels[x]);
+  if (!id) {
+    return {
+      body: '<div class="rq-hero"><h1 class="rq-title">All rated</h1><p class="rq-lead">Thank you. One last screen.</p></div>',
+      foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Next</span></button>`,
+    };
+  }
+  const d = quiz.dishes[id];
+  const said = run.answers.cards?.[id];
+  const left = quiz.rateOrder.length - ratedCount();
+  return {
+    body: `
+      <p class="rq-eyebrow center">How hard, on a tired night?</p>
+      <div class="rq-card solo r${d.rung}">
+        <div class="rq-card-art">${icon(d.rung)}<span>${METHOD[d.rung] ?? ''}</span>${said ? `<em class="${said.yes ? 'y' : 'n'}">${said.yes ? 'You’d make it' : 'You said no'}</em>` : ''}</div>
+        <h2 class="rq-card-name">${esc(d.name)}</h2>
+        <p class="rq-card-ing">${esc(ingredientsOf(d))}</p>
+      </div>
+      <div class="rq-levels" role="group" aria-label="How hard">${DIFFICULTY.map((x) => `<button class="rq-level l${x.level}" data-act="rate" data-level="${x.level}" type="button">${HX}<i aria-hidden="true"></i><b>${esc(x.label)}</b><small>${esc(x.hint)}</small></button>`).join('')}</div>
+      ${ratedCount() >= 2 && left > 1 ? '<button class="rq-none" data-act="ratestop" type="button">That’s enough for now</button>' : ''}`,
+    foot: back ? `${back}<span class="rq-left">${left === 1 ? 'Last one' : `${left} to go`}</span>` : '',
+  };
+}
+
+function rate(level, el) {
+  if (flying) return;
+  const id = quiz.rateOrder.find((x) => !run.answers.difficulty.levels[x]);
+  if (!id) return;
+  run.answers.difficulty.levels[id] = { level, ms: Math.round(performance.now() - shownAt) };
+  save();
+  el.classList.add('on');
+  buzz(10);
+  flying = true;
+  setTimeout(() => {
+    flying = false;
+    if (!quiz.rateOrder.some((x) => !run.answers.difficulty.levels[x])) run.at++;
+    save();
+    render();
+  }, 260);
+}
+
+function undoRate() {
+  const done = quiz.rateOrder.filter((x) => run.answers.difficulty.levels[x]);
+  delete run.answers.difficulty.levels[done[done.length - 1]];
+  save();
+  render();
+}
+
+function onKey(e) {
+  if (!root || root.hidden || e.target.matches('input, textarea')) return;
+  const s = screens()[run.at];
+  if (s?.kind === 'cards' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); decide(e.key === 'ArrowRight'); }
+  if (s?.kind === 'rate' && /^[1-5]$/.test(e.key)) { const b = root.querySelector(`.rq-level[data-level="${e.key}"]`); if (b) rate(Number(e.key), b); }
 }
 
 // ── Send ────────────────────────────────────────────────────────────────────

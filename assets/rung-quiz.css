@@ -188,3 +188,104 @@
 .rq-typed { margin-top: 10px; }
 .rq-tag.typed small { font-weight: 400; color: var(--muted); }
 .rq-tag.typed.new { border-style: dashed; }
+
+/* 1.42.0 meal cards: thinking, the count, a card stack (tap or swipe), difficulty ratings.
+   Each card's colour is how it's cooked: no heat, one appliance, the stove, two at once. */
+.rq-bar i.now::after { transform: scaleX(var(--p, .45)); }
+.rq-card, .rq-mini { --c: var(--accent); }
+.r1 { --c: var(--ok); } .r2 { --c: var(--blue); } .r3 { --c: var(--accent); } .r4 { --c: #b78cf2; }
+.center { text-align: center; }
+
+/* thinking */
+.rq-hero.think { align-items: center; text-align: center; gap: 22px; }
+.rq-orb { position: relative; width: 112px; height: 112px; display: flex; align-items: center; justify-content: center; }
+.rq-orb i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; animation: rq-ring 2.4s var(--settle) infinite; }
+.rq-orb i:nth-child(2) { animation-delay: .8s; }
+.rq-orb i:nth-child(3) { animation-delay: 1.6s; }
+@keyframes rq-ring { 0% { transform: scale(.45); opacity: .9; } 100% { transform: scale(1.15); opacity: 0; } }
+.rq-orb span { width: 64px; height: 64px; border-radius: 20px; background: var(--accent); color: var(--accent-ink); font: 800 34px Georgia, serif; display: flex; align-items: center; justify-content: center; animation: rq-breathe 1.6s ease-in-out infinite; }
+@keyframes rq-breathe { 50% { transform: scale(1.08) rotate(-4deg); } }
+.rq-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; text-align: left; width: min(100%, 340px); }
+.rq-steps li { display: flex; align-items: center; gap: 12px; font-size: 16px; color: var(--muted); opacity: .35; animation: rq-step .4s var(--settle) var(--d) forwards; }
+@keyframes rq-step { to { opacity: 1; color: var(--ink); } }
+.rq-tickmini { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; animation: rq-tickon .3s var(--pop) calc(var(--d) + .5s) forwards; }
+.rq-tickmini svg { width: 14px; height: 14px; fill: none; stroke: var(--accent-ink); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; opacity: 0; animation: rq-fadein .2s calc(var(--d) + .55s) forwards; }
+@keyframes rq-tickon { from { transform: scale(.6); } to { background: var(--ok); border-color: var(--ok); transform: scale(1); } }
+@keyframes rq-fadein { to { opacity: 1; } }
+
+/* the count */
+.rq-hero.reveal { gap: 12px; }
+.rq-count { margin: 0; display: flex; flex-direction: column; gap: 2px; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spacing: -.025em; }
+.rq-num-big { font-size: 112px; line-height: .95; letter-spacing: -.05em; color: var(--accent); font-variant-numeric: tabular-nums; animation: rq-pop .5s var(--pop); }
+.rq-fan { position: relative; height: 150px; margin: 14px 0 4px; }
+.rq-mini { position: absolute; left: 50%; top: 8px; width: 150px; height: 128px; margin-left: -75px; padding: 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--c); display: flex; flex-direction: column; gap: 10px; transform: translate3d(calc((var(--i) - 1) * 92px), calc(var(--i) * 0px), 0) rotate(calc((var(--i) - 1) * 8deg)); animation: rq-deal .55s var(--pop) calc(var(--i) * .09s + .3s) both; }
+.rq-mini:nth-child(2) { z-index: 1; top: 0; }
+@keyframes rq-deal { from { opacity: 0; transform: translate3d(0, 40px, 0) rotate(0); } }
+.rq-mini svg, .rq-card-art svg { width: 26px; height: 26px; fill: none; stroke: var(--c); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.rq-mini b { font-size: 14px; line-height: 1.25; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* the stack */
+.rq-body[data-kind="cards"], .rq-body[data-kind="rate"] { gap: 12px; }
+.rq-stack { position: relative; flex: 1; min-height: 330px; max-height: 440px; margin: 4px 0; }
+.rq-card { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 14px; padding: 22px 20px; border-radius: 24px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  transform: translate3d(0, calc(var(--k) * 14px), 0) scale(calc(1 - var(--k) * .05)); transition: transform .32s var(--settle), opacity .24s; will-change: transform; }
+.rq-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 120px; background: linear-gradient(to bottom, color-mix(in srgb, var(--c) 22%, transparent), transparent); pointer-events: none; }
+.rq-card[style*="--k:1"] { opacity: .7; } .rq-card[style*="--k:2"] { opacity: .4; }
+.rq-card.top { cursor: grab; border-color: color-mix(in srgb, var(--c) 45%, var(--line)); }
+.rq-card.top.in { animation: rq-forward .32s var(--settle); }
+@keyframes rq-forward { from { transform: translate3d(0, 14px, 0) scale(.95); } }
+.rq-card.drag { transition: none; cursor: grabbing; }
+.rq-card.gone { transition: transform .26s cubic-bezier(.4,0,1,1), opacity .26s; opacity: 0; }
+.rq-card.gone.right { transform: translate3d(130%, -30px, 0) rotate(18deg) !important; }
+.rq-card.gone.left { transform: translate3d(-130%, -30px, 0) rotate(-18deg) !important; }
+.rq-card-art { position: relative; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
+.rq-card-art svg { width: 44px; height: 44px; padding: 9px; border-radius: 14px; background: color-mix(in srgb, var(--c) 16%, var(--surface)); }
+.rq-card-art em { margin-left: auto; font-style: normal; font-size: 12px; letter-spacing: .02em; text-transform: none; padding: 4px 10px; border-radius: 12px; background: var(--surface2); color: var(--muted); }
+.rq-card-art em.y { background: var(--ok-soft); color: var(--ok); }
+.rq-card-name { position: relative; margin: auto 0 0; text-transform: none; color: var(--ink); font-size: 32px; line-height: 1.1; font-weight: 800; letter-spacing: -.025em; text-wrap: balance; }
+.rq-card-ing { position: relative; margin: 0; font-size: 16px; line-height: 1.45; color: var(--muted); text-transform: capitalize; }
+.rq-card-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.rq-card-meta span { padding: 6px 11px; border-radius: 14px; background: var(--surface2); font-size: 13.5px; font-weight: 600; }
+.rq-card-meta .away { background: var(--blue-soft); color: var(--blue); }
+.rq-stamp { position: absolute; top: 22px; padding: 4px 14px; border: 3px solid; border-radius: 10px; font-size: 26px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; pointer-events: none; opacity: 0; }
+.rq-stamp.yes { right: 18px; color: var(--ok); transform: rotate(10deg); opacity: var(--sy, 0); }
+.rq-stamp.no { left: 18px; color: var(--no); transform: rotate(-10deg); opacity: var(--sn, 0); }
+.rq-card.gone.right .rq-stamp.yes, .rq-card.gone.left .rq-stamp.no { opacity: 1; }
+.rq-card.done { align-items: center; justify-content: center; text-align: center; animation: rq-in .32s var(--settle); }
+.rq-card.done .rq-card-name { margin: 0; font-size: 26px; }
+.rq-card.done .rq-card-ing { text-transform: none; }
+
+.rq-whynot { padding: 12px 14px 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+.rq-whynot.appear { animation: rq-in .28s var(--settle) both; }
+.rq-whynot p { margin: 0 0 10px; font-size: 15px; }
+.rq-whynot small { color: var(--muted); margin-left: 4px; }
+.rq-whynot .rq-tag { min-height: 40px; font-size: 14px; }
+
+.rq-yn { flex: 1; display: flex; gap: 12px; }
+.rq-vote { position: relative; flex: 1; min-height: 72px; margin-bottom: 5px; border-radius: 22px; border: 2px solid; background: var(--surface); font: 700 19px var(--font); display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform .3s var(--pop); }
+.rq-vote svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.rq-vote.no { color: var(--no); border-color: color-mix(in srgb, var(--no) 55%, transparent); box-shadow: 0 5px 0 var(--no-soft); }
+.rq-vote.yes { color: var(--accent-ink); background: var(--ok); border-color: var(--ok); box-shadow: 0 5px 0 color-mix(in srgb, var(--ok) 45%, #000); }
+.rq-vote:active { transform: translateY(3px) scale(.97); transition: none; }
+
+/* rating */
+.rq-scale-demo { display: flex; gap: 6px; margin-top: 8px; }
+.rq-scale-demo i { flex: 1; height: 10px; border-radius: 5px; background: var(--lv); animation: rq-deal .4s var(--pop) both; }
+.rq-scale-demo i:nth-child(2) { animation-delay: .05s; } .rq-scale-demo i:nth-child(3) { animation-delay: .1s; } .rq-scale-demo i:nth-child(4) { animation-delay: .15s; } .rq-scale-demo i:nth-child(5) { animation-delay: .2s; }
+.l1 { --lv: var(--ok); } .l2 { --lv: #9ccf5a; } .l3 { --lv: #e8c15a; } .l4 { --lv: var(--accent); } .l5 { --lv: var(--no); }
+.rq-card.solo { position: relative; inset: auto; min-height: 0; gap: 10px; padding: 18px; animation: rq-next .3s var(--settle); }
+.rq-card.solo .rq-card-name { margin-top: 6px; font-size: 26px; }
+.rq-levels { display: flex; flex-direction: column; gap: 8px; }
+.rq-level { position: relative; display: grid; grid-template-columns: 14px 1fr auto; align-items: center; gap: 12px; min-height: 56px; padding: 0 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform .3s var(--pop), background-color .15s, border-color .15s; }
+.rq-level i { width: 14px; height: 14px; border-radius: 50%; background: var(--lv); }
+.rq-level b { font-size: 17px; font-weight: 600; }
+.rq-level small { font-size: 13px; color: var(--muted); }
+.rq-level:active { transform: scale(.98); transition: none; }
+.rq-level.on { border-color: var(--lv); background: color-mix(in srgb, var(--lv) 20%, var(--surface)); animation: rq-settle .3s var(--pop); }
+.rq-left { flex: 1; text-align: center; color: var(--muted); font-size: 15px; }
+.rq-body[data-kind="rate"] .rq-none { margin-top: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rq-orb *, .rq-mini, .rq-card, .rq-num-big, .rq-scale-demo i { animation: none !important; }
+  .rq-steps li, .rq-tickmini, .rq-tickmini svg { animation-duration: .01s !important; }
+}
