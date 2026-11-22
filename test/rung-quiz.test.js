@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { loadKitchens } from '../src/brain/kitchen-test.js';
 import { buildInventory } from '../src/brain/inventory.js';
 import { TIER_ORDER } from '../src/brain/ranker.js';
-import { buildRungQuiz, encodeRungResult, scoreRungResult, rungMarcoChoices, parseRungResults, kendall, seededShuffle, PER_RUNG, RUNG_FORMAT } from '../src/brain/rung-quiz.js';
+import { buildRungQuiz, encodeRungResult, scoreRungResult, rungMarcoChoices, parseRungResults, latestRuns, kendall, seededShuffle, PER_RUNG, RUNG_FORMAT, THIN_KITCHEN } from '../src/brain/rung-quiz.js';
 
 const cache = JSON.parse(readFileSync(new URL('../data/ingredient-cache.json', import.meta.url), 'utf8'));
 const [kitchen] = loadKitchens(readFileSync(new URL('../data/test-kitchens/kitchens.json', import.meta.url), 'utf8'));
@@ -104,4 +104,36 @@ test('send: one file per run, and #send= saves the token once', async () => {
   assert.equal(outbox().length, 0);
   assert.equal(calls.filter(([, m]) => m === 'PUT').length, 2);
   assert.ok(calls[0][0].endsWith('/contents/data/kitchen-tests/taste-2026-11-22-k-1-t-9.json'));
+});
+
+// 1.37.0: Banana Singh's kitchen (22 Nov): a steel pot, eggs, bread, milk, oats, no pan, no microwave.
+const BANANA = { kitchen: 'Pot kitchen', items: ['eggs', 'milk', 'ghee', 'oats', 'brown bread', 'black salt', 'gas stove', 'steel pot'].map((name) => ({ name })) };
+
+test('a steel pot cooks milk oats and a boiled-egg sandwich, not just boiled eggs', () => {
+  const q = buildRungQuiz({ kitchen: BANANA, inventory: buildInventory(BANANA.items) });
+  const real = Object.values(q.dishes).filter((d) => !d.away).map((d) => d.id);
+  for (const id of ['boiled_eggs', 'pot_milk_oats', 'boiled_egg_sandwich']) assert.ok(real.includes(id), id);
+});
+
+test('a thin kitchen gets one-away dishes for Marco, marked, and White shows only cookable ones', () => {
+  const q = buildRungQuiz({ kitchen: BANANA, inventory: buildInventory(BANANA.items) });
+  const all = Object.values(q.dishes);
+  assert.ok(all.filter((d) => !d.away).length < THIN_KITCHEN);
+  const away = all.filter((d) => d.away);
+  assert.ok(away.length > 0);
+  for (const d of away) assert.match(d.how, /^Needs /);
+  assert.ok(q.steps.some((s) => s.section === 'marco'));
+  for (const g of q.rungs) {
+    for (const id of g.shown.white) assert.ok(!q.dishes[id].away, id);
+    if (g.pick) assert.ok(!q.dishes[g.pick].away);
+  }
+  const res = encodeRungResult(q, { white: Object.fromEntries(q.rungs.map((g) => [g.rung, { picks: [], none: true }])) }, { version: 't', at: 'x', testerId: 't' });
+  for (const w of res.white) assert.ok(w.harveys == null || !res.dishes[w.harveys].away);
+  assert.ok(Object.values(res.dishes).some((d) => d.away));
+});
+
+test('latestRuns keeps a named tester’s last run per kitchen, never merges unnamed ones', () => {
+  const r = (tester, testerId, at, kitchenId = 'k') => ({ tester, testerId, at, kitchenId });
+  const runs = [r('Banana Singh', 'a', '2026-11-22T14:02'), r('banana singh', 'b', '2026-11-22T14:03'), r('', 'c', '1'), r('', 'd', '2'), r('Banana Singh', 'e', '3', 'k2')];
+  assert.deepEqual(latestRuns(runs).map((x) => x.testerId), ['b', 'c', 'd', 'e']);
 });

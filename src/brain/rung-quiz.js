@@ -13,7 +13,8 @@
 
 import { CATALOGUE } from './catalogue.js';
 import { DEFAULT_CONFIG } from './config.js';
-import { rank, RUNGS, TIER_ORDER, byRungOrder } from './ranker.js';
+import { rank, RUNGS, TIER_ORDER, byRungOrder, describeMissing } from './ranker.js';
+import { CAPABILITIES } from './vocabulary.js';
 import { PIERRE_SEED } from './train-data.js';
 import { featureVector } from './learn.js';
 import { kitchenId, effortFacts, MOMENT, TARGETS, fitFrom } from './kitchen-test.js';
@@ -23,6 +24,14 @@ import { cleanFeedback } from './feedback.js';
 export const RUNG_FORMAT = 'harveys-rung-quiz/1';
 /** Most dishes a tester sorts on one rung: Harvey's top ones (more is a chore on a phone). */
 export const PER_RUNG = 5;
+/**
+ * Thin kitchens (1.37.0): with fewer cookable dishes than this, the quiz adds dishes that are one
+ * missing thing away, marked "Needs …". Ranking effort doesn't need the kitchen to have it all,
+ * and Harsh's and Banana Singh's tests (22 Nov) each got one dish and no Marco sort at all.
+ */
+export const THIN_KITCHEN = 4;
+/** Most dishes a thin kitchen's quiz grows to, cookable and one-away together. */
+export const THIN_FILL = 8;
 export const CRITERIA = [
   { id: 'macros', label: 'Macros' },
   { id: 'difficulty', label: 'Effort' },
@@ -72,10 +81,15 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdi
   let kind = 'meal';
   let r = go(kind);
   if (!r.ranked.length) r = go(kind = 'any');
+  const pool = r.ranked.length < THIN_KITCHEN
+    ? [...r.ranked, ...oneAway({ r, kind, inventory, catalogue, verdicts, config }).slice(0, THIN_FILL - r.ranked.length)]
+    : r.ranked;
+  // Cookable dishes lead their rung, so White's "Harvey's pick" is always one you can make.
+  const realFirst = (a, b) => (a.away ? 1 : 0) - (b.away ? 1 : 0) || byRungOrder(a, b);
   const byRung = {};
   let groups = [];
   for (const rung of [1, 2, 3, 4]) {
-    const items = r.ranked.filter((x) => x.rung === rung).sort(byRungOrder).slice(0, PER_RUNG);
+    const items = pool.filter((x) => x.rung === rung).sort(realFirst).slice(0, PER_RUNG);
     if (!items.length) continue;
     byRung[rung] = items;
     groups.push({ rungs: [rung], items });
@@ -94,28 +108,49 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdi
   const rungs = groups.map((grp) => {
     grp.items.forEach((x) => {
       dishes[x.meal.id] = {
-        id: x.meal.id, name: x.meal.name, rung: x.rung, how: shortHow(x.meal), facts: effortFacts(x.raw),
+        id: x.meal.id, name: x.meal.name, rung: x.rung, how: x.away ? `Needs ${x.away} · ${shortHow(x.meal)}` : shortHow(x.meal), facts: effortFacts(x.raw),
+        ...(x.away ? { away: x.away } : {}),
         protein: x.meal.macros?.protein ?? null, kcal: x.meal.macros?.kcal ?? null,
         harveys: { order: byRung[x.rung].indexOf(x), tier: x.pierre.tier, friction: round(x.friction), score: round(x.score) },
         raw: compactRaw(x.raw),
       };
     });
     const ids = grp.items.map((x) => x.meal.id);
+    // White asks what you'd actually cook, so it shows only dishes this kitchen can make.
+    const real = grp.items.filter((x) => !x.away).map((x) => x.meal.id);
     const key = grp.rungs[0];
     return {
-      rung: key, rungs: grp.rungs, name: grp.rungs.map((n) => RUNGS[n]).join(' + '), dishes: ids,
-      shown: { marco: seededShuffle(ids, `${id}|marco|${key}`), pierre: seededShuffle(ids, `${id}|pierre|${key}`), white: seededShuffle(ids, `${id}|white|${key}`) },
+      rung: key, rungs: grp.rungs, name: grp.rungs.map((n) => RUNGS[n]).join(' + '), dishes: ids, pick: real[0] ?? null,
+      shown: { marco: seededShuffle(ids, `${id}|marco|${key}`), pierre: seededShuffle(ids, `${id}|pierre|${key}`), white: real.length > 1 ? seededShuffle(real, `${id}|white|${key}`) : real },
     };
   });
   const sortable = rungs.filter((g) => g.dishes.length > 1);
   const steps = [
     ...sortable.map((g) => ({ section: 'marco', rung: g.rung })),
     ...sortable.map((g) => ({ section: 'pierre', rung: g.rung })),
-    ...rungs.map((g) => ({ section: 'white', rung: g.rung })),
+    ...rungs.filter((g) => g.shown.white.length).map((g) => ({ section: 'white', rung: g.rung })),
   ];
   // 1.33.0: every listed item, used or not, and why not (src/brain/usage.js).
   const usage = ingredientUsage({ items: kitchen.items ?? [], inventory, ranking: r, shown: Object.keys(dishes), catalogue, kind, config });
   return { id, kitchen, rungs, dishes, steps, usage };
+}
+
+/**
+ * Dishes blocked by exactly one thing (kit or food), ranked as if the kitchen had it, Harvey's
+ * order (tier, then score). Each carries `away`: the missing thing in words ("a pan").
+ */
+function oneAway({ r, kind, inventory, catalogue, verdicts, config }) {
+  const out = [];
+  for (const f of r.filtered ?? []) {
+    if (kind !== 'any' && f.meal.kind !== kind) continue;
+    const need = [...f.missing.equipment, ...f.missing.ingredients.map((opts) => opts[0])];
+    if (need.length !== 1 || String(need[0]).startsWith('role:')) continue;
+    const id = CAPABILITIES[need[0]]?.anyOf[0] ?? need[0];
+    const inv = { ...inventory, have: new Set([...inventory.have, id]), missingBasics: new Set([...(inventory.missingBasics ?? [])].filter((u) => u !== need[0])) };
+    const x = rank({ inventory: inv, targets: TARGETS, context: { hour: MOMENT.hour, weekday: MOMENT.weekday, kind }, catalogue: [f.meal], verdicts, config }).ranked[0];
+    if (x) out.push({ ...x, away: describeMissing(f.missing)[0] });
+  }
+  return out.sort((a, b) => TIER_ORDER[b.pierre.tier] - TIER_ORDER[a.pierre.tier] || b.score - a.score || a.meal.id.localeCompare(b.meal.id));
 }
 
 const round = (n) => (Number.isFinite(n) ? Math.round(n * 1000) / 1000 : null);
@@ -146,12 +181,12 @@ export function encodeRungResult(quiz, answers, { version, at, testerId, runNo =
     unmovedConfirmed: true,
     // 1.33.0: what the kitchen had that no shown dish used, and why: catalogue gaps across kitchens.
     ingredients: quiz.usage ? usageForResult(quiz.usage) : null,
-    dishes: Object.fromEntries(Object.values(quiz.dishes).map((d) => [d.id, { name: d.name, rung: d.rung, harveys: d.harveys, raw: d.raw }])),
+    dishes: Object.fromEntries(Object.values(quiz.dishes).map((d) => [d.id, { name: d.name, rung: d.rung, harveys: d.harveys, raw: d.raw, ...(d.away ? { away: d.away } : {}) }])),
     marco: sortRows('marco'),
     pierre: sortRows('pierre'),
     white: quiz.rungs.filter((g) => answers.white?.[g.rung]).map((g) => {
       const a = answers.white[g.rung];
-      return { rung: g.rung, rungs: g.rungs ?? [g.rung], harveys: g.dishes[0], shown: g.shown.white, picks: a.none ? [] : a.picks, none: !!a.none, criteria: a.criteria ?? [], ms: a.ms ?? null };
+      return { rung: g.rung, rungs: g.rungs ?? [g.rung], harveys: g.pick === undefined ? g.dishes[0] : g.pick, shown: g.shown.white, picks: a.none ? [] : a.picks, none: !!a.none, criteria: a.criteria ?? [], ms: a.ms ?? null };
     }),
     // 1.34.0: what the tester said went wrong (src/brain/feedback.js). null: never reached it.
     feedback: cleanFeedback(answers.feedback, quiz),
@@ -209,6 +244,22 @@ export function scoreRungResult(r) {
 }
 
 export { fitFrom };
+
+/**
+ * One result per tester and kitchen (1.37.0): the latest. A named tester who sends again (Banana
+ * Singh sent runs 2 and 3 a minute apart, 22 Nov) redid the test, so the earlier run is dropped.
+ * Each run has its own testerId, so a named tester is matched by name; an unnamed one never merges.
+ */
+export function latestRuns(results) {
+  const best = new Map();
+  for (const r of results) {
+    const who = r.tester ? `name:${String(r.tester).trim().toLowerCase()}` : `id:${r.testerId}`;
+    const key = `${who}|${r.kitchenId}`;
+    const prev = best.get(key);
+    if (!prev || String(r.at ?? '') > String(prev.at ?? '')) best.set(key, r);
+  }
+  return results.filter((r) => [...best.values()].includes(r));
+}
 
 /** Text (an issue body, a shared file, a pasted message) → the rung-quiz results in it. */
 export function parseRungResults(text) {

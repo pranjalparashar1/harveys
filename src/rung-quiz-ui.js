@@ -144,7 +144,7 @@ function render(enter = false) {
       <div class="rq-hero">
         <p class="rq-eyebrow">${run.name ? `Hi, ${esc(run.name)}` : 'Taste test'}</p>
         <h1 class="rq-title">Teach Harvey how you cook</h1>
-        <p class="rq-lead">${Object.keys(quiz.dishes).length ? (opts.source === 'link' ? `Harvey looked through your kitchen and found ${Object.keys(quiz.dishes).length} dishes you can make.` : 'Harvey found dishes you can make with your kitchen.') : 'Harvey couldn’t find a dish in this kitchen yet.'} Picture a weeknight, 9 PM. You’re tired.</p>
+        <p class="rq-lead">${Object.keys(quiz.dishes).length ? (opts.source === 'link' ? `Harvey looked through your kitchen and found ${Object.values(quiz.dishes).filter((d) => !d.away).length} dishes you can make${Object.values(quiz.dishes).some((d) => d.away) ? ', plus a few that need one more thing' : ''}.` : 'Harvey found dishes you can make with your kitchen.') : 'Harvey couldn’t find a dish in this kitchen yet.'} Picture a weeknight, 9 PM. You’re tired.</p>
         <ol class="rq-rounds">
           <li><b>Easiest first</b><span>Sort by effort</span></li>
           <li><b>Tastiest first</b><span>Sort by taste</span></li>
