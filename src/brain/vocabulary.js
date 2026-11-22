@@ -45,7 +45,7 @@ export const FOODS = {
   poha: { label: 'Poha', group: 'grain', synonyms: ['poha', 'flattened rice', 'beaten rice'] },
   besan: { label: 'Besan', group: 'grain', synonyms: ['besan', 'gram flour', 'chickpea flour'] },
   // One food since 20 Nov (pranjal): the differences between dals are negligible. Chole, rajma, chana stay separate.
-  dal: { label: 'Dal', group: 'grain', synonyms: ['dal', 'daal', 'moong dal', 'yellow moong dal', 'split moong', 'masoor dal', 'toor dal', 'arhar dal', 'urad dal', 'chana dal'] },
+  dal: { label: 'Dal', group: 'grain', synonyms: ['dal', 'daal', 'moong dal', 'yellow moong dal', 'split moong', 'masoor dal', 'toor dal', 'arhar dal', 'urad dal', 'chana dal', 'lentils', 'lentil'] },
   chickpeas: { label: 'Chickpeas (boiled or canned)', group: 'protein', synonyms: ['chickpeas', 'chole', 'kabuli chana', 'canned chickpeas', 'boiled chana'] },
   // Staples from pranjal's "The staples and their processes" (21 Nov): soaked overnight, then pressure-cooked.
   rajma: { label: 'Rajma', group: 'protein', synonyms: ['rajma', 'kidney beans', 'red kidney beans'] },
@@ -65,6 +65,10 @@ export const FOODS = {
   frozen_peas: { label: 'Frozen peas', group: 'veg', synonyms: ['peas', 'frozen peas', 'matar', 'green peas'] },
   sweet_corn: { label: 'Sweet corn', group: 'veg', synonyms: ['sweet corn', 'corn', 'frozen corn'] },
   lemon: { label: 'Lemon', group: 'veg', synonyms: ['lemon', 'lime', 'nimbu'] },
+  // Tea and coffee with milk (1.36.0, pranjal 22 Nov): made only when spotted with milk.
+  tea: { label: 'Tea leaves', group: 'drink', synonyms: ['tea', 'chai', 'chai patti', 'tea leaves', 'tea powder', 'tata tea', 'red label', 'tea bags', 'black tea', 'assam tea'] },
+  green_tea: { label: 'Green tea', group: 'drink', synonyms: ['green tea', 'green tea bags'] },
+  coffee: { label: 'Coffee', group: 'drink', synonyms: ['coffee', 'instant coffee', 'coffee powder', 'nescafe', 'bru', 'filter coffee', 'black coffee'] },
   banana: { label: 'Banana', group: 'fruit', synonyms: ['banana', 'bananas', 'kela'] },
   salt: { label: 'Salt', group: 'spice', synonyms: ['salt', 'namak', 'tata salt', 'rock salt'] },
   black_pepper: { label: 'Black pepper', group: 'spice', synonyms: ['black pepper', 'pepper', 'kali mirch'] },
@@ -109,6 +113,13 @@ export const ASSUMED_BASICS = {
   cutting_board: { label: 'Cutting board', synonyms: ['cutting board', 'chopping board', 'chopping block'] },
   spatula: { label: 'Spatula / ladle', synonyms: ['spatula', 'ladle', 'turner', 'karchi', 'tongs'] },
 };
+
+/**
+ * Pantry staples every kitchen is assumed to have (1.36.0, pranjal 22 Nov): a video rarely
+ * shows the salt tin or the oil bottle, and missing salt alone hid every egg dish from Harsh.
+ * buildInventory adds them unless the user marks them missing.
+ */
+export const ASSUMED_STAPLES = Object.freeze(['salt', 'oil']);
 
 /** Capabilities: one requirement that several pieces of kit can satisfy. */
 export const CAPABILITIES = {
