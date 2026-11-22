@@ -18,6 +18,7 @@ import { PIERRE_SEED } from './train-data.js';
 import { featureVector } from './learn.js';
 import { kitchenId, effortFacts, MOMENT, TARGETS, fitFrom } from './kitchen-test.js';
 import { ingredientUsage, usageForResult } from './usage.js';
+import { cleanFeedback } from './feedback.js';
 
 export const RUNG_FORMAT = 'harveys-rung-quiz/1';
 /** Most dishes a tester sorts on one rung: Harvey's top ones (more is a chore on a phone). */
@@ -150,6 +151,8 @@ export function encodeRungResult(quiz, answers, { version, at, testerId, runNo =
       const a = answers.white[g.rung];
       return { rung: g.rung, rungs: g.rungs ?? [g.rung], harveys: g.dishes[0], shown: g.shown.white, picks: a.none ? [] : a.picks, none: !!a.none, criteria: a.criteria ?? [], ms: a.ms ?? null };
     }),
+    // 1.34.0: what the tester said went wrong (src/brain/feedback.js). null: never reached it.
+    feedback: cleanFeedback(answers.feedback, quiz),
   };
 }
 

@@ -4,6 +4,9 @@
 //   node scripts/kitchen-tests.mjs plan [kitchens.json …]   print each kitchen's three quizzes
 //   node scripts/kitchen-tests.mjs score [results …] [--persona <text>]
 //                                                           score each result, then fit Marco on all
+//   node scripts/kitchen-tests.mjs feedback [results …] [--out <file.md>]
+//                                                           testers' feedback (1.34.0) as Markdown:
+//                                                           what went wrong, dishes to add, list errors
 //
 // score reads both kinds of result: test.html's kitchen tests (harveys-kitchen-test/1) and the
 // taste test after Proceed on the main page (harveys-rung-quiz/1, 1.31.0). A taste test's
@@ -16,17 +19,21 @@
 // Results are the downloaded files, the copied text, or a kitchen-test issue body.
 // score never edits config: it prints the pooled frictionTheta and Pierre verdicts to review.
 
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { loadKitchens, buildKitchenTest, whiteFor, parseResults, scoreResult, marcoChoices, fitFrom } from '../src/brain/kitchen-test.js';
 import { DEFAULT_CONFIG } from '../src/brain/config.js';
 import { parseRungResults, scoreRungResult, rungMarcoChoices, buildRungQuiz } from '../src/brain/rung-quiz.js';
 import { buildInventory } from '../src/brain/inventory.js';
 import { usageForResult } from '../src/brain/usage.js';
+import { summariseFeedback, feedbackReport } from '../src/brain/feedback.js';
+import { CATALOGUE } from '../src/brain/catalogue.js';
 
 const [cmd = 'score', ...rest] = process.argv.slice(2);
 const pi = rest.indexOf('--persona');
 const personaFilter = pi >= 0 ? String(rest[pi + 1] ?? '').toLowerCase() : '';
-const files = rest.filter((a, i) => !a.startsWith('--') && !(pi >= 0 && i === pi + 1));
+const oi = rest.indexOf('--out');
+const outFile = oi >= 0 ? rest[oi + 1] : null;
+const files = rest.filter((a, i) => !a.startsWith('--') && !(pi >= 0 && i === pi + 1) && !(oi >= 0 && i === oi + 1));
 let cache = {};
 try { cache = JSON.parse(readFileSync(new URL('../data/ingredient-cache.json', import.meta.url), 'utf8')); } catch { /* empty cache */ }
 const dir = new URL('../data/kitchen-tests/', import.meta.url);
@@ -50,6 +57,11 @@ const texts = paths.map((p) => readFileSync(p, 'utf8'));
 const results = texts.flatMap(parseResults)
   .filter((r) => !personaFilter || String(r.persona ?? '').toLowerCase().includes(personaFilter));
 const tastes = personaFilter ? [] : texts.flatMap(parseRungResults);
+if (cmd === 'feedback') {
+  const md = feedbackReport(summariseFeedback(tastes, { catalogue: CATALOGUE }));
+  if (outFile) { writeFileSync(outFile, md); console.log(`Wrote ${outFile}`); } else process.stdout.write(md);
+  process.exit(0);
+}
 if (!results.length && !tastes.length) { console.log(`No kitchen-test results found${personaFilter ? ` for persona "${personaFilter}"` : ''}.`); process.exit(0); }
 const known = Object.fromEntries(allKitchens().map((k) => [k.id, k]));
 
@@ -81,6 +93,8 @@ for (const r of tastes) {
   console.log(`   Marco:  agreement ${pct(s.marco.tau)} (Kendall, 1 = same order) over ${s.marco.rungs.length} rung(s), ${s.marco.pairs} pairs; ${s.marco.rungs.filter((x) => !x.moved).length} left as shown`);
   console.log(`   Pierre: agreement ${pct(s.pierre.tau)} over ${s.pierre.rungs.length} rung(s)`);
   console.log(`   White:  Harvey's pick was first on ${s.white.hits}/${s.white.n} rungs, picked at all on ${s.white.inPicks}/${s.white.n}; why: ${Object.entries(s.white.criteria).sort((a, b) => b[1] - a[1]).map(([k]) => k).join(' > ') || '-'}`);
+  const f = r.feedback;
+  if (f) console.log(`   Said:   ${f.skipped ? 'skipped' : [...f.chips, ...(f.dishIdeas ?? []).map((d) => `+${d.name}`), ...(f.wrongItems ?? []).map((x) => `-${x}`)].join(', ')}${f.note ? ` · "${f.note.slice(0, 80)}${f.note.length > 80 ? '…' : ''}"` : ''}`);
   for (const [k, v] of Object.entries(s.white.criteria)) criteria[k] = (criteria[k] ?? 0) + v;
   for (const row of r.pierre) row.ranking.forEach((id, i) => {
     const d = r.dishes[id];
@@ -119,6 +133,15 @@ if (tastes.length) {
     console.log(`Named by a dish, but out: ${tally((u) => u.unused.filter((x) => x.reasons[0]?.dish).map((x) => `${x.name} [${x.reasons[0].why}]`)) || '-'}`);
     console.log(`One thing away: ${tally((u) => (u.blockers ?? []).map((b) => `${b.thing} → ${b.dishes.join(' / ')}`)) || '-'}`);
   }
+}
+
+if (tastes.some((r) => r.feedback)) {
+  const fs = summariseFeedback(tastes, { catalogue: CATALOGUE });
+  const top = (xs, f) => xs.slice(0, 8).map(f).join(', ') || '-';
+  console.log(`\n# Feedback from ${fs.answered} tester(s) (full report: node scripts/kitchen-tests.mjs feedback)`);
+  console.log(`Went wrong: ${top(fs.chips, (c) => `${c.label} ${c.n}`)}`);
+  console.log(`Catalogue candidates: ${top(fs.ideas.filter((x) => x.status === 'new'), (x) => `${x.name} (${x.n})`)}`);
+  console.log(`Kitchen list errors: ${fs.wrongItems.length + fs.missedItems.length ? `${top(fs.wrongItems, (x) => `-${x.name}`)}; ${top(fs.missedItems, (x) => `+${x.name}`)}` : '-'}`);
 }
 
 const fit = fitFrom(pooled);

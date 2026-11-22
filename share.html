@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Harvey’s share links</title>
+  <meta name="description" content="Turn a kitchen list into a taste-test link to send on WhatsApp or iMessage.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d97757'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='36' text-anchor='middle' fill='%23fff'%3EH%3C/text%3E%3C/svg%3E">
+  <link rel="preload" href="assets/fonts/poppins-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/share.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero hero-row">
+      <h1>Share links</h1>
+      <a class="btn link hero-link" href="./">Harvey</a>
+    </header>
+
+    <section class="card" aria-labelledby="in-title">
+      <h2 id="in-title">Kitchen list</h2>
+      <p class="mini">Paste what the video agent returned, or upload its file. One link per kitchen.</p>
+      <textarea id="kitchens" rows="6" spellcheck="false" placeholder='[{"kitchen": "Riya, Bandra", "items": [{"name": "eggs", "category": "protein"}, …]}]' aria-label="Kitchen JSON"></textarea>
+      <div class="row">
+        <button class="btn primary" id="make" data-haptic type="button">Make links</button>
+        <label class="btn" for="file">Upload<input id="file" type="file" accept=".json,.txt,application/json,text/plain" hidden></label>
+      </div>
+      <p class="error" id="err" role="alert" hidden></p>
+    </section>
+
+    <section id="out" aria-live="polite"></section>
+
+    <details class="card msg" id="msg-box">
+      <summary>Message</summary>
+      <p class="mini">Sent with every link. {link} is where the link goes.</p>
+      <textarea id="msg" rows="4" aria-label="Message"></textarea>
+      <button class="btn link quiet" id="msg-reset" type="button">Reset</button>
+    </details>
+  </main>
+  <script type="module" src="src/share.js"></script>
+</body>
+</html>
