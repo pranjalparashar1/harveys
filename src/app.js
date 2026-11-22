@@ -11,8 +11,9 @@ import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, allowedModels, detectProvide
 import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
+import { startRungQuiz } from './rung-quiz-ui.js';
 
-const VERSION = '1.30.1';
+const VERSION = '1.31.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -866,6 +867,7 @@ function init() {
     if (kitchen) {
       state.pickSource = 'inventory';
       state.reviewingPaste = true;
+      state.kitchen = kitchen;
       setItems(kitchen.items);
       showPasteSummary(kitchen.items);
       return;
@@ -877,6 +879,7 @@ function init() {
     state.pickSource = 'inventory';
     const list = items.map((name) => ({ name, canonical: null, category: 'other', source: 'paste' }));
     state.reviewingPaste = true;
+    state.kitchen = { kitchen: 'Pasted list', diet: 'unknown', notes: '', items: list };
     setItems(list);
     showPasteSummary(list);
   });
@@ -889,7 +892,13 @@ function init() {
     box.open = true;
     $('paste-text').focus();
   });
+  // Proceed (1.31.0): the taste test. Marco, then Pierre sort each rung; White picks; Send.
+  // ?debug keeps the old ladder of picks.
   $('paste-proceed').addEventListener('click', () => {
+    if (document.body.classList.contains('testing')) {
+      startRungQuiz({ kitchen: state.kitchen ?? { kitchen: 'Pasted list', items: state.items }, inventory: inventory(), version: VERSION, source: 'paste' });
+      return;
+    }
     endPasteReview();
     show($('paste-list'), true);
     $('paste-list').open = false;
