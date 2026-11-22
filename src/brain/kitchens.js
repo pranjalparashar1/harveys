@@ -39,7 +39,9 @@ export function importKitchens(input) {
 /** JSON, or JSON wrapped in prose or a code fence. */
 function parseLoose(text) {
   const s = String(text ?? '');
-  for (const [open, close] of [['[', ']'], ['{', '}']]) {
+  // Whichever bracket opens first: a single kitchen object holds an items array.
+  const pairs = [['[', ']'], ['{', '}']].sort((x, y) => (s.indexOf(x[0]) + 1 || Infinity) - (s.indexOf(y[0]) + 1 || Infinity));
+  for (const [open, close] of pairs) {
     const a = s.indexOf(open);
     const b = s.lastIndexOf(close);
     if (a < 0 || b <= a) continue;
