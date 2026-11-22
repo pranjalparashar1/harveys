@@ -113,7 +113,7 @@ export const ASSUMED_BASICS = {
 /** Capabilities: one requirement that several pieces of kit can satisfy. */
 export const CAPABILITIES = {
   stovetop: { label: 'a stove (induction or gas)', anyOf: ['induction', 'gas_stove'] },
-  pot: { label: 'a pot to boil in', anyOf: ['saucepan', 'pressure_cooker', 'kadai'] },
+  pot: { label: 'a pot to boil in', anyOf: ['saucepan', 'pressure_cooker'] },
   pan: { label: 'a pan', anyOf: ['frying_pan', 'tawa', 'kadai'] },
 };
 

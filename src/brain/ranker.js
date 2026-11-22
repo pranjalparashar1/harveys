@@ -390,7 +390,21 @@ export function rank({ inventory, targets, context = {}, catalogue, config = DEF
     .slice(0, config.unlockSuggestions)
     .map(([id, meals]) => ({ id, label: labelFor(id), meals }));
 
-  return { ladder: buildLadder(ranked), ranked, filtered, vetoed, unlocks, lambda, tomorrow };
+  // "Get a saucepan to unlock": meals blocked only by one piece of kit (1.30.0). A kitchen
+  // with a nonstick kadai but no saucepan or kettle has no real way to boil water.
+  const kitCounts = new Map();
+  for (const f of filtered) {
+    if (f.missing.ingredients.length || new Set(f.missing.equipment).size !== 1) continue;
+    const key = f.missing.equipment[0];
+    if (!kitCounts.has(key)) kitCounts.set(key, []);
+    kitCounts.get(key).push(f.meal.name);
+  }
+  const kitUnlocks = [...kitCounts.entries()]
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+    .slice(0, config.unlockSuggestions)
+    .map(([id, meals]) => ({ id, label: labelFor(id), meals }));
+
+  return { ladder: buildLadder(ranked), ranked, filtered, vetoed, unlocks, kitUnlocks, lambda, tomorrow };
 }
 
 /** Human description of what blocked a meal. */

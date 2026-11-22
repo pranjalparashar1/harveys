@@ -5,14 +5,14 @@ import {
   CATALOGUE, DEFAULT_CONFIG, PROVISIONAL, ASSUMED_BASICS,
   buildInventory, parseItemList, kindOf, labelFor, rank, describeMissing,
   PIERRE_SEED, cookLogEntry, liveRepairEntry, liveVerdicts, soakNeeds,
-  importKitchens, looksLikeKitchenJson, classifyPrompt, parseClassification,
+  importKitchens, looksLikeKitchenJson, kitchenTips, classifyPrompt, parseClassification,
 } from './brain/index.js';
 import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, allowedModels, detectProvider, checkKey, pickModel, scanKitchen, designRecipes, callModel, AIError } from './ai/providers.js';
 import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 
-const VERSION = '1.29.0';
+const VERSION = '1.30.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -730,10 +730,15 @@ function renderResult(result) {
 
   cards.push(aiIdeasCard(result));
 
-  if (result.unlocks.length) {
+  const tips = kitchenTips(inventory(), state.items);
+  const kit = result.kitUnlocks ?? [];
+  if (result.unlocks.length || kit.length || tips.length) {
+    const line = (u) => h('p', { class: 'unlock' }, 'Get ', h('strong', {}, u.label.toLowerCase()), ` and you unlock ${u.meals.length} more: `, h('span', { class: 'muted' }, u.meals.join(', ')));
     cards.push(h('section', { class: 'card' },
       h('h2', {}, 'One thing to buy'),
-      result.unlocks.map((u) => h('p', { class: 'unlock' }, 'Get ', h('strong', {}, u.label.toLowerCase()), ` and you unlock ${u.meals.length} more: `, h('span', { class: 'muted' }, u.meals.join(', '))))));
+      tips.map((t) => h('p', { class: 'unlock' }, t)),
+      result.unlocks.map(line),
+      kit.map(line)));
   }
 
   const blockedCatalogue = result.filtered.filter((f) => f.meal.origin !== 'ai');
@@ -821,6 +826,16 @@ function init() {
   $('use-demo').addEventListener('click', () => {
     state.pickSource = 'inventory';
     setItems(DEMO_KITCHEN.map((i) => ({ ...i, source: 'demo' })));
+    $('step-inventory').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // Test persona kitchens (1.30.0), in the catalogue format, until real kitchens come back.
+  $('use-test-kitchen')?.addEventListener('click', async () => {
+    const res = await fetch('data/kitchens/aspirational-bachelor.json');
+    const kitchen = importKitchens(await res.text())[0];
+    if (!kitchen) return;
+    state.pickSource = 'inventory';
+    setItems(kitchen.items);
     $('step-inventory').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 

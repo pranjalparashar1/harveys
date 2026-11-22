@@ -50,3 +50,20 @@ function parseLoose(text) {
 
 /** True when pasted text looks like a catalogued-kitchen JSON rather than a plain list. */
 export const looksLikeKitchenJson = (text) => /^\s*(```\w*\s*)?[[{]/.test(String(text ?? ''));
+
+/**
+ * Plain-language warnings about missing fundamentals (1.30.0), e.g. no way to boil water,
+ * or a metal spatula on nonstick. Takes the inventory buildInventory returns and the items.
+ */
+export function kitchenTips(inventory, items = []) {
+  const have = inventory?.have ?? new Set();
+  const names = items.map((i) => String(i.name ?? '').toLowerCase());
+  const tips = [];
+  if (!['kettle', 'saucepan', 'pressure_cooker'].some((id) => have.has(id))) {
+    tips.push('Nothing here boils water quickly: no kettle, saucepan or pressure cooker. A saucepan is the cheapest fix.');
+  }
+  const metal = names.some((n) => /\b(metal|steel)\b.*\b(spatula|ladle|turner|karchi|spoon)\b/.test(n));
+  const nonstick = names.some((n) => /non[- ]?stick/.test(n));
+  if (metal && nonstick) tips.push('A metal spatula scratches nonstick. Stir with a silicone or wooden one.');
+  return tips;
+}
