@@ -17,6 +17,7 @@ import { rank, RUNGS, TIER_ORDER, byRungOrder } from './ranker.js';
 import { PIERRE_SEED } from './train-data.js';
 import { featureVector } from './learn.js';
 import { kitchenId, effortFacts, MOMENT, TARGETS, fitFrom } from './kitchen-test.js';
+import { ingredientUsage, usageForResult } from './usage.js';
 
 export const RUNG_FORMAT = 'harveys-rung-quiz/1';
 /** Most dishes a tester sorts on one rung: Harvey's top ones (more is a chore on a phone). */
@@ -67,8 +68,9 @@ const shortHow = (meal) => {
 export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdicts = PIERRE_SEED, config = DEFAULT_CONFIG }) {
   const id = kitchenId(kitchen);
   const go = (kind) => rank({ inventory, targets: TARGETS, context: { hour: MOMENT.hour, weekday: MOMENT.weekday, kind }, catalogue, verdicts, config });
-  let r = go('meal');
-  if (!r.ranked.length) r = go('any');
+  let kind = 'meal';
+  let r = go(kind);
+  if (!r.ranked.length) r = go(kind = 'any');
   const byRung = {};
   let groups = [];
   for (const rung of [1, 2, 3, 4]) {
@@ -110,7 +112,9 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdi
     ...sortable.map((g) => ({ section: 'pierre', rung: g.rung })),
     ...rungs.map((g) => ({ section: 'white', rung: g.rung })),
   ];
-  return { id, kitchen, rungs, dishes, steps };
+  // 1.33.0: every listed item, used or not, and why not (src/brain/usage.js).
+  const usage = ingredientUsage({ items: kitchen.items ?? [], inventory, ranking: r, shown: Object.keys(dishes), catalogue, kind, config });
+  return { id, kitchen, rungs, dishes, steps, usage };
 }
 
 const round = (n) => (Number.isFinite(n) ? Math.round(n * 1000) / 1000 : null);
@@ -137,6 +141,8 @@ export function encodeRungResult(quiz, answers, { version, at, testerId, runNo =
     directions: { marco: 'easiest first', pierre: 'tastiest first', white: 'tap order = preference' },
     // From 1.32.0 an unmoved sort was confirmed with a "Keep this order" tap, so it is a real answer.
     unmovedConfirmed: true,
+    // 1.33.0: what the kitchen had that no shown dish used, and why: catalogue gaps across kitchens.
+    ingredients: quiz.usage ? usageForResult(quiz.usage) : null,
     dishes: Object.fromEntries(Object.values(quiz.dishes).map((d) => [d.id, { name: d.name, rung: d.rung, harveys: d.harveys, raw: d.raw }])),
     marco: sortRows('marco'),
     pierre: sortRows('pierre'),

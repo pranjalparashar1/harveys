@@ -12,8 +12,9 @@ import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 import { startRungQuiz } from './rung-quiz-ui.js';
+import { buildRungQuiz } from './brain/rung-quiz.js';
 
-const VERSION = '1.32.0';
+const VERSION = '1.33.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -403,7 +404,58 @@ async function classifyUnknown() {
   }
 }
 
+// ── Ingredient check (?debug, 1.33.0) ──────────────────────────────────────
+// The taste test's own dishes, so this is exactly what a tester would see. Each item listed
+// is used (by which dishes) or not (each catalogue dish that names it, and why it's out).
+let usageTab = 'unused';
+let lastUsage = null;
+const testKitchen = () => state.kitchen ?? { kitchen: 'Pasted list', items: state.items };
+function renderUsage() {
+  const card = $('usage');
+  if (!card || document.body.classList.contains('testing')) return;
+  show(card, state.items.length > 0);
+  if (!state.items.length) return;
+  const quiz = buildRungQuiz({ kitchen: { ...testKitchen(), items: state.items }, inventory: inventory() });
+  const u = lastUsage = { kitchen: testKitchen().kitchen, dishes: Object.values(quiz.dishes).map((d) => d.name), ...quiz.usage };
+  const kit = u.items.filter((x) => x.kit);
+  const usedKit = kit.filter((x) => x.status === 'used').length;
+  $('usage-sum').textContent = `The taste test shows ${u.dishes.length} dish${u.dishes.length === 1 ? '' : 'es'}. They use ${u.used - usedKit} of ${u.items.length - kit.length} foods and ${usedKit} of ${kit.length} pieces of kit.`;
+  for (const b of $('usage-tabs').querySelectorAll('button')) {
+    b.setAttribute('aria-checked', String(b.dataset.value === usageTab));
+    b.textContent = `${b.dataset.value === 'used' ? 'Used' : 'Not used'} · ${b.dataset.value === 'used' ? u.used : u.unused}`;
+  }
+  const row = (x, lines) => h('li', { class: `usage-row ${x.status}` },
+    h('b', {}, x.name, x.kit ? h('span', { class: 'usage-tag' }, 'kit') : null),
+    lines.length ? h('ul', {}, lines) : null);
+  const reasonLine = (r) => h('li', {}, r.dish ? h('span', { class: 'usage-dish' }, r.dish) : null, h('span', { class: 'usage-why' }, r.why));
+  let body;
+  if (usageTab === 'used') {
+    body = [h('ul', { class: 'usage-list' }, u.items.filter((x) => x.status === 'used').map((x) => row(x, x.usedIn.map((d) => h('li', {}, h('span', { class: 'usage-dish' }, d))))))];
+  } else {
+    const gaps = u.items.filter((x) => x.status === 'unused' && !x.reasons[0]?.dish);
+    const blocked = u.items.filter((x) => x.status !== 'used' && !gaps.includes(x));
+    body = [
+      u.blockers.length ? h('div', { class: 'usage-group' },
+        h('h3', {}, 'One thing away'),
+        h('ul', { class: 'usage-list' }, u.blockers.slice(0, 4).map((b) => h('li', { class: 'usage-row' }, h('b', {}, b.thing), h('ul', {}, b.dishes.map((d) => h('li', {}, h('span', { class: 'usage-dish' }, d)))))))) : null,
+      blocked.length ? h('div', { class: 'usage-group' },
+        h('h3', {}, 'A dish names it, but it’s out'),
+        h('ul', { class: 'usage-list' }, blocked.map((x) => {
+          const first = x.reasons.slice(0, 3).map(reasonLine);
+          const more = x.reasons.slice(3);
+          return row(x, more.length ? [...first, h('li', {}, h('details', { class: 'usage-more' }, h('summary', {}, `${more.length} more`), h('ul', {}, more.map(reasonLine))))] : first);
+        }))) : null,
+      gaps.length ? h('div', { class: 'usage-group' },
+        h('h3', {}, 'No recipe uses it'),
+        h('div', { class: 'chips' }, gaps.map((x) => h('span', { class: 'chip static' }, x.name)))) : null,
+      !u.unused ? h('p', { class: 'mini' }, 'Every item is used.') : null,
+    ];
+  }
+  $('usage-body').replaceChildren(...body.filter(Boolean));
+}
+
 function renderInventory() {
+  renderUsage();
   const has = state.items.length > 0;
   show($('step-inventory'), has);
   show($('step-context'), has && !state.reviewingPaste);
@@ -851,6 +903,16 @@ function init() {
   }
   $('scan').addEventListener('click', scan);
   $('copy-debug')?.addEventListener('click', copyDebug);
+  $('usage-tabs')?.addEventListener('click', (e) => {
+    const v = e.target.closest('button')?.dataset.value;
+    if (v && v !== usageTab) { usageTab = v; renderUsage(); }
+  });
+  $('usage-copy')?.addEventListener('click', () => {
+    navigator.clipboard?.writeText(JSON.stringify({ version: VERSION, ingredientCheck: lastUsage }, null, 1)).then(() => { $('usage-copy').textContent = 'Copied'; }, () => {});
+  });
+  $('usage-quiz')?.addEventListener('click', () => {
+    startRungQuiz({ kitchen: testKitchen(), inventory: inventory(), version: VERSION, source: 'paste' });
+  });
   $('use-demo').addEventListener('click', () => {
     state.pickSource = 'inventory';
     endPasteReview();

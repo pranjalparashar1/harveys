@@ -1,16 +1,22 @@
-// One-tap send (1.32.0): a taste test goes straight into the repo as a new file in
-// data/kitchen-tests/, through GitHub's contents API, with a token saved once on this phone.
+// One-tap send: a taste test goes straight into the repo as a new file in data/kitchen-tests/.
 //
-// Set up once: open the app with #send=<token> (a fine-grained token for this repo only,
-// Contents: read and write), or paste it on the last screen. It lives in this browser's
-// localStorage and nowhere else. Then every Send is one tap, for every tester on the phone.
+// 1.33.0, any phone: Send posts the result to the relay (relay/worker.js, a Cloudflare Worker
+// that holds the GitHub token), so a friend on their own phone taps once and it's in. No
+// token, no account, no download.
+// 1.32.0, fallback: a token saved on this phone (#send=<token>, a fine-grained token for this
+// repo only, Contents: read and write) commits through GitHub's contents API directly. Used
+// when no relay is set, or the relay is down and this phone has a token.
 //
 // No signal? The file waits in an outbox on the phone and goes on the next send, the next
-// open, or when the phone comes back online. One file per run, so sends never collide.
+// open, every 30 s while the page is open, or when the phone comes back online.
+// One file per run, so sends never collide.
 
 export const REPO = 'pranjalparashar1/harveys';
 export const DIR = 'data/kitchen-tests';
+/** The relay's address (relay/README.md). #relay=<url> overrides it on one phone, for testing. */
+export const RELAY_URL = '';
 const TOKEN_KEY = 'harveys.gh.v1';
+const RELAY_KEY = 'harveys.relay.v1';
 const OUTBOX_KEY = 'harveys.outbox.v1';
 const API = `https://api.github.com/repos/${REPO}`;
 
@@ -21,12 +27,18 @@ export const getToken = () => read(TOKEN_KEY, null);
 export const hasToken = () => !!getToken();
 export const forgetToken = () => write(TOKEN_KEY, null);
 export const outbox = () => read(OUTBOX_KEY, []);
+export const relayUrl = () => read(RELAY_KEY, null) || RELAY_URL || null;
+/** Can this phone send without asking anyone for anything? */
+export const canSend = () => !!(relayUrl() || getToken());
 
-/** #send=<token> in the address saves the token and takes it out of the address bar. */
+/** #send=<token> saves the token, #relay=<url> (or #relay=off) the relay; both leave the address bar. */
 export function captureToken(loc = globalThis.location, hist = globalThis.history) {
-  const m = /(?:^#|&)send=([^&]+)/.exec(loc?.hash ?? '');
-  if (!m) return false;
-  write(TOKEN_KEY, decodeURIComponent(m[1]).trim());
+  const hash = loc?.hash ?? '';
+  const t = /(?:^#|&)send=([^&]+)/.exec(hash);
+  const r = /(?:^#|&)relay=([^&]+)/.exec(hash);
+  if (!t && !r) return false;
+  if (t) write(TOKEN_KEY, decodeURIComponent(t[1]).trim());
+  if (r) { const v = decodeURIComponent(r[1]).trim(); write(RELAY_KEY, v === 'off' ? null : v); }
   try { hist?.replaceState(null, '', loc.pathname + loc.search); } catch { /* old browser */ }
   return true;
 }
@@ -66,34 +78,51 @@ async function put(item, token) {
   return 'retry';
 }
 
-/** Sends everything waiting in the outbox. → { sent, left, auth } */
-export async function flush() {
-  const token = getToken();
-  let box = outbox();
-  if (!token || !box.length) return { sent: 0, left: box.length, auth: !token };
-  let sent = 0;
-  let auth = false;
-  for (const item of [...box]) {
-    let r;
-    try { r = await put(item, token); } catch { r = 'retry'; }
-    if (r === 'sent') { sent++; box = box.filter((x) => x.path !== item.path); write(OUTBOX_KEY, box); }
-    if (r === 'auth') { auth = true; break; }
-    if (r === 'retry') break;
-  }
-  return { sent, left: box.length, auth };
+/** Through the relay: 'sent' | 'retry' (no signal, busy, down) | 'rejected' (the relay refused this file). */
+async function post(item, url) {
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: item.content });
+  if (res.ok) return 'sent';
+  if (res.status === 400 || res.status === 413) return 'rejected';
+  return 'retry';
 }
 
-/** Queues one result and tries to send. → 'sent' | 'queued' (no signal) | 'auth' (no or bad token) */
+/** Sends everything waiting in the outbox. → { sent, left, auth, rejected } */
+export async function flush() {
+  const token = getToken();
+  const relay = relayUrl();
+  let box = outbox();
+  if ((!token && !relay) || !box.length) return { sent: 0, left: box.length, auth: !token && !relay, rejected: 0 };
+  let sent = 0;
+  let auth = false;
+  let rejected = 0;
+  for (const item of [...box]) {
+    let r = 'retry';
+    if (relay) { try { r = await post(item, relay); } catch { r = 'retry'; } }
+    // The relay is down or refused it, and this phone has a token: go straight to GitHub.
+    if (r !== 'sent' && token) { try { r = await put(item, token); } catch { r = 'retry'; } }
+    else if (r === 'rejected') { rejected++; item.rejected = true; }
+    if (r === 'sent') { sent++; box = box.filter((x) => x.path !== item.path); write(OUTBOX_KEY, box); }
+    if (r === 'auth' && !relay) { auth = true; break; }
+    if (r === 'retry') break;
+  }
+  // A refused file stays out of the way of the rest: kept on the phone, never retried.
+  if (rejected) { write('harveys.rejected.v1', [...read('harveys.rejected.v1', []), ...box.filter((x) => x.rejected)].slice(-20)); box = box.filter((x) => !x.rejected); write(OUTBOX_KEY, box); }
+  return { sent, left: box.length, auth, rejected };
+}
+
+/** Queues one result and tries to send. → 'sent' | 'queued' (no signal) | 'auth' (no way to send) | 'failed' (refused) */
 export async function sendResult(res) {
   const item = { path: pathFor(res), message: `Taste test: ${res.kitchen?.kitchen ?? res.kitchenId} (${res.testerId})`, content: JSON.stringify(res, null, 1) + '\n' };
   write(OUTBOX_KEY, [...outbox().filter((x) => x.path !== item.path), item]);
-  const { left, auth } = await flush();
-  if (!outbox().some((x) => x.path === item.path)) return 'sent';
-  return auth ? 'auth' : left ? 'queued' : 'sent';
+  const { auth, rejected } = await flush();
+  if (!outbox().some((x) => x.path === item.path)) return rejected && read('harveys.rejected.v1', []).some((x) => x.path === item.path) ? 'failed' : 'sent';
+  return auth ? 'auth' : 'queued';
 }
 
 if (typeof window !== 'undefined') {
   captureToken();
   flush();
   window.addEventListener('online', () => { flush(); });
+  // A friend may never open the page again: keep trying while it's open.
+  setInterval(() => { if (outbox().length && navigator.onLine !== false) flush(); }, 30e3);
 }
