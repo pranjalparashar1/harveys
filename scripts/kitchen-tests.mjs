@@ -5,6 +5,10 @@
 //   node scripts/kitchen-tests.mjs score [results …] [--persona <text>]
 //                                                           score each result, then fit Marco on all
 //
+// score reads both kinds of result: test.html's kitchen tests (harveys-kitchen-test/1) and the
+// taste test after Proceed on the main page (harveys-rung-quiz/1, 1.31.0). A taste test's
+// Marco rankings become every pair inside each rung, pooled into the same frictionTheta fit.
+//
 // --persona is optional and only for looking: by default every result is pooled, persona
 // role-plays included, because they calibrate Marco's shared effort weights for everyone.
 //
@@ -15,6 +19,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { loadKitchens, buildKitchenTest, whiteFor, parseResults, scoreResult, marcoChoices, fitFrom } from '../src/brain/kitchen-test.js';
 import { DEFAULT_CONFIG } from '../src/brain/config.js';
+import { parseRungResults, scoreRungResult, rungMarcoChoices } from '../src/brain/rung-quiz.js';
 
 const [cmd = 'score', ...rest] = process.argv.slice(2);
 const pi = rest.indexOf('--persona');
@@ -39,9 +44,11 @@ if (cmd === 'plan') {
 }
 
 const paths = files.length ? files : readdirSync(dir).filter((n) => n.endsWith('.json')).map((n) => new URL(n, dir));
-const results = paths.flatMap((p) => parseResults(readFileSync(p, 'utf8')))
+const texts = paths.map((p) => readFileSync(p, 'utf8'));
+const results = texts.flatMap(parseResults)
   .filter((r) => !personaFilter || String(r.persona ?? '').toLowerCase().includes(personaFilter));
-if (!results.length) { console.log(`No kitchen-test results found${personaFilter ? ` for persona "${personaFilter}"` : ''}.`); process.exit(0); }
+const tastes = personaFilter ? [] : texts.flatMap(parseRungResults);
+if (!results.length && !tastes.length) { console.log(`No kitchen-test results found${personaFilter ? ` for persona "${personaFilter}"` : ''}.`); process.exit(0); }
 const known = Object.fromEntries(allKitchens().map((k) => [k.id, k]));
 
 const pooled = [];
@@ -62,8 +69,34 @@ for (const r of results) {
   pooled.push(...marcoChoices(t, marco, pierre));
 }
 
+// Taste tests: one line per tester and kitchen, then dishes where testers and Pierre disagree.
+const pct = (x) => (x == null ? '-' : x.toFixed(2));
+const tastePlace = {}; // dish → { name, tier, places: [0 = top … 1 = bottom] }
+const criteria = {};
+for (const r of tastes) {
+  const s = scoreRungResult(r);
+  console.log(`## Taste test: ${s.kitchen}  [${s.kitchenId}]  tester ${s.tester || s.testerId}`);
+  console.log(`   Marco:  agreement ${pct(s.marco.tau)} (Kendall, 1 = same order) over ${s.marco.rungs.length} rung(s), ${s.marco.pairs} pairs; ${s.marco.rungs.filter((x) => !x.moved).length} left as shown`);
+  console.log(`   Pierre: agreement ${pct(s.pierre.tau)} over ${s.pierre.rungs.length} rung(s)`);
+  console.log(`   White:  Harvey's pick was first on ${s.white.hits}/${s.white.n} rungs, picked at all on ${s.white.inPicks}/${s.white.n}; why: ${Object.entries(s.white.criteria).sort((a, b) => b[1] - a[1]).map(([k]) => k).join(' > ') || '-'}`);
+  for (const [k, v] of Object.entries(s.white.criteria)) criteria[k] = (criteria[k] ?? 0) + v;
+  for (const row of r.pierre) row.ranking.forEach((id, i) => {
+    const d = r.dishes[id];
+    tastePlace[id] ??= { name: d.name, tier: d.harveys.tier, places: [] };
+    tastePlace[id].places.push(row.ranking.length > 1 ? i / (row.ranking.length - 1) : 0);
+  });
+  pooled.push(...rungMarcoChoices(r));
+}
+if (tastes.length) {
+  const avg = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const rows = Object.values(tastePlace).map((d) => ({ ...d, place: avg(d.places) }));
+  const flag = rows.filter((d) => (['crave', 'pass'].includes(d.tier) && d.place >= 0.75) || (['veto', 'floor'].includes(d.tier) && d.place <= 0.25));
+  console.log(flag.length ? `Taste vs Pierre: ${flag.map((d) => `${d.name} (${d.tier}, placed ${pct(d.place)} down)`).join('; ')}` : 'Taste vs Pierre: no strong disagreements.');
+  console.log(`What decided White's picks (points, most first): ${Object.entries(criteria).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ') || '-'}`);
+}
+
 const fit = fitFrom(pooled);
-console.log(`\n# Pooled over ${results.length} kitchen test(s)${personaFilter ? `, persona contains "${personaFilter}"` : ', all personas'}`);
+console.log(`\n# Pooled over ${results.length} kitchen test(s) and ${tastes.length} taste test(s)${personaFilter ? `, persona contains "${personaFilter}"` : ', all personas'}`);
 if (fit) {
   console.log(`Marco: ${fit.n} picks, fit ${fit.hits}, leave-one-out ${fit.looHits ?? '-'}, today's weights ${fit.priorHits}`);
   console.log('feature     now      proposed');
