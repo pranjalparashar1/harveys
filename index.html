@@ -69,11 +69,10 @@
         <button class="btn wide" id="paste-go" data-haptic type="button">Use this list</button>
       </details>
       <div id="paste-summary" hidden>
-        <div id="paste-groups"></div>
-        <div class="paste-actions">
-          <button class="btn" id="paste-edit" data-haptic type="button">Edit list</button>
-          <button class="btn primary" id="paste-proceed" data-haptic type="button">Proceed</button>
-        </div>
+        <p class="tally-head">Spotted</p>
+        <div class="tallies" id="paste-groups"></div>
+        <button class="btn primary xl wide" id="paste-proceed" data-haptic type="button">Proceed</button>
+        <button class="btn link quiet edit-list" id="paste-edit" data-haptic type="button">Edit list</button>
       </div>
       <p class="error" id="scan-error" role="alert" hidden></p>
     </section>

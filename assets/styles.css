@@ -161,8 +161,15 @@ input:focus-visible, select:focus-visible { outline: none; }
 .group { margin: 0 0 14px; }
 .group h3 { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-#paste-summary .group h3 { color: var(--ink, inherit); }
-.paste-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+/* After "Use this list": two big counts, one big action. */
+.tally-head { margin: 4px 0 10px; font-size: 15px; color: var(--muted); }
+.tallies { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tally { display: flex; flex-direction: column; gap: 2px; padding: 18px 18px 16px; background: var(--surface2); border-radius: var(--r); animation: rise .38s var(--settle) both; }
+.tally + .tally { animation-delay: .06s; }
+.tally-n { font-size: 56px; line-height: 1; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums lining-nums; }
+.tally-label { font-size: 15px; color: var(--muted); }
+#paste-summary .btn.xl { margin-top: 22px; }
+.btn.link.quiet.edit-list { display: block; margin: 6px auto 0; }
 .chip {
   display: inline-flex; align-items: center; gap: 2px;
   min-height: 36px;

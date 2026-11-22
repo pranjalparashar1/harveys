@@ -12,7 +12,7 @@ import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 
-const VERSION = '1.29.0';
+const VERSION = '1.30.1';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -361,10 +361,12 @@ function showPasteSummary(items) {
     }
     (isKit ? kit : food).push(item.name);
   }
-  const group = (title, names) => h('div', { class: 'group' },
-    h('h3', {}, `${title} · ${names.length}`),
-    names.length ? h('div', { class: 'chips' }, names.map((n) => h('span', { class: 'chip' }, n))) : h('p', { class: 'muted' }, 'None'));
-  $('paste-groups').replaceChildren(group('Food items spotted', food), group('Cookware & appliances spotted', kit));
+  const tile = (n, label) => h('div', { class: 'tally' },
+    h('span', { class: 'tally-n' }, String(n)),
+    h('span', { class: 'tally-label' }, label));
+  $('paste-groups').replaceChildren(
+    tile(food.length, food.length === 1 ? 'food item' : 'food items'),
+    tile(kit.length, 'cookware'));
   show($('paste-list'), false);
   show($('paste-summary'), true);
   show($('step-context'), false);
