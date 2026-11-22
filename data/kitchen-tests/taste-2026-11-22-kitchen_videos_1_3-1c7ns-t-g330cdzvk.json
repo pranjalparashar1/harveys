@@ -1,0 +1,503 @@
+{
+ "format": "harveys-rung-quiz/1",
+ "version": "1.35.0",
+ "at": "2026-11-22T13:06:31.179Z",
+ "source": "link",
+ "kitchenId": "kitchen_videos_1_3-1c7ns",
+ "testerId": "t-g330cdzvk",
+ "runNo": 1,
+ "tester": "Harsh",
+ "kitchen": {
+  "kitchen": "Kitchen, videos 1-3",
+  "diet": "veg+eggs",
+  "notes": "multiple unlabelled or faded jars; water dispenser jug on counter",
+  "items": [
+   {
+    "name": "lentils",
+    "category": "protein"
+   },
+   {
+    "name": "chickpeas",
+    "category": "protein"
+   },
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "butter",
+    "category": "dairy"
+   },
+   {
+    "name": "instant noodles",
+    "category": "grain"
+   },
+   {
+    "name": "sweet corn",
+    "category": "veg"
+   },
+   {
+    "name": "lemon",
+    "category": "fruit"
+   },
+   {
+    "name": "coriander powder",
+    "category": "spice"
+   },
+   {
+    "name": "cumin",
+    "category": "spice"
+   },
+   {
+    "name": "cardamom",
+    "category": "spice"
+   },
+   {
+    "name": "peanuts",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "khakhra",
+    "category": "snack"
+   },
+   {
+    "name": "chocolate syrup",
+    "category": "sweet"
+   },
+   {
+    "name": "chocolate bar",
+    "category": "sweet"
+   },
+   {
+    "name": "water",
+    "category": "drink"
+   },
+   {
+    "name": "induction cooktop",
+    "category": "appliance"
+   },
+   {
+    "name": "microwave",
+    "category": "appliance"
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance"
+   },
+   {
+    "name": "refrigerator",
+    "category": "appliance"
+   },
+   {
+    "name": "tawa",
+    "category": "cookware"
+   },
+   {
+    "name": "steel pot",
+    "category": "cookware"
+   }
+  ]
+ },
+ "moment": "Weeknight, 9 PM, tired",
+ "targets": {
+  "protein": 60,
+  "calories": 1200,
+  "fiber": 20
+ },
+ "directions": {
+  "marco": "easiest first",
+  "pierre": "tastiest first",
+  "white": "tap order = preference"
+ },
+ "unmovedConfirmed": true,
+ "ingredients": {
+  "used": [
+   "instant noodles",
+   "induction cooktop",
+   "steel pot"
+  ],
+  "unused": [
+   {
+    "name": "lentils",
+    "category": "protein",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "chickpeas",
+    "category": "protein",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Chana chaat",
+      "why": "missing Onion, Tomato, Chaat masala"
+     },
+     {
+      "dish": "Pressure-cooker chole",
+      "why": "missing Pressure cooker, Cooking oil, Salt"
+     }
+    ]
+   },
+   {
+    "name": "eggs",
+    "category": "protein",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Boiled eggs with salt and pepper",
+      "why": "missing Salt"
+     },
+     {
+      "dish": "Microwave mug omelette",
+      "why": "missing Salt"
+     },
+     {
+      "dish": "Butter omelette",
+      "why": "missing Salt"
+     },
+     {
+      "dish": "Egg bhurji",
+      "why": "missing Onion, Tomato, Cooking oil, Salt"
+     }
+    ]
+   },
+   {
+    "name": "milk",
+    "category": "dairy",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Whey and makhana bowl",
+      "why": "missing Whey protein, Makhana"
+     },
+     {
+      "dish": "Microwave protein oats",
+      "why": "missing Oats, Whey protein"
+     },
+     {
+      "dish": "Whey shake with milk",
+      "why": "a snack, and the test shows meals"
+     }
+    ]
+   },
+   {
+    "name": "butter",
+    "category": "dairy",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Microwave paneer bhurji (no chopping)",
+      "why": "missing Paneer, Salt"
+     },
+     {
+      "dish": "Butter omelette",
+      "why": "missing Salt"
+     },
+     {
+      "dish": "Air-fryer egg-in-a-hole on protein bread",
+      "why": "missing Air fryer, Protein bread or Bread, Salt"
+     },
+     {
+      "dish": "Tawa paneer cheese sandwich",
+      "why": "missing Protein bread or Bread, Paneer, Cheese slices or Cheese (block or cubes), Salt"
+     }
+    ]
+   },
+   {
+    "name": "sweet corn",
+    "category": "veg",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "lemon",
+    "category": "fruit",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Chana chaat",
+      "why": "missing Onion, Tomato, Chaat masala"
+     },
+     {
+      "dish": "Moong sprouts salad",
+      "why": "missing Moong sprouts, Tomato, Salt"
+     }
+    ]
+   },
+   {
+    "name": "coriander powder",
+    "category": "spice",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "cumin",
+    "category": "spice",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "cardamom",
+    "category": "spice",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "peanuts",
+    "category": "nuts_seeds",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kanda poha with peanuts",
+      "why": "missing Strainer / colander, Poha, Onion, Cooking oil, Salt"
+     }
+    ]
+   },
+   {
+    "name": "khakhra",
+    "category": "snack",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "chocolate syrup",
+    "category": "sweet",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "chocolate bar",
+    "category": "sweet",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "water",
+    "category": "drink",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "microwave",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Microwave paneer bhurji (no chopping)",
+      "why": "missing Paneer, Salt"
+     },
+     {
+      "dish": "Microwave protein oats",
+      "why": "missing Oats, Whey protein"
+     },
+     {
+      "dish": "Microwave mug omelette",
+      "why": "missing Salt"
+     },
+     {
+      "dish": "Microwave soya chunks in spiced curd",
+      "why": "missing Soya chunks, Curd / yogurt, Salt"
+     }
+    ]
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "refrigerator",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "tawa",
+    "category": "cookware",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Fusilli aglio olio with air-fried paneer",
+      "why": "missing Strainer / colander, Air fryer, Pasta (fusilli etc.), Paneer, Garlic, Cooking oil, Salt"
+     },
+     {
+      "dish": "Butter omelette",
+      "why": "missing Salt"
+     },
+     {
+      "dish": "Egg bhurji",
+      "why": "missing Onion, Tomato, Cooking oil, Salt"
+     },
+     {
+      "dish": "Tawa paneer cheese sandwich",
+      "why": "missing Protein bread or Bread, Paneer, Cheese slices or Cheese (block or cubes), Salt"
+     }
+    ]
+   }
+  ],
+  "gaps": [
+   "lentils",
+   "sweet corn",
+   "coriander powder",
+   "cumin",
+   "cardamom",
+   "khakhra",
+   "chocolate syrup",
+   "chocolate bar",
+   "water",
+   "electric kettle",
+   "refrigerator"
+  ],
+  "blockers": [
+   {
+    "thing": "Salt",
+    "dishes": [
+     "Boiled eggs with salt and pepper",
+     "Microwave mug omelette",
+     "Butter omelette"
+    ]
+   },
+   {
+    "thing": "Cheese slices or Cheese (block or cubes)",
+    "dishes": [
+     "Cheese Maggi"
+    ]
+   },
+   {
+    "thing": "Cooking oil",
+    "dishes": [
+     "Maggi with a fried egg"
+    ]
+   }
+  ]
+ },
+ "dishes": {
+  "maggi": {
+   "name": "Maggi",
+   "rung": 3,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 1.071,
+    "score": -0.969
+   },
+   "raw": {
+    "protein": 6,
+    "tools": 2,
+    "handsOn": 1,
+    "waiting": 4,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 1,
+    "attention": 1,
+    "cleanup": 2
+   }
+  }
+ },
+ "marco": [],
+ "pierre": [],
+ "white": [
+  {
+   "rung": 3,
+   "rungs": [
+    3
+   ],
+   "harveys": "maggi",
+   "shown": [
+    "maggi"
+   ],
+   "picks": [
+    "maggi"
+   ],
+   "none": false,
+   "criteria": [
+    "taste",
+    "difficulty",
+    "macros"
+   ],
+   "ms": 16328
+  }
+ ],
+ "feedback": {
+  "chips": [
+   "missing_dishes"
+  ],
+  "skipped": false,
+  "allGood": false,
+  "wrongItems": [],
+  "missedItems": [],
+  "dishIdeas": [
+   {
+    "name": "Chai and toast",
+    "quick": true
+   }
+  ],
+  "tooHard": [],
+  "wouldntEat": [],
+  "wouldntWhy": [],
+  "confusing": [],
+  "note": "Missing milk, dal preparations, there’s a kadhai that can be used to make dal, roti can be ordered online",
+  "ms": 109502
+ }
+}
