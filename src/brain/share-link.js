@@ -74,9 +74,35 @@ export async function decodeKitchen(code) {
   }
 }
 
-/** A kitchen → its full share link. */
-export async function kitchenLink(k, site = SITE) {
-  return `${site}#k=${await encodeKitchen(k)}`;
+/** A kitchen → its full share link. `name` (1.35.0) is the tester's first name: the page greets them with it. */
+export async function kitchenLink(k, site = SITE, name = '') {
+  return linkFor(await encodeKitchen(k), site, name);
+}
+
+/** An already-encoded kitchen + a name → the link (share.html re-links on every keystroke, no re-encode). */
+export function linkFor(code, site = SITE, name = '') {
+  const n = cleanName(name);
+  return `${site}#${n ? `n=${encodeURIComponent(n)}&` : ''}k=${code}`;
+}
+
+/** A tester's name as the greeting shows it: one line, at most 40 characters. */
+export const cleanName = (s) => String(s ?? '').replace(/[\u0000-\u001f<>]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+
+/** The tester's name in a page's hash ("#n=Riya&k=…"), or ''. */
+export function linkName(hash) {
+  const m = /(?:^#|&)n=([^&]*)/.exec(String(hash ?? ''));
+  if (!m) return '';
+  try { return cleanName(decodeURIComponent(m[1].replace(/\+/g, ' '))); } catch { return cleanName(m[1]); }
+}
+
+/** A first-name guess from a kitchen label: "Riya, Bandra" → "Riya", "Sam’s kitchen" → "Sam". */
+export function guessName(label) {
+  const s = cleanName(label);
+  const own = /^([^,’']{1,24})[’']s\b/.exec(s);
+  if (own) return own[1].trim();
+  const [first, rest] = s.split(',');
+  if (rest !== undefined && first.trim().split(' ').length <= 2) return first.trim();
+  return '';
 }
 
 /** The code in a page's hash ("#k=…", maybe beside other keys), or null. */

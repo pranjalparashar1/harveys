@@ -3,20 +3,26 @@
 // itself (src/brain/share-link.js), so nothing is uploaded and every link works at once.
 import { importKitchens, buildInventory } from './brain/index.js';
 import { buildRungQuiz } from './brain/rung-quiz.js';
-import { kitchenLink } from './brain/share-link.js';
+import { encodeKitchen, linkFor, guessName, cleanName } from './brain/share-link.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SITE = new URL('./', location.href).href; // "Try it" opens on this copy of the site
 const PUBLIC = /github\.io/.test(location.host) ? SITE : 'https://pranjalparashar1.github.io/harveys/';
-const DEFAULT_MSG = 'Hi! Here’s your Harvey’s taste test, made from your kitchen video. It takes a few minutes and it’s all taps:\n{link}';
-const KEYS = { text: 'harveys.share.text', msg: 'harveys.share.msg' };
+const DEFAULT_MSG = 'Hi {name}! Here’s your Harvey’s taste test, made from your kitchen video. It takes a few minutes and it’s all taps:\n{link}';
+const KEYS = { text: 'harveys.share.text', msg: 'harveys.share.msg', names: 'harveys.share.names' };
 const get = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const set = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { /* private mode */ } };
 const buzz = () => { if (navigator.vibrate) try { navigator.vibrate(8); } catch { /* none */ } };
 
 let made = [];
-const message = (link) => ($('msg').value || DEFAULT_MSG).replace('{link}', link);
+// 1.35.0: each link carries its tester's first name, so the page opens on "Hi, Riya".
+const names = (() => { try { return JSON.parse(get(KEYS.names)) ?? {}; } catch { return {}; } })();
+const link = (m, site = PUBLIC) => linkFor(m.code, site, m.name);
+const message = (m) => {
+  const t = ($('msg').value || DEFAULT_MSG).replace('{link}', link(m));
+  return m.name ? t.replace(/\{name\}/g, m.name) : t.replace(/ \{name\}|\{name\},? ?/g, '');
+};
 
 /** One kitchen → what its tester will see, so a thin kitchen is caught before it's sent. */
 function preview(k) {
@@ -40,7 +46,7 @@ async function make() {
     return;
   }
   set(KEYS.text, text);
-  made = await Promise.all(kitchens.map(async (k) => ({ k, link: await kitchenLink(k, PUBLIC), local: await kitchenLink(k, SITE), ...preview(k) })));
+  made = await Promise.all(kitchens.map(async (k) => ({ k, code: await encodeKitchen(k), name: names[k.kitchen] ?? guessName(k.kitchen), ...preview(k) })));
   render();
 }
 
@@ -59,19 +65,46 @@ function render() {
       </ul>
       ${thin ? '<p class="kwarn">Too few dishes for a good test. Check the list for missing staples before sending.</p>' : ''}
       ${m.k.notes ? `<p class="mini">${esc(m.k.notes)}</p>` : ''}
-      <a class="klink" href="${esc(m.local)}" target="_blank" rel="noopener">${esc(m.link)}</a>
+      <label class="kname"><span>Who’s it for?</span><input type="text" data-i="${i}" value="${esc(m.name)}" placeholder="First name" autocomplete="off" autocapitalize="words" enterkeyhint="done" maxlength="40"></label>
+      <p class="mini khi" data-i="${i}"></p>
+      <a class="klink" data-i="${i}" target="_blank" rel="noopener"></a>
       <div class="kacts">
         <button class="btn primary" data-act="share" data-i="${i}" type="button">${navigator.share ? 'Share' : 'Copy message'}</button>
-        <a class="btn" href="https://wa.me/?text=${encodeURIComponent(message(m.link))}" target="_blank" rel="noopener">WhatsApp</a>
-        <a class="btn" href="sms:&amp;body=${encodeURIComponent(message(m.link))}">Messages</a>
+        <a class="btn" data-wa="${i}" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="btn" data-sms="${i}">Messages</a>
         <button class="btn" data-act="copy" data-i="${i}" type="button">Copy link</button>
-        <a class="btn" href="${esc(m.local)}" target="_blank" rel="noopener">Try it</a>
+        <a class="btn" data-try="${i}" target="_blank" rel="noopener">Try it</a>
       </div>
     </article>`;
   });
   const all = made.length > 1 ? `<div class="all-row"><button class="btn" data-act="all" type="button">Copy all ${made.length} links</button></div>` : '';
   $('out').innerHTML = all + cards.join('');
+  made.forEach((_, i) => paint(i));
 }
+
+/** One card's links, redone in place on every keystroke of the name (keeps the keyboard up). */
+function paint(i) {
+  const m = made[i];
+  const q = (sel) => $('out').querySelector(sel);
+  const a = q(`.klink[data-i="${i}"]`);
+  a.href = link(m, SITE);
+  a.textContent = link(m);
+  q(`[data-wa="${i}"]`).href = `https://wa.me/?text=${encodeURIComponent(message(m))}`;
+  // "sms:?&body=" is the one form both iPhone and Android Messages fill in
+  q(`[data-sms="${i}"]`).href = `sms:?&body=${encodeURIComponent(message(m))}`;
+  q(`[data-try="${i}"]`).href = link(m, SITE);
+  q(`.khi[data-i="${i}"]`).textContent = m.name ? `Opens on “Hi, ${m.name}”.` : 'No name: it opens on “Hi there”.';
+}
+
+$('out').addEventListener('input', (e) => {
+  const input = e.target.closest('.kname input');
+  if (!input) return;
+  const m = made[Number(input.dataset.i)];
+  m.name = cleanName(input.value);
+  names[m.k.kitchen] = m.name;
+  set(KEYS.names, JSON.stringify(names));
+  paint(Number(input.dataset.i));
+});
 
 async function copy(text, btn, label) {
   try { await navigator.clipboard.writeText(text); } catch { prompt('Copy this', text); return; }
@@ -86,12 +119,12 @@ $('out').addEventListener('click', async (e) => {
   if (!b) return;
   buzz();
   const m = made[Number(b.dataset.i)];
-  if (b.dataset.act === 'copy') return copy(m.link, b, 'Copied');
-  if (b.dataset.act === 'all') return copy(made.map((x) => `${x.k.kitchen}\n${x.link}`).join('\n\n'), b, 'Copied');
+  if (b.dataset.act === 'copy') return copy(link(m), b, 'Copied');
+  if (b.dataset.act === 'all') return copy(made.map((x) => `${x.k.kitchen}${x.name ? ` (${x.name})` : ''}\n${link(x)}`).join('\n\n'), b, 'Copied');
   if (b.dataset.act === 'share') {
     // Text only: WhatsApp and Messages both keep the link inside the text and preview it.
-    if (navigator.share) { try { await navigator.share({ text: message(m.link) }); } catch { /* cancelled */ } return; }
-    return copy(message(m.link), b, 'Copied');
+    if (navigator.share) { try { await navigator.share({ text: message(m) }); } catch { /* cancelled */ } return; }
+    return copy(message(m), b, 'Copied');
   }
 });
 
@@ -104,8 +137,8 @@ $('file').addEventListener('change', async (e) => {
   make();
 });
 $('msg').value = get(KEYS.msg) ?? DEFAULT_MSG;
-$('msg').addEventListener('input', () => { set(KEYS.msg, $('msg').value === DEFAULT_MSG ? null : $('msg').value); if (made.length) render(); });
-$('msg-reset').addEventListener('click', () => { $('msg').value = DEFAULT_MSG; set(KEYS.msg, null); if (made.length) render(); });
+$('msg').addEventListener('input', () => { set(KEYS.msg, $('msg').value === DEFAULT_MSG ? null : $('msg').value); made.forEach((_, i) => paint(i)); });
+$('msg-reset').addEventListener('click', () => { $('msg').value = DEFAULT_MSG; set(KEYS.msg, null); made.forEach((_, i) => paint(i)); });
 
 const last = get(KEYS.text);
 if (last) { $('kitchens').value = last; make(); }

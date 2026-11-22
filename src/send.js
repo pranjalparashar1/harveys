@@ -86,28 +86,45 @@ async function post(item, url) {
   return 'retry';
 }
 
+// One flush at a time (1.35.0). The page flushes on open, every 30 s, when it comes back
+// online and on Send; two at once each wrote back their own stale copy of the outbox, so a
+// result queued mid-flush could be wiped and then reported "Sent" without ever leaving.
+let chain = Promise.resolve();
+const drop = (paths) => write(OUTBOX_KEY, outbox().filter((x) => !paths.includes(x.path)));
+
 /** Sends everything waiting in the outbox. → { sent, left, auth, rejected } */
-export async function flush() {
+export function flush() {
+  // A flush asked for while one runs goes right after it, so it sees anything just queued.
+  const p = chain.then(flushOnce, flushOnce);
+  chain = p.catch(() => {});
+  return p;
+}
+
+async function flushOnce() {
   const token = getToken();
   const relay = relayUrl();
-  let box = outbox();
+  const box = outbox();
   if ((!token && !relay) || !box.length) return { sent: 0, left: box.length, auth: !token && !relay, rejected: 0 };
   let sent = 0;
   let auth = false;
-  let rejected = 0;
-  for (const item of [...box]) {
+  const refused = [];
+  for (const item of box) {
     let r = 'retry';
     if (relay) { try { r = await post(item, relay); } catch { r = 'retry'; } }
     // The relay is down or refused it, and this phone has a token: go straight to GitHub.
     if (r !== 'sent' && token) { try { r = await put(item, token); } catch { r = 'retry'; } }
-    else if (r === 'rejected') { rejected++; item.rejected = true; }
-    if (r === 'sent') { sent++; box = box.filter((x) => x.path !== item.path); write(OUTBOX_KEY, box); }
+    if (r === 'rejected') refused.push(item);
+    // Always re-read before writing: something may have been queued while this one was on the way.
+    if (r === 'sent') { sent++; drop([item.path]); }
     if (r === 'auth' && !relay) { auth = true; break; }
     if (r === 'retry') break;
   }
   // A refused file stays out of the way of the rest: kept on the phone, never retried.
-  if (rejected) { write('harveys.rejected.v1', [...read('harveys.rejected.v1', []), ...box.filter((x) => x.rejected)].slice(-20)); box = box.filter((x) => !x.rejected); write(OUTBOX_KEY, box); }
-  return { sent, left: box.length, auth, rejected };
+  if (refused.length) {
+    write('harveys.rejected.v1', [...read('harveys.rejected.v1', []), ...refused].slice(-20));
+    drop(refused.map((x) => x.path));
+  }
+  return { sent, left: outbox().length, auth, rejected: refused.length };
 }
 
 /** Queues one result and tries to send. → 'sent' | 'queued' (no signal) | 'auth' (no way to send) | 'failed' (refused) */

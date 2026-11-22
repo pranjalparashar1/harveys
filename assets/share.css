@@ -16,3 +16,9 @@
 .all-row .btn { flex: 1; }
 .msg summary { font-weight: 600; font-size: 15px; color: var(--accent); cursor: pointer; }
 .msg textarea { margin-top: 8px; }
+/* 1.35.0: the tester's name, so their page opens on "Hi, Riya" */
+.kname { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.kname span { font-size: 13px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.kname input { min-height: 52px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 600 18px var(--font); }
+.kname input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+.khi { margin-top: 6px; }

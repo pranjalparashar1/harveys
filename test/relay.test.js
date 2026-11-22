@@ -70,6 +70,26 @@ test('send: through the relay with no token, refused files stop blocking the out
   assert.equal(outbox().length, 0); // t-2 was refused too, and moved aside
 });
 
+test('1.35.0: a Send during a slow flush is never wiped, and is only "sent" once it really went', async () => {
+  const { sendResult, flush, outbox } = await import('../src/send.js');
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  const posted = [];
+  // The first post hangs (bad signal), then the relay goes down for the rest.
+  globalThis.fetch = async (url, o) => {
+    posted.push(JSON.parse(o.body).testerId);
+    if (posted.length === 1) { await gate; return { ok: true, status: 200 }; }
+    throw new TypeError('offline');
+  };
+  localStorage.setItem('harveys.outbox.v1', JSON.stringify([{ path: 'data/kitchen-tests/old.json', message: 'm', content: JSON.stringify({ ...result, testerId: 't-old' }) }]));
+  const slow = flush(); // the page's own flush on open
+  const tap = sendResult({ ...result, testerId: 't-new' }); // the tester taps Send meanwhile
+  release();
+  await slow;
+  assert.equal(await tap, 'queued', 'no signal for the new one: queued, not "sent"');
+  assert.deepEqual(outbox().map((x) => JSON.parse(x.content).testerId), ['t-new']);
+});
+
 test('ingredient check: every item is used or has a reason, and the result keeps the unused ones', () => {
   const u = quiz.usage;
   assert.equal(u.items.length, kitchen.items.length);
