@@ -1,0 +1,777 @@
+{
+ "format": "harveys-rung-quiz/1",
+ "version": "1.31.0",
+ "at": "2026-11-22T11:07:40.509Z",
+ "source": "paste",
+ "kitchenId": "aspirational_bachelor_test_persona-6s03o",
+ "testerId": "t-cfybq46xz",
+ "tester": "",
+ "kitchen": {
+  "kitchen": "Aspirational bachelor (test persona)",
+  "diet": "veg+eggs",
+  "notes": "single working Indian male, 25-35, getting fitter; lots of ingredients, little technique; no kettle, saucepan or pressure cooker; stirs nonstick with a metal spatula",
+  "items": [
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "soya chunks",
+    "category": "protein"
+   },
+   {
+    "name": "whey protein",
+    "category": "protein"
+   },
+   {
+    "name": "paneer",
+    "category": "dairy"
+   },
+   {
+    "name": "greek yogurt",
+    "category": "dairy"
+   },
+   {
+    "name": "toned milk",
+    "category": "dairy"
+   },
+   {
+    "name": "cheese slices",
+    "category": "dairy"
+   },
+   {
+    "name": "butter",
+    "category": "dairy"
+   },
+   {
+    "name": "rolled oats",
+    "category": "grain"
+   },
+   {
+    "name": "quinoa",
+    "category": "grain"
+   },
+   {
+    "name": "brown rice",
+    "category": "grain"
+   },
+   {
+    "name": "whole wheat pasta",
+    "category": "grain"
+   },
+   {
+    "name": "moong dal",
+    "category": "grain"
+   },
+   {
+    "name": "multigrain bread",
+    "category": "bread"
+   },
+   {
+    "name": "onion",
+    "category": "veg"
+   },
+   {
+    "name": "tomato",
+    "category": "veg"
+   },
+   {
+    "name": "capsicum",
+    "category": "veg"
+   },
+   {
+    "name": "spinach",
+    "category": "veg"
+   },
+   {
+    "name": "garlic",
+    "category": "veg"
+   },
+   {
+    "name": "green chilli",
+    "category": "veg"
+   },
+   {
+    "name": "frozen sweet corn",
+    "category": "veg"
+   },
+   {
+    "name": "lemon",
+    "category": "fruit"
+   },
+   {
+    "name": "banana",
+    "category": "fruit"
+   },
+   {
+    "name": "olive oil",
+    "category": "fat"
+   },
+   {
+    "name": "ghee",
+    "category": "fat"
+   },
+   {
+    "name": "peanut butter",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "almonds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "chia seeds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "flax seeds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "makhana",
+    "category": "snack"
+   },
+   {
+    "name": "honey",
+    "category": "sweet"
+   },
+   {
+    "name": "soy sauce",
+    "category": "condiment"
+   },
+   {
+    "name": "peri peri sauce",
+    "category": "condiment"
+   },
+   {
+    "name": "apple cider vinegar",
+    "category": "condiment"
+   },
+   {
+    "name": "ketchup",
+    "category": "condiment"
+   },
+   {
+    "name": "salt",
+    "category": "spice"
+   },
+   {
+    "name": "black pepper",
+    "category": "spice"
+   },
+   {
+    "name": "turmeric",
+    "category": "spice"
+   },
+   {
+    "name": "red chilli powder",
+    "category": "spice"
+   },
+   {
+    "name": "kashmiri chilli powder",
+    "category": "spice"
+   },
+   {
+    "name": "cumin seeds",
+    "category": "spice"
+   },
+   {
+    "name": "coriander powder",
+    "category": "spice"
+   },
+   {
+    "name": "garam masala",
+    "category": "spice"
+   },
+   {
+    "name": "chaat masala",
+    "category": "spice"
+   },
+   {
+    "name": "kasuri methi",
+    "category": "spice"
+   },
+   {
+    "name": "mustard seeds",
+    "category": "spice"
+   },
+   {
+    "name": "chilli flakes",
+    "category": "spice"
+   },
+   {
+    "name": "oregano",
+    "category": "herb"
+   },
+   {
+    "name": "cinnamon powder",
+    "category": "spice"
+   },
+   {
+    "name": "black coffee",
+    "category": "drink"
+   },
+   {
+    "name": "green tea bags",
+    "category": "drink"
+   },
+   {
+    "name": "milk frother",
+    "category": "appliance"
+   },
+   {
+    "name": "air fryer",
+    "category": "appliance"
+   },
+   {
+    "name": "microwave",
+    "category": "appliance"
+   },
+   {
+    "name": "induction cooktop",
+    "category": "appliance"
+   },
+   {
+    "name": "nonstick pan",
+    "category": "cookware"
+   },
+   {
+    "name": "nonstick kadai",
+    "category": "cookware"
+   },
+   {
+    "name": "metal spatula",
+    "category": "cookware"
+   }
+  ]
+ },
+ "moment": "Weeknight, 9 PM, tired",
+ "targets": {
+  "protein": 60,
+  "calories": 1200,
+  "fiber": 20
+ },
+ "directions": {
+  "marco": "easiest first",
+  "pierre": "tastiest first",
+  "white": "tap order = preference"
+ },
+ "dishes": {
+  "curd_whey_bowl": {
+   "name": "Curd and whey protein bowl",
+   "rung": 1,
+   "harveys": {
+    "order": 0,
+    "tier": "floor",
+    "friction": 0.633,
+    "score": 0.969
+   },
+   "raw": {
+    "protein": 32,
+    "tools": 1,
+    "handsOn": 3,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 0,
+    "cleanup": 1
+   }
+  },
+  "whey_makhana_bowl": {
+   "name": "Whey and makhana bowl",
+   "rung": 1,
+   "harveys": {
+    "order": 1,
+    "tier": "floor",
+    "friction": 0.533,
+    "score": 0.674
+   },
+   "raw": {
+    "protein": 27,
+    "tools": 1,
+    "handsOn": 2,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 0,
+    "cleanup": 1
+   }
+  },
+  "airfryer_protein_cheese_toast": {
+   "name": "Air-fryer cheese toast",
+   "rung": 2,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 0.845,
+    "score": -0.375
+   },
+   "raw": {
+    "protein": 12,
+    "tools": 1,
+    "handsOn": 1.5,
+    "waiting": 5,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 1,
+    "cleanup": 1
+   }
+  },
+  "microwave_whey_oats": {
+   "name": "Microwave protein oats",
+   "rung": 2,
+   "harveys": {
+    "order": 1,
+    "tier": "floor",
+    "friction": 1.139,
+    "score": 0.725
+   },
+   "raw": {
+    "protein": 36,
+    "tools": 2,
+    "handsOn": 3,
+    "waiting": 4,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 1
+   }
+  },
+  "microwave_paneer_bhurji": {
+   "name": "Microwave paneer bhurji (no chopping)",
+   "rung": 2,
+   "harveys": {
+    "order": 2,
+    "tier": "floor",
+    "friction": 1.283,
+    "score": -0.32
+   },
+   "raw": {
+    "protein": 24,
+    "tools": 2,
+    "handsOn": 3,
+    "waiting": 2,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 1,
+    "cleanup": 2.5
+   }
+  },
+  "airfryer_egg_in_toast": {
+   "name": "Air-fryer egg-in-a-hole",
+   "rung": 2,
+   "harveys": {
+    "order": 3,
+    "tier": "floor",
+    "friction": 1.277,
+    "score": -0.703
+   },
+   "raw": {
+    "protein": 18,
+    "tools": 1,
+    "handsOn": 2.5,
+    "waiting": 8,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 2.5
+   }
+  },
+  "airfryer_paneer_tikka": {
+   "name": "Air-fryer paneer tikka",
+   "rung": 2,
+   "harveys": {
+    "order": 4,
+    "tier": "floor",
+    "friction": 2.65,
+    "score": -2.305
+   },
+   "raw": {
+    "protein": 26,
+    "tools": 4,
+    "handsOn": 6,
+    "waiting": 10,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 1,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 5.5
+   }
+  },
+  "boiled_eggs": {
+   "name": "Boiled eggs with salt and pepper",
+   "rung": 3,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 1.662,
+    "score": -1.047
+   },
+   "raw": {
+    "protein": 25,
+    "tools": 1,
+    "handsOn": 5,
+    "waiting": 14,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 2
+   }
+  },
+  "plain_omelette": {
+   "name": "Butter omelette",
+   "rung": 3,
+   "harveys": {
+    "order": 1,
+    "tier": "pass",
+    "friction": 2.077,
+    "score": -1.935
+   },
+   "raw": {
+    "protein": 19,
+    "tools": 3,
+    "handsOn": 5,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 2,
+    "cleanup": 4.5
+   }
+  },
+  "stovetop_paneer_bhurji": {
+   "name": "Classic paneer bhurji",
+   "rung": 3,
+   "harveys": {
+    "order": 2,
+    "tier": "pass",
+    "friction": 3.418,
+    "score": -3.384
+   },
+   "raw": {
+    "protein": 25,
+    "tools": 4,
+    "handsOn": 13,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 1,
+    "cuts": 1,
+    "steps": 3,
+    "attention": 2,
+    "cleanup": 7
+   }
+  },
+  "masala_oats": {
+   "name": "Masala oats",
+   "rung": 3,
+   "harveys": {
+    "order": 3,
+    "tier": "pass",
+    "friction": 2.92,
+    "score": -3.493
+   },
+   "raw": {
+    "protein": 7,
+    "tools": 5,
+    "handsOn": 10,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 1,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 2,
+    "cleanup": 4.5
+   }
+  },
+  "egg_bhurji": {
+   "name": "Egg bhurji",
+   "rung": 3,
+   "harveys": {
+    "order": 4,
+    "tier": "pass",
+    "friction": 3.318,
+    "score": -3.562
+   },
+   "raw": {
+    "protein": 20,
+    "tools": 4,
+    "handsOn": 12,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 1,
+    "cuts": 1,
+    "steps": 3,
+    "attention": 2,
+    "cleanup": 7
+   }
+  },
+  "airfryer_soya_chunks": {
+   "name": "Air-fried soya chunks",
+   "rung": 4,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 2.258,
+    "score": -1.712
+   },
+   "raw": {
+    "protein": 26,
+    "tools": 3,
+    "handsOn": 5,
+    "waiting": 15,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 3.5
+   }
+  }
+ },
+ "marco": [
+  {
+   "rung": 1,
+   "harveys": [
+    "curd_whey_bowl",
+    "whey_makhana_bowl"
+   ],
+   "shown": [
+    "whey_makhana_bowl",
+    "curd_whey_bowl"
+   ],
+   "ranking": [
+    "whey_makhana_bowl",
+    "curd_whey_bowl"
+   ],
+   "moved": false,
+   "ms": 30814
+  },
+  {
+   "rung": 2,
+   "harveys": [
+    "airfryer_protein_cheese_toast",
+    "microwave_whey_oats",
+    "microwave_paneer_bhurji",
+    "airfryer_egg_in_toast",
+    "airfryer_paneer_tikka"
+   ],
+   "shown": [
+    "microwave_paneer_bhurji",
+    "airfryer_egg_in_toast",
+    "airfryer_paneer_tikka",
+    "microwave_whey_oats",
+    "airfryer_protein_cheese_toast"
+   ],
+   "ranking": [
+    "airfryer_protein_cheese_toast",
+    "microwave_whey_oats",
+    "microwave_paneer_bhurji",
+    "airfryer_paneer_tikka",
+    "airfryer_egg_in_toast"
+   ],
+   "moved": true,
+   "ms": 67115
+  },
+  {
+   "rung": 3,
+   "harveys": [
+    "boiled_eggs",
+    "plain_omelette",
+    "stovetop_paneer_bhurji",
+    "masala_oats",
+    "egg_bhurji"
+   ],
+   "shown": [
+    "stovetop_paneer_bhurji",
+    "egg_bhurji",
+    "plain_omelette",
+    "masala_oats",
+    "boiled_eggs"
+   ],
+   "ranking": [
+    "egg_bhurji",
+    "plain_omelette",
+    "stovetop_paneer_bhurji",
+    "boiled_eggs",
+    "masala_oats"
+   ],
+   "moved": true,
+   "ms": 34906
+  }
+ ],
+ "pierre": [
+  {
+   "rung": 1,
+   "harveys": [
+    "curd_whey_bowl",
+    "whey_makhana_bowl"
+   ],
+   "shown": [
+    "whey_makhana_bowl",
+    "curd_whey_bowl"
+   ],
+   "ranking": [
+    "curd_whey_bowl",
+    "whey_makhana_bowl"
+   ],
+   "moved": true,
+   "ms": 3066
+  },
+  {
+   "rung": 2,
+   "harveys": [
+    "airfryer_protein_cheese_toast",
+    "microwave_whey_oats",
+    "microwave_paneer_bhurji",
+    "airfryer_egg_in_toast",
+    "airfryer_paneer_tikka"
+   ],
+   "shown": [
+    "airfryer_protein_cheese_toast",
+    "airfryer_paneer_tikka",
+    "airfryer_egg_in_toast",
+    "microwave_whey_oats",
+    "microwave_paneer_bhurji"
+   ],
+   "ranking": [
+    "airfryer_paneer_tikka",
+    "airfryer_egg_in_toast",
+    "airfryer_protein_cheese_toast",
+    "microwave_whey_oats",
+    "microwave_paneer_bhurji"
+   ],
+   "moved": true,
+   "ms": 17087
+  },
+  {
+   "rung": 3,
+   "harveys": [
+    "boiled_eggs",
+    "plain_omelette",
+    "stovetop_paneer_bhurji",
+    "masala_oats",
+    "egg_bhurji"
+   ],
+   "shown": [
+    "plain_omelette",
+    "masala_oats",
+    "boiled_eggs",
+    "egg_bhurji",
+    "stovetop_paneer_bhurji"
+   ],
+   "ranking": [
+    "stovetop_paneer_bhurji",
+    "plain_omelette",
+    "egg_bhurji",
+    "masala_oats",
+    "boiled_eggs"
+   ],
+   "moved": true,
+   "ms": 22534
+  }
+ ],
+ "white": [
+  {
+   "rung": 1,
+   "harveys": "curd_whey_bowl",
+   "shown": [
+    "whey_makhana_bowl",
+    "curd_whey_bowl"
+   ],
+   "picks": [
+    "whey_makhana_bowl",
+    "curd_whey_bowl"
+   ],
+   "none": false,
+   "criteria": [
+    "macros",
+    "taste",
+    "difficulty"
+   ],
+   "ms": 66389
+  },
+  {
+   "rung": 2,
+   "harveys": "airfryer_protein_cheese_toast",
+   "shown": [
+    "airfryer_protein_cheese_toast",
+    "microwave_whey_oats",
+    "airfryer_egg_in_toast",
+    "airfryer_paneer_tikka",
+    "microwave_paneer_bhurji"
+   ],
+   "picks": [
+    "airfryer_protein_cheese_toast",
+    "microwave_whey_oats",
+    "airfryer_egg_in_toast",
+    "microwave_paneer_bhurji",
+    "airfryer_paneer_tikka"
+   ],
+   "none": false,
+   "criteria": [
+    "difficulty",
+    "macros",
+    "taste"
+   ],
+   "ms": 42797
+  },
+  {
+   "rung": 3,
+   "harveys": "boiled_eggs",
+   "shown": [
+    "egg_bhurji",
+    "plain_omelette",
+    "masala_oats",
+    "boiled_eggs",
+    "stovetop_paneer_bhurji"
+   ],
+   "picks": [
+    "egg_bhurji",
+    "plain_omelette",
+    "boiled_eggs",
+    "masala_oats",
+    "stovetop_paneer_bhurji"
+   ],
+   "none": false,
+   "criteria": [
+    "difficulty",
+    "macros",
+    "taste"
+   ],
+   "ms": 23433
+  },
+  {
+   "rung": 4,
+   "harveys": "airfryer_soya_chunks",
+   "shown": [
+    "airfryer_soya_chunks"
+   ],
+   "picks": [
+    "airfryer_soya_chunks"
+   ],
+   "none": false,
+   "criteria": [
+    "macros",
+    "difficulty",
+    "taste"
+   ],
+   "ms": 24801
+  }
+ ]
+}

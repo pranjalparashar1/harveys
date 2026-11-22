@@ -108,7 +108,7 @@ From pranjal's "The staples and their processes": dal tadka with rice, pressure-
 
 Dishes that need soaking (dal, rice, chole, rajma, kala chana) list those foods in `prePrep.soak`. Under "Right now", tick what's already soaked; the ticks last until midnight. A dish whose foods are all soaked ranks with no soaking cost. Any other soak dish leaves tonight's ladder for a "For tomorrow" card ("Soak the rajma tonight"). Poha's 15-minute soak stays an "If you have time" note. Egg fried rice is pass without spring onion and crave with it, as a separate dish (new food id `spring_onion`).
 
-### Taste test after Proceed (1.31.0)
+### Taste test after Proceed (1.31.0, 1.32.0)
 
 On the main page, Proceed (after pasting a list) opens a Kiron-style taste test for real testers on phones: a story bar with no numbers, one question per screen, drag to sort, tap to pick. Every answer is set at the tired baseline (weeknight, 9 PM).
 
@@ -118,12 +118,16 @@ pasted kitchen ─► Round 1, Marco   each rung with 2+ dishes: drag the easies
                ─► Round 3, White   each rung: tap what you'd actually cook, favourite first
                                    (tap again to remove, or "None of these"), then what decided it:
                                    Macros, Effort, Taste, in tap order
-               ─► Send to Harvey's: the phone's share sheet with the .json file (WhatsApp, Mail…);
-                                   else download + clipboard. Also "Post on GitHub" and "Save the file".
+               ─► Send to Harvey's (1.32.0): one tap commits the .json to data/kitchen-tests/
+                                   in this repo, then "Next person" hands the phone on
 ```
 
+**One-tap send (1.32.0).** Testers use one phone (pranjal's), so there's no name field and no per-tester login. Set the phone up once: make a fine-grained GitHub token for `pranjalparashar1/harveys` only, with *Contents: read and write*, and open the app once as `…/harveys/#send=<token>` (or paste it on the last screen the first time Send asks). It stays in that browser's localStorage. Each Send then writes `data/kitchen-tests/taste-<date>-<kitchenId>-<testerId>.json` to main through the contents API (`src/send.js`); Pages doesn't redeploy for those files. No signal: the file waits in an outbox on the phone and goes on the next send, open, or reconnect. Every run gets a fresh `testerId` and a `runNo` on this phone; a sent run is never reused. To score: `git pull && node scripts/kitchen-tests.mjs score`.
+
+**Thin rungs (1.32.0).** A rung with one dish can't be sorted, so it merges into its smaller neighbour (e.g. round 1's lone soya chunks joined "Stand at it"). The group lists its `rungs`, each dish keeps its own rung, and scoring reads Harvey's easiest-first as rung, then friction, so cross-rung pairs also test the ladder. Until a row moves, the sort button reads "Keep this order", so an unmoved sort is a confirmed answer (`unmovedConfirmed: true`).
+
 - **Pure core:** `src/brain/rung-quiz.js` (`buildRungQuiz`, `encodeRungResult`, `parseRungResults`, `scoreRungResult`, `rungMarcoChoices`). Up to 5 dishes per rung, in Harvey's own order; each section shows them in a seeded shuffle (never Harvey's order) so the tester isn't anchored. Screens: `src/rung-quiz-ui.js`, `assets/rung-quiz.css`. `?debug` keeps the old ladder after Proceed.
-- **Results** (`harveys-rung-quiz/1`), one file per kitchen and tester: `kitchenId`, `testerId` (random, kept in the browser), optional name, the kitchen's items, and every dish's rung, Harvey's tier, friction, score, order and raw effort features. Then per rung: Marco and Pierre `{shown, ranking, moved, ms}` (ranking is top first) and White `{shown, picks (tap order), none, criteria (tap order), ms}`. Answers resume if the tester closes the page.
+- **Results** (`harveys-rung-quiz/1`), one file per kitchen and tester: `kitchenId`, `testerId` (random, new for every run), `runNo`, the kitchen's items, and every dish's rung, Harvey's tier, friction, score, order and raw effort features. Then per rung: Marco and Pierre `{shown, ranking, moved, ms}` (ranking is top first) and White `{shown, picks (tap order), none, criteria (tap order), ms}`. Answers resume if the tester closes the page.
 - **Scoring:** drop the files (or issue bodies, or pasted messages) in `data/kitchen-tests/` and run `node scripts/kitchen-tests.mjs score`. Per tester: Marco's and Pierre's agreement with Harvey's order (Kendall's tau), how often White's pick was the tester's first pick, and what decided it. Pooled: dishes testers placed far from Pierre's tier, and a Marco fit where each ranking of n dishes adds n(n−1)/2 pairs to the same `frictionTheta` fit as kitchen tests.
 
 ### Kitchen test mode (1.30.0)

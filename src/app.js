@@ -13,7 +13,7 @@ import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 import { startRungQuiz } from './rung-quiz-ui.js';
 
-const VERSION = '1.31.0';
+const VERSION = '1.32.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 

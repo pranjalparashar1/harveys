@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { loadKitchens } from '../src/brain/kitchen-test.js';
 import { buildInventory } from '../src/brain/inventory.js';
+import { TIER_ORDER } from '../src/brain/ranker.js';
 import { buildRungQuiz, encodeRungResult, scoreRungResult, rungMarcoChoices, parseRungResults, kendall, seededShuffle, PER_RUNG, RUNG_FORMAT } from '../src/brain/rung-quiz.js';
 
 const cache = JSON.parse(readFileSync(new URL('../data/ingredient-cache.json', import.meta.url), 'utf8'));
@@ -12,7 +13,7 @@ const quiz = buildRungQuiz({ kitchen, inventory: buildInventory(kitchen.items, {
 test('quiz: rungs in order, capped, Marco then Pierre on sortable rungs, then White on all', () => {
   assert.ok(quiz.rungs.length >= 2);
   assert.deepEqual(quiz.rungs.map((g) => g.rung), [...quiz.rungs.map((g) => g.rung)].sort());
-  for (const g of quiz.rungs) assert.ok(g.dishes.length >= 1 && g.dishes.length <= PER_RUNG);
+  for (const g of quiz.rungs) assert.ok(g.dishes.length >= 2 && g.dishes.length <= PER_RUNG + 1);
   const sortable = quiz.rungs.filter((g) => g.dishes.length > 1).length;
   assert.deepEqual(quiz.steps.map((s) => s.section), [...Array(sortable).fill('marco'), ...Array(sortable).fill('pierre'), ...Array(quiz.rungs.length).fill('white')]);
 });
@@ -32,16 +33,20 @@ test('kendall: same order 1, reversed −1', () => {
   assert.equal(kendall(['a', 'b', 'c'], ['c', 'b', 'a']), -1);
 });
 
+const tasteFirst = (ids) => [...ids].sort((x, y) => TIER_ORDER[quiz.dishes[y].harveys.tier] - TIER_ORDER[quiz.dishes[x].harveys.tier] || quiz.dishes[x].rung - quiz.dishes[y].rung || quiz.dishes[x].harveys.order - quiz.dishes[y].harveys.order);
+
 test('a full taste test encodes, parses back from an issue body, and scores', () => {
   const answers = { marco: {}, pierre: {}, white: {} };
   for (const g of quiz.rungs) {
     if (g.dishes.length > 1) {
       answers.marco[g.rung] = { ranking: [...g.dishes].reverse(), moved: true, ms: 4000 };
-      answers.pierre[g.rung] = { ranking: [...g.dishes], moved: true, ms: 3000 };
+      answers.pierre[g.rung] = { ranking: tasteFirst(g.dishes), moved: true, ms: 3000 };
     }
     answers.white[g.rung] = { picks: [g.dishes[0]], criteria: ['taste', 'difficulty'], none: false, ms: 2000 };
   }
-  const res = encodeRungResult(quiz, answers, { version: 'test', at: '2026-11-22T00:00:00Z', testerId: 't-1', tester: 'A' });
+  const res = encodeRungResult(quiz, answers, { version: 'test', at: '2026-11-22T00:00:00Z', testerId: 't-1', runNo: 1 });
+  assert.equal('tester' in res, false);
+  assert.equal(res.unmovedConfirmed, true);
   assert.equal(res.format, RUNG_FORMAT);
   assert.equal(res.kitchenId, quiz.id);
   const [back] = parseRungResults('Sent from my phone\n```json\n' + JSON.stringify(res) + '\n```');
@@ -59,4 +64,43 @@ test('White "none of these" sends no picks', () => {
   const res = encodeRungResult(quiz, { marco: {}, pierre: {}, white: { [g.rung]: { picks: [g.dishes[0]], none: true, criteria: [] } } }, { testerId: 't' });
   assert.deepEqual(res.white[0].picks, []);
   assert.equal(res.white[0].none, true);
+});
+
+test('a rung with one dish joins its neighbour, so every group can be sorted (round 1: soya chunks alone)', () => {
+  const r1 = JSON.parse(readFileSync(new URL('../data/kitchen-tests/taste-2026-11-22-aspirational_bachelor_test_persona-6s03o-t-cfybq46xz.json', import.meta.url), 'utf8'));
+  const [k] = loadKitchens({ ...r1.kitchen });
+  const q = buildRungQuiz({ kitchen: k, inventory: buildInventory(k.items, { cache }) });
+  for (const g of q.rungs) assert.ok(g.dishes.length >= 2, `rung ${g.rung} has ${g.dishes.length}`);
+  const merged = q.rungs.find((g) => g.dishes.includes('airfryer_soya_chunks'));
+  assert.deepEqual(merged.rungs, [3, 4]);
+  assert.equal(q.dishes.airfryer_soya_chunks.rung, 4); // each dish keeps its own rung
+  assert.ok(q.steps.some((s) => s.section === 'marco' && s.rung === merged.rung));
+});
+
+test('scoring a merged group: Harvey’s easiest-first is rung first, then friction', () => {
+  const dishes = { a: { rung: 3, harveys: { friction: 3, tier: 'pass', order: 0 } }, b: { rung: 4, harveys: { friction: 1, tier: 'pass', order: 0 } } };
+  const r = { kitchen: { kitchen: 'k' }, dishes, marco: [{ rung: 3, ranking: ['a', 'b'], moved: true }], pierre: [], white: [] };
+  assert.equal(scoreRungResult(r).marco.tau, 1);
+});
+
+test('send: one file per run, and #send= saves the token once', async () => {
+  const mem = {};
+  globalThis.localStorage = { getItem: (k) => mem[k] ?? null, setItem: (k, v) => { mem[k] = String(v); }, removeItem: (k) => { delete mem[k]; } };
+  const { pathFor, captureToken, getToken, sendResult, outbox } = await import('../src/send.js');
+  assert.equal(pathFor({ at: '2026-11-22T11:00:00Z', kitchenId: 'k-1', testerId: 't-9' }), 'data/kitchen-tests/taste-2026-11-22-k-1-t-9.json');
+  let replaced = null;
+  assert.equal(captureToken({ hash: '#send=github_pat_x', pathname: '/harveys/', search: '' }, { replaceState: (a, b, u) => { replaced = u; } }), true);
+  assert.equal(getToken(), 'github_pat_x');
+  assert.equal(replaced, '/harveys/');
+  // No signal: the result waits in the outbox instead of being lost.
+  globalThis.fetch = async () => { throw new TypeError('offline'); };
+  assert.equal(await sendResult({ at: '2026-11-22T11:00:00Z', kitchenId: 'k-1', testerId: 't-9', kitchen: { kitchen: 'K' } }), 'queued');
+  assert.equal(outbox().length, 1);
+  // Signal back: it goes, as a new file, and the outbox empties.
+  const calls = [];
+  globalThis.fetch = async (url, o) => { calls.push([url, o?.method]); return { ok: true, status: 201, json: async () => ({}) }; };
+  assert.equal(await sendResult({ at: '2026-11-22T12:00:00Z', kitchenId: 'k-1', testerId: 't-10', kitchen: { kitchen: 'K' } }), 'sent');
+  assert.equal(outbox().length, 0);
+  assert.equal(calls.filter(([, m]) => m === 'PUT').length, 2);
+  assert.ok(calls[0][0].endsWith('/contents/data/kitchen-tests/taste-2026-11-22-k-1-t-9.json'));
 });
