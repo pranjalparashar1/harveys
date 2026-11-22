@@ -1,0 +1,387 @@
+{
+ "format": "harveys-rung-quiz/1",
+ "version": "1.36.1",
+ "at": "2026-11-22T14:03:19.565Z",
+ "source": "link",
+ "kitchenId": "kitchen_video_1-1n287",
+ "testerId": "t-kb8ww47ed",
+ "runNo": 3,
+ "tester": "Banana Singh",
+ "kitchen": {
+  "kitchen": "Kitchen, video_1",
+  "diet": "veg+eggs",
+  "notes": "many clipped or unlabelled bags and containers; no fridge visible",
+  "items": [
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "ghee",
+    "category": "dairy"
+   },
+   {
+    "name": "oats",
+    "category": "grain"
+   },
+   {
+    "name": "brown bread",
+    "category": "bread"
+   },
+   {
+    "name": "rusk",
+    "category": "bread"
+   },
+   {
+    "name": "black salt",
+    "category": "spice"
+   },
+   {
+    "name": "cashews",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "almonds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "peanuts",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "dish soap",
+    "category": "other"
+   },
+   {
+    "name": "blender",
+    "category": "appliance"
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance"
+   },
+   {
+    "name": "gas stove",
+    "category": "appliance"
+   },
+   {
+    "name": "water purifier",
+    "category": "appliance"
+   },
+   {
+    "name": "steel pot",
+    "category": "cookware"
+   }
+  ]
+ },
+ "moment": "Weeknight, 9 PM, tired",
+ "targets": {
+  "protein": 60,
+  "calories": 1200,
+  "fiber": 20
+ },
+ "directions": {
+  "marco": "easiest first",
+  "pierre": "tastiest first",
+  "white": "tap order = preference"
+ },
+ "unmovedConfirmed": true,
+ "ingredients": {
+  "used": [
+   "eggs",
+   "black salt",
+   "gas stove",
+   "steel pot"
+  ],
+  "unused": [
+   {
+    "name": "milk",
+    "category": "dairy",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Whey and makhana bowl",
+      "why": "missing Whey protein, Makhana"
+     },
+     {
+      "dish": "Microwave protein oats",
+      "why": "missing Microwave, Whey protein"
+     },
+     {
+      "dish": "Whey shake with milk",
+      "why": "a snack, and the test shows meals"
+     },
+     {
+      "dish": "Chai",
+      "why": "a snack, and the test shows meals"
+     }
+    ]
+   },
+   {
+    "name": "ghee",
+    "category": "dairy",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Microwave paneer bhurji (no chopping)",
+      "why": "missing Microwave, Paneer"
+     },
+     {
+      "dish": "Butter omelette",
+      "why": "missing a pan"
+     },
+     {
+      "dish": "Tawa paneer cheese sandwich",
+      "why": "missing a pan, Paneer, Cheese slices or Cheese (block or cubes)"
+     },
+     {
+      "dish": "Classic paneer bhurji",
+      "why": "missing a pan, Paneer, Onion, Tomato"
+     }
+    ]
+   },
+   {
+    "name": "oats",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Microwave protein oats",
+      "why": "missing Microwave, Whey protein"
+     },
+     {
+      "dish": "Masala oats",
+      "why": "missing a pan, Onion"
+     }
+    ]
+   },
+   {
+    "name": "brown bread",
+    "category": "bread",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Air-fryer protein bread cheese toast",
+      "why": "missing Air fryer, Cheese slices or Cheese (block or cubes)"
+     },
+     {
+      "dish": "Air-fryer egg-in-a-hole on protein bread",
+      "why": "missing Air fryer"
+     },
+     {
+      "dish": "Paneer cheese grilled sandwich",
+      "why": "missing Sandwich maker, Paneer, Cheese slices or Cheese (block or cubes)"
+     },
+     {
+      "dish": "Tawa paneer cheese sandwich",
+      "why": "missing a pan, Paneer, Cheese slices or Cheese (block or cubes)"
+     }
+    ]
+   },
+   {
+    "name": "rusk",
+    "category": "bread",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "cashews",
+    "category": "nuts_seeds",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "almonds",
+    "category": "nuts_seeds",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "peanuts",
+    "category": "nuts_seeds",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kanda poha with peanuts",
+      "why": "missing a pan, Strainer / colander, Poha, Onion"
+     }
+    ]
+   },
+   {
+    "name": "dish soap",
+    "category": "other",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "blender",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "water purifier",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   }
+  ],
+  "gaps": [
+   "rusk",
+   "cashews",
+   "almonds",
+   "dish soap",
+   "blender",
+   "electric kettle",
+   "water purifier"
+  ],
+  "blockers": [
+   {
+    "thing": "a pan",
+    "dishes": [
+     "Butter omelette"
+    ]
+   },
+   {
+    "thing": "Air fryer",
+    "dishes": [
+     "Air-fryer egg-in-a-hole on protein bread"
+    ]
+   },
+   {
+    "thing": "Maggi noodles",
+    "dishes": [
+     "Maggi"
+    ]
+   },
+   {
+    "thing": "Microwave",
+    "dishes": [
+     "Microwave mug omelette"
+    ]
+   }
+  ]
+ },
+ "dishes": {
+  "boiled_eggs": {
+   "name": "Boiled eggs with salt and pepper",
+   "rung": 3,
+   "harveys": {
+    "order": 0,
+    "tier": "floor",
+    "friction": 1.662,
+    "score": -1.047
+   },
+   "raw": {
+    "protein": 25,
+    "tools": 1,
+    "handsOn": 5,
+    "waiting": 14,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 2
+   }
+  }
+ },
+ "marco": [],
+ "pierre": [],
+ "white": [
+  {
+   "rung": 3,
+   "rungs": [
+    3
+   ],
+   "harveys": "boiled_eggs",
+   "shown": [
+    "boiled_eggs"
+   ],
+   "picks": [
+    "boiled_eggs"
+   ],
+   "none": false,
+   "criteria": [
+    "difficulty",
+    "macros",
+    "taste"
+   ],
+   "ms": 12365
+  }
+ ],
+ "feedback": {
+  "chips": [
+   "missing_dishes"
+  ],
+  "skipped": false,
+  "allGood": false,
+  "wrongItems": [],
+  "missedItems": [],
+  "dishIdeas": [
+   {
+    "name": "Curd rice",
+    "quick": true
+   },
+   {
+    "name": "Maggi",
+    "quick": true
+   },
+   {
+    "name": "I’d order in",
+    "quick": true
+   }
+  ],
+  "tooHard": [],
+  "wouldntEat": [],
+  "wouldntWhy": [],
+  "confusing": [],
+  "note": "",
+  "ms": 26181
+ }
+}
