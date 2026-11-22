@@ -729,11 +729,13 @@ export const CATALOGUE = [
   // long open boil first instead of whistles. Harsh's kitchen had dal and a kadai, no cooker.
   {
     id: 'kadai_dal',
-    name: 'Kadai-boiled dal',
+    name: 'Open-pot dal',
     kind: 'meal',
     form: 'one-pot',
     parts: [{ id: 'dal', technique: 'boiled' }],
-    equipment: ['stovetop', 'kadai'],
+    // 1.38.0: any pot (patila, kadai, saucepan), not only a kadai. Harsh had lentils and a steel
+    // pot and asked for dal; the video missed his kadhai.
+    equipment: ['stovetop', 'pot'],
     utensils: ['spatula', 'bowl'],
     ingredients: [
       { id: 'dal', amount: '60 g', prep: 'wash' },
@@ -743,7 +745,7 @@ export const CATALOGUE = [
       { anyOf: ['lemon', 'role:acid'], amount: 'a squeeze', prep: 'ready', optional: true },
     ],
     steps: [
-      { text: 'Rinse the dal and put it in the kadai with salt and 3 cups of water.', active: 2 },
+      { text: 'Rinse the dal and put it in a pot or kadai with salt and 3 cups of water.', active: 2 },
       { text: 'Boil it uncovered for about 40 minutes, stirring now and then and adding water if it dries out, until the dal is soft.', active: 4, passive: 40 },
       { text: 'Mash it a little with the ladle and serve with ghee on top.', active: 1 },
     ],
@@ -1060,6 +1062,32 @@ export const CATALOGUE = [
     attention: 1,
     cleanup: { dishes: 2, greasy: 0 },
     macros: { protein: 7, kcal: 130, fiber: 0 },
+    source: 'estimate',
+  },
+  // Bare-kitchen dish (1.38.0, diagnosis of Harsh's and Banana Singh's kitchens): a stove, a pot
+  // and eggs, nothing to chop. (A blended raw-oats shake was tried and dropped: raw oats are cook-first.)
+  {
+    id: 'pot_egg_bhurji',
+    name: 'Plain egg bhurji (no chopping)',
+    kind: 'meal',
+    form: 'bhurji',
+    parts: [{ id: 'eggs', technique: 'scrambled' }, { id: 'ghee' }],
+    equipment: ['stovetop', 'pot'],
+    utensils: ['spatula', 'plate'],
+    ingredients: [
+      { id: 'eggs', amount: '3', prep: 'crack' },
+      { anyOf: ['ghee', 'butter', 'oil'], amount: '1 tsp', prep: 'measure' },
+      { id: 'salt', amount: 'a pinch', prep: 'measure' },
+      { anyOf: ['turmeric', 'red_chilli_powder', 'black_pepper', 'role:heat'], amount: 'a pinch', prep: 'measure', optional: true },
+      { anyOf: ['bread', 'protein_bread'], amount: '2 slices, on the side', prep: 'ready', optional: true },
+    ],
+    steps: [
+      { text: 'Melt the ghee, butter or oil in the pot or pan on low heat.', active: 1, passive: 1 },
+      { text: 'Crack in the eggs with salt and a pinch of spice, and stir until just set.', active: 3 },
+    ],
+    attention: 2,
+    cleanup: { dishes: 2, greasy: 1 },
+    macros: { protein: 19, kcal: 260, fiber: 0 },
     source: 'estimate',
   },
 ];

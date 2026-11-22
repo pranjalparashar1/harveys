@@ -14,10 +14,16 @@ test('salt and oil are assumed unless marked missing', () => {
   assert.ok(can('boiled_eggs', ['eggs', 'induction cooktop', 'steel pot']), 'eggs no longer need salt spotted');
 });
 
-test('lentils are dal, and dal boils in a kadai without a cooker', () => {
+test('lentils are dal, and dal boils in any pot without a cooker', () => {
   assert.equal(matchName('lentils'), 'dal');
   assert.ok(can('kadai_dal', ['lentils', 'induction cooktop', 'kadhai']));
-  assert.ok(!can('kadai_dal', ['lentils', 'induction cooktop', 'steel pot']));
+  assert.ok(can('kadai_dal', ['lentils', 'induction cooktop', 'steel pot']), '1.38.0: a patila boils dal too');
+  assert.ok(!can('kadai_dal', ['lentils', 'induction cooktop']), 'still needs a vessel');
+});
+
+test('bare kitchens (1.38.0): egg bhurji in a pot, no pan and no chopping', () => {
+  assert.ok(can('pot_egg_bhurji', ['eggs', 'ghee', 'gas stove', 'steel pot']));
+  assert.ok(!can('pot_egg_bhurji', ['eggs', 'ghee', 'steel pot']), 'needs a stove');
 });
 
 test('chai and coffee need milk, the tea or coffee, and a saucepan; a kadai will not do', () => {
