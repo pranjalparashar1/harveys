@@ -15,18 +15,15 @@ export const DEFAULT_CONFIG = Object.freeze({
   // score = payoff − λ_context × friction  (friction: learn.js FEATURES)
 
   // Friction (v2) scales live in learn.js FEATURES, shared with the pick-two trainer.
-  // FITTED (1.25.0, 21 Nov 2026): pranjal's Marco prep quiz (prep.html, issue #59: 40
-  // answers, one dish two ways at a set time and energy), pulled toward the 5C sprint fit.
-  // On the 26 clear a/b picks it gets 20 right; the 5C weights got 14. Held out: 7/10.
-  // Answers: data/prep-answers-2026-11-21.txt; refit with scripts/fit-prep.mjs.
-  // Attention and cleanup now cost (5C had clamped them to 0). cuts and steps fitted
-  // slightly positive (+0.265, +0.018) and are clamped to 0: a cost can't be a bonus.
-  // λ by energy from the same fit: fresh 0.4, okay 1, tired 2.5 (not applied: λ per mood
-  // stays frozen; 8 of 11 "neither tonight" answers came at "wiped out").
+  // FITTED (22 Nov 2026): pranjal's Marco prep quiz, rounds 1–3 (prep.html: 91 answers,
+  // data/prep-answers-*.txt), refit with `scripts/fit-prep.mjs data/prep-answers-*.txt --no-taste`.
+  // Leave-one-out 52/91; the 1.25.0 weights got 47/91. Held out: 15/24.
+  // peels and cuts fitted positive (+0.213, +0.286) and are clamped to 0: a cost can't be a bonus.
+  // λ by energy from the same fit: fresh 0.7, okay 1, tired 1.75 (not applied: λ per mood stays frozen).
   frictionTheta: Object.freeze({
-    tools: -0.417, handsOn: -0.569, waiting: -0.733, prePrep: -0.114, peels: -0.027,
-    cuts: 0, steps: 0, // fitted positive, clamped (see above)
-    attention: -0.524, cleanup: -0.611,
+    tools: -0.682, handsOn: -1.005, waiting: -0.518, prePrep: -0.367, peels: 0,
+    cuts: 0, // fitted positive, clamped (see above)
+    steps: -0.036, attention: -0.571, cleanup: -0.734,
   }),
 
   // Payoff: progress to what is still remaining today, capped at the target.
