@@ -59,8 +59,9 @@ export function kitchenTips(inventory, items = []) {
   const have = inventory?.have ?? new Set();
   const names = items.map((i) => String(i.name ?? '').toLowerCase());
   const tips = [];
-  if (!['kettle', 'saucepan', 'pressure_cooker'].some((id) => have.has(id))) {
-    tips.push('Nothing here boils water quickly: no kettle, saucepan or pressure cooker. A saucepan is the cheapest fix.');
+  // A nonstick kadai boils and fries (pranjal, 22 Nov), so it counts as a pot here too.
+  if (!['kettle', 'saucepan', 'pressure_cooker', 'kadai'].some((id) => have.has(id))) {
+    tips.push('Nothing here boils water: no kettle, saucepan, kadai or pressure cooker. A saucepan is the cheapest fix.');
   }
   const metal = names.some((n) => /\b(metal|steel)\b.*\b(spatula|ladle|turner|karchi|spoon)\b/.test(n));
   const nonstick = names.some((n) => /non[- ]?stick/.test(n));

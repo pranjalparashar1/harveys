@@ -13,7 +13,7 @@ You have the code but none of the old project's memory, chat or files. Everythin
 
 ---
 
-> **1.30.0 (test kitchen):** `data/kitchens/aspirational-bachelor.json` is a synthetic persona (single working Indian male, 25 to 35, getting fitter: lots of ingredients, no kettle, saucepan or pressure cooker, metal spatula on nonstick) used until real kitchens come back. The page loads it from "Test kitchen". A nonstick kadai no longer counts as a pot to boil in. `rank()` now also returns `kitUnlocks` (dishes blocked by one piece of kit) and `kitchenTips()` flags missing fundamentals.
+> **1.30.0 (test kitchen):** `data/kitchens/aspirational-bachelor.json` is a synthetic persona (single working Indian male, 25 to 35, getting fitter: lots of ingredients, no kettle, saucepan or pressure cooker, metal spatula on nonstick) used until real kitchens come back. The page loads it from "Test kitchen". A nonstick kadai counts as a pot for boiling and frying (pranjal). `rank()` now also returns `kitUnlocks` (dishes blocked by one piece of kit) and `kitchenTips()` flags missing fundamentals.
 
 > **1.29.0 (open-ended pantry):** any named ingredient now works. See [`docs/catalogue-prompt.md`](catalogue-prompt.md) for the cataloguing prompt, `src/brain/pantry.js` for profiles and `scripts/import-kitchens.mjs` for importing other people's kitchens.
 
