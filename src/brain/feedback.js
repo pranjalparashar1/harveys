@@ -43,7 +43,7 @@ const SUB_IDS = { wouldntWhy: new Set(WOULDNT_WHY.map((x) => x.id)), confusing: 
 /** Follow-up screen for each chip, in the order shown. "All good" has none. */
 export const FOLLOW_UPS = ['wrong_items', 'missing_dishes', 'too_hard', 'wouldnt_eat', 'confusing'];
 
-export const blankFeedback = () => ({ chips: [], wrongItems: [], missedItems: [], dishIdeas: [], tooHard: [], wouldntEat: [], wouldntWhy: [], confusing: [], note: '', ms: 0, seen: false });
+export const blankFeedback = () => ({ chips: [], wrongItems: [], missedItems: [], dishIdeas: [], tooHard: [], wouldntEat: [], wouldntWhy: [], confusing: [], note: '', makes: '', ms: 0, seen: false });
 
 export const norm = (s) => String(s ?? '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 const text = (s, n) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
@@ -69,16 +69,21 @@ export function cleanFeedback(fb, quiz) {
   const has = (c) => chips.includes(c);
   const out = {
     chips,
-    skipped: !chips.length && !text(fb.note, 1),
+    skipped: !chips.length && !text(fb.note, 1) && !text(fb.makes, 1),
     allGood: has('all_good'),
     wrongItems: has('wrong_items') ? [...new Set((fb.wrongItems ?? []).map((n) => items.get(norm(n))).filter(Boolean))] : [],
     missedItems: has('wrong_items') ? uniq((fb.missedItems ?? []).map((n) => text(n, 60))).slice(0, 30) : [],
-    dishIdeas: has('missing_dishes') ? uniq((fb.dishIdeas ?? []).map((d) => (typeof d === 'string' ? { name: text(d, 60), quick: false } : { name: text(d.name, 60), quick: !!d.quick }))).filter((d) => d.name).slice(0, 20) : [],
+    // 1.44.0: "Meals or foods you often make" on the end screen counts as typed dish ideas too.
+    dishIdeas: uniq([
+      ...(has('missing_dishes') ? (fb.dishIdeas ?? []).map((d) => (typeof d === 'string' ? { name: text(d, 60), quick: false } : { name: text(d.name, 60), quick: !!d.quick })) : []),
+      ...splitIdeas(fb.makes).map((name) => ({ name, quick: false, makes: true })),
+    ]).filter((d) => d.name).slice(0, 30),
     tooHard: has('too_hard') ? [...new Set(fb.tooHard ?? [])].filter((id) => dishes.has(id)) : [],
     wouldntEat: has('wouldnt_eat') ? [...new Set(fb.wouldntEat ?? [])].filter((id) => dishes.has(id)) : [],
     wouldntWhy: has('wouldnt_eat') ? [...new Set(fb.wouldntWhy ?? [])].filter((id) => SUB_IDS.wouldntWhy.has(id)) : [],
     confusing: has('confusing') ? [...new Set(fb.confusing ?? [])].filter((id) => SUB_IDS.confusing.has(id)) : [],
     note: text(fb.note, 2000),
+    makes: text(fb.makes, 1000),
     ms: Math.max(0, Math.round(fb.ms ?? 0)) || null,
   };
   return out;
@@ -154,6 +159,9 @@ export function summariseCheck(results) {
     have: list(tally).map((e) => ({ id: e.key, label: labelFor(e.key), n: e.n, testers: e.testers, kitchens: e.kitchens })),
     noStove: checked.filter((r) => r.confirm.noStove).map((r) => ({ tester: who(r), kitchen: where(r), stove: [...(r.confirm.have ?? []), ...(r.confirm.typed ?? []).map((t) => t.id)].filter((id) => id === 'gas_stove' || id === 'induction').map(labelFor) })),
     burners: checked.filter((r) => r.confirm.burners).map((r) => ({ tester: who(r), kitchen: where(r), n: r.confirm.burners })),
+    // 1.44.0: listed items testers unticked (the video agent saw something that isn't there)
+    removed: list((() => { const m = new Map(); for (const r of checked) for (const n of r.confirm.removed ?? []) { const k = norm(n); const e = m.get(k) ?? { name: n, n: 0, testers: [], kitchens: new Set() }; e.n++; e.testers.push(who(r)); e.kitchens.add(where(r)); m.set(k, e); } return m; })()).map((e) => ({ name: e.name, n: e.n, testers: e.testers, kitchens: e.kitchens })),
+    bonus: results.filter((r) => r.bonus).map((r) => ({ tester: who(r), kitchen: where(r), name: r.bonus.name, need: r.bonus.need?.label, effort: r.bonus.effort, taste: r.bonus.taste, want: r.bonus.want, have: r.bonus.have })),
     fresh: list(fresh).map((e) => ({ name: e.name, n: e.n, from: [...new Set(e.from)], testers: e.testers, kitchens: e.kitchens })),
   };
 }
@@ -196,6 +204,7 @@ export function summariseFeedback(results, { catalogue = [] } = {}) {
     wouldntEat: dishVotes('wouldntEat'),
     wouldntWhy: count((r) => r.feedback.wouldntWhy ?? []).map(({ key, n }) => ({ id: key, label: WOULDNT_WHY.find((x) => x.id === key)?.label ?? key, n })),
     confusing: count((r) => r.feedback.confusing ?? []).map(({ key, n }) => ({ id: key, label: CONFUSING.find((x) => x.id === key)?.label ?? key, n })),
+    makes: withFb.filter((r) => r.feedback.makes).map((r) => ({ tester: r.tester || r.testerId, kitchen: r.kitchen?.kitchen ?? r.kitchenId, makes: r.feedback.makes })),
     notes: withFb.filter((r) => r.feedback.note).map((r) => ({ kitchen: r.kitchen?.kitchen ?? r.kitchenId, testerId: r.testerId, at: r.at, note: r.feedback.note })),
   };
 }
@@ -215,6 +224,12 @@ export function checkReport(c) {
   L.push(`## Quick check: what the videos missed (${c.checked} tester(s))`, '');
   L.push(c.have.length ? c.have.map((e) => `${e.label} (${e.n})`).join(', ') : 'Nobody tapped anything.', '');
   if (c.noStove.length) L.push(`**No stove on the list:** ${c.noStove.map((x) => `${x.tester} (${x.kitchen}) → ${x.stove.join(' + ') || 'none tapped'}`).join('; ')}`, '');
+  if (c.removed?.length) L.push(`**Listed but not in the kitchen (unticked):** ${c.removed.map((e) => `${e.name} (${e.n})`).join(', ')}`, '');
+  if (c.bonus?.length) {
+    L.push('## Bonus: one more thing', '', '| Tester | Kitchen | Needs | Dish | Effort | Taste | Would get it |', '|---|---|---|---|---|---|---|');
+    for (const b of c.bonus) L.push(`| ${b.tester} | ${b.kitchen} | ${b.need ?? '-'} | ${b.name} | ${b.effort ?? '-'} | ${b.taste ?? '-'} | ${b.have ? 'has it' : b.want ?? '-'} |`);
+    L.push('');
+  }
   if (c.burners.length) L.push(`**Burners at once:** ${c.burners.map((x) => `${x.tester} ${x.n === 3 ? '3+' : x.n}`).join(', ')}`, '');
   return L;
 }
@@ -263,6 +278,11 @@ export function feedbackReport(s, { title = 'Tester feedback' } = {}) {
     L.push('');
   }
   if (s.confusing.length) L.push('## Confusing', '', list(s.confusing, (x) => `${x.label} (${x.n})`), '');
+  if (s.makes?.length) {
+    L.push('## What testers make, word for word', '');
+    for (const m of s.makes) L.push(`- **${m.tester}** (${m.kitchen}): ${m.makes.replace(/\n/g, ' ')}`);
+    L.push('');
+  }
   if (s.notes.length) {
     L.push('## Notes, word for word', '');
     for (const n of s.notes) L.push(`> ${n.note.replace(/\n/g, ' ')}`, `> — ${n.kitchen}, ${n.testerId}`, '');

@@ -14,7 +14,8 @@
 // Marco rankings become every pair inside each rung, pooled into the same frictionTheta fit.
 // From 1.42.0 the taste test is meal cards (flow 'cards'): yes/no per dish, then difficulty
 // ratings 1-5; every two dishes rated apart become one Marco pair in the same fit.
-// From 1.43.0 it is a recipe list (flow 'stars'): effort and taste stars per dish (5 = effortless,
+// From 1.44.0 each dish is its own screen (same 'stars' data), the check confirms the list
+// (confirm.removed), and a bonus dish needs one more thing (bonus.want). From 1.43.0 it is a recipe list (flow 'stars'): effort and taste stars per dish (5 = effortless,
 // delicious), or "can't make it" (missing ingredients / equipment). Effort stars become
 // difficulty levels (6 - stars), so they feed Marco the same way.
 //
@@ -132,7 +133,9 @@ for (const r of tastes) {
   }
   const f = r.feedback;
   const c = r.confirm;
-  if (c) console.log(`   Check:  has ${[...(c.have ?? []), ...(c.typed ?? []).filter((t) => t.id).map((t) => t.id)].join(', ') || 'nothing tapped'}${c.burners ? `; ${c.burners === 3 ? '3+' : c.burners} burner(s)` : ''}${c.noStove ? '; no stove on the list' : ''}${(c.unmatched ?? []).length ? `; NEW: ${c.unmatched.join(', ')}` : ''}`);
+  if (c) console.log(`   Check:  has ${[...(c.have ?? []), ...(c.typed ?? []).filter((t) => t.id).map((t) => t.id)].join(', ') || 'nothing tapped'}${c.burners ? `; ${c.burners === 3 ? '3+' : c.burners} burner(s)` : ''}${c.noStove ? '; no stove on the list' : ''}${(c.unmatched ?? []).length ? `; NEW: ${c.unmatched.join(', ')}` : ''}${(c.removed ?? []).length ? `; NOT THERE: ${c.removed.join(', ')}` : ''}`);
+  if (r.bonus) console.log(`   Bonus:  ${r.bonus.name} needs ${r.bonus.need?.label}: effort ${r.bonus.effort ?? '-'}, taste ${r.bonus.taste ?? '-'}, would get it ${r.bonus.have ? 'has it' : r.bonus.want ?? '-'}/5`);
+  if (r.feedback?.makes) console.log(`   Makes:  ${r.feedback.makes}`);
   if (f) console.log(`   Said:   ${f.skipped ? 'skipped' : [...f.chips, ...(f.dishIdeas ?? []).map((d) => `+${d.name}`), ...(f.wrongItems ?? []).map((x) => `-${x}`)].join(', ')}${f.note ? ` · "${f.note.slice(0, 80)}${f.note.length > 80 ? '…' : ''}"` : ''}`);
   for (const [k, v] of Object.entries(s.white.criteria)) criteria[k] = (criteria[k] ?? 0) + v;
   for (const row of r.pierre ?? []) row.ranking.forEach((id, i) => {

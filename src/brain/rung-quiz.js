@@ -14,7 +14,7 @@
 import { CATALOGUE } from './catalogue.js';
 import { DEFAULT_CONFIG } from './config.js';
 import { rank, RUNGS, TIER_ORDER, byRungOrder, describeMissing } from './ranker.js';
-import { CAPABILITIES } from './vocabulary.js';
+import { CAPABILITIES, labelFor, kindOf } from './vocabulary.js';
 import { PIERRE_SEED } from './train-data.js';
 import { featureVector } from './learn.js';
 import { kitchenId, effortFacts, MOMENT, TARGETS, fitFrom } from './kitchen-test.js';
@@ -165,7 +165,30 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdi
   // and a seeded shuffle for rating, so ratings aren't read off the order Harvey showed.
   const deck = Object.values(dishes).sort((a, b) => a.rung - b.rung || (a.away ? 1 : 0) - (b.away ? 1 : 0) || a.harveys.order - b.harveys.order || a.id.localeCompare(b.id)).map((d) => d.id);
   const rateOrder = seededShuffle(deck, `${id}|rate`);
-  return { id, kitchen, rungs, dishes, steps, usage, deck, rateOrder, cookable: deck.filter((d) => !dishes[d].away).length };
+  const bonus = bonusPick({ r, kind, inventory, catalogue, verdicts, config, shown: new Set(deck) });
+  return { id, kitchen, rungs, dishes, steps, usage, deck, rateOrder, cookable: deck.filter((d) => !dishes[d].away).length, bonus };
+}
+
+/**
+ * 1.44.0 bonus: one dish this kitchen could make with one more thing (a food or a piece of kit).
+ * The thing that unlocks the most dishes not already shown wins; its best dish is the one asked
+ * about. null when nothing is one thing away.
+ */
+export function bonusPick({ r, kind, inventory, catalogue = CATALOGUE, verdicts = PIERRE_SEED, config = DEFAULT_CONFIG, shown = new Set() }) {
+  const pool = oneAway({ r, kind, inventory, catalogue, verdicts, config }).filter((x) => !shown.has(x.meal.id) && x.pierre.tier !== 'veto');
+  if (!pool.length) return null;
+  const by = new Map();
+  for (const x of pool) by.set(x.need, [...(by.get(x.need) ?? []), x]);
+  const [need, list] = [...by.entries()].sort((a, b) => b[1].length - a[1].length || pool.indexOf(a[1][0]) - pool.indexOf(b[1][0]))[0];
+  const x = list[0];
+  return {
+    id: x.meal.id, name: x.meal.name, rung: x.rung, how: shortHow(x.meal), away: x.away,
+    need: { id: need, label: labelFor(need), kind: kindOf(need) ?? 'food' },
+    unlocks: list.map((y) => ({ id: y.meal.id, name: y.meal.name })),
+    protein: x.meal.macros?.protein ?? null, kcal: x.meal.macros?.kcal ?? null,
+    harveys: { tier: x.pierre.tier, friction: round(x.friction), score: round(x.score) },
+    raw: compactRaw(x.raw),
+  };
 }
 
 /**
@@ -181,7 +204,7 @@ function oneAway({ r, kind, inventory, catalogue, verdicts, config }) {
     const id = CAPABILITIES[need[0]]?.anyOf[0] ?? need[0];
     const inv = { ...inventory, have: new Set([...inventory.have, id]), missingBasics: new Set([...(inventory.missingBasics ?? [])].filter((u) => u !== need[0])) };
     const x = rank({ inventory: inv, targets: TARGETS, context: { hour: MOMENT.hour, weekday: MOMENT.weekday, kind }, catalogue: [f.meal], verdicts, config }).ranked[0];
-    if (x) out.push({ ...x, away: describeMissing(f.missing)[0] });
+    if (x) out.push({ ...x, away: describeMissing(f.missing)[0], need: id });
   }
   return out.sort((a, b) => TIER_ORDER[b.pierre.tier] - TIER_ORDER[a.pierre.tier] || b.score - a.score || a.meal.id.localeCompare(b.meal.id));
 }
@@ -199,6 +222,9 @@ const confirmOut = (c) => {
     unmatched: typed.filter((t) => !t.id).map((t) => t.text),
     burners: [1, 2, 3].includes(c.burners) ? c.burners : null,
     noStove: !!c.noStove,
+    // 1.44.0: the tester confirms the list instead of being asked. removed = listed items they
+    // unticked (not in their kitchen); listed = how many listed items they were shown.
+    ...(c.removed ? { removed: c.removed.map((n) => String(n).slice(0, 60)).slice(0, 80), listed: c.listed ?? null } : {}),
     ms: c.ms ?? null,
   };
 };
@@ -233,6 +259,20 @@ const starsOut = (quiz, answers) => {
     stars,
     // Effort stars on the old difficulty scale, so rungMarcoChoices and the reports read them as before.
     difficulty: rated.length ? { scale: DIFFICULTY.map((x) => x.label), from: 'effort stars, level = 6 - stars', ratings: rated.map((x) => ({ id: x.id, level: 6 - x.effort, ms: x.ms })), stoppedEarly: rated.length < deck.length } : null,
+  };
+};
+
+export const WANT_STARS = ['No way', 'Unlikely', 'Maybe', 'Likely', 'Definitely'];
+const bonusOut = (quiz, answers) => {
+  const b = quiz.bonus;
+  if (!b) return null;
+  const ok = (n) => ([1, 2, 3, 4, 5].includes(n) ? n : null);
+  const a = answers.stars?.[b.id] ?? {};
+  const w = answers.bonusItem ?? {};
+  return {
+    id: b.id, name: b.name, rung: b.rung, need: b.need, unlocks: b.unlocks.map((u) => u.id), harveys: b.harveys, raw: b.raw,
+    effort: ok(a.effort), taste: ok(a.taste), cant: CANT.some((c) => c.id === a.cant) ? a.cant : null,
+    want: ok(w.want), have: !!w.have, ms: (a.ms ?? 0) + (w.ms ?? 0) || null,
   };
 };
 
@@ -277,6 +317,9 @@ export function encodeRungResult(quiz, answers, { version, at, testerId, runNo =
     // 1.43.0 recipe test (flow 'stars'): stars = per dish effort and taste 1-5 (5 = effortless,
     // delicious) and cant ('ingredients' | 'equipment'); difficulty is the effort stars as levels.
     ...(answers.stars ? starsOut(quiz, answers) : answers.cards ? cardsOut(quiz, answers) : {}),
+    // 1.44.0 bonus: a dish one thing away (need), its effort and taste stars, and want = how
+    // likely they'd get that thing, 1 (no way) … 5 (definitely); have = they already have it.
+    bonus: bonusOut(quiz, answers),
     // 1.34.0: what the tester said went wrong (src/brain/feedback.js). null: never reached it.
     feedback: cleanFeedback(answers.feedback, quiz),
   };
@@ -377,6 +420,7 @@ export function scoreRungResult(r) {
     pierre: { rungs: pierre, tau: mean(pierre.map((x) => x.tau)) },
     white: { rungs: white, hits: white.filter((x) => x.hit).length, inPicks: white.filter((x) => x.inPicks).length, n: white.length, criteria },
     flow: r.flow ?? 'rounds', cards, difficulty, stars,
+    bonus: r.bonus ? { name: r.bonus.name, need: r.bonus.need?.label ?? null, effort: r.bonus.effort, taste: r.bonus.taste, want: r.bonus.want, have: r.bonus.have } : null,
   };
 }
 

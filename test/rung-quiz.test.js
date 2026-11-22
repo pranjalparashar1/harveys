@@ -204,3 +204,36 @@ test('1.43.0 recipe test: effort and taste stars, can’t-make reasons, effort s
   assert.equal(empty.difficulty, null);
   assert.deepEqual(empty.stars, []);
 });
+
+test('1.44.0: a bonus dish one thing away, confirm removals, and what testers make', async () => {
+  const { listedSplit, addChoices } = await import('../src/brain/confirm.js');
+  const { summariseFeedback, feedbackReport } = await import('../src/brain/feedback.js');
+  const b = quiz.bonus;
+  assert.ok(b, 'this kitchen has a dish one thing away');
+  assert.ok(!quiz.deck.includes(b.id), 'the bonus is not a dish already rated');
+  assert.ok(b.need.id && b.need.label && b.unlocks.some((u) => u.id === b.id));
+  const answers = {
+    marco: {}, pierre: {}, white: {}, stars: { [b.id]: { effort: 4, taste: 5, ms: 900 } }, bonusItem: { want: 2, ms: 500 },
+    confirm: { have: ['maggi'], typed: [], removed: ['Tomato'], listed: 57, noStove: false },
+    feedback: { chips: ['confusing'], confusing: ['stars'], makes: 'rajma chawal, aloo paratha', seen: true },
+  };
+  const res = encodeRungResult(quiz, answers, { version: 'test', testerId: 't-b', tester: 'Riya' });
+  assert.equal(res.bonus.id, b.id);
+  assert.deepEqual([res.bonus.effort, res.bonus.taste, res.bonus.want, res.bonus.have], [4, 5, 2, false]);
+  assert.ok(!res.stars.some((x) => x.id === b.id), 'the bonus stays out of the Marco pairs');
+  assert.deepEqual(res.confirm.removed, ['Tomato']);
+  assert.equal(res.feedback.makes, 'rajma chawal, aloo paratha');
+  assert.deepEqual(res.feedback.dishIdeas.map((d) => d.name), ['rajma chawal', 'aloo paratha']);
+  assert.equal(scoreRungResult(res).bonus.want, 2);
+  const md = feedbackReport(summariseFeedback([res]));
+  assert.match(md, /Bonus: one more thing/);
+  assert.match(md, /What testers make/);
+  assert.match(md, /unticked\):\*\* Tomato/);
+  // The two confirm screens: food and kit apart; plates and spoons aren't asked about.
+  const split = listedSplit([{ name: 'onion', category: 'veg' }, { name: 'Air fryer', category: 'appliance' }, { name: 'spoon', category: 'utensil' }, { name: 'soy sauce', category: 'condiment' }]);
+  assert.deepEqual(split.food.map((x) => [x.name, x.group]), [['Onion', 'veg'], ['Soy sauce', 'condiments']]);
+  assert.deepEqual(split.kit.map((x) => x.name), ['Air fryer']);
+  const add = addChoices([{ name: 'onion', category: 'veg' }]);
+  assert.ok(!add.food.find((g) => g.id === 'veg').opts.some((o) => o.id === 'onion'), 'what is listed is not offered again');
+  assert.ok(add.noStove && add.kit[0].id === 'stove');
+});

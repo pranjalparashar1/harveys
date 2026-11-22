@@ -8,7 +8,7 @@ import { CATALOGUE } from './catalogue.js';
 import { DEFAULT_CONFIG } from './config.js';
 import { buildInventory, matchName, SYNONYMS } from './inventory.js';
 import { rank } from './ranker.js';
-import { kindOf, labelFor } from './vocabulary.js';
+import { kindOf, labelFor, FOODS, ASSUMED_STAPLES } from './vocabulary.js';
 import { MOMENT, TARGETS } from './kitchen-test.js';
 
 /** Things most Indian kitchens have that a video often misses: jars, a vessel on a hook. */
@@ -136,4 +136,69 @@ export function matchTyped(text) {
     if (!best || s > best.s) best = { id, s };
   }
   return best && best.s >= FUZZY_MIN ? { ...out, id: best.id, label: labelFor(best.id), how: 'fuzzy' } : out;
+}
+
+// ── Confirm, don't ask (1.44.0) ─────────────────────────────────────────────
+// pranjal, 22 Nov: testers fumbled "Do you have any of these?". Now Harvey shows what it saw
+// as a list to confirm (all ticked; untick what isn't there), and "Missed something? Add more"
+// opens a few categories of taps. Foods first, then cookware, the same way.
+
+/** The categories behind "Add more". text entries have no vocabulary id: they join as typed. */
+export const FOOD_GROUPS = Object.freeze([
+  { id: 'veg', label: 'Veg & fruit', groups: ['veg', 'fruit'], extra: ['Potato', 'Carrot', 'Coriander leaves', 'Cauliflower', 'Apple'] },
+  { id: 'spices', label: 'Spices', groups: ['spice'], extra: ['Cumin (jeera)', 'Coriander powder', 'Hing', 'Ajwain'] },
+  { id: 'condiments', label: 'Sauces & spreads', groups: ['spread'], extra: ['Soy sauce', 'Pickle (achaar)', 'Green chutney', 'Chilli sauce', 'Vinegar', 'Jam'] },
+  { id: 'foods', label: 'Staples', groups: ['grain', 'protein', 'dairy', 'bread', 'fat'], extra: ['Atta', 'Sooji (rava)', 'Frozen paratha'] },
+  { id: 'misc', label: 'Drinks & snacks', groups: ['drink', 'snack'], extra: ['Biscuits', 'Chips', 'Instant soup', 'Dry fruits'], type: true },
+]);
+export const KIT_GROUPS = Object.freeze([
+  { id: 'stove', label: 'Stove', ids: ['gas_stove', 'induction'] },
+  { id: 'pots', label: 'Pots & pans', ids: ['pressure_cooker', 'saucepan', 'frying_pan', 'kadai', 'tawa'] },
+  { id: 'appliances', label: 'Appliances', ids: ['kettle', 'microwave', 'air_fryer', 'sandwich_maker', 'toaster', 'oven', 'blender'], type: true },
+]);
+const KIT_CATS = new Set(['appliance', 'appliances', 'cookware', 'utensil', 'utensils', 'equipment', 'tool', 'tools']);
+const CAT_GROUP = { veg: 'veg', fruit: 'veg', herb: 'veg', spice: 'spices', condiment: 'condiments', sweet: 'condiments', drink: 'misc', snack: 'misc', nuts_seeds: 'misc', other: 'misc' };
+const GROUP_OF = Object.fromEntries(FOOD_GROUPS.flatMap((g) => g.groups.map((x) => [x, g.id])));
+const cap = (s) => String(s ?? '').replace(/^./, (c) => c.toUpperCase());
+
+/**
+ * The kitchen list split for the two confirm screens: { food: [{ name, id, group }], kit: [...] }.
+ * Plates, spoons and the like are assumed, so they aren't shown. One row per name.
+ */
+export function listedSplit(items) {
+  const out = { food: [], kit: [] };
+  const seen = new Set();
+  for (const item of items ?? []) {
+    const name = String((typeof item === 'string' ? item : item?.name) ?? '').trim();
+    const key = name.toLowerCase().replace(/\s+/g, ' ');
+    if (!name || seen.has(key)) continue;
+    seen.add(key);
+    const id = (item?.canonical && kindOf(item.canonical) ? item.canonical : null) ?? matchName(name);
+    const kind = id ? kindOf(id) : null;
+    const cat = String(item?.category ?? '').toLowerCase();
+    if (kind === 'utensil' || (!kind && /^(utensil|utensils|tool|tools)$/.test(cat))) continue;
+    if (kind === 'appliance' || kind === 'cookware' || (!kind && KIT_CATS.has(cat))) out.kit.push({ name: cap(name), id });
+    else out.food.push({ name: cap(name), id, group: GROUP_OF[FOODS[id]?.group] ?? CAT_GROUP[cat] ?? 'foods' });
+  }
+  return out;
+}
+
+/**
+ * What each "Add more" category offers: { food: [{ id, label, opts }], kit: [...] } where an opt
+ * is { id, label } (a vocabulary id) or { text, label } (typed). Things already on the list,
+ * and salt and oil (always assumed), aren't offered. Within a category, the ones that unlock
+ * the most dishes here come first.
+ */
+export function addChoices(items, { cache = {}, missingBasics = [] } = {}) {
+  const base = buildInventory(items, { cache, missingBasics });
+  const first = new Map(confirmCandidates(items, { cache, missingBasics, limit: 99 }).map((a, i) => [a.id, i]));
+  const kitFirst = new Map(kitCandidates(items, { cache, missingBasics }).kit.map((a, i) => [a.id, i]));
+  const order = (rank) => (a, b) => (rank.get(a) ?? 99) - (rank.get(b) ?? 99);
+  const label = (id) => ASK_LABEL[id] ?? labelFor(id);
+  const food = FOOD_GROUPS.map((g) => {
+    const ids = Object.keys(FOODS).filter((id) => g.groups.includes(FOODS[id].group) && !base.have.has(id) && !ASSUMED_STAPLES.includes(id)).sort(order(first));
+    return { id: g.id, label: g.label, type: !!g.type, opts: [...ids.map((id) => ({ id, label: label(id) })), ...g.extra.map((text) => ({ text, label: text }))] };
+  });
+  const kit = KIT_GROUPS.map((g) => ({ id: g.id, label: g.label, type: !!g.type, opts: g.ids.filter((id) => !base.have.has(id)).sort(order(kitFirst)).map((id) => ({ id, label: label(id) })) })).filter((g) => g.opts.length || g.type);
+  return { food, kit, noStove: !STOVES.some((id) => base.have.has(id)) };
 }
