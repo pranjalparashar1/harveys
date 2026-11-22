@@ -1,7 +1,7 @@
 // Turns the AI's free-form list of "things it saw" into the brain's inventory.
 // Pure: no DOM, no network.
 
-import { FOODS, EQUIPMENT, ASSUMED_BASICS } from './vocabulary.js';
+import { FOODS, EQUIPMENT, ASSUMED_BASICS, ASSUMED_STAPLES } from './vocabulary.js';
 import { profileOf, roleToken, ID_ROLES } from './pantry.js';
 
 const ALL = { ...FOODS, ...EQUIPMENT, ...ASSUMED_BASICS };
@@ -81,7 +81,9 @@ export function buildInventory(items, options = {}) {
     extras.push(profile);
     addRoles(profile.roles, profile.as ?? profile.id);
   }
-  return { have, missingBasics: new Set(options.missingBasics ?? []), matched, unmatched, extras, roles, labels, excluded };
+  const missing = new Set(options.missingBasics ?? []);
+  for (const id of ASSUMED_STAPLES) if (!missing.has(id) && !have.has(id)) { have.add(id); addRoles(ID_ROLES[id], id); }
+  return { have, missingBasics: missing, matched, unmatched, extras, roles, labels, excluded };
 }
 
 /** Splits pasted text into item names: lines, commas, semicolons; drops bullets and numbering. */
