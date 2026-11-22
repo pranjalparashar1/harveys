@@ -46,6 +46,7 @@ test('a full taste test encodes, parses back from an issue body, and scores', ()
   }
   const res = encodeRungResult(quiz, answers, { version: 'test', at: '2026-11-22T00:00:00Z', testerId: 't-1', runNo: 1 });
   assert.equal('tester' in res, false);
+  assert.equal(encodeRungResult(quiz, answers, { version: 'test', at: '2026-11-22T00:00:00Z', testerId: 't-1', tester: 'Riya' }).tester, 'Riya', '1.35.0: the name from the link');
   assert.equal(res.unmovedConfirmed, true);
   assert.equal(res.format, RUNG_FORMAT);
   assert.equal(res.kitchenId, quiz.id);

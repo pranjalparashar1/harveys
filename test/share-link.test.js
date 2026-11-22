@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { encodeKitchen, decodeKitchen, kitchenLink, linkCode, packKitchen, unpackKitchen } from '../src/brain/share-link.js';
+import { encodeKitchen, decodeKitchen, kitchenLink, linkCode, linkName, guessName, packKitchen, unpackKitchen } from '../src/brain/share-link.js';
 import { importKitchens } from '../src/brain/kitchens.js';
 import { kitchenId } from '../src/brain/kitchen-test.js';
 
@@ -39,4 +39,24 @@ test('linkCode finds k= beside other hash keys', () => {
   assert.equal(linkCode('#k=1abc'), '1abc');
   assert.equal(linkCode('#relay=off&k=0xyz'), '0xyz');
   assert.equal(linkCode('#send=abc'), null);
+});
+
+test('1.35.0: the tester’s name rides in front of the kitchen and comes back clean', async () => {
+  const link = await kitchenLink(kitchen, 'https://x.test/', 'Riya Sen');
+  assert.match(link, /^https:\/\/x\.test\/#n=Riya%20Sen&k=1/);
+  const hash = link.slice(link.indexOf('#'));
+  assert.equal(linkName(hash), 'Riya Sen');
+  assert.ok(await decodeKitchen(linkCode(hash)), 'the kitchen still decodes behind the name');
+  assert.equal(linkName('#k=1abc'), '');
+  assert.equal(linkName('#n=<b>Zo%C3%AB</b>&k=1'), 'b Zoë /b');
+  assert.equal(linkName('#n=%E0%A4'), '%E0%A4'.slice(0, 40), 'a broken escape doesn’t throw');
+  assert.doesNotMatch(await kitchenLink(kitchen, 'https://x.test/', '  '), /n=/);
+});
+
+test('1.35.0: a first-name guess from the kitchen label, or nothing', () => {
+  assert.equal(guessName('Riya, Bandra'), 'Riya');
+  assert.equal(guessName('Sam’s kitchen'), 'Sam');
+  assert.equal(guessName("Arjun's flat, Pune"), 'Arjun');
+  assert.equal(guessName('Aspirational bachelor kitchen'), '');
+  assert.equal(guessName('Shared flat in Koramangala, 3 people'), '');
 });

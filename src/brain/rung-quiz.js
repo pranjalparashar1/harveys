@@ -128,7 +128,7 @@ function compactRaw(raw) {
  * Answers → the file a tester sends. answers: { marco: {rung: {ranking, ms, moved}},
  * pierre: {…same}, white: {rung: {picks, none, criteria, ms}} }.
  */
-export function encodeRungResult(quiz, answers, { version, at, testerId, runNo = null, source = 'paste' } = {}) {
+export function encodeRungResult(quiz, answers, { version, at, testerId, runNo = null, source = 'paste', tester = '' } = {}) {
   const shownOf = (g, s) => g.shown[s];
   const sortRows = (section) => quiz.rungs.filter((g) => answers[section]?.[g.rung]).map((g) => {
     const a = answers[section][g.rung];
@@ -137,6 +137,8 @@ export function encodeRungResult(quiz, answers, { version, at, testerId, runNo =
   return {
     format: RUNG_FORMAT, version, at, source,
     kitchenId: quiz.id, testerId, runNo,
+    // 1.35.0: the first name pranjal put in the share link; left out when there's none.
+    ...(tester ? { tester: String(tester).slice(0, 40) } : {}),
     kitchen: { kitchen: quiz.kitchen.kitchen, diet: quiz.kitchen.diet ?? 'unknown', notes: quiz.kitchen.notes ?? '', items: (quiz.kitchen.items ?? []).map((i) => ({ name: i.name, category: i.category })) },
     moment: MOMENT.label, targets: TARGETS,
     directions: { marco: 'easiest first', pierre: 'tastiest first', white: 'tap order = preference' },

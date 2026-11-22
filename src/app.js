@@ -13,9 +13,9 @@ import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 import { startRungQuiz } from './rung-quiz-ui.js';
 import { buildRungQuiz } from './brain/rung-quiz.js';
-import { decodeKitchen, linkCode } from './brain/share-link.js';
+import { decodeKitchen, linkCode, linkName } from './brain/share-link.js';
 
-const VERSION = '1.34.0';
+const VERSION = '1.35.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -961,7 +961,7 @@ function init() {
   // ?debug keeps the old ladder of picks.
   $('paste-proceed').addEventListener('click', () => {
     if (document.body.classList.contains('testing')) {
-      startRungQuiz({ kitchen: state.kitchen ?? { kitchen: 'Pasted list', items: state.items }, inventory: inventory(), version: VERSION, source: state.linked ? 'link' : 'paste' });
+      startRungQuiz({ kitchen: state.kitchen ?? { kitchen: 'Pasted list', items: state.items }, inventory: inventory(), version: VERSION, source: state.linked ? 'link' : 'paste', name: state.linked ? testerName() : '' });
       return;
     }
     endPasteReview();
@@ -998,8 +998,32 @@ function init() {
   renderThumbs();
   renderInventory();
   renderContext();
+  greet();
   openSharedKitchen();
   addEventListener('hashchange', openSharedKitchen);
+}
+
+// ── The tester's greeting (1.35.0) ─────────────────────────────────────────
+// share.html puts the tester's first name in the link (#n=Riya&k=…). The page says hi with
+// it, the quiz says it on the way in and out, and the result carries it. Kept on this phone,
+// so "Hi, Riya" is still there when she opens the site again without the link.
+const NAME_KEY = 'harveys.tester.name.v1';
+function testerName() {
+  const fromLink = linkName(location.hash);
+  if (fromLink) { try { localStorage.setItem(NAME_KEY, fromLink); } catch { /* private mode */ } return fromLink; }
+  try { return localStorage.getItem(NAME_KEY) || ''; } catch { return ''; }
+}
+function greet(dishes = null) {
+  const hi = $('hi');
+  if (!hi) return; // owner.html has no greeting
+  const name = testerName();
+  hi.textContent = name ? `Hi, ${name}` : 'Hi there';
+  document.title = name ? `Hi, ${name} · Harvey’s` : 'Harvey’s';
+  $('hi-lead').textContent = dishes == null
+    ? 'Tell Harvey what’s in your kitchen. It finds what you can cook tonight, easiest first.'
+    : dishes
+      ? `Harvey went through your kitchen and found ${dishes} dish${dishes === 1 ? '' : 'es'} you can make. Your taste test teaches it which ones you’d actually cook on a tired night.`
+      : 'Harvey couldn’t find a dish in this kitchen yet. Ask for a new link, or add a few things below.';
 }
 
 // Share links (1.34.0): #k=… carries a whole kitchen (src/brain/share-link.js, made on
@@ -1010,9 +1034,13 @@ async function openSharedKitchen() {
   if (!code) return;
   const raw = await decodeKitchen(code);
   const kitchen = raw ? importKitchens([raw])[0] : null;
+  greet();
   if (!kitchen) {
     const err = $('scan-error');
-    err.textContent = 'This link didn’t open, maybe it was cut short. Ask whoever sent it for a new one.';
+    // iOS before 16.4 can't unpack a link at all: say that, not "cut short".
+    err.textContent = typeof DecompressionStream === 'undefined' && code.startsWith('1')
+      ? 'This phone’s browser is too old to open the link. Update iOS (or open it in Chrome) and tap the link again.'
+      : 'This link didn’t open, maybe it was cut short. Ask whoever sent it for a new one.';
     show(err, true);
     return;
   }
@@ -1023,7 +1051,8 @@ async function openSharedKitchen() {
   setItems(kitchen.items);
   showPasteSummary(kitchen.items);
   $('paste-proceed').textContent = 'Start the taste test';
-  startRungQuiz({ kitchen, inventory: inventory(), version: VERSION, source: 'link' });
+  greet(Object.keys(buildRungQuiz({ kitchen, inventory: inventory() }).dishes).length);
+  startRungQuiz({ kitchen, inventory: inventory(), version: VERSION, source: 'link', name: testerName() });
 }
 
 init();

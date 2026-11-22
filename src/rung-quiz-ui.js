@@ -50,7 +50,7 @@ function loadStore() {
 let store = loadStore();
 const newTesterId = () => `t-${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
 /** A new run: a new person holding the phone, so a new tester id. */
-const freshRun = () => ({ testerId: newTesterId(), runNo: ++store.seq, answers: { marco: {}, pierre: {}, white: {}, feedback: blankFeedback() }, at: 0, sent: false });
+const freshRun = (name = '') => ({ testerId: newTesterId(), runNo: ++store.seq, name, answers: { marco: {}, pierre: {}, white: {}, feedback: blankFeedback() }, at: 0, sent: false });
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch { /* private mode: keep going in memory */ } };
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -82,13 +82,15 @@ function screens() {
   return out;
 }
 
-export function startRungQuiz({ kitchen, inventory, version, source, onExit }) {
-  opts = { version, source, onExit };
+export function startRungQuiz({ kitchen, inventory, version, source, name = '', onExit }) {
+  opts = { version, source, name, onExit };
   quiz = buildRungQuiz({ kitchen, inventory });
   store = loadStore();
   run = store.runs[quiz.id];
   // A sent run belongs to the last person: whoever opens it next is someone new.
-  if (!run || run.sent) run = store.runs[quiz.id] = freshRun();
+  if (!run || run.sent) run = store.runs[quiz.id] = freshRun(name);
+  // 1.35.0: the name in the link (share.html) greets the tester and labels their result.
+  if (name && run.name == null) run.name = name; // a 1.34 run in progress; a "next person" run stays nameless
   run.testerId ??= newTesterId();
   run.answers.feedback ??= blankFeedback();
   if (run.at >= screens().length) run.at = 0;
@@ -117,7 +119,7 @@ function close() {
   opts.onExit?.();
 }
 
-const resultOf = () => encodeRungResult(quiz, run.answers, { version: opts.version, at: new Date().toISOString(), testerId: run.testerId, runNo: run.runNo, source: opts.source });
+const resultOf = () => encodeRungResult(quiz, run.answers, { version: opts.version, at: new Date().toISOString(), testerId: run.testerId, runNo: run.runNo, source: opts.source, tester: run.name || '' });
 
 // ── Render ──────────────────────────────────────────────────────────────────
 function bar(list) {
@@ -140,7 +142,7 @@ function render(enter = false) {
   if (s.kind === 'intro') {
     body = `
       <div class="rq-hero">
-        <p class="rq-eyebrow">Taste test</p>
+        <p class="rq-eyebrow">${run.name ? `Hi, ${esc(run.name)}` : 'Taste test'}</p>
         <h1 class="rq-title">Teach Harvey how you cook</h1>
         <p class="rq-lead">${Object.keys(quiz.dishes).length ? (opts.source === 'link' ? `Harvey looked through your kitchen and found ${Object.keys(quiz.dishes).length} dishes you can make.` : 'Harvey found dishes you can make with your kitchen.') : 'Harvey couldn’t find a dish in this kitchen yet.'} Picture a weeknight, 9 PM. You’re tired.</p>
         <ol class="rq-rounds">
@@ -228,11 +230,13 @@ function sortGoLabel(s, g) {
 function endScreen() {
   const waiting = outbox().length;
   const st = sendState || (run.sent ? 'sent' : '');
+  const who = run.name ? `, ${esc(run.name)}` : '';
+  const own = opts.source === 'link' && !!run.name; // their own phone, from their own link
   const copy = {
     '': ['That’s all. Thank you!', 'One tap sends your answers to Harvey’s.'],
     sending: ['Sending…', 'Putting your answers in Harvey’s.'],
-    sent: ['Sent. Thank you!', 'Your answers are in Harvey’s. Hand the phone to the next person.'],
-    queued: ['Saved. Thank you!', `Your answers are safe on this phone${waiting > 1 ? ` with ${waiting - 1} more` : ''} and send themselves as soon as they can. Leave this page open for a minute if you can.`],
+    sent: [`Sent. Thank you${who}!`, own ? 'Your answers are in Harvey’s. That’s a real help: every tap teaches Harvey how people actually cook.' : 'Your answers are in Harvey’s. Hand the phone to the next person.'],
+    queued: [`Saved. Thank you${who}!`, `Your answers are safe on this phone${waiting > 1 ? ` with ${waiting - 1} more` : ''} and send themselves as soon as they can. Leave this page open for a minute if you can.`],
     failed: ['Not sent', 'Something went wrong sending this. Tap Save the file and send it to whoever gave you the link.'],
     auth: ['Almost there', 'This phone isn’t set up to send yet. Your answers are saved here and go as soon as it is.'],
     setup: ['Set up sending', 'Paste the GitHub token for Harvey’s once. Every send after is one tap, for everyone using this phone.'],
@@ -248,12 +252,15 @@ function endScreen() {
         ${ask ? `<label class="rq-field"><span>GitHub token</span><input id="rq-token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…"></label>` : ''}
       </div>`;
   const main = done
-    ? `<button class="btn primary xl rq-go" data-act="nextperson" type="button">${HX}<span>Next person</span></button>`
+    ? own
+      ? `<button class="btn primary xl rq-go" data-act="close" type="button">${HX}<span>Done</span></button>`
+      : `<button class="btn primary xl rq-go" data-act="nextperson" type="button">${HX}<span>Next person</span></button>`
     : ask
       ? `<button class="btn primary xl rq-go" data-act="token" type="button">${HX}<span>Save and send</span></button>`
       : `<button class="btn primary xl rq-go" data-act="send" type="button"${st === 'sending' ? ' disabled' : ''}>${HX}<span>${st === 'sending' ? 'Sending…' : 'Send to Harvey’s'}</span></button>`;
   const alt = [
-    done ? '<button class="btn link" data-act="close" type="button">Done for now</button>' : '',
+    done && !own ? '<button class="btn link" data-act="close" type="button">Done for now</button>' : '',
+    done && own ? '<button class="btn link" data-act="nextperson" type="button">Someone else wants a go</button>' : '',
     ask ? '<button class="btn link" data-act="github" type="button">Post on GitHub instead</button>' : '',
     '<button class="btn link" data-act="file" type="button">Save the file</button>',
     done ? '' : '<button class="btn link" data-act="restart" type="button">Start over</button>',
@@ -464,7 +471,7 @@ function onClick(e) {
   if (act === 'file') { download(resultOf()); return; }
   if (act === 'restart') {
     if (!el.classList.contains('armed')) { el.classList.add('armed'); el.textContent = 'Tap again to start over'; setTimeout(() => { el.classList.remove('armed'); el.textContent = 'Start over'; }, 4000); return; }
-    store.runs[quiz.id] = run = freshRun();
+    store.runs[quiz.id] = run = freshRun(run.name); // same person, same name
     sendState = '';
     save();
     return render();

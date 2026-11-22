@@ -477,3 +477,31 @@ h2 .badge.tier { vertical-align: 2px; text-transform: none; letter-spacing: 0; }
 .chip.static { padding: 8px 12px; }
 .usage-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
 .usage-actions .btn { flex: 1; }
+
+/* ── 1.35.0: tester greeting, owner gate, owner hub, signature ───────────── */
+.greet { padding: 22px 2px 20px; animation: rise .38s var(--settle) both; }
+.greet-eyebrow { margin: 0 0 6px; font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.greet h1 { font-size: 40px; font-weight: 800; letter-spacing: -.03em; overflow-wrap: anywhere; }
+.greet-lead { margin: 10px 0 0; font-size: 17px; line-height: 1.45; color: var(--muted); max-width: 30em; }
+.sig { display: flex; justify-content: center; gap: 4px; padding: 28px 0 calc(12px + env(safe-area-inset-bottom)); }
+.sig a, .sig button, .sig .sig-me { min-height: 44px; padding: 0 12px; display: inline-flex; align-items: center; border: 0; background: none; font: 500 14px var(--font); color: var(--muted); opacity: .55; text-decoration: none; letter-spacing: .02em; cursor: pointer; }
+.sig a:active, .sig button:active { opacity: 1; }
+html.rq-open .sig { display: none; }
+
+html.locked .shell, html.locked .sig { display: none !important; }
+.gate { max-width: 400px; margin: 0 auto; padding: calc(18vh + env(safe-area-inset-top)) 20px 24px; display: flex; flex-direction: column; gap: 12px; animation: rise .38s var(--settle) both; }
+.gate-eyebrow { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.gate-title { font-size: 36px; font-weight: 800; letter-spacing: -.03em; }
+.gate-lead { margin: 0 0 8px; color: var(--muted); font-size: 16px; }
+.gate-input { width: 100%; min-height: 56px; padding: 0 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 500 18px var(--font); }
+.gate-input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+.gate-err { margin: 0; color: var(--no); font-size: 15px; }
+.gate-back { align-self: center; color: var(--muted); font-weight: 500; }
+.gate.shake { animation: shake .32s var(--settle); }
+@keyframes shake { 25% { transform: translateX(-8px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-3px); } }
+
+.hub { display: flex; gap: 8px; overflow-x: auto; margin: -8px -16px 16px; padding: 0 16px 4px; scrollbar-width: none; }
+.hub::-webkit-scrollbar { display: none; }
+.hub a { flex: none; min-height: 40px; padding: 0 14px; display: inline-flex; align-items: center; border-radius: 999px; background: var(--surface2); border: 1px solid var(--line); color: var(--ink); font-size: 15px; font-weight: 600; text-decoration: none; }
+.hub a.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.hub a:active { transform: scale(.97); }
