@@ -25,13 +25,14 @@ function toast(msg) {
 }
 
 let builtIn = [];
+let cache = {}; // data/ingredient-cache.json: flash-lite profiles from import-kitchens --classify
 const tests = new Map();
 const kitchens = () => {
   const seen = new Set();
   return [...builtIn, ...store.pasted].filter((k) => !seen.has(k.id) && seen.add(k.id));
 };
 const testOf = (k) => {
-  if (!tests.has(k.id)) tests.set(k.id, buildKitchenTest(k));
+  if (!tests.has(k.id)) tests.set(k.id, buildKitchenTest(k, { cache }));
   return tests.get(k.id);
 };
 const runOf = (id) => {
@@ -341,6 +342,9 @@ load();
 const params = new URLSearchParams(location.search);
 // ?kitchens=<url> loads more kitchens from any JSON file (one or many).
 const sources = ['data/test-kitchens/kitchens.json', params.get('kitchens')].filter(Boolean);
-Promise.all(sources.map((u) => fetch(u).then((res) => (res.ok ? res.text() : '[]')).catch(() => '[]')))
-  .then((texts) => { builtIn = texts.flatMap((t) => loadKitchens(t)); })
+const loadCache = fetch('data/ingredient-cache.json')
+  .then((res) => (res.ok ? res.json() : {}))
+  .catch(() => ({}));
+Promise.all([loadCache, ...sources.map((u) => fetch(u).then((res) => (res.ok ? res.text() : '[]')).catch(() => '[]'))])
+  .then(([c, ...texts]) => { cache = c ?? {}; builtIn = texts.flatMap((t) => loadKitchens(t)); })
   .finally(() => { current = params.get('k'); render(); });
