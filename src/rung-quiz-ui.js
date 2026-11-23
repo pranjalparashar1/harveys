@@ -21,8 +21,25 @@ import { CONFUSING, blankFeedback, splitIdeas, norm } from './brain/feedback.js'
 const KEY = 'harveys.rq.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const HX = '<input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">';
-const buzz = (ms = 8) => { if (!('switch' in HTMLInputElement.prototype) && navigator.vibrate) try { navigator.vibrate(ms); } catch { /* no vibration */ } };
+// 1.45.0: no more invisible switch inside every button. An <input> nested in a <button> is
+// invalid HTML, and on iPhones it sat over the button's whole area and took the tap. One
+// hidden switch, ticked from code during the tap, gives the same iOS haptic.
+const HX = '';
+let hapticEl = null;
+const buzz = (ms = 8) => {
+  if ('switch' in HTMLInputElement.prototype) {
+    try {
+      if (!hapticEl) {
+        hapticEl = document.createElement('label');
+        hapticEl.setAttribute('aria-hidden', 'true');
+        hapticEl.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;';
+        hapticEl.innerHTML = '<input type="checkbox" switch tabindex="-1">';
+        document.body.append(hapticEl);
+      }
+      hapticEl.click();
+    } catch { /* no haptic */ }
+  } else if (navigator.vibrate) try { navigator.vibrate(ms); } catch { /* no vibration */ }
+};
 const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.75 5.6 6.15.9-4.45 4.33 1.05 6.12L12 16.87l-5.5 2.88 1.05-6.12L3.1 9.3l6.15-.9z"/></svg>';
 const TICK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const CHEV = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
@@ -70,8 +87,9 @@ let sendState = ''; // '', 'sending', 'sent', 'queued', 'failed', 'auth', 'setup
 let root = null;
 let opts = {};
 let shownAt = 0;
-let lastScroll = 0;
 let downAt = null; // where the finger went down, to tell a tap from a scroll
+let navTap = null; // the tap that last changed screen, so a double tap can't skip the next one
+let guarded = false; // a history entry so the phone's Back goes back one screen, not off the site
 let kitchenIn = null;
 let listed = { food: [], kit: [] }; // what the video saw, split for the two confirm screens
 let choices = { food: [], kit: [], noStove: false }; // what "Add more" offers
@@ -122,8 +140,18 @@ export function startRungQuiz({ kitchen, inventory, version, source, name = '', 
     root.setAttribute('aria-label', 'Taste test');
     document.body.append(root);
     root.addEventListener('click', onClick);
-    root.addEventListener('scroll', () => { lastScroll = performance.now(); }, { passive: true });
-    root.addEventListener('pointerdown', (e) => { downAt = { x: e.clientX, y: e.clientY, t: performance.now() }; }, { passive: true });
+    // Instant feedback: the finger's button looks pressed at once (iOS needs a touch
+    // listener before :active works at all).
+    root.addEventListener('touchstart', () => {}, { passive: true });
+    root.addEventListener('pointerdown', (e) => {
+      downAt = { x: e.clientX, y: e.clientY, t: performance.now() };
+      root.querySelector('.press')?.classList.remove('press');
+      e.target.closest?.('[data-act]')?.classList.add('press');
+    }, { passive: true });
+    const unpress = () => root.querySelector('.press')?.classList.remove('press');
+    root.addEventListener('pointerup', () => setTimeout(unpress, 120), { passive: true });
+    root.addEventListener('pointercancel', unpress, { passive: true });
+    addEventListener('popstate', onPop);
     root.addEventListener('submit', (e) => { e.preventDefault(); const f = e.target.closest('.rq-add'); if (f) typeAdd(f); });
     root.addEventListener('input', (e) => {
       if (e.target.matches('.rq-makes textarea')) { run.answers.feedback.makes = e.target.value.slice(0, 1000); run.answers.feedback.seen = true; save(); }
@@ -132,7 +160,23 @@ export function startRungQuiz({ kitchen, inventory, version, source, name = '', 
   }
   root.hidden = false;
   document.documentElement.classList.add('rq-open');
+  guard();
   render(true);
+}
+
+/** One extra history entry while the test is open: the phone's Back button or swipe then
+ * lands in onPop, which goes back one screen, instead of leaving the page. */
+function guard() {
+  if (guarded) return;
+  try { history.pushState({ rq: 1 }, ''); guarded = true; } catch { /* no history */ }
+}
+function onPop() {
+  guarded = false;
+  if (!root || root.hidden) return;
+  if (sheetId) { closeRecipe(); return guard(); }
+  if (run.at === 0 && !panel) return close();
+  goBack();
+  guard();
 }
 
 function close() {
@@ -177,10 +221,16 @@ function bar(list) {
   ].join('')}</div>`;
 }
 
+let shownKey = '';
 function render(enter = false) {
   const list = screens();
   const s = list[run.at];
-  shownAt = performance.now();
+  const key = `${run.at}:${panel}`;
+  const same = key === shownKey; // the same screen redrawn: keep its place, don't animate in
+  const keepY = same ? root.scrollTop : 0;
+  shownKey = key;
+  if (!same) shownAt = performance.now();
+  if (!same) root.classList.remove('rq-skip');
   let body = '';
   let foot = '';
   const back = run.at > 0 || panel ? `<button class="rq-icon" data-act="back" type="button" aria-label="Back">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>` : '<span class="rq-icon ghost"></span>';
@@ -204,9 +254,9 @@ function render(enter = false) {
       ${ghost ? '<div class="rq-bar"></div>' : bar(list)}
       <button class="rq-fresh" data-act="fresh" type="button">Start fresh</button>
     </header>
-    <main class="rq-body${enter ? '' : ' in'}" data-kind="${s.kind}${panel ? '-add' : ''}">${body}</main>
+    <main class="rq-body${enter ? '' : same ? ' still' : ' in'}" data-kind="${s.kind}${panel ? '-add' : ''}">${body}</main>
     <footer class="rq-foot">${foot}</footer>`;
-  root.scrollTop = 0;
+  root.scrollTop = keepY;
   clearTimeout(thinkTimer);
   if (s.kind === 'think') thinkTimer = setTimeout(() => { if (screens()[run.at]?.kind === 'think' && !root.hidden) { run.at++; save(); render(); } }, THINK_MS);
   if (s.kind === 'reveal') countUp();
@@ -215,23 +265,33 @@ function render(enter = false) {
   if (s.kind === 'feedback') syncFb();
 }
 
+// 1.45.0 (pranjal): a big hello, then why they're here, one line at a time out of the dark,
+// so a tester reads each before the next. A tap anywhere shows the rest at once.
 function introScreen() {
   const can = Object.keys(quiz.dishes).length || opts.items;
   const mini = (n) => `<span class="rq-sw demo">${[1, 2, 3, 4, 5].map((k) => `<i class="${k <= n ? 'on' : ''}">${STAR}</i>`).join('')}</span>`;
+  let n = 0;
+  const seq = () => `class="rq-seq" style="--s:${n++}"`;
+  const video = opts.source === 'link';
+  const hi = `<h1 class="rq-hi" ${seq()}>${run.name ? `Hi, ${esc(run.name)}` : 'Hi there'}</h1>`;
+  if (!can) {
+    return {
+      body: `<div class="rq-hero intro">${hi}<p class="rq-lead" ${seq()}>Harvey’s has no ideas for this kitchen yet. Add a few more things to your list and try again.</p></div>`,
+      foot: `<button class="btn xl rq-go" data-act="close" type="button"><span>Back to my list</span></button>`,
+    };
+  }
   const body = `
-      <div class="rq-hero">
-        <p class="rq-eyebrow">${run.name ? `Hi, ${esc(run.name)}` : 'Taste test'}</p>
-        <h1 class="rq-title">${can ? 'Test Harvey’s recipes' : 'No recipes yet'}</h1>
-        ${can ? `<ol class="rq-rounds">
-          ${opts.items ? '<li><b>Confirm your kitchen</b><span>Foods, then cookware</span></li>' : ''}
-          <li><b>Rate each recipe</b><span class="rq-mini-rate"><span>Effort ${mini(4)}</span><span>Taste ${mini(3)}</span></span></li>
-          <li><b>Send</b><span>One tap</span></li>
-        </ol>` : ''}
+      <div class="rq-hero intro" data-act="skipintro">
+        ${hi}
+        <p class="rq-say" ${seq()}>${video ? 'Harvey’s watched the video of your kitchen.' : 'Harvey’s read your kitchen list.'}</p>
+        <p class="rq-say" ${seq()}>From what’s in it, Harvey’s came up with <b>meal and snack ideas</b> you could make.</p>
+        <p class="rq-say strong" ${seq()}>Now tell Harvey’s what you think of them.</p>
+        <ol class="rq-rounds">
+          ${opts.items ? `<li ${seq()}><b>Check your kitchen</b><span>Untick what’s not there</span></li>` : ''}
+          <li ${seq()}><b>Rate each idea</b><span class="rq-mini-rate"><span>Effort ${mini(4)}</span><span>Taste ${mini(3)}</span></span></li>
+        </ol>
       </div>`;
-  const foot = can
-    ? `<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Start</span></button>`
-    : `<p class="rq-lead">Add a few more things to your list and try again.</p><button class="btn xl rq-go" data-act="close" type="button">${HX}<span>Back to my list</span></button>`;
-  return { body, foot };
+  return { body, foot: `<button class="btn primary xl rq-go rq-seq" style="--s:${n}" data-act="next" type="button"><span>Start</span></button>` };
 }
 
 // ── Confirm your kitchen (1.44.0) ───────────────────────────────────────────
@@ -330,7 +390,7 @@ function typeAdd(form) {
 }
 
 // ── Thinking and the count ──────────────────────────────────────────────────
-const THINK_MS = 3200;
+const THINK_MS = 1800; // 1.45.0: was 3.2 s, and testers read it as Next being slow
 let thinkTimer = 0;
 
 function thinkScreen() {
@@ -371,13 +431,14 @@ function revealScreen(back) {
     body: `
       <div class="rq-hero reveal">
         <p class="rq-eyebrow">Harvey’s came up with</p>
-        <h1 class="rq-count"><span class="rq-num-big" data-to="${quiz.deck.length}">${quiz.deck.length}</span><span>${quiz.deck.length === 1 ? 'recipe' : 'recipes'} for your kitchen</span></h1>
-        ${more ? `<p class="rq-lead">${n} you can cook now, ${more} need${more === 1 ? 's' : ''} one more thing.</p>` : ''}
-        <div class="rq-demo-row" aria-hidden="true">
-          <div class="rq-starrow"><b>Effort</b><span class="rq-sw demo">${[1, 2, 3, 4, 5].map((k) => `<i class="${k <= 4 ? 'on' : ''}" style="--i:${k}">${STAR}</i>`).join('')}</span></div>
-          <div class="rq-starrow"><b>Taste</b><span class="rq-sw demo">${[1, 2, 3, 4, 5].map((k) => `<i class="${k <= 3 ? 'on' : ''}" style="--i:${k + 5}">${STAR}</i>`).join('')}</span></div>
+        <h1 class="rq-count"><span class="rq-num-big" data-to="${quiz.deck.length}">${quiz.deck.length}</span><span>meal and snack ${quiz.deck.length === 1 ? 'idea' : 'ideas'} for your kitchen</span></h1>
+        ${more ? `<p class="rq-lead">${n} you can make now, ${more} need${more === 1 ? 's' : ''} one more thing.</p>` : ''}
+        <div class="rq-explain">
+          <p class="rq-explain-q">Now rate each idea, one at a time</p>
+          <p class="rq-explain-n">The stars are for the food, not your kitchen.</p>
+          <div class="rq-starrow"><b>Effort</b><span class="rq-sw demo" aria-hidden="true">${[1, 2, 3, 4, 5].map((k) => `<i class="on" style="--i:${k}">${STAR}</i>`).join('')}</span><span class="rq-means">= effortless</span></div>
+          <div class="rq-starrow"><b>Taste</b><span class="rq-sw demo" aria-hidden="true">${[1, 2, 3, 4, 5].map((k) => `<i class="on" style="--i:${k + 5}">${STAR}</i>`).join('')}</span><span class="rq-means">= delicious</span></div>
         </div>
-        <p class="rq-lead strong">One at a time. Rate each for effort and taste.</p>
       </div>`,
     foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Start rating</span></button>`,
   };
@@ -402,8 +463,8 @@ function countUp() {
 const ingredientsOf = (d) => (d.away ? d.how.split(' · ').slice(1).join(' · ') : d.how);
 const METHOD = { 1: 'No cooking', 2: 'One appliance', 3: 'On the stove', 4: 'Two things at once' };
 const ASK = {
-  effort: { q: 'How easy, tonight?', words: EFFORT_STARS },
-  taste: { q: 'How tasty?', words: TASTE_STARS },
+  effort: { q: 'How easy to make?', words: EFFORT_STARS },
+  taste: { q: 'How tasty would it be?', words: TASTE_STARS },
   want: { q: '', words: WANT_STARS },
 };
 const starOf = (id) => run.answers.stars?.[id] ?? {};
@@ -425,7 +486,7 @@ function dishScreen(s, back) {
   const total = quiz.deck.length;
   const last = s.bonus ? false : s.i === total - 1;
   const body = `
-      <p class="rq-eyebrow">${s.bonus ? 'Bonus · needs one more thing' : `Recipe ${s.i + 1} of ${total}`}</p>
+      <p class="rq-eyebrow">${s.bonus ? 'Bonus · needs one more thing' : `Idea ${s.i + 1} of ${total}`}</p>
       <h1 class="rq-dname">${esc(d.name)}</h1>
       <p class="rq-ding">${esc(ingredientsOf(d))}</p>
       ${d.away ? `<p class="rq-need">Needs ${esc(s.bonus ? d.need.label.toLowerCase() : d.away)}</p>` : ''}
@@ -436,7 +497,7 @@ function dishScreen(s, back) {
       <div class="rq-cantwhy" hidden role="group" aria-label="Why not">${CANT.map((c) => `<button class="rq-tag" data-act="cantwhy" data-id="${esc(s.id)}" data-why="${c.id}" type="button" aria-pressed="false">${HX}<span>${esc(c.label)}</span></button>`).join('')}</div>
       ${askRow(s.id, 'effort')}
       ${askRow(s.id, 'taste')}`;
-  return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>${last ? 'Next' : s.bonus ? 'Next' : 'Next recipe'}</span></button>` };
+  return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>${last || s.bonus ? 'Next' : 'Next idea'}</span></button>` };
 }
 
 /** Stars, words, the taste row's turn, can't-make, and Next, for the dish on screen. */
@@ -472,9 +533,10 @@ function syncDish(id) {
   }
   const go = root.querySelector('.rq-foot [data-act="next"]');
   if (go) {
-    go.disabled = !isDone(id);
+    go.setAttribute('aria-disabled', String(!isDone(id)));
     go.classList.toggle('ready', isDone(id));
   }
+  unnudge();
 }
 
 function setStar(id, kind, n) {
@@ -541,8 +603,9 @@ function syncWant() {
   have.classList.toggle('on', !!w.have);
   have.setAttribute('aria-pressed', String(!!w.have));
   const go = root.querySelector('.rq-foot [data-act="next"]');
-  go.disabled = !(w.want || w.have);
-  go.classList.toggle('ready', !go.disabled);
+  go.setAttribute('aria-disabled', String(!(w.want || w.have)));
+  go.classList.toggle('ready', !!(w.want || w.have));
+  unnudge();
 }
 
 // ── Anything confusing? ─────────────────────────────────────────────────────
@@ -625,23 +688,27 @@ function endScreen() {
 }
 
 // ── Taps ────────────────────────────────────────────────────────────────────
-/** Acts that change an answer: these are the ones a scroll must never trigger. */
-const ANSWERS = new Set(['star', 'cant', 'cantwhy', 'untick', 'addopt', 'typeddrop', 'havebonus', 'fbchip', 'recipe', 'next', 'cat', 'more']);
+// 1.45.0 (pranjal, 23 Nov, live test: "buttons are broken, do nothing, or take too long"):
+// 1.44 ignored any tap within 140 ms of a scroll event and within 320 ms of a new screen.
+// On an iPhone a flicked list keeps sending scroll events for a second or more as it slows
+// and bounces at the bottom, so taps on a still-looking list (Missed something?, the tiles)
+// were silently thrown away. Now: a finger that travelled is a scroll (the phone already
+// sends no click for those), and the only tap dropped is a repeat, at the same spot, of the
+// tap that just changed the screen. Every kept tap shows and buzzes at once.
+const NAV = new Set(['next', 'back', 'more', 'cat', 'paneldone', 'recipe', 'recipeclose']);
 
 function onClick(e) {
   const el = e.target.closest('[data-act]');
   if (!el || el.disabled) return;
   const act = el.dataset.act;
   const now = performance.now();
-  // A tap is a tap only if the finger didn't travel, the page wasn't scrolling, and the
-  // screen has been up long enough to be seen (a double tap mustn't answer the next dish).
-  if (ANSWERS.has(act) && !sheetId) {
-    const moved = downAt && e.clientX && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 12;
-    if (moved || now - lastScroll < 140 || now - shownAt < 320) return;
-  }
+  if (!sheetId && downAt && e.clientX && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 16) return;
+  if (navTap && now - navTap.t < 350 && Math.hypot(e.clientX - navTap.x, e.clientY - navTap.y) < 40) return;
+  if (NAV.has(act)) navTap = { t: now, x: e.clientX, y: e.clientY };
   buzz();
   const list = screens();
   const s = list[run.at];
+  if (act === 'skipintro') { root.classList.add('rq-skip'); return; }
   if (act === 'close') return close();
   if (act === 'back' && sheetId) return closeRecipe();
   // 1.40.0: one tap on the first screen; mid-test a second tap, so a stray thumb loses nothing.
@@ -650,14 +717,7 @@ function onClick(e) {
     el.textContent = 'Starting…';
     return startFresh();
   }
-  if (act === 'back') {
-    if (s.kind === 'confirm' && panel) { panel = panel === 'cats' ? null : 'cats'; return render(); }
-    commit(s);
-    run.at = Math.max(0, run.at - 1);
-    while (run.at > 0 && passOver(list[run.at])) run.at--;
-    save();
-    return render();
-  }
+  if (act === 'back') return goBack();
   if (act === 'recipe') return openRecipe(el.dataset.id);
   if (act === 'recipeclose') return closeRecipe();
   if (act === 'star') return setStar(el.dataset.id, el.dataset.kind, Number(el.dataset.n));
@@ -692,12 +752,52 @@ function onClick(e) {
   }
   if (act === 'typeadd') return typeAdd(el.closest('.rq-add'));
   if (act === 'fbchip') return fbChip(el.dataset.id);
-  if (act === 'next') { commit(s); run.at = Math.min(list.length - 1, run.at + 1); save(); return render(); }
+  if (act === 'next') {
+    if (el.getAttribute('aria-disabled') === 'true') return nudge();
+    commit(s);
+    run.at = Math.min(list.length - 1, run.at + 1);
+    save();
+    return render();
+  }
   if (act === 'send') return send();
   if (act === 'github') { const res = resultOf(); window.open(issueHref(res), '_blank', 'noopener'); sendState = 'sent'; markSent(); return; }
   if (act === 'token') return saveToken();
   if (act === 'nextperson') { store.runs[quiz.id] = run = freshRun(); rebuild(null); sendState = ''; save(); return render(); }
   if (act === 'file') { download(resultOf()); return; }
+}
+
+function goBack() {
+  const list = screens();
+  const s = list[run.at];
+  if (s.kind === 'confirm' && panel) { panel = panel === 'cats' ? null : 'cats'; return render(); }
+  if (run.at === 0) return;
+  commit(s);
+  run.at = Math.max(0, run.at - 1);
+  while (run.at > 0 && passOver(list[run.at])) run.at--;
+  save();
+  return render();
+}
+
+let nudgeTimer = 0;
+function unnudge() {
+  const go = root?.querySelector('.rq-foot [data-act="next"] span');
+  if (go?.dataset.was) { go.textContent = go.dataset.was; delete go.dataset.was; }
+}
+/** Next tapped before the stars: point at what's missing instead of doing nothing. */
+function nudge() {
+  const box = [...root.querySelectorAll('.rq-ask')].find((b) => !b.classList.contains('set') && !b.classList.contains('off'));
+  const go = root.querySelector('.rq-foot [data-act="next"] span');
+  if (go) {
+    go.dataset.was ??= go.textContent;
+    go.textContent = box?.dataset.kind === 'taste' ? 'Rate taste first' : box?.dataset.kind === 'want' ? 'Tap the stars first' : 'Rate effort first';
+    clearTimeout(nudgeTimer);
+    nudgeTimer = setTimeout(unnudge, 1600);
+  }
+  if (!box) return;
+  box.classList.remove('nudge');
+  void box.offsetWidth; // restart the animation
+  box.classList.add('nudge');
+  box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
 function typeAddThen(form, then) {
