@@ -37,7 +37,8 @@ export const THIN_FILL = 8;
  * 21 cookable dishes: 18 sat on rung 3, so the paneer dishes she unlocked never showed. Free
  * slots now go to the rest, dishes the tester's added items unlocked (`prefer`) first.
  */
-export const DECK_MAX = 10;
+// pranjal, 23 Nov: "let them rate all dishes, it's fine": no cap, every cookable dish is rated.
+export const DECK_MAX = Infinity;
 export const CRITERIA = [
   { id: 'macros', label: 'Macros' },
   { id: 'difficulty', label: 'Effort' },
@@ -149,7 +150,8 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdi
     const grp = groups.find((g) => g.rungs.includes(x.rung));
     if (!grp) continue;
     grp.items.push(x);
-    (byRung[x.rung] ??= []).push(x);
+    // An unmerged group's items are byRung's own array: push once, not twice.
+    if (byRung[x.rung] !== grp.items) (byRung[x.rung] ??= []).push(x);
     size += 1;
   }
   const dishes = {};

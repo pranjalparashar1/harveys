@@ -272,15 +272,15 @@ test('1.48.0: results still waiting go out as beacons when the page is closed, a
 // 1.49.0: Banana Singh (23 Nov) added paneer, a pan and a pressure cooker; 21 dishes were
 // cookable but rung 3's cap showed 8 and none with paneer. Free slots now fill to DECK_MAX,
 // dishes the additions unlocked first.
-test('a crowded rung fills to DECK_MAX, preferred dishes first', async () => {
+test('a crowded rung shows every cookable dish, preferred dishes first', async () => {
   const { buildRungQuiz, DECK_MAX } = await import('../src/brain/rung-quiz.js');
   const { withConfirmed } = await import('../src/brain/confirm.js');
   const { readFileSync } = await import('node:fs');
   const r = JSON.parse(readFileSync(new URL('../data/kitchen-tests/taste-2026-11-23-kitchen_video_1-1n287-t-q94cu22qk.json', import.meta.url), 'utf8'));
   const inv = withConfirmed(r.kitchen.items, r.confirm.have, {}, []);
   const q = buildRungQuiz({ kitchen: r.kitchen, inventory: inv });
-  assert.equal(q.deck.length, DECK_MAX);
-  assert.ok(q.total > q.deck.length);
+  assert.equal(DECK_MAX, Infinity);
+  assert.equal(q.deck.length, q.total); // every cookable dish is rated
   const p = buildRungQuiz({ kitchen: r.kitchen, inventory: inv, prefer: new Set(['stovetop_paneer_bhurji']) });
   assert.ok(p.deck.includes('stovetop_paneer_bhurji'));
 });
