@@ -34,7 +34,7 @@ jobs:
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.first.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
@@ -50,5 +50,13 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+      # GitHub sometimes can't see a just-uploaded artifact yet (23 Nov: 1.46.0 never went
+      # live because of this). Wait and try once more rather than leave the old site up.
+      - id: first
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+      - if: steps.first.outcome == 'failure'
+        run: sleep 30
       - id: deployment
+        if: steps.first.outcome == 'failure'
         uses: actions/deploy-pages@v4
