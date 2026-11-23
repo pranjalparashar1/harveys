@@ -1,0 +1,907 @@
+{
+ "format": "harveys-rung-quiz/1",
+ "version": "1.50.0",
+ "at": "2026-11-23T20:42:21.644Z",
+ "source": "link",
+ "kitchenId": "kitchen_video_1-m0xa7",
+ "testerId": "t-76mnjcvim",
+ "runNo": 1,
+ "tester": "Purujeet",
+ "kitchen": {
+  "kitchen": "Kitchen, video_1",
+  "diet": "veg+eggs",
+  "notes": "no gas stove visible; large water jug and dish rack by sink",
+  "items": [
+   {
+    "name": "soya chunks",
+    "category": "protein"
+   },
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "protein powder",
+    "category": "protein"
+   },
+   {
+    "name": "skyr",
+    "category": "dairy"
+   },
+   {
+    "name": "curd",
+    "category": "dairy"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "pasta",
+    "category": "grain"
+   },
+   {
+    "name": "rice",
+    "category": "grain"
+   },
+   {
+    "name": "peanut butter",
+    "category": "fat"
+   },
+   {
+    "name": "honey",
+    "category": "sweet"
+   },
+   {
+    "name": "chocolate syrup",
+    "category": "sweet"
+   },
+   {
+    "name": "tiramisu",
+    "category": "sweet"
+   },
+   {
+    "name": "tomato ketchup",
+    "category": "condiment"
+   },
+   {
+    "name": "tandoori sauce",
+    "category": "condiment"
+   },
+   {
+    "name": "chipotle sauce",
+    "category": "condiment"
+   },
+   {
+    "name": "mayonnaise",
+    "category": "condiment"
+   },
+   {
+    "name": "red chilli flakes",
+    "category": "spice"
+   },
+   {
+    "name": "black pepper",
+    "category": "spice"
+   },
+   {
+    "name": "rock salt",
+    "category": "spice"
+   },
+   {
+    "name": "salt",
+    "category": "spice"
+   },
+   {
+    "name": "cumin seeds",
+    "category": "spice"
+   },
+   {
+    "name": "apples",
+    "category": "fruit"
+   },
+   {
+    "name": "bananas",
+    "category": "fruit"
+   },
+   {
+    "name": "chewing gum",
+    "category": "snack"
+   },
+   {
+    "name": "dates",
+    "category": "fruit"
+   },
+   {
+    "name": "coffee",
+    "category": "drink"
+   },
+   {
+    "name": "soda",
+    "category": "drink"
+   },
+   {
+    "name": "water",
+    "category": "drink"
+   },
+   {
+    "name": "air fryer",
+    "category": "appliance"
+   },
+   {
+    "name": "induction cooktop",
+    "category": "appliance"
+   },
+   {
+    "name": "refrigerator",
+    "category": "appliance"
+   },
+   {
+    "name": "milk frother",
+    "category": "appliance"
+   },
+   {
+    "name": "kitchen scale",
+    "category": "appliance"
+   },
+   {
+    "name": "steel pot",
+    "category": "cookware"
+   }
+  ]
+ },
+ "moment": "Weeknight, 9 PM, tired",
+ "targets": {
+  "protein": 60,
+  "calories": 1200,
+  "fiber": 20
+ },
+ "directions": {
+  "marco": "easiest first",
+  "pierre": "tastiest first",
+  "white": "tap order = preference"
+ },
+ "unmovedConfirmed": true,
+ "confirm": {
+  "asked": [],
+  "have": [],
+  "typed": [],
+  "unmatched": [],
+  "burners": null,
+  "noStove": false,
+  "removed": [
+   "Apples",
+   "Dates",
+   "Tiramisu"
+  ],
+  "listed": 34,
+  "ms": 63344
+ },
+ "ingredients": {
+  "used": [
+   "soya chunks",
+   "eggs",
+   "protein powder",
+   "skyr",
+   "curd",
+   "pasta",
+   "rice",
+   "peanut butter",
+   "honey",
+   "tomato ketchup",
+   "red chilli flakes",
+   "black pepper",
+   "rock salt",
+   "salt",
+   "cumin seeds",
+   "bananas",
+   "air fryer",
+   "induction cooktop",
+   "steel pot"
+  ],
+  "unused": [
+   {
+    "name": "milk",
+    "category": "dairy",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Whey and makhana bowl",
+      "why": "missing Makhana"
+     },
+     {
+      "dish": "Microwave protein oats",
+      "why": "missing Microwave, Oats"
+     },
+     {
+      "dish": "Oats cooked in milk",
+      "why": "missing Oats"
+     },
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "missing Electric kettle, Oats"
+     }
+    ]
+   },
+   {
+    "name": "chocolate syrup",
+    "category": "sweet",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "missing Electric kettle, Oats"
+     }
+    ]
+   },
+   {
+    "name": "tiramisu",
+    "category": "sweet",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "tandoori sauce",
+    "category": "condiment",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Soya chunk pasta in one pot",
+      "why": "made with Ketchup instead"
+     }
+    ]
+   },
+   {
+    "name": "chipotle sauce",
+    "category": "condiment",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Soya chunk pasta in one pot",
+      "why": "made with Ketchup instead"
+     }
+    ]
+   },
+   {
+    "name": "mayonnaise",
+    "category": "condiment",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Soya chunk pasta in one pot",
+      "why": "made with Ketchup instead"
+     },
+     {
+      "dish": "Microwave paneer wrap",
+      "why": "missing Microwave, Wraps / roti, Paneer"
+     }
+    ]
+   },
+   {
+    "name": "apples",
+    "category": "fruit",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "chewing gum",
+    "category": "snack",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "dates",
+    "category": "fruit",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "coffee",
+    "category": "drink",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Milk coffee",
+      "why": "a snack, and the test shows meals"
+     }
+    ]
+   },
+   {
+    "name": "soda",
+    "category": "drink",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "water",
+    "category": "drink",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "refrigerator",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "milk frother",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "kitchen scale",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   }
+  ],
+  "gaps": [
+   "tiramisu",
+   "apples",
+   "chewing gum",
+   "dates",
+   "soda",
+   "water",
+   "refrigerator",
+   "milk frother",
+   "kitchen scale"
+  ],
+  "blockers": [
+   {
+    "thing": "Dal",
+    "dishes": [
+     "Open-pot dal",
+     "Open-pot dal khichdi",
+     "Dal and rice, one pot after the other"
+    ]
+   },
+   {
+    "thing": "Microwave",
+    "dishes": [
+     "Microwave mug omelette",
+     "Microwave soya chunks in spiced curd",
+     "Air-fried soya chunks"
+    ]
+   },
+   {
+    "thing": "a pan",
+    "dishes": [
+     "Butter omelette",
+     "Egg fried rice"
+    ]
+   },
+   {
+    "thing": "Maggi noodles",
+    "dishes": [
+     "Maggi",
+     "Maggi with an egg stirred in"
+    ]
+   },
+   {
+    "thing": "Bread or Protein bread",
+    "dishes": [
+     "Boiled egg sandwich"
+    ]
+   }
+  ]
+ },
+ "dishes": {
+  "curd_peanut_banana_bowl": {
+   "name": "Curd, banana and peanut bowl",
+   "rung": 1,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 0.526,
+    "score": 0.501
+   },
+   "raw": {
+    "protein": 17,
+    "tools": 1,
+    "handsOn": 2,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 1,
+    "attention": 0,
+    "cleanup": 1
+   }
+  },
+  "curd_whey_bowl": {
+   "name": "Curd and whey protein bowl",
+   "rung": 1,
+   "harveys": {
+    "order": 1,
+    "tier": "floor",
+    "friction": 0.633,
+    "score": 0.969
+   },
+   "raw": {
+    "protein": 32,
+    "tools": 1,
+    "handsOn": 3,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 0,
+    "cleanup": 1
+   }
+  },
+  "pot_soya_curd_bowl": {
+   "name": "Soya chunks in spiced curd (pot)",
+   "rung": 3,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 1.556,
+    "score": -0.497
+   },
+   "raw": {
+    "protein": 30,
+    "tools": 2,
+    "handsOn": 5,
+    "waiting": 6,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 2
+   }
+  },
+  "boiled_eggs": {
+   "name": "Boiled eggs with salt and pepper",
+   "rung": 3,
+   "harveys": {
+    "order": 1,
+    "tier": "pass",
+    "friction": 1.662,
+    "score": -1.047
+   },
+   "raw": {
+    "protein": 25,
+    "tools": 1,
+    "handsOn": 5,
+    "waiting": 14,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 2
+   }
+  },
+  "pot_egg_bhurji": {
+   "name": "Plain egg bhurji (no chopping)",
+   "rung": 3,
+   "harveys": {
+    "order": 2,
+    "tier": "pass",
+    "friction": 1.686,
+    "score": -1.374
+   },
+   "raw": {
+    "protein": 19,
+    "tools": 2,
+    "handsOn": 4,
+    "waiting": 1,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 2,
+    "cleanup": 3.5
+   }
+  },
+  "curd_rice": {
+   "name": "Curd rice",
+   "rung": 3,
+   "harveys": {
+    "order": 3,
+    "tier": "pass",
+    "friction": 1.759,
+    "score": -1.58
+   },
+   "raw": {
+    "protein": 14,
+    "tools": 2,
+    "handsOn": 4,
+    "waiting": 15,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 1,
+    "cleanup": 2
+   }
+  },
+  "soya_pasta_pot": {
+   "name": "Soya chunk pasta in one pot",
+   "rung": 3,
+   "harveys": {
+    "order": 4,
+    "tier": "floor",
+    "friction": 1.548,
+    "score": -0.5
+   },
+   "raw": {
+    "protein": 26,
+    "tools": 2,
+    "handsOn": 5,
+    "waiting": 10,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 1
+   }
+  },
+  "pot_airfryer_soya_tikka": {
+   "name": "Air-fried soya tikka (no chopping)",
+   "rung": 4,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 2.609,
+    "score": -2.092
+   },
+   "raw": {
+    "protein": 28,
+    "tools": 3,
+    "handsOn": 6,
+    "waiting": 18,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 4.5
+   }
+  },
+  "soya_jeera_rice": {
+   "name": "Soya and jeera rice in one pot",
+   "rung": 3,
+   "harveys": {
+    "order": 5,
+    "tier": "floor",
+    "friction": 1.83,
+    "score": -1.036
+   },
+   "raw": {
+    "protein": 25,
+    "tools": 2,
+    "handsOn": 5,
+    "waiting": 12,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 1,
+    "cleanup": 2.5
+   }
+  },
+  "egg_pasta_pot": {
+   "name": "Pasta with eggs stirred in",
+   "rung": 3,
+   "harveys": {
+    "order": 6,
+    "tier": "floor",
+    "friction": 1.951,
+    "score": -1.316
+   },
+   "raw": {
+    "protein": 23,
+    "tools": 2,
+    "handsOn": 5,
+    "waiting": 10,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 2,
+    "cleanup": 2.5
+   }
+  },
+  "egg_rice": {
+   "name": "Egg rice in one pot",
+   "rung": 3,
+   "harveys": {
+    "order": 7,
+    "tier": "floor",
+    "friction": 2.438,
+    "score": -2.083
+   },
+   "raw": {
+    "protein": 23,
+    "tools": 3,
+    "handsOn": 6,
+    "waiting": 12,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 2,
+    "cleanup": 3.5
+   }
+  }
+ },
+ "marco": [],
+ "pierre": [],
+ "white": [],
+ "flow": "stars",
+ "order": [
+  "boiled_eggs",
+  "soya_jeera_rice",
+  "curd_rice",
+  "pot_airfryer_soya_tikka",
+  "egg_pasta_pot",
+  "curd_whey_bowl",
+  "egg_rice",
+  "soya_pasta_pot",
+  "curd_peanut_banana_bowl",
+  "pot_egg_bhurji",
+  "pot_soya_curd_bowl"
+ ],
+ "stars": [
+  {
+   "id": "curd_peanut_banana_bowl",
+   "effort": 5,
+   "taste": 2,
+   "cant": null,
+   "ms": 9387
+  },
+  {
+   "id": "curd_whey_bowl",
+   "effort": 5,
+   "taste": 3,
+   "cant": null,
+   "ms": 9171
+  },
+  {
+   "id": "pot_soya_curd_bowl",
+   "effort": 5,
+   "taste": 4,
+   "cant": null,
+   "ms": 2892
+  },
+  {
+   "id": "boiled_eggs",
+   "effort": 3,
+   "taste": 4,
+   "cant": null,
+   "ms": 21356
+  },
+  {
+   "id": "pot_egg_bhurji",
+   "effort": 5,
+   "taste": 4,
+   "cant": null,
+   "ms": 5186
+  },
+  {
+   "id": "curd_rice",
+   "effort": 5,
+   "taste": 2,
+   "cant": null,
+   "ms": 16487
+  },
+  {
+   "id": "soya_pasta_pot",
+   "effort": 4,
+   "taste": 3,
+   "cant": null,
+   "ms": 16375
+  },
+  {
+   "id": "soya_jeera_rice",
+   "effort": 4,
+   "taste": 5,
+   "cant": null,
+   "ms": 15654
+  },
+  {
+   "id": "egg_pasta_pot",
+   "effort": 3,
+   "taste": 5,
+   "cant": null,
+   "ms": 24662
+  },
+  {
+   "id": "egg_rice",
+   "effort": 3,
+   "taste": 4,
+   "cant": null,
+   "ms": 9190
+  },
+  {
+   "id": "pot_airfryer_soya_tikka",
+   "effort": 5,
+   "taste": 5,
+   "cant": null,
+   "ms": 3086
+  }
+ ],
+ "difficulty": {
+  "scale": [
+   "Effortless",
+   "Easy",
+   "Some effort",
+   "Hard work",
+   "Too much tonight"
+  ],
+  "from": "effort stars, level = 6 - stars",
+  "ratings": [
+   {
+    "id": "curd_peanut_banana_bowl",
+    "level": 1,
+    "ms": 9387
+   },
+   {
+    "id": "curd_whey_bowl",
+    "level": 1,
+    "ms": 9171
+   },
+   {
+    "id": "pot_soya_curd_bowl",
+    "level": 1,
+    "ms": 2892
+   },
+   {
+    "id": "boiled_eggs",
+    "level": 3,
+    "ms": 21356
+   },
+   {
+    "id": "pot_egg_bhurji",
+    "level": 1,
+    "ms": 5186
+   },
+   {
+    "id": "curd_rice",
+    "level": 1,
+    "ms": 16487
+   },
+   {
+    "id": "soya_pasta_pot",
+    "level": 2,
+    "ms": 16375
+   },
+   {
+    "id": "soya_jeera_rice",
+    "level": 2,
+    "ms": 15654
+   },
+   {
+    "id": "egg_pasta_pot",
+    "level": 3,
+    "ms": 24662
+   },
+   {
+    "id": "egg_rice",
+    "level": 3,
+    "ms": 9190
+   },
+   {
+    "id": "pot_airfryer_soya_tikka",
+    "level": 1,
+    "ms": 3086
+   }
+  ],
+  "stoppedEarly": false
+ },
+ "bonus": {
+  "id": "pot_khichdi",
+  "name": "Open-pot dal khichdi",
+  "rung": 3,
+  "need": {
+   "id": "dal",
+   "label": "Dal",
+   "kind": "food"
+  },
+  "unlocks": [
+   "pot_khichdi",
+   "dal_rice_pot",
+   "kadai_dal"
+  ],
+  "harveys": {
+   "tier": "floor",
+   "friction": 2.606,
+   "score": -2.523
+  },
+  "raw": {
+   "protein": 16,
+   "tools": 3,
+   "handsOn": 5.5,
+   "waiting": 30,
+   "prePrepMinutes": 0,
+   "peels": 0,
+   "cuts": 0,
+   "steps": 3,
+   "attention": 1,
+   "cleanup": 2
+  },
+  "effort": 2,
+  "taste": 2,
+  "cant": null,
+  "want": 1,
+  "have": false,
+  "ms": 43165
+ },
+ "feedback": {
+  "chips": [],
+  "skipped": false,
+  "allGood": false,
+  "wrongItems": [],
+  "missedItems": [],
+  "dishIdeas": [
+   {
+    "name": "Chicken rice",
+    "quick": false,
+    "makes": true
+   },
+   {
+    "name": "paneer salad bowl",
+    "quick": false,
+    "makes": true
+   }
+  ],
+  "tooHard": [],
+  "wouldntEat": [],
+  "wouldntWhy": [],
+  "confusing": [],
+  "note": "",
+  "makes": "Chicken rice, paneer salad bowl",
+  "ms": null
+ }
+}
