@@ -1,7 +1,7 @@
 // "Start fresh" (1.40.0): one tap that clears what this phone remembers about a taste test,
 // drops any cached copies of the site, and opens the link again from the network.
 // Kept: unsent results (the outbox), the send token and relay, the AI key, the owner's
-// password, and the tester's name. Pure enough to test: storage and the page are passed in.
+// password, and the old stored tester name (unused from 1.47.1). Pure enough to test: storage and the page are passed in.
 
 /** What a fresh start forgets: the saved quiz runs and the kitchen the page last showed. */
 export const FRESH_KEYS = Object.freeze([

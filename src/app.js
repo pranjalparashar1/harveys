@@ -16,7 +16,7 @@ import { buildRungQuiz } from './brain/rung-quiz.js';
 import { decodeKitchen, linkCode, linkName } from './brain/share-link.js';
 import { startFresh, reloadIfStale } from './fresh.js';
 
-const VERSION = '1.47.0';
+const VERSION = '1.47.1';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -1009,14 +1009,13 @@ function init() {
 
 // ── The tester's greeting (1.35.0) ─────────────────────────────────────────
 // share.html puts the tester's first name in the link (#n=Riya&k=…). The page says hi with
-// it, the quiz says it on the way in and out, and the result carries it. Kept on this phone,
-// so "Hi, Riya" is still there when she opens the site again without the link.
+// it, the quiz says it on the way in and out, and the result carries it.
+// 1.47.1: the name comes from the link only. 1.35 kept it on the phone, so the bare site
+// greeted whoever last opened a link there (pranjal's phone said "Hi, <last tester>" after
+// checking a link). A resumed run keeps its own name in the saved run, so nothing is lost.
 const NAME_KEY = 'harveys.tester.name.v1';
-function testerName() {
-  const fromLink = linkName(location.hash);
-  if (fromLink) { try { localStorage.setItem(NAME_KEY, fromLink); } catch { /* private mode */ } return fromLink; }
-  try { return localStorage.getItem(NAME_KEY) || ''; } catch { return ''; }
-}
+try { localStorage.removeItem(NAME_KEY); } catch { /* private mode */ }
+const testerName = () => linkName(location.hash) || '';
 function greet(dishes = null) {
   const hi = $('hi');
   if (!hi) return; // owner.html has no greeting

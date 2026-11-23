@@ -21,7 +21,7 @@ test('the fresh URL keeps the link and changes the query', () => {
 
 test('a run saved by an older version is dropped, and the tester page shows Start fresh', () => {
   const ui = readFileSync(new URL('../src/rung-quiz-ui.js', import.meta.url), 'utf8');
-  assert.match(ui, /run\.v !== version\) run = null/);
+  assert.match(ui, /minor\(run\.v\) !== minor\(version\)\) run = null/);
   assert.match(ui, /data-act="fresh"/);
   assert.match(readFileSync(new URL('../index.html', import.meta.url), 'utf8'), /id="start-fresh"/);
   assert.match(readFileSync(new URL('../.github/workflows/pages.yml', import.meta.url), 'utf8'), /_site\/version\.json/);
