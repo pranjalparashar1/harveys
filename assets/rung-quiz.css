@@ -467,3 +467,8 @@
 }
 .rq-grab, .rq-sheet-top { -webkit-user-select: none; user-select: none; }
 .rq-cantwhy { scroll-margin-bottom: 112px; }
+
+/* 1.49.0: "+3 meal ideas" when a tick opens up dishes. Small, above the footer, gone in a moment. */
+.rq-toast { position: fixed; left: 50%; bottom: calc(108px + env(safe-area-inset-bottom)); z-index: 40; transform: translate3d(-50%, 8px, 0); opacity: 0; pointer-events: none; background: var(--ink); color: var(--bg); border-radius: 999px; padding: 8px 14px; font-size: 15px; font-weight: 700; white-space: nowrap; transition: opacity .2s ease, transform .25s var(--settle); }
+.rq-toast.show { opacity: 1; transform: translate3d(-50%, 0, 0); }
+@media (prefers-reduced-motion: reduce) { .rq-toast { transition: opacity .2s ease; transform: translate3d(-50%, 0, 0); } }
