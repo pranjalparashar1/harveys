@@ -118,21 +118,26 @@ test('a steel pot cooks milk oats and a boiled-egg sandwich, not just boiled egg
 // 1.38.0: the pot egg bhurji lifts BANANA to four dishes, so the thin case drops the ghee and oats.
 const THIN = { kitchen: 'Thin pot kitchen', items: ['eggs', 'milk', 'brown bread', 'gas stove', 'steel pot'].map((name) => ({ name })) };
 
-test('a thin kitchen gets one-away dishes for Marco, marked, and White shows only cookable ones', () => {
+test('1.50.0: a thin kitchen rates only what it can make; one dish that needs more is the bonus', () => {
   const q = buildRungQuiz({ kitchen: THIN, inventory: buildInventory(THIN.items) });
   const all = Object.values(q.dishes);
-  assert.ok(all.filter((d) => !d.away).length < THIN_KITCHEN);
-  const away = all.filter((d) => d.away);
-  assert.ok(away.length > 0);
-  for (const d of away) assert.match(d.how, /^Needs /);
-  assert.ok(q.steps.some((s) => s.section === 'marco'));
-  for (const g of q.rungs) {
-    for (const id of g.shown.white) assert.ok(!q.dishes[id].away, id);
-    if (g.pick) assert.ok(!q.dishes[g.pick].away);
-  }
-  const res = encodeRungResult(q, { white: Object.fromEntries(q.rungs.map((g) => [g.rung, { picks: [], none: true }])) }, { version: 't', at: 'x', testerId: 't' });
-  for (const w of res.white) assert.ok(w.harveys == null || !res.dishes[w.harveys].away);
-  assert.ok(Object.values(res.dishes).some((d) => d.away));
+  assert.ok(all.length > 0 && all.length < THIN_KITCHEN);
+  assert.ok(all.every((d) => !d.away));
+  assert.equal(q.deck.length, q.total);
+  assert.ok(q.bonus && !q.deck.includes(q.bonus.id));
+});
+
+test('1.50.0: the deck follows the confirmed kitchen: adding brings dishes in, removing drops them', async () => {
+  const { withConfirmed } = await import('../src/brain/confirm.js');
+  const r = JSON.parse(readFileSync(new URL('../data/kitchen-tests/taste-2026-11-23-kitchen_video_1-1n287-t-q94cu22qk.json', import.meta.url), 'utf8'));
+  const listed = buildRungQuiz({ kitchen: r.kitchen, inventory: buildInventory(r.kitchen.items) });
+  const added = buildRungQuiz({ kitchen: r.kitchen, inventory: withConfirmed(r.kitchen.items, ['frying_pan'], {}, []) });
+  const noEggs = buildRungQuiz({ kitchen: r.kitchen, inventory: buildInventory(r.kitchen.items.filter((i) => i.name !== 'eggs')) });
+  assert.ok(added.deck.length > listed.deck.length);
+  assert.ok(added.deck.includes('plain_omelette'));
+  assert.ok(noEggs.deck.length < listed.deck.length);
+  assert.ok(!noEggs.deck.includes('boiled_eggs'));
+  for (const q of [listed, added, noEggs]) assert.equal(q.deck.length, q.total);
 });
 
 test('latestRuns keeps a named tester’s last run per kitchen, never merges unnamed ones', () => {

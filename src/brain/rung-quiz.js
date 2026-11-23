@@ -30,7 +30,7 @@ export const PER_RUNG = 5;
  * and Harsh's and Banana Singh's tests (22 Nov) each got one dish and no Marco sort at all.
  */
 export const THIN_KITCHEN = 4;
-/** Most dishes a thin kitchen's quiz grows to, cookable and one-away together. */
+/** Most dishes a thin kitchen's quiz grew to, cookable and one-away together (unused from 1.50.0). */
 export const THIN_FILL = 8;
 /**
  * 1.49.0: most dishes a tester rates. PER_RUNG alone left Banana Singh (23 Nov) rating 8 of
@@ -117,9 +117,9 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdi
   let kind = 'meal';
   let r = go(kind);
   if (!r.ranked.length) r = go(kind = 'any');
-  const pool = r.ranked.length < THIN_KITCHEN
-    ? [...r.ranked, ...oneAway({ r, kind, inventory, catalogue, verdicts, config }).slice(0, THIN_FILL - r.ranked.length)]
-    : r.ranked;
+  // 1.50.0 (pranjal, 23 Nov): rate only what this kitchen, as confirmed, can make. A thin
+  // kitchen no longer pads with one-away dishes; the bonus round is the one dish that needs more.
+  const pool = r.ranked;
   // Cookable dishes lead their rung, so White's "Harvey's pick" is always one you can make.
   const realFirst = (a, b) => (a.away ? 1 : 0) - (b.away ? 1 : 0) || byRungOrder(a, b);
   const byRung = {};
