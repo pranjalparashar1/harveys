@@ -101,7 +101,9 @@ function screens() {
   const out = [{ kind: 'intro' }];
   if (opts.items) out.push({ kind: 'confirm', side: 'food' }, { kind: 'confirm', side: 'kit' });
   out.push({ kind: 'think' }, { kind: 'reveal' });
-  quiz.deck.forEach((id, i) => out.push({ kind: 'dish', id, i }));
+  // 1.48.0: dishes come in the seeded shuffle, not Harvey's easiest-first order. Shown in
+  // Harvey's order, the effort stars partly echo the position, and Marco trains on them.
+  (quiz.rateOrder ?? quiz.deck).forEach((id, i) => out.push({ kind: 'dish', id, i }));
   // 1.46.0: the bonus is two screens: how it's made and what the one extra thing unlocks,
   // then its ratings. "Was anything confusing?" is gone (pranjal: it added nothing).
   if (quiz.bonus) out.push({ kind: 'bonusinfo' }, { kind: 'bonus' });
@@ -626,6 +628,16 @@ function setStar(id, kind, n) {
   save();
   buzz(n >= 4 ? 12 : 8);
   syncDish(id);
+  showNext();
+}
+
+/** 1.48.0: after a rating, bring the next question into view. On an iPhone SE the taste row
+ * sat half under the footer and "I can't make this" was off screen, with nothing to say so. */
+function showNext() {
+  const next = root.querySelector('.rq-ask:not(.set):not(.off)') ?? root.querySelector('.rq-cantbox');
+  if (!next) return;
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  requestAnimationFrame(() => next.scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' }));
 }
 
 /** "I can't make this" is a tick box: tap again to take it back. The reasons are tick boxes too. */
