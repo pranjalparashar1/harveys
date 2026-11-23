@@ -237,3 +237,14 @@ test('1.44.0: a bonus dish one thing away, confirm removals, and what testers ma
   assert.ok(!add.food.find((g) => g.id === 'veg').opts.some((o) => o.id === 'onion'), 'what is listed is not offered again');
   assert.ok(add.noStove && add.kit[0].id === 'stove');
 });
+
+test('1.46.0: what’s missing can be one or both reasons, and a dish they can’t make may still be rated', () => {
+  const [a, b] = quiz.deck;
+  const stars = { [a]: { cantOpen: true, cants: ['ingredients', 'equipment'], cant: 'ingredients', taste: 4 }, [b]: { cantOpen: true, cants: ['equipment', 'nope'], cant: 'equipment' } };
+  const res = encodeRungResult(quiz, { marco: {}, pierre: {}, white: {}, stars }, { version: 'test', testerId: 't-c' });
+  assert.deepEqual(res.stars[0].cants, ['ingredients', 'equipment']);
+  assert.equal(res.stars[0].cant, 'ingredients', 'cant stays the first, for older readers');
+  assert.equal(res.stars[0].taste, 4);
+  assert.deepEqual(res.stars[1].cants, ['equipment'], 'unknown reasons dropped');
+  assert.deepEqual(scoreRungResult(res).stars.cant, { ingredients: 1, equipment: 2 });
+});

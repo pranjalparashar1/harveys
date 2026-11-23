@@ -251,7 +251,9 @@ const starsOut = (quiz, answers) => {
   const cant = new Set(CANT.map((c) => c.id));
   const stars = deck.filter((id) => answers.stars[id]).map((id) => {
     const a = answers.stars[id];
-    return { id, effort: ok(a.effort), taste: ok(a.taste), cant: cant.has(a.cant) ? a.cant : null, ms: a.ms ?? null };
+    // 1.46.0: what's missing is a multi-pick; cant stays the first, cants holds them all.
+    const cants = [...new Set(a.cants ?? (a.cant ? [a.cant] : []))].filter((c) => cant.has(c));
+    return { id, effort: ok(a.effort), taste: ok(a.taste), cant: cants[0] ?? null, ...(cants.length ? { cants } : {}), ms: a.ms ?? null };
   }).filter((x) => x.effort || x.taste || x.cant);
   const rated = stars.filter((x) => x.effort);
   return {
@@ -316,6 +318,7 @@ export function encodeRungResult(quiz, answers, { version, at, testerId, runNo =
     // order rated, null when skipped. rungMarcoChoices turns ratings into pairs.
     // 1.43.0 recipe test (flow 'stars'): stars = per dish effort and taste 1-5 (5 = effortless,
     // delicious) and cant ('ingredients' | 'equipment'); difficulty is the effort stars as levels.
+    // 1.46.0: cants = every reason ticked (one or both); a dish can't-made may still carry stars.
     ...(answers.stars ? starsOut(quiz, answers) : answers.cards ? cardsOut(quiz, answers) : {}),
     // 1.44.0 bonus: a dish one thing away (need), its effort and taste stars, and want = how
     // likely they'd get that thing, 1 (no way) … 5 (definitely); have = they already have it.
@@ -410,7 +413,7 @@ export function scoreRungResult(r) {
     if ((a.taste > b.taste) === (ta > tb)) tAgree++;
   }
   const cant = {};
-  for (const x of st) if (x.cant) cant[x.cant] = (cant[x.cant] ?? 0) + 1;
+  for (const x of st) for (const c of x.cants ?? (x.cant ? [x.cant] : [])) cant[c] = (cant[c] ?? 0) + 1;
   const stars = { n: st.length, both: st.filter((x) => x.effort && x.taste).length, cant, tastePairs: tPairs, tasteAgree: tPairs ? round(tAgree / tPairs) : null };
   const criteria = {};
   for (const w of r.white ?? []) w.criteria.forEach((c, i) => { criteria[c] = (criteria[c] ?? 0) + (w.criteria.length - i); });

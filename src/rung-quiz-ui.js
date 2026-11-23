@@ -16,7 +16,7 @@ import { CATALOGUE } from './brain/catalogue.js';
 import { withConfirmed, matchTyped, listedSplit, addChoices, FOOD_GROUPS } from './brain/confirm.js';
 import { sendResult, flush, setToken, outbox } from './send.js';
 import { startFresh } from './fresh.js';
-import { CONFUSING, blankFeedback, splitIdeas, norm } from './brain/feedback.js';
+import { blankFeedback, splitIdeas, norm } from './brain/feedback.js';
 
 const KEY = 'harveys.rq.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
@@ -102,8 +102,10 @@ function screens() {
   if (opts.items) out.push({ kind: 'confirm', side: 'food' }, { kind: 'confirm', side: 'kit' });
   out.push({ kind: 'think' }, { kind: 'reveal' });
   quiz.deck.forEach((id, i) => out.push({ kind: 'dish', id, i }));
-  if (quiz.bonus) out.push({ kind: 'dish', id: quiz.bonus.id, bonus: true }, { kind: 'want' });
-  out.push({ kind: 'feedback' }, { kind: 'end' });
+  // 1.46.0: the bonus is two screens: how it's made and what the one extra thing unlocks,
+  // then its ratings. "Was anything confusing?" is gone (pranjal: it added nothing).
+  if (quiz.bonus) out.push({ kind: 'bonusinfo' }, { kind: 'bonus' });
+  out.push({ kind: 'end' });
   return out;
 }
 /** Screens Back passes over: the thinking pause. */
@@ -216,8 +218,7 @@ function bar(list) {
     seg((s) => s.kind === 'confirm' && s.side === 'food'),
     seg((s) => s.kind === 'confirm' && s.side === 'kit'),
     seg((s) => s.kind === 'dish' && !s.bonus),
-    seg((s) => (s.kind === 'dish' && s.bonus) || s.kind === 'want'),
-    seg((s) => s.kind === 'feedback'),
+    seg((s) => s.kind === 'bonusinfo' || s.kind === 'bonus'),
   ].join('')}</div>`;
 }
 
@@ -241,15 +242,19 @@ function render(enter = false) {
   else if (s.kind === 'think') ({ body, foot } = thinkScreen());
   else if (s.kind === 'reveal') ({ body, foot } = revealScreen(back));
   else if (s.kind === 'dish') ({ body, foot } = dishScreen(s, back));
-  else if (s.kind === 'want') ({ body, foot } = wantScreen(back));
-  else if (s.kind === 'feedback') ({ body, foot } = feedbackScreen(back));
+  else if (s.kind === 'bonusinfo') ({ body, foot } = bonusInfoScreen(back));
+  else if (s.kind === 'bonus') ({ body, foot } = bonusScreen(back));
   else ({ body, foot } = endScreen());
 
   const ghost = ['intro', 'end', 'think', 'reveal'].includes(s.kind);
   sheetId = null;
   document.documentElement.classList.remove('rq-sheet-open');
+  clearInterval(demoTimer);
+  // On the hello, the close and Start fresh buttons wait until the last line is in: the page
+  // starts empty but for "Hi".
+  const topIn = s.kind === 'intro' ? ` rq-seq" style="--s:${introSteps}` : '';
   root.innerHTML = `
-    <header class="rq-top">
+    <header class="rq-top${topIn}">
       <button class="rq-icon" data-act="close" type="button" aria-label="Close">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       ${ghost ? '<div class="rq-bar"></div>' : bar(list)}
       <button class="rq-fresh" data-act="fresh" type="button">Start fresh</button>
@@ -259,39 +264,38 @@ function render(enter = false) {
   root.scrollTop = keepY;
   clearTimeout(thinkTimer);
   if (s.kind === 'think') thinkTimer = setTimeout(() => { if (screens()[run.at]?.kind === 'think' && !root.hidden) { run.at++; save(); render(); } }, THINK_MS);
-  if (s.kind === 'reveal') countUp();
+  if (s.kind === 'reveal') { countUp(); demoStars(); }
   if (s.kind === 'dish') syncDish(s.id);
-  if (s.kind === 'want') syncWant();
-  if (s.kind === 'feedback') syncFb();
+  if (s.kind === 'bonus') syncDish(quiz.bonus.id);
 }
 
-// 1.45.0 (pranjal): a big hello, then why they're here, one line at a time out of the dark,
-// so a tester reads each before the next. A tap anywhere shows the rest at once.
+// 1.46.0 (pranjal): the page starts empty but for "Hi, Riya". Each line then fades in on its
+// own, so a tester reads one thing at a time. No word yet of videos or ideas: Harvey's found
+// some things in their kitchen and wants them checked. What to do with the ideas comes after
+// the thinking screen, when there are ideas. A tap anywhere shows the rest at once.
+let introSteps = 0;
 function introScreen() {
   const can = Object.keys(quiz.dishes).length || opts.items;
-  const mini = (n) => `<span class="rq-sw demo">${[1, 2, 3, 4, 5].map((k) => `<i class="${k <= n ? 'on' : ''}">${STAR}</i>`).join('')}</span>`;
   let n = 0;
-  const seq = () => `class="rq-seq" style="--s:${n++}"`;
-  const video = opts.source === 'link';
-  const hi = `<h1 class="rq-hi" ${seq()}>${run.name ? `Hi, ${esc(run.name)}` : 'Hi there'}</h1>`;
+  // 1.46.0: a bare class="rq-seq" here sat beside the element's own class, and a browser keeps
+  // only the first, so in 1.45 every line showed at once. Now one class attribute each.
+  const seq = () => `style="--s:${n++}"`;
+  const hi = `<h1 class="rq-hi rq-seq" ${seq()}>${run.name ? `Hi, ${esc(run.name)}` : 'Hi there'}</h1>`;
   if (!can) {
-    return {
-      body: `<div class="rq-hero intro">${hi}<p class="rq-lead" ${seq()}>Harvey’s has no ideas for this kitchen yet. Add a few more things to your list and try again.</p></div>`,
-      foot: `<button class="btn xl rq-go" data-act="close" type="button"><span>Back to my list</span></button>`,
-    };
+    const body = `<div class="rq-hero intro">${hi}<p class="rq-say rq-seq" ${seq()}>Harvey’s has no ideas for this kitchen yet. Add a few more things to your list and try again.</p></div>`;
+    introSteps = n;
+    return { body, foot: `<button class="btn xl rq-go rq-seq" style="--s:${n}" data-act="close" type="button"><span>Back to my list</span></button>` };
   }
+  const lines = opts.items
+    ? ['Harvey’s spotted some food and cookware in your kitchen.', 'Some of it may be wrong.', '<b>Help Harvey’s check it.</b>']
+    : ['Harvey’s has your kitchen list.', '<b>Let’s see what it can make.</b>'];
   const body = `
       <div class="rq-hero intro" data-act="skipintro">
         ${hi}
-        <p class="rq-say" ${seq()}>${video ? 'Harvey’s watched the video of your kitchen.' : 'Harvey’s read your kitchen list.'}</p>
-        <p class="rq-say" ${seq()}>From what’s in it, Harvey’s came up with <b>meal and snack ideas</b> you could make.</p>
-        <p class="rq-say strong" ${seq()}>Now tell Harvey’s what you think of them.</p>
-        <ol class="rq-rounds">
-          ${opts.items ? `<li ${seq()}><b>Check your kitchen</b><span>Untick what’s not there</span></li>` : ''}
-          <li ${seq()}><b>Rate each idea</b><span class="rq-mini-rate"><span>Effort ${mini(4)}</span><span>Taste ${mini(3)}</span></span></li>
-        </ol>
+        ${lines.map((l) => `<p class="rq-say rq-seq" ${seq()}>${l}</p>`).join('')}
       </div>`;
-  return { body, foot: `<button class="btn primary xl rq-go rq-seq" style="--s:${n}" data-act="next" type="button"><span>Start</span></button>` };
+  introSteps = n;
+  return { body, foot: `<button class="btn primary xl rq-go rq-seq" style="--s:${n}" data-act="next" type="button"><span>${opts.items ? 'Check my kitchen' : 'Start'}</span></button>` };
 }
 
 // ── Confirm your kitchen (1.44.0) ───────────────────────────────────────────
@@ -427,21 +431,70 @@ function revealScreen(back) {
       foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Tell Harvey</span></button>`,
     };
   }
+  // 1.46.0: what to do now lives here, once there are ideas. The example stars keep changing,
+  // so nobody reads them as the rating to give.
+  const demo = (kind, label) => `<div class="rq-demo-ask" data-demo="${kind}"><p><b>${label}</b><span class="rq-sv"></span></p><span class="rq-sw demo" aria-hidden="true">${[1, 2, 3, 4, 5].map(() => `<i>${STAR}</i>`).join('')}</span></div>`;
   return {
     body: `
       <div class="rq-hero reveal">
         <p class="rq-eyebrow">Harvey’s came up with</p>
         <h1 class="rq-count"><span class="rq-num-big" data-to="${quiz.deck.length}">${quiz.deck.length}</span><span>meal and snack ${quiz.deck.length === 1 ? 'idea' : 'ideas'} for your kitchen</span></h1>
         ${more ? `<p class="rq-lead">${n} you can make now, ${more} need${more === 1 ? 's' : ''} one more thing.</p>` : ''}
-        <div class="rq-explain">
+        <div class="rq-explain rq-seq" style="--s:1">
           <p class="rq-explain-q">Now rate each idea, one at a time</p>
-          <p class="rq-explain-n">The stars are for the food, not your kitchen.</p>
-          <div class="rq-starrow"><b>Effort</b><span class="rq-sw demo" aria-hidden="true">${[1, 2, 3, 4, 5].map((k) => `<i class="on" style="--i:${k}">${STAR}</i>`).join('')}</span><span class="rq-means">= effortless</span></div>
-          <div class="rq-starrow"><b>Taste</b><span class="rq-sw demo" aria-hidden="true">${[1, 2, 3, 4, 5].map((k) => `<i class="on" style="--i:${k + 5}">${STAR}</i>`).join('')}</span><span class="rq-means">= delicious</span></div>
+          <p class="rq-explain-n">Give each one as many stars as you like. The stars are for the food, not your kitchen.</p>
+          ${demo('effort', 'Effort')}
+          ${demo('taste', 'Taste')}
         </div>
       </div>`,
-    foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Start rating</span></button>`,
+    foot: `${back}<button class="btn primary xl rq-go rq-seq" style="--s:2" data-act="next" type="button">${HX}<span>Start rating</span></button>`,
   };
+}
+
+/** The example on the reveal: each row fills to a new number every second or so, with its word. */
+let demoTimer = 0;
+const DEMO = { effort: [2, 5, 3, 4, 1], taste: [4, 2, 5, 3, 5] };
+function demoStars() {
+  const rows = [...root.querySelectorAll('.rq-demo-ask')];
+  if (!rows.length) return;
+  let k = 0;
+  const step = () => {
+    rows.forEach((row, r) => {
+      if ((k + r) % 2) return; // the two rows take turns
+      const kind = row.dataset.demo;
+      const seq = DEMO[kind];
+      const v = seq[Math.floor((k + r) / 2) % seq.length];
+      fillStars([...row.querySelectorAll('i')], v);
+      row.querySelector('.rq-sv').textContent = (kind === 'effort' ? EFFORT_STARS : TASTE_STARS)[v - 1];
+    });
+    k++;
+  };
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setTimeout(() => { if (!root.querySelector('.rq-demo-ask')) return; step(); step(); if (!still) demoTimer = setInterval(step, 1100); }, 1500);
+}
+
+/** Stars on to v, filling left to right and emptying right to left, each with a small spring.
+ * Only classes, a delay and a transform animation: nothing that moves the layout. */
+function fillStars(stars, v) {
+  const was = stars.filter((el) => el.classList.contains('on')).length;
+  stars.forEach((el, i) => {
+    const n = i + 1;
+    const on = n <= v;
+    if (el.classList.contains('on') === on) return;
+    const delay = on ? (n - was - 1) * 45 : (was - n) * 30;
+    el.style.setProperty('--dl', `${delay}ms`);
+    el.classList.toggle('on', on);
+    if (on) spring(el.querySelector('svg'), delay);
+  });
+}
+const SPRING = 'linear(0, 0.013 0.6%, 0.05 1.2%, 0.2 2.7%, 0.737 7.4%, 0.984 10.4%, 1.112 13.1%, 1.161 15.5%, 1.164 17.4%, 1.139 19.6%, 1.006 26.4%, 0.976 29.6%, 0.968 32.9%, 0.986 41.3%, 1.002 51.3%, 1)';
+let springOk = null;
+function spring(el, delay = 0) {
+  if (!el?.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (springOk == null) springOk = CSS.supports?.('transition-timing-function', SPRING) ?? false;
+  try {
+    el.animate([{ transform: 'scale(.72)' }, { transform: 'scale(1)' }], { duration: springOk ? 620 : 380, delay, easing: springOk ? SPRING : 'cubic-bezier(.34,1.56,.64,1)', fill: 'backwards' });
+  } catch { /* no animation */ }
 }
 
 function countUp() {
@@ -468,7 +521,6 @@ const ASK = {
   want: { q: '', words: WANT_STARS },
 };
 const starOf = (id) => run.answers.stars?.[id] ?? {};
-const isDone = (id) => { const a = starOf(id); return !!((a.effort && a.taste) || a.cant); };
 const dishOf = (id) => quiz.dishes[id] ?? (quiz.bonus?.id === id ? quiz.bonus : null);
 
 /** Five big stars, and what the far ends mean, so no legend is needed. */
@@ -481,60 +533,79 @@ function askRow(id, kind, q = ASK[kind].q) {
     </section>`;
 }
 
+const cantsOf = (a) => a.cants ?? (a.cant ? [a.cant] : []);
+const cantOn = (a) => !!(a.cantOpen || a.cant || a.cants?.length);
+/** 1.46.0: a dish is done when it's rated, or when they can't make it and said what's missing. */
+const isDone = (id) => { const a = starOf(id); return cantOn(a) ? cantsOf(a).length > 0 : !!(a.effort && a.taste); };
+
 function dishScreen(s, back) {
   const d = dishOf(s.id);
   const total = quiz.deck.length;
-  const last = s.bonus ? false : s.i === total - 1;
+  const last = s.i === total - 1;
   const body = `
-      <p class="rq-eyebrow">${s.bonus ? 'Bonus · needs one more thing' : `Idea ${s.i + 1} of ${total}`}</p>
+      <p class="rq-eyebrow">Idea ${s.i + 1} of ${total}</p>
       <h1 class="rq-dname">${esc(d.name)}</h1>
       <p class="rq-ding">${esc(ingredientsOf(d))}</p>
-      ${d.away ? `<p class="rq-need">Needs ${esc(s.bonus ? d.need.label.toLowerCase() : d.away)}</p>` : ''}
+      ${d.away ? `<p class="rq-need">Needs ${esc(d.away)}</p>` : ''}
       <div class="rq-dact">
         <button class="rq-see" data-act="recipe" data-id="${esc(s.id)}" type="button">${HX}<span>See the recipe</span>${CHEV}</button>
-        <button class="rq-cant" data-act="cant" data-id="${esc(s.id)}" type="button" aria-expanded="false">${HX}<span>I can’t make this</span></button>
       </div>
-      <div class="rq-cantwhy" hidden role="group" aria-label="Why not">${CANT.map((c) => `<button class="rq-tag" data-act="cantwhy" data-id="${esc(s.id)}" data-why="${c.id}" type="button" aria-pressed="false">${HX}<span>${esc(c.label)}</span></button>`).join('')}</div>
+      <p class="rq-ifcould" hidden>If you could make it, how would you rate it? <span>Optional</span></p>
       ${askRow(s.id, 'effort')}
-      ${askRow(s.id, 'taste')}`;
-  return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>${last || s.bonus ? 'Next' : 'Next idea'}</span></button>` };
+      ${askRow(s.id, 'taste')}
+      <div class="rq-cantbox">
+        <button class="rq-tile rq-canttoggle" data-act="cant" data-id="${esc(s.id)}" type="button" aria-pressed="false" aria-expanded="false">${HX}<span class="rq-box" aria-hidden="true">${TICK}</span><span class="rq-tl">I can’t make this</span></button>
+        <div class="rq-cantwhy" hidden role="group" aria-label="What’s missing">
+          <p class="rq-cant-q">What’s missing? <span>Tap one or both.</span></p>
+          <div class="rq-tiles add">${CANT.map((c) => `<button class="rq-tile" data-act="cantwhy" data-id="${esc(s.id)}" data-why="${c.id}" type="button" aria-pressed="false">${HX}<span class="rq-box" aria-hidden="true">${TICK}</span><span class="rq-tl">${esc(c.label)}</span></button>`).join('')}</div>
+        </div>
+      </div>`;
+  return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>${last ? 'Next' : 'Next idea'}</span></button>` };
 }
 
-/** Stars, words, the taste row's turn, can't-make, and Next, for the dish on screen. */
+/** Stars, words, the taste row's turn, can't-make, and Next, for the dish (or bonus) on screen. */
 function syncDish(id) {
   const a = starOf(id);
+  const w = run.answers.bonusItem;
+  const bonus = quiz.bonus?.id === id;
+  const cant = !bonus && cantOn(a);
   for (const box of root.querySelectorAll('.rq-ask')) {
     const kind = box.dataset.kind;
-    const v = a[kind] ?? 0;
+    const v = (kind === 'want' ? w.want : a[kind]) ?? 0;
     box.classList.toggle('set', !!v);
-    // Effort first: taste waits its turn, so the eye goes one place at a time.
-    box.classList.toggle('wait', kind === 'taste' && !a.effort && !a.cant);
-    box.classList.toggle('off', !!a.cant);
-    for (const b of box.querySelectorAll('.rq-star')) {
-      const n = Number(b.dataset.n);
-      b.classList.toggle('on', n <= v);
-      b.setAttribute('aria-checked', String(n === v));
-    }
+    // One row at a time: effort, then taste, then (bonus) the item.
+    box.classList.toggle('wait', (kind === 'taste' && !a.effort && !cant) || (kind === 'want' && !(a.effort && a.taste) && !w.want && !w.have));
+    box.classList.toggle('off', kind === 'want' && !!w.have);
+    box.classList.toggle('maybe', cant);
+    const stars = [...box.querySelectorAll('.rq-star')];
+    fillStars(stars, v);
+    for (const b of stars) b.setAttribute('aria-checked', String(Number(b.dataset.n) === v));
     box.querySelector('.rq-sv').textContent = v ? ASK[kind].words[v - 1] : '';
   }
-  const open = !!(a.cantOpen || a.cant);
   const why = root.querySelector('.rq-cantwhy');
   if (why) {
-    if (open && why.hidden) { why.hidden = false; why.classList.add('appear'); }
-    if (!open) why.hidden = true;
-    const btn = root.querySelector('.rq-cant');
-    btn.classList.toggle('on', open);
-    btn.setAttribute('aria-expanded', String(open));
-    for (const t of why.querySelectorAll('.rq-tag')) {
-      const on = a.cant === t.dataset.why;
+    const picked = cantsOf(a);
+    if (cant && why.hidden) { why.hidden = false; why.classList.add('appear'); requestAnimationFrame(() => why.scrollIntoView({ block: 'nearest', behavior: 'smooth' })); }
+    if (!cant) why.hidden = true;
+    const btn = root.querySelector('.rq-canttoggle');
+    btn.classList.toggle('on', cant);
+    btn.setAttribute('aria-pressed', String(cant));
+    btn.setAttribute('aria-expanded', String(cant));
+    why.classList.toggle('need', cant && !picked.length);
+    for (const t of why.querySelectorAll('.rq-tile')) {
+      const on = picked.includes(t.dataset.why);
       t.classList.toggle('on', on);
       t.setAttribute('aria-pressed', String(on));
     }
+    root.querySelector('.rq-ifcould').hidden = !cant;
   }
+  const have = root.querySelector('.rq-have');
+  if (have) { have.classList.toggle('on', !!w.have); have.setAttribute('aria-pressed', String(!!w.have)); }
+  const done = bonus ? !!(a.effort && a.taste && (w.want || w.have)) : isDone(id);
   const go = root.querySelector('.rq-foot [data-act="next"]');
   if (go) {
-    go.setAttribute('aria-disabled', String(!isDone(id)));
-    go.classList.toggle('ready', isDone(id));
+    go.setAttribute('aria-disabled', String(!done));
+    go.classList.toggle('ready', done);
   }
   unnudge();
 }
@@ -545,102 +616,66 @@ function setStar(id, kind, n) {
     w.want = w.want === n ? 0 : n;
     if (w.want) w.have = false;
     w.ms = Math.round(performance.now() - shownAt);
-    save();
-    buzz(n >= 4 ? 12 : 8);
-    syncWant();
-    root.querySelector(`.rq-star[data-n="${n}"]`)?.classList.add('pop');
-    return;
+  } else {
+    const a = (run.answers.stars[id] ??= {});
+    a[kind] = a[kind] === n ? 0 : n; // tap the same star again to clear it
+    a.ms = Math.round(performance.now() - shownAt);
   }
-  const a = (run.answers.stars[id] ??= {});
-  a[kind] = a[kind] === n ? 0 : n; // tap the same star again to clear it
-  a.ms = Math.round(performance.now() - shownAt);
   save();
   buzz(n >= 4 ? 12 : 8);
   syncDish(id);
-  root.querySelector(`.rq-ask[data-kind="${kind}"] .rq-star[data-n="${n}"]`)?.classList.add('pop');
 }
 
+/** "I can't make this" is a tick box: tap again to take it back. The reasons are tick boxes too. */
 function cantTap(id, why = null) {
   const a = (run.answers.stars[id] ??= {});
-  if (why) a.cant = a.cant === why ? null : why;
-  else if (a.cant || a.cantOpen) { a.cant = null; a.cantOpen = false; } else a.cantOpen = true;
+  if (why) {
+    const picked = cantsOf(a);
+    a.cants = picked.includes(why) ? picked.filter((x) => x !== why) : [...picked, why];
+    a.cant = a.cants[0] ?? null;
+    a.cantOpen = true;
+  } else if (cantOn(a)) { a.cant = null; a.cants = []; a.cantOpen = false; } else a.cantOpen = true;
   a.ms = Math.round(performance.now() - shownAt);
   save();
   syncDish(id);
 }
 
-// ── The bonus item ──────────────────────────────────────────────────────────
-function wantScreen(back) {
+// ── The bonus: one more thing (1.46.0) ──────────────────────────────────────
+// pranjal: "Rice, would you buy it?" means nothing on its own. First how the dish is made and
+// what that one thing would let them cook, then the ratings.
+const aOrAn = (w) => (/^[aeiou]/i.test(w) ? 'an' : 'a');
+const needName = (b) => (b.need.kind !== 'food' ? `${aOrAn(b.need.label)} ${b.need.label.toLowerCase()}` : b.need.label.toLowerCase());
+
+function bonusInfoScreen(back) {
+  const b = quiz.bonus;
+  const meal = CATALOGUE.find((m) => m.id === b.id);
+  const steps = meal?.steps ?? [];
+  const others = b.unlocks.filter((u) => u.id !== b.id);
+  const thing = needName(b);
+  const body = `
+      <p class="rq-eyebrow">Bonus idea</p>
+      <h1 class="rq-dname">${esc(b.name)}</h1>
+      ${ingredientsOf(b) ? `<p class="rq-ding">${esc(ingredientsOf(b))}</p>` : ''}
+      <p class="rq-need">You’d need ${esc(thing)}</p>
+      ${ITEM_NOTE[b.need.id] ? `<p class="rq-note">${esc(ITEM_NOTE[b.need.id])}</p>` : ''}
+      <p class="rq-group">How it’s made</p>
+      <ol class="rq-steps-list">${steps.map((x) => `<li>${esc(x.text)}</li>`).join('')}</ol>
+      ${others.length ? `<div class="rq-item"><p class="rq-unlocks">With ${esc(thing)} you could also make <strong>${others.slice(0, 3).map((u) => esc(u.name)).join(', ')}</strong>${others.length > 3 ? ` and ${others.length - 3} more` : ''}.</p></div>` : ''}`;
+  return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Rate it</span></button>` };
+}
+
+function bonusScreen(back) {
   const b = quiz.bonus;
   const kit = b.need.kind !== 'food';
-  const label = b.need.label;
-  const others = b.unlocks.filter((u) => u.id !== b.id);
+  const thing = needName(b);
   const body = `
-      <p class="rq-eyebrow">Bonus · one more thing</p>
-      <h1 class="rq-dname">${esc(label)}</h1>
-      <div class="rq-item">
-        ${ITEM_NOTE[b.need.id] ? `<p>${esc(ITEM_NOTE[b.need.id])}</p>` : ''}
-        <p class="rq-unlocks">With it: <strong>${esc(b.name)}</strong>${others.length ? `, ${others.slice(0, 2).map((u) => esc(u.name)).join(', ')}${others.length > 2 ? ` and ${others.length - 2} more` : ''}` : ''}</p>
-      </div>
-      ${askRow(b.id, 'want', kit ? 'Would you get one?' : 'Would you buy it?')}
-      <button class="rq-cant rq-have" data-act="havebonus" type="button" aria-pressed="false">${HX}<span>I already have ${kit ? 'one' : 'it'}</span></button>`;
+      <p class="rq-eyebrow">Bonus idea · needs ${esc(thing)}</p>
+      <h1 class="rq-dname">${esc(b.name)}</h1>
+      ${askRow(b.id, 'effort')}
+      ${askRow(b.id, 'taste')}
+      ${askRow(b.id, 'want', `Would you ${kit ? 'get' : 'buy'} ${thing} to make it?`)}
+      <button class="rq-tile rq-have" data-act="havebonus" type="button" aria-pressed="false">${HX}<span class="rq-box" aria-hidden="true">${TICK}</span><span class="rq-tl">I already have ${kit ? 'one' : 'it'}</span></button>`;
   return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Next</span></button>` };
-}
-
-function syncWant() {
-  const w = run.answers.bonusItem;
-  const box = root.querySelector('.rq-ask');
-  const v = w.want ?? 0;
-  box.classList.toggle('set', !!v);
-  box.classList.toggle('off', !!w.have);
-  for (const b of box.querySelectorAll('.rq-star')) {
-    const n = Number(b.dataset.n);
-    b.classList.toggle('on', n <= v);
-    b.setAttribute('aria-checked', String(n === v));
-  }
-  box.querySelector('.rq-sv').textContent = v ? WANT_STARS[v - 1] : '';
-  const have = root.querySelector('.rq-have');
-  have.classList.toggle('on', !!w.have);
-  have.setAttribute('aria-pressed', String(!!w.have));
-  const go = root.querySelector('.rq-foot [data-act="next"]');
-  go.setAttribute('aria-disabled', String(!(w.want || w.have)));
-  go.classList.toggle('ready', !!(w.want || w.have));
-  unnudge();
-}
-
-// ── Anything confusing? ─────────────────────────────────────────────────────
-function feedbackScreen(back) {
-  const fb = run.answers.feedback;
-  fb.seen = true;
-  const chip = (id, label, cls = '') => `<button class="rq-fbchip${cls}" data-act="fbchip" data-id="${id}" type="button" aria-pressed="false">${HX}<span class="rq-check" aria-hidden="true">${TICK}</span><span>${esc(label)}</span></button>`;
-  const body = `
-      <p class="rq-eyebrow">Almost done</p>
-      <h1 class="rq-q">Was anything confusing?</h1>
-      <p class="rq-hint">Tap any that apply.</p>
-      <div class="rq-fb">${chip('all_good', 'No, all clear', ' good')}${CONFUSING.map((c) => chip(c.id, c.label)).join('')}</div>`;
-  return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Skip</span></button>` };
-}
-
-function syncFb() {
-  const fb = run.answers.feedback;
-  for (const c of root.querySelectorAll('.rq-fbchip')) {
-    const on = c.dataset.id === 'all_good' ? fb.chips.includes('all_good') : fb.confusing.includes(c.dataset.id);
-    c.classList.toggle('on', on);
-    c.setAttribute('aria-pressed', String(on));
-  }
-  const go = root.querySelector('.rq-foot [data-act="next"] span');
-  if (go) go.textContent = fb.chips.length ? 'Next' : 'Skip';
-}
-
-function fbChip(id) {
-  const fb = run.answers.feedback;
-  if (id === 'all_good') { fb.confusing = []; fb.chips = fb.chips.includes('all_good') ? [] : ['all_good']; } else {
-    const i = fb.confusing.indexOf(id);
-    if (i >= 0) fb.confusing.splice(i, 1); else fb.confusing.push(id);
-    fb.chips = fb.confusing.length ? ['confusing'] : [];
-  }
-  save();
-  syncFb();
 }
 
 // ── The end: what you make, then Send ───────────────────────────────────────
@@ -662,6 +697,7 @@ function endScreen() {
   const done = st === 'sent' || st === 'queued';
   const ask = st === 'auth' || st === 'setup' || st === 'bad';
   const fb = run.answers.feedback;
+  fb.seen = true; // 1.46.0: no feedback screen; reaching the end is what counts
   const body = `
       <div class="rq-hero end">
         <div class="rq-tick${done || !st ? '' : ' wait'}" aria-hidden="true"><svg viewBox="0 0 52 52"><path d="M14 27l8 8 16-17"/></svg></div>
@@ -703,6 +739,7 @@ function onClick(e) {
   const act = el.dataset.act;
   const now = performance.now();
   if (!sheetId && downAt && e.clientX && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 16) return;
+  if (sheetDragged && now - sheetDragged < 350) return; // the lift at the end of a sheet drag
   if (navTap && now - navTap.t < 350 && Math.hypot(e.clientX - navTap.x, e.clientY - navTap.y) < 40) return;
   if (NAV.has(act)) navTap = { t: now, x: e.clientX, y: e.clientY };
   buzz();
@@ -723,7 +760,7 @@ function onClick(e) {
   if (act === 'star') return setStar(el.dataset.id, el.dataset.kind, Number(el.dataset.n));
   if (act === 'cant') return cantTap(el.dataset.id);
   if (act === 'cantwhy') return cantTap(el.dataset.id, el.dataset.why);
-  if (act === 'havebonus') { const w = run.answers.bonusItem; w.have = !w.have; if (w.have) w.want = 0; save(); return syncWant(); }
+  if (act === 'havebonus') { const w = run.answers.bonusItem; w.have = !w.have; if (w.have) w.want = 0; save(); return syncDish(quiz.bonus.id); }
   if (act === 'untick') {
     const d = draft();
     const name = el.dataset.name;
@@ -751,7 +788,6 @@ function onClick(e) {
     return render();
   }
   if (act === 'typeadd') return typeAdd(el.closest('.rq-add'));
-  if (act === 'fbchip') return fbChip(el.dataset.id);
   if (act === 'next') {
     if (el.getAttribute('aria-disabled') === 'true') return nudge();
     commit(s);
@@ -785,11 +821,12 @@ function unnudge() {
 }
 /** Next tapped before the stars: point at what's missing instead of doing nothing. */
 function nudge() {
-  const box = [...root.querySelectorAll('.rq-ask')].find((b) => !b.classList.contains('set') && !b.classList.contains('off'));
+  const why = root.querySelector('.rq-cantwhy.need');
+  const box = why ?? [...root.querySelectorAll('.rq-ask')].find((b) => !b.classList.contains('set') && !b.classList.contains('off'));
   const go = root.querySelector('.rq-foot [data-act="next"] span');
   if (go) {
     go.dataset.was ??= go.textContent;
-    go.textContent = box?.dataset.kind === 'taste' ? 'Rate taste first' : box?.dataset.kind === 'want' ? 'Tap the stars first' : 'Rate effort first';
+    go.textContent = why ? 'Tap what’s missing' : box?.dataset.kind === 'taste' ? 'Rate taste first' : box?.dataset.kind === 'want' ? 'Tap the stars first' : 'Rate effort first';
     clearTimeout(nudgeTimer);
     nudgeTimer = setTimeout(unnudge, 1600);
   }
@@ -830,7 +867,6 @@ function commit(s) {
       run.answers.bonusItem = {};
     }
   }
-  if (s.kind === 'feedback') { const fb = run.answers.feedback; fb.ms = (fb.ms ?? 0) + ms; }
 }
 
 // ── The recipe, over the dish ───────────────────────────────────────────────
@@ -839,6 +875,12 @@ const ingName = (i) => {
   return ids.map((x, n) => (n ? labelFor(x).toLowerCase() : labelFor(x))).join(' or ');
 };
 
+// 1.46.0 (pranjal: "the close is jittery"): the sheet moves only by transitions on transform,
+// with the iOS sheet curve, so open, close and a drag hand over to each other mid-move instead
+// of a keyframe fighting a transition. A grey grabber says it can be pulled down; pulling the
+// top, or the recipe when it's scrolled to the top, drags it, and a pull past a quarter of its
+// height or a flick closes it.
+let sheetDragged = 0;
 function openRecipe(id) {
   const d = dishOf(id);
   const meal = CATALOGUE.find((m) => m.id === id);
@@ -851,6 +893,7 @@ function openRecipe(id) {
   sheet.innerHTML = `
     <div class="rq-scrim" data-act="recipeclose"></div>
     <section class="rq-sheet-in" role="dialog" aria-modal="true" aria-label="${esc(d.name)} recipe">
+      <div class="rq-grab" aria-hidden="true"><i></i></div>
       <header class="rq-sheet-top">
         <div class="rq-sheet-meta">${meta.map((m) => `<span>${esc(m)}</span>`).join('')}${d.away ? `<span class="away">Needs ${esc(d.away)}</span>` : ''}</div>
         <button class="rq-icon" data-act="recipeclose" type="button" aria-label="Close recipe">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -866,17 +909,95 @@ function openRecipe(id) {
     </section>`;
   root.append(sheet);
   document.documentElement.classList.add('rq-sheet-open');
+  void sheet.offsetHeight; // start from below the screen, then slide up
+  sheet.classList.add('open');
+  dragSheet(sheet);
   sheet.querySelector('.rq-sheet-foot .rq-go').focus({ preventScroll: true });
 }
 
-function closeRecipe() {
-  const sheet = root.querySelector('.rq-sheet');
+/** Close, carrying on at the finger's speed when it was flicked (v in px/ms). */
+function closeRecipe(v = 0) {
+  const sheet = root.querySelector('.rq-sheet:not(.out)');
   sheetId = null;
   document.documentElement.classList.remove('rq-sheet-open');
-  shownAt = performance.now(); // the tap that closed it mustn't land on a star underneath
+  shownAt = performance.now();
   if (!sheet) return;
+  const pane = sheet.querySelector('.rq-sheet-in');
+  const scrim = sheet.querySelector('.rq-scrim');
+  const left = pane.offsetHeight - (new DOMMatrixReadOnly(getComputedStyle(pane).transform).m42 || 0);
+  const ms = v > 0.3 ? Math.max(160, Math.min(380, left / v)) : 380;
+  pane.style.transitionDuration = `${ms}ms`;
+  scrim.style.transitionDuration = `${ms}ms`;
+  pane.style.transform = '';
+  scrim.style.opacity = '';
   sheet.classList.add('out');
-  setTimeout(() => sheet.remove(), 200);
+  sheet.classList.remove('open');
+  let gone = false;
+  const done = () => { if (!gone) { gone = true; sheet.remove(); } };
+  pane.addEventListener('transitionend', (e) => { if (e.target === pane && e.propertyName === 'transform') done(); });
+  setTimeout(done, ms + 120);
+}
+
+function dragSheet(sheet) {
+  const pane = sheet.querySelector('.rq-sheet-in');
+  const scrim = sheet.querySelector('.rq-scrim');
+  const body = sheet.querySelector('.rq-sheet-body');
+  let y0 = null; let dy = 0; let h = 0; let pts = []; let live = false; let fromBody = false;
+  const begin = (y, inBody) => { y0 = y; dy = 0; h = pane.offsetHeight; pts = [[performance.now(), y]]; live = false; fromBody = inBody; };
+  const move = (y) => {
+    if (y0 == null) return false;
+    let d = y - y0;
+    if (!live) {
+      if (fromBody && (body.scrollTop > 0 || d < 0)) { y0 = null; return false; } // the recipe scrolls as usual
+      if (Math.abs(d) < 6) return false;
+      live = true;
+      y0 = y; d = 0;
+      pane.classList.add('drag');
+      scrim.classList.add('drag');
+    }
+    dy = d >= 0 ? d : -6 * Math.sqrt(-d); // a little give upwards, like iOS
+    pane.style.transform = `translate3d(0, ${dy.toFixed(1)}px, 0)`;
+    scrim.style.opacity = String(Math.max(0, 1 - Math.max(0, dy) / h));
+    pts.push([performance.now(), y]);
+    if (pts.length > 6) pts.shift();
+    return true;
+  };
+  const end = () => {
+    if (y0 == null) return;
+    y0 = null;
+    if (!live) return;
+    live = false;
+    sheetDragged = performance.now();
+    const [t1, a] = pts[0];
+    const [t2, b] = pts[pts.length - 1];
+    const v = t2 - t1 > 0 ? (b - a) / (t2 - t1) : 0;
+    pane.classList.remove('drag');
+    scrim.classList.remove('drag');
+    if (dy > h * 0.25 || (v > 0.5 && dy > 20)) return closeRecipe(v);
+    pane.style.transform = '';
+    scrim.style.opacity = '';
+  };
+  // The grabber and the top row: mouse or finger, through pointer events.
+  for (const el of [sheet.querySelector('.rq-grab'), sheet.querySelector('.rq-sheet-top')]) {
+    el.addEventListener('pointerdown', (e) => { if (e.button === 0) begin(e.clientY, false); });
+  }
+  const pm = (e) => move(e.clientY);
+  addEventListener('pointermove', pm, { passive: true });
+  addEventListener('pointerup', end, { passive: true });
+  addEventListener('pointercancel', end, { passive: true });
+  // The recipe itself: only when it's at the top and pulled down. Touch events, so the drag
+  // can take over from the scroll.
+  body.addEventListener('touchstart', (e) => begin(e.touches[0].clientY, true), { passive: true });
+  body.addEventListener('touchmove', (e) => { if (move(e.touches[0].clientY)) e.preventDefault(); }, { passive: false });
+  body.addEventListener('touchend', end, { passive: true });
+  body.addEventListener('touchcancel', end, { passive: true });
+  new MutationObserver((_, ob) => {
+    if (sheet.isConnected) return;
+    ob.disconnect();
+    removeEventListener('pointermove', pm);
+    removeEventListener('pointerup', end);
+    removeEventListener('pointercancel', end);
+  }).observe(root, { childList: true });
 }
 
 function onKey(e) {
