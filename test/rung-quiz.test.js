@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { loadKitchens } from '../src/brain/kitchen-test.js';
 import { buildInventory } from '../src/brain/inventory.js';
 import { TIER_ORDER } from '../src/brain/ranker.js';
-import { buildRungQuiz, encodeRungResult, scoreRungResult, rungMarcoChoices, parseRungResults, latestRuns, kendall, seededShuffle, PER_RUNG, RUNG_FORMAT, THIN_KITCHEN } from '../src/brain/rung-quiz.js';
+import { buildRungQuiz, encodeRungResult, scoreRungResult, rungMarcoChoices, parseRungResults, latestRuns, kendall, seededShuffle, PER_RUNG, RUNG_FORMAT, THIN_KITCHEN, DECK_MAX } from '../src/brain/rung-quiz.js';
 
 const cache = JSON.parse(readFileSync(new URL('../data/ingredient-cache.json', import.meta.url), 'utf8'));
 const [kitchen] = loadKitchens(readFileSync(new URL('../data/test-kitchens/kitchens.json', import.meta.url), 'utf8'));
@@ -13,7 +13,7 @@ const quiz = buildRungQuiz({ kitchen, inventory: buildInventory(kitchen.items, {
 test('quiz: rungs in order, capped, Marco then Pierre on sortable rungs, then White on all', () => {
   assert.ok(quiz.rungs.length >= 2);
   assert.deepEqual(quiz.rungs.map((g) => g.rung), [...quiz.rungs.map((g) => g.rung)].sort());
-  for (const g of quiz.rungs) assert.ok(g.dishes.length >= 2 && g.dishes.length <= PER_RUNG + 1);
+  for (const g of quiz.rungs) assert.ok(g.dishes.length >= 2 && g.dishes.length <= DECK_MAX);
   const sortable = quiz.rungs.filter((g) => g.dishes.length > 1).length;
   assert.deepEqual(quiz.steps.map((s) => s.section), [...Array(sortable).fill('marco'), ...Array(sortable).fill('pierre'), ...Array(quiz.rungs.length).fill('white')]);
 });
@@ -267,4 +267,20 @@ test('1.48.0: results still waiting go out as beacons when the page is closed, a
   assert.equal(beaconOutbox({}), 0, 'no beacon support: nothing to do');
   mem['harveys.relay.v1'] = JSON.stringify('off');
   assert.equal(beaconOutbox(nav), 0, 'no relay: beacons have nowhere to go');
+});
+
+// 1.49.0: Banana Singh (23 Nov) added paneer, a pan and a pressure cooker; 21 dishes were
+// cookable but rung 3's cap showed 8 and none with paneer. Free slots now fill to DECK_MAX,
+// dishes the additions unlocked first.
+test('a crowded rung shows every cookable dish, preferred dishes first', async () => {
+  const { buildRungQuiz, DECK_MAX } = await import('../src/brain/rung-quiz.js');
+  const { withConfirmed } = await import('../src/brain/confirm.js');
+  const { readFileSync } = await import('node:fs');
+  const r = JSON.parse(readFileSync(new URL('../data/kitchen-tests/taste-2026-11-23-kitchen_video_1-1n287-t-q94cu22qk.json', import.meta.url), 'utf8'));
+  const inv = withConfirmed(r.kitchen.items, r.confirm.have, {}, []);
+  const q = buildRungQuiz({ kitchen: r.kitchen, inventory: inv });
+  assert.equal(DECK_MAX, Infinity);
+  assert.equal(q.deck.length, q.total); // every cookable dish is rated
+  const p = buildRungQuiz({ kitchen: r.kitchen, inventory: inv, prefer: new Set(['stovetop_paneer_bhurji']) });
+  assert.ok(p.deck.includes('stovetop_paneer_bhurji'));
 });

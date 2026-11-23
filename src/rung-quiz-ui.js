@@ -17,6 +17,9 @@ import { withConfirmed, matchTyped, listedSplit, addChoices, FOOD_GROUPS } from 
 import { sendResult, flush, setToken, outbox } from './send.js';
 import { startFresh } from './fresh.js';
 import { blankFeedback, splitIdeas, norm } from './brain/feedback.js';
+import { rank } from './brain/ranker.js';
+import { MOMENT, TARGETS } from './brain/kitchen-test.js';
+import { DEFAULT_CONFIG } from './brain/config.js';
 
 const KEY = 'harveys.rq.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
@@ -194,13 +197,53 @@ function close() {
 /** The quiz again with what the tester confirmed: unticked items out, added ones in. */
 function rebuild(conf) {
   if (!opts.items) return;
+  const inv = invFor(conf);
+  // 1.49.0: dishes the tester's additions unlocked get the free rating slots first.
+  const before = mealsIn(opts.inventory);
+  const prefer = new Set([...mealsIn(inv)].filter((id) => !before.has(id)));
+  quiz = buildRungQuiz({ kitchen: kitchenIn, inventory: inv, prefer });
+}
+/** The kitchen as the confirm screens have it: unticked items out, added ones in. */
+function invFor(conf) {
   const gone = new Set((conf?.removed ?? []).map(norm));
   const kept = opts.items.filter((i) => !gone.has(norm(typeof i === 'string' ? i : i?.name)));
   const typed = conf?.typed ?? [];
   const ids = [...new Set([...(conf?.have ?? []), ...typed.filter((t) => t.id).map((t) => t.id)])];
   const extras = typed.filter((t) => !t.id).map((t) => t.text);
-  const inv = ids.length || extras.length || gone.size ? withConfirmed(kept, ids, { cache: opts.cache, missingBasics: opts.missingBasics }, extras) : opts.inventory;
-  quiz = buildRungQuiz({ kitchen: kitchenIn, inventory: inv });
+  return ids.length || extras.length || gone.size ? withConfirmed(kept, ids, { cache: opts.cache, missingBasics: opts.missingBasics }, extras) : opts.inventory;
+}
+/** Ids of the dishes this kitchen can make, counted the way the reveal counts them. */
+const mealsIn = (inv) => new Set(rank({
+  inventory: inv, targets: TARGETS, context: { hour: MOMENT.hour, weekday: MOMENT.weekday, kind: quiz?.kind ?? 'meal' }, catalogue: CATALOGUE, config: DEFAULT_CONFIG,
+}).ranked.map((r) => r.meal.id));
+
+// ── "+3 meal ideas" (1.49.0) ────────────────────────────────────────────────
+// pranjal, 23 Nov: each food or cookware the tester ticks shows, for a moment, how many more
+// dishes it opens up given everything else ticked. Nothing shows when it opens up none.
+const snap = () => { const d = draft(); return { have: [...d.have], typed: d.typed.map((t) => ({ ...t })), removed: [...d.removed] }; };
+let toastEl = null;
+let toastT = 0;
+function unlockToast(before) {
+  if (!opts.items) return;
+  let n = 0;
+  try {
+    const was = mealsIn(invFor(before));
+    n = [...mealsIn(invFor(draft()))].filter((id) => !was.has(id)).length;
+  } catch { return; }
+  if (n < 1) { toastEl?.classList.remove('show'); return; }
+  if (!toastEl) {
+    toastEl = document.createElement('div');
+    toastEl.className = 'rq-toast';
+    toastEl.setAttribute('role', 'status');
+    toastEl.setAttribute('aria-live', 'polite');
+    document.body.append(toastEl);
+  }
+  toastEl.textContent = `+${n} meal ${n === 1 ? 'idea' : 'ideas'}`;
+  toastEl.classList.remove('show');
+  void toastEl.offsetWidth; // restart the pop on a quick second tap
+  toastEl.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => toastEl.classList.remove('show'), 1600);
 }
 const confKey = (c) => JSON.stringify([[...(c?.have ?? [])].sort(), (c?.typed ?? []).map((t) => t.id ?? t.text).sort(), [...(c?.removed ?? [])].map(norm).sort()]);
 
@@ -384,6 +427,7 @@ function toggleOpt(el, side) {
 function typeAdd(form) {
   const input = form.querySelector('input');
   const d = draft();
+  const before = snap();
   for (const text of splitIdeas(input.value)) {
     const m = matchTyped(text);
     if (!m.text) continue;
@@ -395,6 +439,7 @@ function typeAdd(form) {
   buzz();
   save();
   render();
+  unlockToast(before);
 }
 
 // ── Thinking and the count ──────────────────────────────────────────────────
@@ -422,8 +467,10 @@ function thinkScreen() {
 }
 
 function revealScreen(back) {
-  const n = quiz.cookable;
-  const more = quiz.deck.length - n;
+  // 1.49.0: the count is every dish the kitchen can make; the tester rates up to DECK_MAX of them.
+  const more = quiz.deck.length - quiz.cookable;
+  const n = Math.max(quiz.total ?? 0, quiz.cookable);
+  const ideas = n + more;
   if (!quiz.deck.length) {
     return {
       body: `
@@ -442,10 +489,10 @@ function revealScreen(back) {
     body: `
       <div class="rq-hero reveal">
         <p class="rq-eyebrow">Harvey’s came up with</p>
-        <h1 class="rq-count"><span class="rq-num-big" data-to="${quiz.deck.length}">${quiz.deck.length}</span><span>meal and snack ${quiz.deck.length === 1 ? 'idea' : 'ideas'} for your kitchen</span></h1>
+        <h1 class="rq-count"><span class="rq-num-big" data-to="${ideas}">${ideas}</span><span>meal and snack ${ideas === 1 ? 'idea' : 'ideas'} for your kitchen</span></h1>
         ${more ? `<p class="rq-lead">${n} you can make now, ${more} need${more === 1 ? 's' : ''} one more thing.</p>` : ''}
         <div class="rq-explain rq-seq" style="--s:1">
-          <p class="rq-explain-q">Now rate each idea, one at a time</p>
+          <p class="rq-explain-q">${ideas > quiz.deck.length ? `Now rate ${quiz.deck.length} of them, one at a time` : 'Now rate each idea, one at a time'}</p>
           <p class="rq-explain-n">Give each one as many stars as you like. The stars are for the food, not your kitchen.</p>
           ${demo('effort', 'Effort')}
           ${demo('taste', 'Taste')}
@@ -778,15 +825,19 @@ function onClick(e) {
   if (act === 'untick') {
     const d = draft();
     const name = el.dataset.name;
+    const before = snap();
     d.removed = isRemoved(name) ? d.removed.filter((n) => norm(n) !== norm(name)) : [...d.removed, name];
     save();
     el.classList.toggle('on', !isRemoved(name));
     el.setAttribute('aria-pressed', String(!isRemoved(name)));
+    if (!isRemoved(name)) unlockToast(before);
     return;
   }
   if (act === 'addopt' || act === 'typeddrop') {
+    const before = snap();
     toggleOpt(el, s.side);
     save();
+    unlockToast(before);
     if (act === 'typeddrop' || !panel) return render(); // the Added row on the list changes shape
     const on = !el.classList.contains('on');
     el.classList.toggle('on', on);

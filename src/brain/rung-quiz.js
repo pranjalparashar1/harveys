@@ -32,6 +32,13 @@ export const PER_RUNG = 5;
 export const THIN_KITCHEN = 4;
 /** Most dishes a thin kitchen's quiz grows to, cookable and one-away together. */
 export const THIN_FILL = 8;
+/**
+ * 1.49.0: most dishes a tester rates. PER_RUNG alone left Banana Singh (23 Nov) rating 8 of
+ * 21 cookable dishes: 18 sat on rung 3, so the paneer dishes she unlocked never showed. Free
+ * slots now go to the rest, dishes the tester's added items unlocked (`prefer`) first.
+ */
+// pranjal, 23 Nov: "let them rate all dishes, it's fine": no cap, every cookable dish is rated.
+export const DECK_MAX = Infinity;
 export const CRITERIA = [
   { id: 'macros', label: 'Macros' },
   { id: 'difficulty', label: 'Effort' },
@@ -104,7 +111,7 @@ const shortHow = (meal) => {
  * dishes; past that the bigger rung's last dish makes room. Only a kitchen with one dish in
  * all leaves a group of one (White only, no sorts).
  */
-export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdicts = PIERRE_SEED, config = DEFAULT_CONFIG }) {
+export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdicts = PIERRE_SEED, config = DEFAULT_CONFIG, prefer = null }) {
   const id = kitchenId(kitchen);
   const go = (kind) => rank({ inventory, targets: TARGETS, context: { hour: MOMENT.hour, weekday: MOMENT.weekday, kind }, catalogue, verdicts, config });
   let kind = 'meal';
@@ -132,6 +139,20 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdi
     const big = a.items.length >= b.items.length ? a : b;
     while (a.items.length + b.items.length > PER_RUNG + 1) big.items.pop();
     groups.splice(Math.min(i, j), 2, { rungs: [...a.rungs, ...b.rungs], items: [...a.items, ...b.items] });
+  }
+  // Top up to DECK_MAX from the cookable dishes the rung cap left out, added-item dishes first.
+  const taken = new Set(groups.flatMap((g) => g.items.map((x) => x.meal.id)));
+  const pref = (x) => (prefer?.has(x.meal.id) ? 0 : 1);
+  const rest = pool.filter((x) => !x.away && !taken.has(x.meal.id)).sort((a, b) => pref(a) - pref(b) || byRungOrder(a, b));
+  let size = taken.size;
+  for (const x of rest) {
+    if (size >= DECK_MAX) break;
+    const grp = groups.find((g) => g.rungs.includes(x.rung));
+    if (!grp) continue;
+    grp.items.push(x);
+    // An unmerged group's items are byRung's own array: push once, not twice.
+    if (byRung[x.rung] !== grp.items) (byRung[x.rung] ??= []).push(x);
+    size += 1;
   }
   const dishes = {};
   const rungs = groups.map((grp) => {
@@ -166,7 +187,7 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdi
   const deck = Object.values(dishes).sort((a, b) => a.rung - b.rung || (a.away ? 1 : 0) - (b.away ? 1 : 0) || a.harveys.order - b.harveys.order || a.id.localeCompare(b.id)).map((d) => d.id);
   const rateOrder = seededShuffle(deck, `${id}|rate`);
   const bonus = bonusPick({ r, kind, inventory, catalogue, verdicts, config, shown: new Set(deck) });
-  return { id, kitchen, rungs, dishes, steps, usage, deck, rateOrder, cookable: deck.filter((d) => !dishes[d].away).length, bonus };
+  return { id, kitchen, kind, rungs, dishes, steps, usage, deck, rateOrder, cookable: deck.filter((d) => !dishes[d].away).length, total: r.ranked.length, bonus };
 }
 
 /**
