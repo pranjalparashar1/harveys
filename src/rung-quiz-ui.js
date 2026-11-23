@@ -120,7 +120,9 @@ export function startRungQuiz({ kitchen, inventory, version, source, name = '', 
   listed = items ? listedSplit(items) : { food: [], kit: [] };
   choices = items ? addChoices(items, { cache, missingBasics }) : { food: [], kit: [], noStove: false };
   // 1.40.0: a run saved by an older version starts again: its screens no longer line up.
-  if (run && !run.sent && run.v !== version) run = null;
+  // 1.47.1: only a minor or major bump restarts; a patch (a fix like 1.47.1) keeps the run.
+  const minor = (v) => String(v ?? '').split('.').slice(0, 2).join('.');
+  if (run && !run.sent && minor(run.v) !== minor(version)) run = null;
   if (run && !run.sent && run.answers?.confirm) rebuild(run.answers.confirm);
   // A sent run belongs to the last person: whoever opens it next is someone new.
   if (!run || run.sent) run = store.runs[quiz.id] = freshRun(name);
