@@ -78,6 +78,7 @@ export const FOODS = {
   turmeric: { label: 'Turmeric', group: 'spice', synonyms: ['turmeric', 'haldi'] },
   red_chilli_powder: { label: 'Red chilli powder', group: 'spice', synonyms: ['red chilli powder', 'chilli powder', 'lal mirch', 'kashmiri chilli'] },
   garam_masala: { label: 'Garam masala', group: 'spice', synonyms: ['garam masala', 'tikka masala', 'kitchen king'] },
+  cumin: { label: 'Cumin (jeera)', group: 'spice', synonyms: ['cumin', 'cumin seeds', 'jeera', 'zeera', 'cumin powder', 'jeera powder'] },
   mustard_seeds: { label: 'Mustard seeds', group: 'spice', synonyms: ['mustard seeds', 'rai', 'sarson'] },
 };
 

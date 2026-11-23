@@ -1,0 +1,188 @@
+[
+ {
+  "kitchen": "Kitchen, video_1",
+  "items": [
+   {
+    "name": "soya chunks",
+    "category": "protein",
+    "confidence": "sure"
+   },
+   {
+    "name": "eggs",
+    "category": "protein",
+    "confidence": "sure"
+   },
+   {
+    "name": "protein powder",
+    "category": "protein",
+    "confidence": "sure"
+   },
+   {
+    "name": "skyr",
+    "category": "dairy",
+    "confidence": "sure"
+   },
+   {
+    "name": "curd",
+    "category": "dairy",
+    "confidence": "sure"
+   },
+   {
+    "name": "milk",
+    "category": "dairy",
+    "confidence": "sure"
+   },
+   {
+    "name": "pasta",
+    "category": "grain",
+    "confidence": "sure"
+   },
+   {
+    "name": "rice",
+    "category": "grain",
+    "confidence": "sure"
+   },
+   {
+    "name": "peanut butter",
+    "category": "fat",
+    "confidence": "sure"
+   },
+   {
+    "name": "honey",
+    "category": "sweet",
+    "confidence": "sure"
+   },
+   {
+    "name": "chocolate syrup",
+    "category": "sweet",
+    "confidence": "sure"
+   },
+   {
+    "name": "tiramisu",
+    "category": "sweet",
+    "confidence": "sure"
+   },
+   {
+    "name": "tomato ketchup",
+    "category": "condiment",
+    "confidence": "sure"
+   },
+   {
+    "name": "tandoori sauce",
+    "category": "condiment",
+    "confidence": "sure"
+   },
+   {
+    "name": "chipotle sauce",
+    "category": "condiment",
+    "confidence": "sure"
+   },
+   {
+    "name": "mayonnaise",
+    "category": "condiment",
+    "confidence": "sure"
+   },
+   {
+    "name": "red chilli flakes",
+    "category": "spice",
+    "confidence": "sure"
+   },
+   {
+    "name": "black pepper",
+    "category": "spice",
+    "confidence": "sure"
+   },
+   {
+    "name": "rock salt",
+    "category": "spice",
+    "confidence": "sure"
+   },
+   {
+    "name": "salt",
+    "category": "spice",
+    "confidence": "likely"
+   },
+   {
+    "name": "cumin seeds",
+    "category": "spice",
+    "confidence": "sure"
+   },
+   {
+    "name": "apples",
+    "category": "fruit",
+    "confidence": "sure"
+   },
+   {
+    "name": "bananas",
+    "category": "fruit",
+    "confidence": "sure"
+   },
+   {
+    "name": "chewing gum",
+    "category": "snack",
+    "confidence": "sure"
+   },
+   {
+    "name": "dates",
+    "category": "fruit",
+    "confidence": "sure"
+   },
+   {
+    "name": "coffee",
+    "category": "drink",
+    "confidence": "sure"
+   },
+   {
+    "name": "soda",
+    "category": "drink",
+    "confidence": "sure"
+   },
+   {
+    "name": "water",
+    "category": "drink",
+    "confidence": "sure"
+   },
+   {
+    "name": "air fryer",
+    "category": "appliance",
+    "confidence": "sure"
+   },
+   {
+    "name": "induction cooktop",
+    "category": "appliance",
+    "confidence": "sure"
+   },
+   {
+    "name": "refrigerator",
+    "category": "appliance",
+    "confidence": "sure"
+   },
+   {
+    "name": "milk frother",
+    "category": "appliance",
+    "confidence": "sure"
+   },
+   {
+    "name": "kitchen scale",
+    "category": "appliance",
+    "confidence": "sure"
+   },
+   {
+    "name": "steel pot",
+    "category": "cookware",
+    "confidence": "sure"
+   }
+  ],
+  "diet": "veg+eggs",
+  "stove": {
+   "type": "induction",
+   "burners": 1
+  },
+  "not_seen": [
+   "gas stove",
+   "closed drawers",
+   "upper cabinets"
+  ],
+  "notes": "no gas stove visible"
+ }
+]
