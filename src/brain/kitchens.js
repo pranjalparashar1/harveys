@@ -4,6 +4,9 @@
 
 import { FOODS, EQUIPMENT, ASSUMED_BASICS, labelFor } from './vocabulary.js';
 import { profileOf } from './pantry.js';
+import { matchName } from './inventory.js';
+
+const STOVE_IDS = new Set(['induction', 'gas_stove']);
 
 const KNOWN = (id) => FOODS[id] || EQUIPMENT[id] || ASSUMED_BASICS[id];
 
@@ -26,8 +29,13 @@ export function importKitchens(input) {
     }
     for (const it of [...(Array.isArray(k.items) ? k.items : []), ...(Array.isArray(k.other) ? k.other : [])]) {
       if (typeof it === 'string' && it.trim()) push({ name: it.trim().slice(0, 80) });
-      else if (it && typeof it.name === 'string' && it.name.trim()) push({ name: it.name.trim().slice(0, 80), category: typeof it.category === 'string' ? it.category : 'other' });
+      else if (it && typeof it.name === 'string' && it.name.trim()) push({ name: it.name.trim().slice(0, 80), category: typeof it.category === 'string' ? it.category : 'other', ...(typeof it.confidence === 'string' ? { confidence: it.confidence } : {}) });
     }
+    // Prompt v2 (PR 94) reports the stove on its own: {"stove": {"type": "induction", "burners": 1}}.
+    // A stove the agent saw there but left out of items still counts.
+    const stove = typeof k.stove === 'string' ? k.stove : typeof k.stove?.type === 'string' ? k.stove.type : '';
+    const stoveName = /induction/i.test(stove) ? 'induction cooktop' : /gas|lpg|burner/i.test(stove) ? 'gas stove' : '';
+    if (stoveName && !items.some((i) => STOVE_IDS.has(matchName(i.name)))) push({ name: stoveName, category: 'appliance' });
     return {
       kitchen: typeof k.kitchen === 'string' && k.kitchen.trim() ? k.kitchen.trim() : `Kitchen ${i + 1}`,
       diet: typeof k.diet === 'string' ? k.diet : 'unknown',

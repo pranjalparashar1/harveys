@@ -49,7 +49,7 @@ test('typed items go to the closest known thing; nothing close stays as typed', 
   assert.equal(id('tava'), 'tawa');
   assert.equal(id('gas'), 'gas_stove');
   assert.equal(matchTyped('indction').how, 'fuzzy');
-  for (const t of ['soy sauce', 'hing', 'jeera', 'a', '']) assert.equal(id(t), null, t);
+  for (const t of ['soy sauce', 'hing', 'tamarind', 'a', '']) assert.equal(id(t), null, t);
   assert.equal(matchTyped('  Soy   sauce ').text, 'Soy sauce');
 });
 

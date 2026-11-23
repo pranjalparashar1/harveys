@@ -5,6 +5,7 @@ import { FOODS, EQUIPMENT, ASSUMED_BASICS, ASSUMED_STAPLES } from './vocabulary.
 import { profileOf, roleToken, ID_ROLES } from './pantry.js';
 
 const ALL = { ...FOODS, ...EQUIPMENT, ...ASSUMED_BASICS };
+const KIT_CATEGORIES = new Set(['appliance', 'cookware', 'utensil', 'equipment', 'tool', 'kit']);
 
 /** Synonym index, longest phrase first so "peanut butter" beats "butter". */
 export const SYNONYMS = Object.entries(ALL)
@@ -59,7 +60,9 @@ export function buildInventory(items, options = {}) {
   for (const item of items ?? []) {
     const name = typeof item === 'string' ? item : item?.name;
     const canonical = typeof item === 'object' ? item?.canonical : null;
-    const id = canonical && ALL[canonical] ? canonical : matchName(name) ?? matchName(canonical);
+    let id = canonical && ALL[canonical] ? canonical : matchName(name) ?? matchName(canonical);
+    // A kit item never stands in for a food: a "milk frother" is not milk (1.47.0).
+    if (id && FOODS[id] && KIT_CATEGORIES.has(String(item?.category ?? '').toLowerCase())) id = null;
     if (id) {
       have.add(id);
       matched.push({ name: name ?? id, id });
