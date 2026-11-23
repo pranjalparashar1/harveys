@@ -1,0 +1,677 @@
+{
+ "format": "harveys-rung-quiz/1",
+ "version": "1.48.0",
+ "at": "2026-11-23T11:38:55.779Z",
+ "source": "link",
+ "kitchenId": "kitchen_video_1-1n287",
+ "testerId": "t-q94cu22qk",
+ "runNo": 2,
+ "tester": "Banana Singh",
+ "kitchen": {
+  "kitchen": "Kitchen, video_1",
+  "diet": "veg+eggs",
+  "notes": "many clipped or unlabelled bags and containers; no fridge visible",
+  "items": [
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "ghee",
+    "category": "dairy"
+   },
+   {
+    "name": "oats",
+    "category": "grain"
+   },
+   {
+    "name": "brown bread",
+    "category": "bread"
+   },
+   {
+    "name": "rusk",
+    "category": "bread"
+   },
+   {
+    "name": "black salt",
+    "category": "spice"
+   },
+   {
+    "name": "cashews",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "almonds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "peanuts",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "dish soap",
+    "category": "other"
+   },
+   {
+    "name": "blender",
+    "category": "appliance"
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance"
+   },
+   {
+    "name": "gas stove",
+    "category": "appliance"
+   },
+   {
+    "name": "water purifier",
+    "category": "appliance"
+   },
+   {
+    "name": "steel pot",
+    "category": "cookware"
+   }
+  ]
+ },
+ "moment": "Weeknight, 9 PM, tired",
+ "targets": {
+  "protein": 60,
+  "calories": 1200,
+  "fiber": 20
+ },
+ "directions": {
+  "marco": "easiest first",
+  "pierre": "tastiest first",
+  "white": "tap order = preference"
+ },
+ "unmovedConfirmed": true,
+ "confirm": {
+  "asked": [],
+  "have": [
+   "onion",
+   "banana",
+   "tomato",
+   "ginger",
+   "garlic",
+   "black_pepper",
+   "turmeric",
+   "red_chilli_powder",
+   "chaat_masala",
+   "cumin",
+   "garam_masala",
+   "ketchup",
+   "honey",
+   "maggi",
+   "protein_bread",
+   "curd",
+   "paneer",
+   "cheese_slices",
+   "butter",
+   "coffee",
+   "frying_pan",
+   "pressure_cooker"
+  ],
+  "typed": [
+   {
+    "text": "Coriander powder",
+    "id": null,
+    "how": null
+   },
+   {
+    "text": "Chilli sauce",
+    "id": null,
+    "how": null
+   }
+  ],
+  "unmatched": [
+   "Coriander powder",
+   "Chilli sauce"
+  ],
+  "burners": null,
+  "noStove": false,
+  "removed": [],
+  "listed": 16,
+  "ms": 23192
+ },
+ "ingredients": {
+  "used": [
+   "eggs",
+   "milk",
+   "oats",
+   "black salt",
+   "peanuts",
+   "electric kettle",
+   "gas stove",
+   "steel pot"
+  ],
+  "unused": [
+   {
+    "name": "ghee",
+    "category": "dairy",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Butter omelette",
+      "why": "cookable, but #8 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Tawa paneer cheese sandwich",
+      "why": "cookable, but #16 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Classic paneer bhurji",
+      "why": "cookable, but #10 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Plain egg bhurji (no chopping)",
+      "why": "cookable, but #14 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "brown bread",
+    "category": "bread",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Boiled egg sandwich",
+      "why": "cookable, but #7 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Tawa paneer cheese sandwich",
+      "why": "cookable, but #16 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Plain egg bhurji (no chopping)",
+      "why": "cookable, but #14 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Bread omelette",
+      "why": "cookable, but #6 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "rusk",
+    "category": "bread",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "cashews",
+    "category": "nuts_seeds",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "made with Peanuts instead"
+     },
+     {
+      "dish": "Curd, banana and peanut bowl",
+      "why": "made with Peanuts instead"
+     }
+    ]
+   },
+   {
+    "name": "almonds",
+    "category": "nuts_seeds",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "made with Peanuts instead"
+     },
+     {
+      "dish": "Curd, banana and peanut bowl",
+      "why": "made with Peanuts instead"
+     }
+    ]
+   },
+   {
+    "name": "dish soap",
+    "category": "other",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "blender",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "water purifier",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   }
+  ],
+  "gaps": [
+   "rusk",
+   "dish soap",
+   "blender",
+   "water purifier"
+  ],
+  "blockers": [
+   {
+    "thing": "Rice",
+    "dishes": [
+     "Pressure-cooker paneer pulao",
+     "Egg fried rice",
+     "Curd rice",
+     "Egg rice in one pot"
+    ]
+   },
+   {
+    "thing": "Air fryer",
+    "dishes": [
+     "Air-fryer protein bread cheese toast",
+     "Air-fryer egg-in-a-hole on protein bread",
+     "Air-fryer paneer tikka"
+    ]
+   },
+   {
+    "thing": "Chickpeas (boiled or canned)",
+    "dishes": [
+     "Chana chaat",
+     "Pressure-cooker chole"
+    ]
+   },
+   {
+    "thing": "Microwave",
+    "dishes": [
+     "Microwave paneer bhurji (no chopping)",
+     "Microwave mug omelette"
+    ]
+   },
+   {
+    "thing": "Poha",
+    "dishes": [
+     "Kanda poha with peanuts",
+     "Peanut poha in a pot (no chopping)"
+    ]
+   }
+  ]
+ },
+ "dishes": {
+  "curd_peanut_banana_bowl": {
+   "name": "Curd, banana and peanut bowl",
+   "rung": 1,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 0.526,
+    "score": 0.501
+   },
+   "raw": {
+    "protein": 17,
+    "tools": 1,
+    "handsOn": 2,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 1,
+    "attention": 0,
+    "cleanup": 1
+   }
+  },
+  "kettle_oats": {
+   "name": "Kettle oats with milk and peanuts",
+   "rung": 2,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 0.876,
+    "score": -0.022
+   },
+   "raw": {
+    "protein": 16,
+    "tools": 2,
+    "handsOn": 2,
+    "waiting": 5,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 0,
+    "cleanup": 1
+   }
+  },
+  "maggi_cheese": {
+   "name": "Cheese Maggi",
+   "rung": 3,
+   "harveys": {
+    "order": 0,
+    "tier": "crave",
+    "friction": 1.163,
+    "score": -0.876
+   },
+   "raw": {
+    "protein": 10,
+    "tools": 2,
+    "handsOn": 1.5,
+    "waiting": 5,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 1,
+    "cleanup": 2
+   }
+  },
+  "egg_drop_maggi": {
+   "name": "Maggi with an egg stirred in",
+   "rung": 3,
+   "harveys": {
+    "order": 1,
+    "tier": "pass",
+    "friction": 1.066,
+    "score": -0.31
+   },
+   "raw": {
+    "protein": 18,
+    "tools": 2,
+    "handsOn": 2,
+    "waiting": 5,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 1,
+    "cleanup": 1
+   }
+  },
+  "maggi": {
+   "name": "Maggi",
+   "rung": 3,
+   "harveys": {
+    "order": 2,
+    "tier": "pass",
+    "friction": 1.071,
+    "score": -0.969
+   },
+   "raw": {
+    "protein": 6,
+    "tools": 2,
+    "handsOn": 1,
+    "waiting": 4,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 1,
+    "attention": 1,
+    "cleanup": 2
+   }
+  },
+  "boiled_eggs": {
+   "name": "Boiled eggs with salt and pepper",
+   "rung": 3,
+   "harveys": {
+    "order": 3,
+    "tier": "pass",
+    "friction": 1.662,
+    "score": -1.047
+   },
+   "raw": {
+    "protein": 25,
+    "tools": 1,
+    "handsOn": 5,
+    "waiting": 14,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 2
+   }
+  },
+  "pot_milk_oats": {
+   "name": "Oats cooked in milk",
+   "rung": 3,
+   "harveys": {
+    "order": 4,
+    "tier": "pass",
+    "friction": 1.504,
+    "score": -1.071
+   },
+   "raw": {
+    "protein": 15,
+    "tools": 2,
+    "handsOn": 3,
+    "waiting": 5,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 2,
+    "cleanup": 2
+   }
+  },
+  "maggi_fried_egg": {
+   "name": "Maggi with a fried egg",
+   "rung": 4,
+   "harveys": {
+    "order": 0,
+    "tier": "crave",
+    "friction": 2.335,
+    "score": -2.427
+   },
+   "raw": {
+    "protein": 12,
+    "tools": 4,
+    "handsOn": 4.5,
+    "waiting": 4,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 2,
+    "cleanup": 4.5
+   }
+  }
+ },
+ "marco": [],
+ "pierre": [],
+ "white": [],
+ "flow": "stars",
+ "order": [
+  "maggi",
+  "curd_peanut_banana_bowl",
+  "kettle_oats",
+  "maggi_fried_egg",
+  "boiled_eggs",
+  "maggi_cheese",
+  "egg_drop_maggi",
+  "pot_milk_oats"
+ ],
+ "stars": [
+  {
+   "id": "curd_peanut_banana_bowl",
+   "effort": 5,
+   "taste": 4,
+   "cant": null,
+   "ms": 6286
+  },
+  {
+   "id": "kettle_oats",
+   "effort": 4,
+   "taste": 3,
+   "cant": null,
+   "ms": 8668
+  },
+  {
+   "id": "maggi_cheese",
+   "effort": 4,
+   "taste": 4,
+   "cant": null,
+   "ms": 3047
+  },
+  {
+   "id": "egg_drop_maggi",
+   "effort": 3,
+   "taste": 3,
+   "cant": null,
+   "ms": 3361
+  },
+  {
+   "id": "maggi",
+   "effort": 4,
+   "taste": 4,
+   "cant": null,
+   "ms": 10546
+  },
+  {
+   "id": "boiled_eggs",
+   "effort": 3,
+   "taste": 3,
+   "cant": null,
+   "ms": 8703
+  },
+  {
+   "id": "pot_milk_oats",
+   "effort": 4,
+   "taste": 3,
+   "cant": null,
+   "ms": 3131
+  },
+  {
+   "id": "maggi_fried_egg",
+   "effort": 3,
+   "taste": 4,
+   "cant": null,
+   "ms": 37557
+  }
+ ],
+ "difficulty": {
+  "scale": [
+   "Effortless",
+   "Easy",
+   "Some effort",
+   "Hard work",
+   "Too much tonight"
+  ],
+  "from": "effort stars, level = 6 - stars",
+  "ratings": [
+   {
+    "id": "curd_peanut_banana_bowl",
+    "level": 1,
+    "ms": 6286
+   },
+   {
+    "id": "kettle_oats",
+    "level": 2,
+    "ms": 8668
+   },
+   {
+    "id": "maggi_cheese",
+    "level": 2,
+    "ms": 3047
+   },
+   {
+    "id": "egg_drop_maggi",
+    "level": 3,
+    "ms": 3361
+   },
+   {
+    "id": "maggi",
+    "level": 2,
+    "ms": 10546
+   },
+   {
+    "id": "boiled_eggs",
+    "level": 3,
+    "ms": 8703
+   },
+   {
+    "id": "pot_milk_oats",
+    "level": 2,
+    "ms": 3131
+   },
+   {
+    "id": "maggi_fried_egg",
+    "level": 3,
+    "ms": 37557
+   }
+  ],
+  "stoppedEarly": false
+ },
+ "bonus": {
+  "id": "airfryer_protein_cheese_toast",
+  "name": "Air-fryer protein bread cheese toast",
+  "rung": 2,
+  "need": {
+   "id": "air_fryer",
+   "label": "Air fryer",
+   "kind": "appliance"
+  },
+  "unlocks": [
+   "airfryer_protein_cheese_toast",
+   "airfryer_egg_in_toast",
+   "airfryer_paneer_tikka"
+  ],
+  "harveys": {
+   "tier": "pass",
+   "friction": 0.845,
+   "score": 0.285
+  },
+  "raw": {
+   "protein": 20,
+   "tools": 1,
+   "handsOn": 1.5,
+   "waiting": 5,
+   "prePrepMinutes": 0,
+   "peels": 0,
+   "cuts": 0,
+   "steps": 2,
+   "attention": 1,
+   "cleanup": 1
+  },
+  "effort": 5,
+  "taste": 5,
+  "cant": null,
+  "want": 3,
+  "have": false,
+  "ms": 7135
+ },
+ "feedback": {
+  "chips": [],
+  "skipped": true,
+  "allGood": false,
+  "wrongItems": [],
+  "missedItems": [],
+  "dishIdeas": [],
+  "tooHard": [],
+  "wouldntEat": [],
+  "wouldntWhy": [],
+  "confusing": [],
+  "note": "",
+  "makes": "",
+  "ms": null
+ }
+}
