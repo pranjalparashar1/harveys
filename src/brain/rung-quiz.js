@@ -258,6 +258,8 @@ const starsOut = (quiz, answers) => {
   const rated = stars.filter((x) => x.effort);
   return {
     flow: 'stars',
+    // 1.48.0: the order the dishes were rated in (before, Harvey's easiest-first deck).
+    order: quiz.rateOrder ?? deck,
     stars,
     // Effort stars on the old difficulty scale, so rungMarcoChoices and the reports read them as before.
     difficulty: rated.length ? { scale: DIFFICULTY.map((x) => x.label), from: 'effort stars, level = 6 - stars', ratings: rated.map((x) => ({ id: x.id, level: 6 - x.effort, ms: x.ms })), stoppedEarly: rated.length < deck.length } : null,

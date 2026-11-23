@@ -133,13 +133,38 @@ export async function sendResult(res) {
   write(OUTBOX_KEY, [...outbox().filter((x) => x.path !== item.path), item]);
   const { auth, rejected } = await flush();
   if (!outbox().some((x) => x.path === item.path)) return rejected && read('harveys.rejected.v1', []).some((x) => x.path === item.path) ? 'failed' : 'sent';
+  // 1.48.0: a blip (a lift, a weak bar) usually clears in seconds; don't wait 30 s to retry.
+  if (!auth) for (const ms of [3e3, 10e3]) setTimeout(() => { if (outbox().length) flush(); }, ms);
   return auth ? 'auth' : 'queued';
+}
+
+/**
+ * 1.48.0: the page is going away (tab closed, app switched, phone locked) with results still
+ * waiting. The end screen already said "Saved. Thank you", so most testers close it there and
+ * never come back, and the outbox only retried while the page was open. A beacon is the one
+ * request a browser keeps sending after the page is gone. It can't report back, so the item
+ * stays in the outbox: if it did land, the next flush gets "already there" from the relay and
+ * drops it. → how many beacons went out.
+ */
+export function beaconOutbox(nav = globalThis.navigator) {
+  const url = relayUrl();
+  if (!url || typeof nav?.sendBeacon !== 'function') return 0;
+  let n = 0;
+  let bytes = 0;
+  for (const item of outbox()) {
+    bytes += item.content.length;
+    if (bytes > 60_000) break; // browsers cap what beacons may carry at once (64 KB)
+    try { if (nav.sendBeacon(url, item.content)) n++; } catch { /* no beacon */ }
+  }
+  return n;
 }
 
 if (typeof window !== 'undefined') {
   captureToken();
   flush();
   window.addEventListener('online', () => { flush(); });
+  addEventListener('pagehide', () => beaconOutbox());
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') beaconOutbox(); });
   // A friend may never open the page again: keep trying while it's open.
   setInterval(() => { if (outbox().length && navigator.onLine !== false) flush(); }, 30e3);
 }

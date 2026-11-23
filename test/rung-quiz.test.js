@@ -186,7 +186,11 @@ test('1.43.0 recipe test: effort and taste stars, can’t-make reasons, effort s
   assert.equal(res.format, RUNG_FORMAT, 'same format: the live relay takes it unchanged');
   assert.equal(res.flow, 'stars');
   assert.equal(res.stars.length, n, 'only dishes in the quiz');
-  assert.deepEqual(res.stars.map((x) => x.id), quiz.deck, 'in the order shown');
+  assert.deepEqual(res.stars.map((x) => x.id), quiz.deck, 'in Harvey’s deck order');
+  // 1.48.0: rated in the seeded shuffle, not Harvey's order, and the result says which order that was.
+  assert.deepEqual(res.order, quiz.rateOrder);
+  assert.deepEqual([...res.order].sort(), [...quiz.deck].sort());
+  assert.notDeepEqual(res.order, quiz.deck, 'not Harvey’s easiest-first order');
   assert.equal(res.stars[n - 1].cant, 'equipment');
   assert.equal(res.stars[n - 1].effort, null);
   assert.ok(!('cantOpen' in res.stars[0]));
@@ -247,4 +251,20 @@ test('1.46.0: what’s missing can be one or both reasons, and a dish they can�
   assert.equal(res.stars[0].taste, 4);
   assert.deepEqual(res.stars[1].cants, ['equipment'], 'unknown reasons dropped');
   assert.deepEqual(scoreRungResult(res).stars.cant, { ingredients: 1, equipment: 2 });
+});
+
+test('1.48.0: results still waiting go out as beacons when the page is closed, and stay queued', async () => {
+  const mem = {};
+  globalThis.localStorage = { getItem: (k) => mem[k] ?? null, setItem: (k, v) => { mem[k] = String(v); }, removeItem: (k) => { delete mem[k]; } };
+  const { beaconOutbox, outbox, RELAY_URL } = await import('../src/send.js');
+  const big = 'x'.repeat(25_000);
+  mem['harveys.outbox.v1'] = JSON.stringify([1, 2, 3].map((i) => ({ path: `p${i}`, content: `${i}${big}` })));
+  const sent = [];
+  const nav = { sendBeacon: (url, body) => { sent.push([url, body[0]]); return true; } };
+  assert.equal(beaconOutbox(nav), 2, 'two fit under the 64 KB beacon cap; the third waits');
+  assert.deepEqual(sent, [[RELAY_URL, '1'], [RELAY_URL, '2']]);
+  assert.equal(outbox().length, 3, 'a beacon can’t confirm, so nothing leaves the outbox');
+  assert.equal(beaconOutbox({}), 0, 'no beacon support: nothing to do');
+  mem['harveys.relay.v1'] = JSON.stringify('off');
+  assert.equal(beaconOutbox(nav), 0, 'no relay: beacons have nowhere to go');
 });

@@ -7,6 +7,8 @@
   position: fixed; inset: 0; z-index: 30; background: var(--bg);
   display: flex; flex-direction: column;
   overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  /* 1.48.0: anything scrolled into view clears the sticky footer (Next and Back). */
+  scroll-padding-bottom: calc(112px + env(safe-area-inset-bottom));
   padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
 }
 .rq[hidden] { display: none; }
@@ -346,7 +348,7 @@
 .rq-ask.wait { opacity: .35; pointer-events: none; border-color: var(--line); }
 .rq-ask.off { opacity: .3; pointer-events: none; border-color: var(--line); }
 .rq-ask-q { margin: 0 4px 6px; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 18px; font-weight: 700; }
-.rq-ask-q .rq-sv { font-size: 15px; font-weight: 600; color: var(--accent); }
+.rq-ask-q .rq-sv { font-size: 15px; font-weight: 600; color: var(--accent); flex: none; } /* 1.48.0: the word never clips ("Tas…" on an SE); the question wraps instead */
 .rq-stars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .rq-stars .rq-star { width: auto; height: 56px; padding: 0; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
 .rq-stars .rq-star svg { width: 42px; height: 42px; stroke-width: 1.4; }
