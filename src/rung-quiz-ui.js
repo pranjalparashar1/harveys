@@ -13,6 +13,7 @@
 import { buildRungQuiz, encodeRungResult, CANT, EFFORT_STARS, TASTE_STARS, WANT_STARS } from './brain/rung-quiz.js';
 import { labelFor } from './brain/vocabulary.js';
 import { CATALOGUE } from './brain/catalogue.js';
+import { expandTemplates } from './brain/templates.js';
 import { withConfirmed, matchTyped, listedSplit, addChoices, FOOD_GROUPS } from './brain/confirm.js';
 import { sendResult, flush, setToken, outbox } from './send.js';
 import { startFresh } from './fresh.js';
@@ -195,7 +196,9 @@ function renderPicker() {
   shownKey = 'picker';
   shownAt = performance.now();
   sheetId = null;
-  const brief = (k) => esc(String(k.notes ?? '').split(/[;.]\s/)[0].slice(0, 90));
+  // 1.54.0: persona kitchens describe the person, so the picker shows that; others show the cookware.
+  const brief = (k) => esc(k.persona ?? String(k.notes ?? '').split(/[;.]\s/)[0].slice(0, 90));
+  const personas = picker.kitchens.some((k) => k.persona);
   root.innerHTML = `
     <header class="rq-top">
       <button class="rq-icon" data-act="close" type="button" aria-label="Close">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -204,8 +207,8 @@ function renderPicker() {
     </header>
     <main class="rq-body" data-kind="picker">
       <p class="rq-eyebrow">Harvey’s</p>
-      <h1 class="rq-q">Pick the kitchen closest to yours</h1>
-      <p class="rq-hint">You’ll tick what you have and untick what you don’t next.</p>
+      <h1 class="rq-q">${personas ? 'Which of these sounds most like you?' : 'Pick the kitchen closest to yours'}</h1>
+      <p class="rq-hint">${personas ? 'Next, make the kitchen yours: untick what you don’t have, add what you do.' : 'You’ll tick what you have and untick what you don’t next.'}</p>
       <div class="rq-cats">${picker.kitchens.map((k, i) => `<button class="rq-cat rq-kitchen" data-act="pickkitchen" data-i="${i}" type="button">${HX}<b>${esc(k.kitchen)}</b><span>${brief(k) || `${(k.items ?? []).length} items`}</span>${CHEV}</button>`).join('')}</div>
     </main>
     <footer class="rq-foot"></footer>`;
@@ -261,7 +264,7 @@ function invFor(conf) {
 }
 /** Ids of the dishes this kitchen can make, counted the way the reveal counts them. */
 const mealsIn = (inv) => new Set(rank({
-  inventory: inv, targets: TARGETS, context: { hour: MOMENT.hour, weekday: MOMENT.weekday, kind: quiz?.kind ?? 'meal' }, catalogue: CATALOGUE, config: DEFAULT_CONFIG,
+  inventory: inv, targets: TARGETS, context: { hour: MOMENT.hour, weekday: MOMENT.weekday, kind: quiz?.kind ?? 'meal' }, catalogue: expandTemplates(CATALOGUE, inv), config: DEFAULT_CONFIG,
 }).ranked.map((r) => r.meal.id));
 
 // ── "+3 meal ideas" (1.49.0) ────────────────────────────────────────────────
@@ -499,7 +502,7 @@ function thinkScreen() {
   const items = (quiz.kitchen.items ?? []).length - d.removed.length + d.have.length + d.typed.length;
   const lines = [
     items > 0 ? `Reading the ${items} things in your kitchen` : 'Reading your kitchen',
-    `Checking ${CATALOGUE.length} recipes against your pots and pans`,
+    `Checking ${quiz.catalogue?.length ?? CATALOGUE.length} recipes against your pots and pans`,
     'Balancing protein and calories',
     'Putting the easiest first',
   ];
@@ -757,7 +760,7 @@ const needName = (b) => (b.need.kind !== 'food' ? `${aOrAn(b.need.label)} ${b.ne
 
 function bonusInfoScreen(back) {
   const b = quiz.bonus;
-  const meal = CATALOGUE.find((m) => m.id === b.id);
+  const meal = mealById(b.id);
   const steps = meal?.steps ?? [];
   const others = b.unlocks.filter((u) => u.id !== b.id);
   const thing = needName(b);
@@ -988,9 +991,12 @@ function commit(s) {
 }
 
 // ── The recipe, over the dish ───────────────────────────────────────────────
+/** A dish by id: one the kitchen opened from a template (1.54.0), or the catalogue's own. */
+const mealById = (id) => quiz?.catalogue?.find((m) => m.id === id) ?? CATALOGUE.find((m) => m.id === id);
 const ingName = (i) => {
   const ids = (i.anyOf ?? [i.id]).filter((x) => x && !String(x).startsWith('role:'));
-  return ids.map((x, n) => (n ? labelFor(x).toLowerCase() : labelFor(x))).join(' or ');
+  const words = ids.map((x, n) => (n ? labelFor(x).toLowerCase() : labelFor(x))).join(' or ');
+  return words.charAt(0).toUpperCase() + words.slice(1); // open-ended items ("x:apple") label in lower case
 };
 
 // 1.46.0 (pranjal: "the close is jittery"): the sheet moves only by transitions on transform,
@@ -1001,7 +1007,7 @@ const ingName = (i) => {
 let sheetDragged = 0;
 function openRecipe(id) {
   const d = dishOf(id);
-  const meal = CATALOGUE.find((m) => m.id === id);
+  const meal = mealById(id);
   if (!d || !meal) return;
   sheetId = id;
   const meta = [METHOD[d.rung], d.protein != null ? `${Math.round(d.protein)} g protein` : '', d.kcal != null ? `${Math.round(d.kcal)} kcal` : ''].filter(Boolean);

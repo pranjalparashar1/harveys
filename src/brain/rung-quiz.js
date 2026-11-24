@@ -21,6 +21,7 @@ import { kitchenId, effortFacts, MOMENT, TARGETS, fitFrom } from './kitchen-test
 import { ingredientUsage, usageForResult } from './usage.js';
 import { cleanFeedback } from './feedback.js';
 import { withConfirmed } from './confirm.js';
+import { expandTemplates } from './templates.js';
 
 export const RUNG_FORMAT = 'harveys-rung-quiz/1';
 /** Most dishes a tester sorts on one rung: Harvey's top ones (more is a chore on a phone). */
@@ -39,7 +40,9 @@ export const THIN_FILL = 8;
  * slots now go to the rest, dishes the tester's added items unlocked (`prefer`) first.
  */
 // pranjal, 23 Nov: "let them rate all dishes, it's fine": no cap, every cookable dish is rated.
-export const DECK_MAX = Infinity;
+// 1.54.0 (pranjal, 24 Nov): open-slot templates make far more dishes (the L5 kitchen opens 100+),
+// so a tester rates about 12, stratified across rungs (see stratify()).
+export const DECK_MAX = 12;
 export const CRITERIA = [
   { id: 'macros', label: 'Macros' },
   { id: 'difficulty', label: 'Effort' },
@@ -96,6 +99,39 @@ export function seededShuffle(list, seed) {
   return out;
 }
 
+/**
+ * 1.54.0 (pranjal, 24 Nov): about `max` dishes, stratified across rungs. Slots go round the
+ * rungs (1, 2, 3, 4, 1, 2…) so every rung the kitchen reaches is rated; within a rung, dishes the
+ * tester's additions unlocked go first, then Harvey's order. Written templates and opened variants
+ * alternate, and a template's second variant waits until every other template on that rung has
+ * had one (no three paneer tikkas).
+ */
+export function stratify(pool, { max = DECK_MAX, prefer = null } = {}) {
+  const real = pool.filter((x) => !x.away);
+  if (real.length <= max) return real;
+  const root = (x) => x.meal.template?.from ?? x.meal.id;
+  const queues = {};
+  for (const rung of [1, 2, 3, 4]) {
+    const list = real.filter((x) => x.rung === rung).sort((a, b) => (prefer?.has(a.meal.id) ? 0 : 1) - (prefer?.has(b.meal.id) ? 0 : 1) || byRungOrder(a, b));
+    // Two lanes, taken in turn: the templates as written, and the dishes the kitchen opened from
+    // them (one per template before any template's second), so testers rate both kinds.
+    const originals = list.filter((x) => !x.meal.template);
+    const byRoot = new Map();
+    for (const x of list.filter((y) => y.meal.template)) byRoot.set(root(x), [...(byRoot.get(root(x)) ?? []), x]);
+    const roots = [...byRoot.values()];
+    const variants = [];
+    for (let i = 0; variants.length < list.length - originals.length; i++) for (const lane of roots) if (lane[i]) variants.push(lane[i]);
+    const q = [];
+    for (let i = 0; q.length < list.length; i++) for (const lane of [originals, variants]) if (lane[i]) q.push(lane[i]);
+    if (q.length) queues[rung] = q;
+  }
+  const out = [];
+  while (out.length < max && Object.values(queues).some((q) => q.length)) {
+    for (const rung of [1, 2, 3, 4]) if (queues[rung]?.length && out.length < max) out.push(queues[rung].shift());
+  }
+  return out;
+}
+
 const shortHow = (meal) => {
   const names = (meal.ingredients ?? []).map((i) => i.name ?? i.id ?? i.anyOf?.[0]).filter(Boolean);
   return names.slice(0, 5).join(', ').replace(/_/g, ' ');
@@ -112,8 +148,10 @@ const shortHow = (meal) => {
  * dishes; past that the bigger rung's last dish makes room. Only a kitchen with one dish in
  * all leaves a group of one (White only, no sorts).
  */
-export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdicts = PIERRE_SEED, config = DEFAULT_CONFIG, prefer = null }) {
+export function buildRungQuiz({ kitchen, inventory, catalogue = null, verdicts = PIERRE_SEED, config = DEFAULT_CONFIG, prefer = null, deckMax = DECK_MAX }) {
   const id = kitchenId(kitchen);
+  // 1.54.0: no catalogue given → the catalogue as this kitchen opens it (open-slot templates).
+  catalogue ??= expandTemplates(CATALOGUE, inventory);
   const go = (kind) => rank({ inventory, targets: TARGETS, context: { hour: MOMENT.hour, weekday: MOMENT.weekday, kind }, catalogue, verdicts, config });
   let kind = 'meal';
   let r = go(kind);
@@ -125,8 +163,9 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdi
   const realFirst = (a, b) => (a.away ? 1 : 0) - (b.away ? 1 : 0) || byRungOrder(a, b);
   const byRung = {};
   let groups = [];
+  const chosen = stratify(pool, { max: deckMax, prefer });
   for (const rung of [1, 2, 3, 4]) {
-    const items = pool.filter((x) => x.rung === rung).sort(realFirst).slice(0, PER_RUNG);
+    const items = chosen.filter((x) => x.rung === rung).sort(realFirst);
     if (!items.length) continue;
     byRung[rung] = items;
     groups.push({ rungs: [rung], items });
@@ -137,23 +176,7 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdi
     const next = groups[i + 1];
     const j = !next || (prev && prev.items.length <= next.items.length) ? i - 1 : i + 1;
     const [a, b] = j < i ? [groups[j], groups[i]] : [groups[i], groups[j]];
-    const big = a.items.length >= b.items.length ? a : b;
-    while (a.items.length + b.items.length > PER_RUNG + 1) big.items.pop();
     groups.splice(Math.min(i, j), 2, { rungs: [...a.rungs, ...b.rungs], items: [...a.items, ...b.items] });
-  }
-  // Top up to DECK_MAX from the cookable dishes the rung cap left out, added-item dishes first.
-  const taken = new Set(groups.flatMap((g) => g.items.map((x) => x.meal.id)));
-  const pref = (x) => (prefer?.has(x.meal.id) ? 0 : 1);
-  const rest = pool.filter((x) => !x.away && !taken.has(x.meal.id)).sort((a, b) => pref(a) - pref(b) || byRungOrder(a, b));
-  let size = taken.size;
-  for (const x of rest) {
-    if (size >= DECK_MAX) break;
-    const grp = groups.find((g) => g.rungs.includes(x.rung));
-    if (!grp) continue;
-    grp.items.push(x);
-    // An unmerged group's items are byRung's own array: push once, not twice.
-    if (byRung[x.rung] !== grp.items) (byRung[x.rung] ??= []).push(x);
-    size += 1;
   }
   const dishes = {};
   const rungs = groups.map((grp) => {
@@ -161,6 +184,8 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdi
       dishes[x.meal.id] = {
         id: x.meal.id, name: x.meal.name, rung: x.rung, how: x.away ? `Needs ${x.away} · ${shortHow(x.meal)}` : shortHow(x.meal), facts: effortFacts(x.raw),
         ...(x.away ? { away: x.away } : {}),
+        // 1.54.0, additive: the template a dish was opened from and what filled its slot.
+        ...(x.meal.template ? { template: x.meal.template } : {}),
         protein: x.meal.macros?.protein ?? null, kcal: x.meal.macros?.kcal ?? null,
         harveys: { order: byRung[x.rung].indexOf(x), tier: x.pierre.tier, friction: round(x.friction), score: round(x.score) },
         raw: compactRaw(x.raw),
@@ -188,7 +213,7 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = CATALOGUE, verdi
   const deck = Object.values(dishes).sort((a, b) => a.rung - b.rung || (a.away ? 1 : 0) - (b.away ? 1 : 0) || a.harveys.order - b.harveys.order || a.id.localeCompare(b.id)).map((d) => d.id);
   const rateOrder = seededShuffle(deck, `${id}|rate`);
   const bonus = bonusPick({ r, kind, inventory, catalogue, verdicts, config, shown: new Set(deck) });
-  return { id, kitchen, kind, rungs, dishes, steps, usage, deck, rateOrder, cookable: deck.filter((d) => !dishes[d].away).length, total: r.ranked.length, bonus };
+  return { id, kitchen, kind, catalogue, rungs, dishes, steps, usage, deck, rateOrder, cookable: deck.filter((d) => !dishes[d].away).length, total: r.ranked.length, bonus };
 }
 
 /**
@@ -320,7 +345,7 @@ export function encodeRungResult(quiz, answers, { version, at, testerId, runNo =
     // 1.52.0, additive: 'sample' when the tester picked a sample kitchen on the bare site, 'link'
     // when a share link carried it in. Left out for a pasted list. The format stays harveys-rung-quiz/1.
     ...(['sample', 'link'].includes(kitchenSource) ? { kitchenSource } : {}),
-    kitchen: { kitchen: quiz.kitchen.kitchen, diet: quiz.kitchen.diet ?? 'unknown', notes: quiz.kitchen.notes ?? '', items: (quiz.kitchen.items ?? []).map((i) => ({ name: i.name, category: i.category })) },
+    kitchen: { kitchen: quiz.kitchen.kitchen, diet: quiz.kitchen.diet ?? 'unknown', notes: quiz.kitchen.notes ?? '', ...(Number.isInteger(quiz.kitchen.level) ? { level: quiz.kitchen.level } : {}), items: (quiz.kitchen.items ?? []).map((i) => ({ name: i.name, category: i.category })) },
     moment: MOMENT.label, targets: TARGETS,
     directions: { marco: 'easiest first', pierre: 'tastiest first', white: 'tap order = preference' },
     // From 1.32.0 an unmoved sort was confirmed with a "Keep this order" tap, so it is a real answer.
@@ -333,7 +358,7 @@ export function encodeRungResult(quiz, answers, { version, at, testerId, runNo =
     confirm: answers.confirm ? confirmOut(answers.confirm) : null,
     // 1.33.0: what the kitchen had that no shown dish used, and why: catalogue gaps across kitchens.
     ingredients: quiz.usage ? usageForResult(quiz.usage) : null,
-    dishes: Object.fromEntries(Object.values(quiz.dishes).map((d) => [d.id, { name: d.name, rung: d.rung, harveys: d.harveys, raw: d.raw, ...(d.away ? { away: d.away } : {}) }])),
+    dishes: Object.fromEntries(Object.values(quiz.dishes).map((d) => [d.id, { name: d.name, rung: d.rung, harveys: d.harveys, raw: d.raw, ...(d.away ? { away: d.away } : {}), ...(d.template ? { template: d.template } : {}) }])),
     marco: sortRows('marco'),
     pierre: sortRows('pierre'),
     white: quiz.rungs.filter((g) => answers.white?.[g.rung]).map((g) => {

@@ -40,6 +40,9 @@ export function importKitchens(input) {
       kitchen: typeof k.kitchen === 'string' && k.kitchen.trim() ? k.kitchen.trim() : `Kitchen ${i + 1}`,
       diet: typeof k.diet === 'string' ? k.diet : 'unknown',
       notes: typeof k.notes === 'string' ? k.notes : '',
+      // 1.54.0 persona kitchens (L1 to L5): who the kitchen belongs to, for the persona picker.
+      ...(typeof k.persona === 'string' && k.persona.trim() ? { persona: k.persona.trim() } : {}),
+      ...(Number.isInteger(k.level) ? { level: k.level } : {}),
       items,
     };
   }).filter((k) => k.items.length);
