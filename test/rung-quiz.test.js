@@ -7,7 +7,7 @@ import { TIER_ORDER } from '../src/brain/ranker.js';
 import { buildRungQuiz, encodeRungResult, scoreRungResult, rungMarcoChoices, parseRungResults, latestRuns, kendall, seededShuffle, PER_RUNG, RUNG_FORMAT, THIN_KITCHEN, DECK_MAX } from '../src/brain/rung-quiz.js';
 
 const cache = JSON.parse(readFileSync(new URL('../data/ingredient-cache.json', import.meta.url), 'utf8'));
-const [kitchen] = loadKitchens(readFileSync(new URL('../data/test-kitchens/kitchens.json', import.meta.url), 'utf8'));
+const [kitchen] = loadKitchens(readFileSync(new URL('./fixtures/bachelor-kitchen.json', import.meta.url), 'utf8'));
 const quiz = buildRungQuiz({ kitchen, inventory: buildInventory(kitchen.items, { cache }) });
 
 test('quiz: rungs in order, capped, Marco then Pierre on sortable rungs, then White on all', () => {

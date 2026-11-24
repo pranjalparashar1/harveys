@@ -94,7 +94,7 @@ let downAt = null; // where the finger went down, to tell a tap from a scroll
 let navTap = null; // the tap that last changed screen, so a double tap can't skip the next one
 let guarded = false; // a history entry so the phone's Back goes back one screen, not off the site
 let kitchenIn = null;
-let listed = { food: [], kit: [] }; // what the video saw, split for the two confirm screens
+let listed = { food: [], kit: [] }; // the kitchen's list (a scan or a sample kitchen), split for the two confirm screens
 let choices = { food: [], kit: [], noStove: false }; // what "Add more" offers
 let panel = null; // on a confirm screen: null (the list), 'cats', or a category id
 let sheetId = null; // the recipe open over a dish
@@ -116,8 +116,8 @@ function screens() {
 /** Screens Back passes over: the thinking pause. */
 const passOver = (s) => s.kind === 'think';
 
-export function startRungQuiz({ kitchen, inventory, version, source, name = '', onExit, items = null, cache = {}, missingBasics = [] }) {
-  opts = { version, source, name, onExit, items, cache, missingBasics, inventory };
+export function startRungQuiz({ kitchen, inventory, version, source, name = '', onExit, items = null, cache = {}, missingBasics = [], kitchenSource = null }) {
+  opts = { version, source, name, onExit, items, cache, missingBasics, inventory, kitchenSource };
   kitchenIn = kitchen;
   quiz = buildRungQuiz({ kitchen, inventory });
   store = loadStore();
@@ -142,35 +142,81 @@ export function startRungQuiz({ kitchen, inventory, version, source, name = '', 
   panel = null;
   save();
   flush(); // anything left over from a send with no signal
-  if (!root) {
-    root = document.createElement('div');
-    root.className = 'rq';
-    root.setAttribute('role', 'dialog');
-    root.setAttribute('aria-label', 'Taste test');
-    document.body.append(root);
-    root.addEventListener('click', onClick);
-    // Instant feedback: the finger's button looks pressed at once (iOS needs a touch
-    // listener before :active works at all).
-    root.addEventListener('touchstart', () => {}, { passive: true });
-    root.addEventListener('pointerdown', (e) => {
-      downAt = { x: e.clientX, y: e.clientY, t: performance.now() };
-      root.querySelector('.press')?.classList.remove('press');
-      e.target.closest?.('[data-act]')?.classList.add('press');
-    }, { passive: true });
-    const unpress = () => root.querySelector('.press')?.classList.remove('press');
-    root.addEventListener('pointerup', () => setTimeout(unpress, 120), { passive: true });
-    root.addEventListener('pointercancel', unpress, { passive: true });
-    addEventListener('popstate', onPop);
-    root.addEventListener('submit', (e) => { e.preventDefault(); const f = e.target.closest('.rq-add'); if (f) typeAdd(f); });
-    root.addEventListener('input', (e) => {
-      if (e.target.matches('.rq-makes textarea')) { run.answers.feedback.makes = e.target.value.slice(0, 1000); run.answers.feedback.seen = true; save(); }
-    });
-    document.addEventListener('keydown', onKey);
-  }
+  picker = null;
+  ensureRoot();
   root.hidden = false;
   document.documentElement.classList.add('rq-open');
   guard();
   render(true);
+}
+
+/** The overlay every screen draws into, made once with its tap and Back handling. */
+function ensureRoot() {
+  if (root) return;
+  root = document.createElement('div');
+  root.className = 'rq';
+  root.setAttribute('role', 'dialog');
+  root.setAttribute('aria-label', 'Taste test');
+  document.body.append(root);
+  root.addEventListener('click', onClick);
+  // Instant feedback: the finger's button looks pressed at once (iOS needs a touch
+  // listener before :active works at all).
+  root.addEventListener('touchstart', () => {}, { passive: true });
+  root.addEventListener('pointerdown', (e) => {
+    downAt = { x: e.clientX, y: e.clientY, t: performance.now() };
+    root.querySelector('.press')?.classList.remove('press');
+    e.target.closest?.('[data-act]')?.classList.add('press');
+  }, { passive: true });
+  const unpress = () => root.querySelector('.press')?.classList.remove('press');
+  root.addEventListener('pointerup', () => setTimeout(unpress, 120), { passive: true });
+  root.addEventListener('pointercancel', unpress, { passive: true });
+  addEventListener('popstate', onPop);
+  root.addEventListener('submit', (e) => { e.preventDefault(); const f = e.target.closest('.rq-add'); if (f) typeAdd(f); });
+  root.addEventListener('input', (e) => {
+    if (e.target.matches('.rq-makes textarea')) { run.answers.feedback.makes = e.target.value.slice(0, 1000); run.answers.feedback.seen = true; save(); }
+  });
+  document.addEventListener('keydown', onKey);
+}
+
+// ── Pick a sample kitchen (1.52.0) ──────────────────────────────────────────
+// The bare site (no #k= link) opens on the sample kitchens (data/test-kitchens/kitchens.json):
+// one screen, one big tap per kitchen. The pick goes straight into Confirm your foods, where the
+// tester ticks what they have and unticks what they don't. Same tap filter as every other screen.
+let picker = null; // { kitchens, onPick, onExit } while the picker is showing
+export function startKitchenPicker({ kitchens, onPick, onExit }) {
+  picker = { kitchens, onPick, onExit };
+  ensureRoot();
+  root.hidden = false;
+  document.documentElement.classList.add('rq-open');
+  guard();
+  renderPicker();
+}
+function renderPicker() {
+  shownKey = 'picker';
+  shownAt = performance.now();
+  sheetId = null;
+  const brief = (k) => esc(String(k.notes ?? '').split(/[;.]\s/)[0].slice(0, 90));
+  root.innerHTML = `
+    <header class="rq-top">
+      <button class="rq-icon" data-act="close" type="button" aria-label="Close">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <div class="rq-bar"></div>
+      <span class="rq-icon ghost"></span>
+    </header>
+    <main class="rq-body" data-kind="picker">
+      <p class="rq-eyebrow">Harvey’s</p>
+      <h1 class="rq-q">Pick the kitchen closest to yours</h1>
+      <p class="rq-hint">You’ll tick what you have and untick what you don’t next.</p>
+      <div class="rq-cats">${picker.kitchens.map((k, i) => `<button class="rq-cat rq-kitchen" data-act="pickkitchen" data-i="${i}" type="button">${HX}<b>${esc(k.kitchen)}</b><span>${brief(k) || `${(k.items ?? []).length} items`}</span>${CHEV}</button>`).join('')}</div>
+    </main>
+    <footer class="rq-foot"></footer>`;
+  root.scrollTop = 0;
+}
+function closePicker() {
+  const p = picker;
+  picker = null;
+  root.hidden = true;
+  document.documentElement.classList.remove('rq-open');
+  p?.onExit?.();
 }
 
 /** One extra history entry while the test is open: the phone's Back button or swipe then
@@ -182,6 +228,7 @@ function guard() {
 function onPop() {
   guarded = false;
   if (!root || root.hidden) return;
+  if (picker) return closePicker();
   if (sheetId) { closeRecipe(); return guard(); }
   if (run.at === 0 && !panel) return close();
   goBack();
@@ -247,7 +294,7 @@ function unlockToast(before) {
 }
 const confKey = (c) => JSON.stringify([[...(c?.have ?? [])].sort(), (c?.typed ?? []).map((t) => t.id ?? t.text).sort(), [...(c?.removed ?? [])].map(norm).sort()]);
 
-const resultOf = () => encodeRungResult(quiz, run.answers, { version: opts.version, at: new Date().toISOString(), testerId: run.testerId, runNo: run.runNo, source: opts.source, tester: run.name || '' });
+const resultOf = () => encodeRungResult(quiz, run.answers, { version: opts.version, at: new Date().toISOString(), testerId: run.testerId, runNo: run.runNo, source: opts.source, tester: run.name || '', kitchenSource: opts.kitchenSource });
 
 // ── Render ──────────────────────────────────────────────────────────────────
 function bar(list) {
@@ -334,7 +381,8 @@ function introScreen() {
     return { body, foot: `<button class="btn xl rq-go rq-seq" style="--s:${n}" data-act="close" type="button"><span>Back to my list</span></button>` };
   }
   const lines = opts.items
-    ? ['Harvey’s spotted some food and cookware in your kitchen.', 'Some of it may be wrong.', '<b>Help Harvey’s check it.</b>']
+    // 1.52.0: the list may be a sample kitchen, not a scan, so nothing here says where it came from.
+    ? ['Here’s a kitchen list to start from.', 'Some of it won’t match yours.', '<b>Tick what you have, untick what you don’t.</b>']
     : ['Harvey’s has your kitchen list.', '<b>Let’s see what it can make.</b>'];
   const body = `
       <div class="rq-hero intro" data-act="skipintro">
@@ -368,7 +416,7 @@ function confirmScreen(side, back) {
     const groups = groupsOf(side);
     const body = `
       <p class="rq-eyebrow">Add more</p>
-      <h1 class="rq-q">What did Harvey miss?</h1>
+      <h1 class="rq-q">What’s missing?</h1>
       <p class="rq-hint">Pick a group.</p>
       <div class="rq-cats">${groups.map((g) => {
         const n = g.opts.filter(isAdded).length + (g.type ? draft().typed.filter((t) => t.side === side && t.group === g.id).length : 0);
@@ -400,11 +448,11 @@ function confirmScreen(side, back) {
   const body = `
       <p class="rq-eyebrow">Your kitchen · ${food ? 1 : 2} of 2</p>
       <h1 class="rq-q">${food ? 'Confirm you have these foods' : 'Confirm your cookware'}</h1>
-      <p class="rq-hint">${rows.length ? 'Untick any you don’t have.' : 'Tap Add more.'}</p>
+      <p class="rq-hint">${rows.length ? 'Untick any you don’t have. Add what’s missing.' : 'Tap Add more.'}</p>
       ${stoves.length ? `<p class="rq-group">Tap your stove</p><div class="rq-tiles add">${stoves.map((o) => tile('addopt', optAttrs(o), o.label, isAdded(o))).join('')}</div>` : ''}
       ${addedNoStove.length ? `<p class="rq-group">Added</p><div class="rq-tiles add">${addedNoStove.map((o) => tile(o.id || !o.text ? 'addopt' : 'typeddrop', optAttrs(o), o.label, true)).join('')}</div>` : ''}
-      ${grouped.map(([label, list]) => `${label ? `<p class="rq-group">${esc(label)}</p>` : stoves.length || addedNoStove.length ? '<p class="rq-group">Harvey saw</p>' : ''}<div class="rq-tiles">${list.map((r) => tile('untick', `data-name="${esc(r.name)}"`, r.name, !isRemoved(r.name))).join('')}</div>`).join('')}
-      <button class="rq-more" data-act="more" type="button">${HX}<span>Missed something?</span><b>${PLUS}Add more</b></button>`;
+      ${grouped.map(([label, list]) => `${label ? `<p class="rq-group">${esc(label)}</p>` : stoves.length || addedNoStove.length ? '<p class="rq-group">On the list</p>' : ''}<div class="rq-tiles">${list.map((r) => tile('untick', `data-name="${esc(r.name)}"`, r.name, !isRemoved(r.name))).join('')}</div>`).join('')}
+      <button class="rq-more" data-act="more" type="button">${HX}<span>Have something else?</span><b>${PLUS}Add more</b></button>`;
   return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>${food ? 'Confirm foods' : 'Confirm cookware'}</span></button>` };
 }
 
@@ -792,7 +840,7 @@ function endScreen() {
 // were silently thrown away. Now: a finger that travelled is a scroll (the phone already
 // sends no click for those), and the only tap dropped is a repeat, at the same spot, of the
 // tap that just changed the screen. Every kept tap shows and buzzes at once.
-const NAV = new Set(['next', 'back', 'more', 'cat', 'paneldone', 'recipe', 'recipeclose']);
+const NAV = new Set(['next', 'back', 'more', 'cat', 'paneldone', 'recipe', 'recipeclose', 'pickkitchen']);
 
 function onClick(e) {
   const el = e.target.closest('[data-act]');
@@ -804,6 +852,11 @@ function onClick(e) {
   if (navTap && now - navTap.t < 350 && Math.hypot(e.clientX - navTap.x, e.clientY - navTap.y) < 40) return;
   if (NAV.has(act)) navTap = { t: now, x: e.clientX, y: e.clientY };
   buzz();
+  if (picker) {
+    if (act === 'close') return closePicker();
+    if (act === 'pickkitchen') { const p = picker; picker = null; return p.onPick(p.kitchens[Number(el.dataset.i)]); }
+    return;
+  }
   const list = screens();
   const s = list[run.at];
   if (act === 'skipintro') { root.classList.add('rq-skip'); return; }

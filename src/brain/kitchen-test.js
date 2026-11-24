@@ -156,7 +156,7 @@ export function fitFrom(choices, config = DEFAULT_CONFIG) {
   // In protein-prior units, like learn.js and refit.js; a positive (effort-is-good) weight is clamped to 0.
   const payload = fittedWeightsPayload(fit);
   const frictionTheta = Object.fromEntries(Object.entries(payload.frictionTheta).map(([k, v]) => [k, v > 0 ? 0 : v]));
-  return { n: choices.length, hits: fit.hits, looHits: fit.looHits, priorHits: fit.priorHits, frictionTheta };
+  return { n: choices.length, hits: fit.hits, looHits: fit.looHits, priorHits: fit.priorHits, pairN: fit.pairN, pairHits: fit.pairHits, priorPairHits: fit.priorPairHits, frictionTheta };
 }
 
 /** White's answer for this kitchen: the ladder and the one dish it leads with. */

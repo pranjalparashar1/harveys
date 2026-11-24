@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { importKitchens } from '../src/brain/kitchens.js';
 
-const kitchens = JSON.parse(readFileSync(new URL('../data/test-kitchens/kitchens.json', import.meta.url), 'utf8'));
+const kitchens = JSON.parse(readFileSync(new URL('./fixtures/bachelor-kitchen.json', import.meta.url), 'utf8'));
 const bachelor = kitchens[0];
 
 test('a hard-wrapped kitchen JSON paste still parses to clean items', () => {

@@ -7,7 +7,7 @@ import { DEFAULT_CONFIG } from '../src/brain/config.js';
 import { parseClassification } from '../src/brain/pantry.js';
 import { importKitchens } from '../src/brain/index.js';
 
-const text = readFileSync(new URL('../data/test-kitchens/kitchens.json', import.meta.url), 'utf8');
+const text = readFileSync(new URL('./fixtures/bachelor-kitchen.json', import.meta.url), 'utf8');
 const [bachelor] = loadKitchens(text);
 
 test('a single kitchen object imports as one kitchen, not as its items', () => {

@@ -5,6 +5,7 @@
 //   node scripts/kitchen-tests.mjs score [results …] [--persona <text>]
 //                                                           score each result, then fit Marco on all
 //   (score and feedback keep only each named tester's latest run per kitchen; --all keeps every run)
+//   (score and feedback end with "# Batch checks", 1.52.0: eggs, air fryer, easy vs tasty)
 //   node scripts/kitchen-tests.mjs feedback [results …] [--out <file.md>]
 //                                                           testers' feedback (1.34.0) as Markdown:
 //                                                           what went wrong, dishes to add, list errors
@@ -29,7 +30,7 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { loadKitchens, buildKitchenTest, whiteFor, parseResults, scoreResult, marcoChoices, fitFrom } from '../src/brain/kitchen-test.js';
 import { DEFAULT_CONFIG } from '../src/brain/config.js';
-import { parseRungResults, latestRuns, scoreRungResult, rungMarcoChoices, buildRungQuiz } from '../src/brain/rung-quiz.js';
+import { parseRungResults, latestRuns, scoreRungResult, rungMarcoChoices, buildRungQuiz, batchChecks, batchCheckLines, todayOrder } from '../src/brain/rung-quiz.js';
 import { buildInventory } from '../src/brain/inventory.js';
 import { usageForResult } from '../src/brain/usage.js';
 import { summariseFeedback, feedbackReport, summariseCheck } from '../src/brain/feedback.js';
@@ -67,8 +68,17 @@ const parsedTastes = personaFilter ? [] : texts.flatMap(parseRungResults);
 // 1.37.0: only each tester's latest run per kitchen, unless --all.
 const tastes = rest.includes('--all') ? parsedTastes : latestRuns(parsedTastes);
 if (tastes.length < parsedTastes.length) console.log(`(${parsedTastes.length - tastes.length} earlier run(s) by the same tester left out; --all keeps them)`);
+// 1.52.0: eggs, air fryer, easy vs tasty over every star-rated result (score and feedback).
+// Harvey's order is today's brain on each result's kitchen, so the egg line tests 1.51.0's egg minutes.
+const todayDishes = (r) => todayOrder(r, { cache });
+const batchSection = () => {
+  const starred = tastes.filter((r) => Array.isArray(r.stars));
+  if (!starred.length) return '';
+  const lines = batchCheckLines(batchChecks(starred, { catalogue: CATALOGUE, dishesFor: todayDishes }));
+  return `\n# Batch checks over ${starred.length} star-rated result(s), Harvey's order as of today\n${lines.join('\n')}\n`;
+};
 if (cmd === 'feedback') {
-  const md = feedbackReport(summariseFeedback(tastes, { catalogue: CATALOGUE }));
+  const md = feedbackReport(summariseFeedback(tastes, { catalogue: CATALOGUE })) + batchSection();
   if (outFile) { writeFileSync(outFile, md); console.log(`Wrote ${outFile}`); } else process.stdout.write(md);
   process.exit(0);
 }
@@ -207,10 +217,14 @@ if (tastes.some((r) => r.feedback)) {
   console.log(`Kitchen list errors: ${fs.wrongItems.length + fs.missedItems.length ? `${top(fs.wrongItems, (x) => `-${x.name}`)}; ${top(fs.missedItems, (x) => `+${x.name}`)}` : '-'}`);
 }
 
+process.stdout.write(batchSection());
+
 const fit = fitFrom(pooled);
 console.log(`\n# Pooled over ${results.length} kitchen test(s) and ${tastes.length} taste test(s)${personaFilter ? `, persona contains "${personaFilter}"` : ', all personas'}`);
 if (fit) {
+  // 1.52.0: today's weights get their own fitted cook-it threshold, so the three numbers compare.
   console.log(`Marco: ${fit.n} picks, fit ${fit.hits}, leave-one-out ${fit.looHits ?? '-'}, today's weights ${fit.priorHits}`);
+  console.log(`Marco, strict a/b picks only (no threshold): ${fit.pairN} picks, fit ${fit.pairHits}, today's weights ${fit.priorPairHits}`);
   console.log('feature     now      proposed');
   for (const [key, v] of Object.entries(fit.frictionTheta)) console.log(`${key.padEnd(10)} ${String(DEFAULT_CONFIG.frictionTheta[key] ?? '-').padEnd(8)} ${v}`);
 } else console.log('Marco: under 3 picks, no fit.');

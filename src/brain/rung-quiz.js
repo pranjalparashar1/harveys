@@ -20,6 +20,7 @@ import { featureVector } from './learn.js';
 import { kitchenId, effortFacts, MOMENT, TARGETS, fitFrom } from './kitchen-test.js';
 import { ingredientUsage, usageForResult } from './usage.js';
 import { cleanFeedback } from './feedback.js';
+import { withConfirmed } from './confirm.js';
 
 export const RUNG_FORMAT = 'harveys-rung-quiz/1';
 /** Most dishes a tester sorts on one rung: Harvey's top ones (more is a chore on a phone). */
@@ -305,7 +306,7 @@ const bonusOut = (quiz, answers) => {
  * Answers → the file a tester sends. answers: { marco: {rung: {ranking, ms, moved}},
  * pierre: {…same}, white: {rung: {picks, none, criteria, ms}} }.
  */
-export function encodeRungResult(quiz, answers, { version, at, testerId, runNo = null, source = 'paste', tester = '' } = {}) {
+export function encodeRungResult(quiz, answers, { version, at, testerId, runNo = null, source = 'paste', tester = '', kitchenSource = null } = {}) {
   const shownOf = (g, s) => g.shown[s];
   const sortRows = (section) => quiz.rungs.filter((g) => answers[section]?.[g.rung]).map((g) => {
     const a = answers[section][g.rung];
@@ -316,6 +317,9 @@ export function encodeRungResult(quiz, answers, { version, at, testerId, runNo =
     kitchenId: quiz.id, testerId, runNo,
     // 1.35.0: the first name pranjal put in the share link; left out when there's none.
     ...(tester ? { tester: String(tester).slice(0, 40) } : {}),
+    // 1.52.0, additive: 'sample' when the tester picked a sample kitchen on the bare site, 'link'
+    // when a share link carried it in. Left out for a pasted list. The format stays harveys-rung-quiz/1.
+    ...(['sample', 'link'].includes(kitchenSource) ? { kitchenSource } : {}),
     kitchen: { kitchen: quiz.kitchen.kitchen, diet: quiz.kitchen.diet ?? 'unknown', notes: quiz.kitchen.notes ?? '', items: (quiz.kitchen.items ?? []).map((i) => ({ name: i.name, category: i.category })) },
     moment: MOMENT.label, targets: TARGETS,
     directions: { marco: 'easiest first', pierre: 'tastiest first', white: 'tap order = preference' },
@@ -451,6 +455,96 @@ export function scoreRungResult(r) {
 }
 
 export { fitFrom };
+
+// ── Batch checks (1.52.0, the 10-sample-kitchen batch) ──────────────────────
+// Three open questions, read off every star-rated result: does 1.51.0's egg handling cost match
+// what testers feel, are air-fryer dishes easier than Harvey thinks, and do the easiest dishes
+// taste worse (easy vs tasty)? Effort stars: 5 = effortless. Harvey's order is rung, then friction:
+// by default the one stored in each result (what testers were shown); `dishesFor` swaps in another
+// (the script passes today's brain, so the egg line checks 1.51.0's egg handling, not the old one).
+const dishOf = (id, catalogue) => catalogue.find((m) => m.id === id) ?? null;
+const needs = (meal, id) => (meal?.ingredients ?? []).some((i) => !i.optional && (i.anyOf ?? [i.id]).every((x) => x === id));
+/** An egg dish: eggs are a must (cracked or peeled). Off-catalogue dishes go by name. */
+export const isEggDish = (id, name = '', catalogue = CATALOGUE) => { const m = dishOf(id, catalogue); return m ? needs(m, 'eggs') : /\begg/i.test(name); };
+/** An air-fryer dish: the air fryer is on its kit list. */
+export const isAirFryerDish = (id, name = '', catalogue = CATALOGUE) => { const m = dishOf(id, catalogue); return m ? (m.equipment ?? []).includes('air_fryer') : /air[- ]?fr/i.test(name); };
+
+export function batchChecks(results, { catalogue = CATALOGUE, dishesFor = (r) => r.dishes } = {}) {
+  const avg = (xs) => (xs.length ? round(xs.reduce((a, b) => a + b, 0) / xs.length) : null);
+  const eggs = { egg: { pairs: 0, agree: 0 }, plain: { pairs: 0, agree: 0 }, effort: [], otherEffort: [] };
+  const air = { effort: [], otherEffort: [], pairs: 0, easierThanHarvey: 0 };
+  const easy = { testers: [], lowTaste: 0 };
+  for (const r of results) {
+    if (!Array.isArray(r.stars) || !r.dishes) continue;
+    const order = dishesFor(r) ?? {};
+    const harveyRank = (id) => [order[id].rung ?? 9, order[id].harveys?.friction ?? 0, id];
+    const easier = (x, y) => { const [a, b] = [harveyRank(x), harveyRank(y)]; return a[0] - b[0] || a[1] - b[1] || a[2].localeCompare(b[2]); };
+    const rated = r.stars.filter((x) => r.dishes[x.id] && order[x.id]);
+    const egg = (id) => isEggDish(id, r.dishes[id].name, catalogue);
+    const af = (id) => isAirFryerDish(id, r.dishes[id].name, catalogue);
+    for (const x of rated) if (x.effort) {
+      (egg(x.id) ? eggs.effort : eggs.otherEffort).push(x.effort);
+      (af(x.id) ? air.effort : air.otherEffort).push(x.effort);
+    }
+    const eff = rated.filter((x) => x.effort);
+    for (let i = 0; i < eff.length; i++) for (let j = i + 1; j < eff.length; j++) {
+      const [a, b] = [eff[i], eff[j]];
+      if (a.effort === b.effort) continue;
+      const [e, h] = a.effort > b.effort ? [a.id, b.id] : [b.id, a.id]; // e: the one rated easier
+      const agree = easier(e, h) < 0;
+      const side = egg(a.id) || egg(b.id) ? eggs.egg : eggs.plain;
+      side.pairs++;
+      if (agree) side.agree++;
+      if (af(a.id) !== af(b.id)) {
+        air.pairs++;
+        if (af(e) && !agree) air.easierThanHarvey++;
+      }
+    }
+    // Easy vs tasty: the tester's two lowest-friction dishes (Harvey's order) against the rest.
+    const tasted = rated.filter((x) => x.taste).sort((x, y) => easier(x.id, y.id));
+    if (tasted.length >= 3) {
+      const low = avg(tasted.slice(0, 2).map((x) => x.taste));
+      const rest = avg(tasted.slice(2).map((x) => x.taste));
+      easy.testers.push({ tester: r.tester || r.testerId, easiest: tasted.slice(0, 2).map((x) => x.id), easiestTaste: low, restTaste: rest });
+      if (low <= 3) easy.lowTaste++;
+    }
+  }
+  const rate = (s) => ({ ...s, rate: s.pairs ? round(s.agree / s.pairs) : null });
+  return {
+    eggs: { egg: rate(eggs.egg), plain: rate(eggs.plain), meanEffort: avg(eggs.effort), n: eggs.effort.length, otherMeanEffort: avg(eggs.otherEffort) },
+    airFryer: { meanEffort: avg(air.effort), n: air.effort.length, otherMeanEffort: avg(air.otherEffort), pairs: air.pairs, easierThanHarvey: air.easierThanHarvey },
+    easyTasty: { ...easy, n: easy.testers.length },
+  };
+}
+
+/**
+ * Today's Harvey on a result's kitchen as the tester confirmed it (unticked items out, ticked and
+ * typed ones in): every dish it can make → { rung, harveys: { friction } }, for batchChecks' dishesFor.
+ * Every cookable dish counts, not just a deck, so dishes rated then stay comparable now.
+ */
+export function todayOrder(r, { cache = {}, catalogue = CATALOGUE, config = DEFAULT_CONFIG } = {}) {
+  if (!Array.isArray(r.kitchen?.items)) return null;
+  const gone = new Set((r.confirm?.removed ?? []).map((x) => String(x).toLowerCase().trim()));
+  const kept = r.kitchen.items.filter((i) => !gone.has(String(i.name ?? i).toLowerCase().trim()));
+  const ids = [...new Set([...(r.confirm?.have ?? []), ...(r.confirm?.typed ?? []).filter((t) => t.id).map((t) => t.id)])];
+  const inventory = withConfirmed(kept, ids, { cache });
+  const go = (kind) => rank({ inventory, targets: TARGETS, context: { hour: MOMENT.hour, weekday: MOMENT.weekday, kind }, catalogue, config });
+  const ranked = [...go('meal').ranked, ...go('any').ranked];
+  const out = {};
+  for (const x of ranked) out[x.meal.id] ??= { rung: x.rung, harveys: { friction: round(x.friction) } };
+  return out;
+}
+
+/** The three checks as the lines `kitchen-tests.mjs score` prints under "# Batch checks". */
+export function batchCheckLines(b) {
+  const f = (x) => (x == null ? '-' : x.toFixed(2));
+  const st = (x) => (x == null ? '-' : `${x.toFixed(1)}★`);
+  return [
+    `Eggs:     effort pairs Harvey orders right, with an egg dish ${b.eggs.egg.agree}/${b.eggs.egg.pairs} (${f(b.eggs.egg.rate)}), without ${b.eggs.plain.agree}/${b.eggs.plain.pairs} (${f(b.eggs.plain.rate)}); egg dishes ${st(b.eggs.meanEffort)} effort over ${b.eggs.n} rating(s), others ${st(b.eggs.otherMeanEffort)}`,
+    `Air fryer: ${st(b.airFryer.meanEffort)} effort over ${b.airFryer.n} rating(s), others ${st(b.airFryer.otherMeanEffort)}; rated easier than Harvey ranked it in ${b.airFryer.easierThanHarvey} of ${b.airFryer.pairs} air-fryer-vs-other pair(s)`,
+    `Easy vs tasty: ${b.easyTasty.n ? b.easyTasty.testers.map((t) => `${t.tester} easiest two ${st(t.easiestTaste)} vs rest ${st(t.restTaste)}`).join('; ') : '-'}; ${b.easyTasty.lowTaste} of ${b.easyTasty.n} tester(s) rated their easiest two 3★ or less on taste`,
+  ];
+}
 
 /**
  * One result per tester and kitchen (1.37.0): the latest. A named tester who sends again (Banana

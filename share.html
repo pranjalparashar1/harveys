@@ -21,9 +21,17 @@
       <a class="btn link hero-link" href="owner.html">Harvey</a>
     </header>
 
+    <!-- 1.52.0: the sample kitchens (data/test-kitchens/kitchens.json). Pick one, type a name, copy. -->
+    <section class="card" aria-labelledby="pick-title" id="pick-card" hidden>
+      <h2 id="pick-title">Sample kitchen</h2>
+      <label class="field"><span>Pick a sample kitchen</span>
+        <select id="preset" aria-label="Pick a sample kitchen"><option value="">Choose one</option></select>
+      </label>
+    </section>
+
     <section class="card" aria-labelledby="in-title">
       <h2 id="in-title">Kitchen list</h2>
-      <p class="mini">Paste what the video agent returned, or upload its file. One link per kitchen.</p>
+      <p class="mini">Or paste a kitchen’s JSON, or upload its file. One link per kitchen.</p>
       <textarea id="kitchens" autocomplete="off" rows="6" spellcheck="false" placeholder='[{"kitchen": "Riya, Bandra", "items": [{"name": "eggs", "category": "protein"}, …]}]' aria-label="Kitchen JSON"></textarea>
       <div class="row">
         <button class="btn primary" id="make" data-haptic type="button">Make links</button>

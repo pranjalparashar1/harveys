@@ -11,12 +11,12 @@ import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, allowedModels, detectProvide
 import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
-import { startRungQuiz } from './rung-quiz-ui.js';
+import { startRungQuiz, startKitchenPicker } from './rung-quiz-ui.js';
 import { buildRungQuiz } from './brain/rung-quiz.js';
 import { decodeKitchen, linkCode, linkName } from './brain/share-link.js';
 import { startFresh, reloadIfStale } from './fresh.js';
 
-const VERSION = '1.51.0';
+const VERSION = '1.52.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -931,6 +931,7 @@ function init() {
   $('paste-go').addEventListener('click', () => {
     const text = $('paste-text').value;
     state.linked = false;
+    state.sample = false;
     const kitchen = looksLikeKitchenJson(text) ? importKitchens(text)[0] : null;
     if (kitchen) {
       state.pickSource = 'inventory';
@@ -965,7 +966,8 @@ function init() {
   // ?debug keeps the old ladder of picks.
   $('paste-proceed').addEventListener('click', () => {
     if (document.body.classList.contains('testing')) {
-      startRungQuiz({ kitchen: state.kitchen ?? { kitchen: 'Pasted list', items: state.items }, inventory: inventory(), items: state.items, cache: state.pantry, missingBasics: state.missingBasics, version: VERSION, source: state.linked ? 'link' : 'paste', name: state.linked ? testerName() : '' });
+      const from = state.linked ? 'link' : state.sample ? 'sample' : 'paste';
+      startRungQuiz({ kitchen: state.kitchen ?? { kitchen: 'Pasted list', items: state.items }, inventory: inventory(), items: state.items, cache: state.pantry, missingBasics: state.missingBasics, version: VERSION, source: from, kitchenSource: from === 'paste' ? null : from, name: state.linked ? testerName() : '' });
       return;
     }
     endPasteReview();
@@ -1003,7 +1005,7 @@ function init() {
   renderInventory();
   renderContext();
   greet();
-  openSharedKitchen();
+  openSharedKitchen().then(() => openSamplePicker());
   addEventListener('hashchange', openSharedKitchen);
 }
 
@@ -1051,11 +1053,38 @@ async function openSharedKitchen() {
   state.reviewingPaste = true;
   state.kitchen = kitchen;
   state.linked = true;
+  state.sample = false;
   setItems(kitchen.items);
   showPasteSummary(kitchen.items);
   $('paste-proceed').textContent = 'Rate the recipes';
   greet(Object.keys(buildRungQuiz({ kitchen, inventory: inventory() }).dishes).length);
-  startRungQuiz({ kitchen, inventory: inventory(), items: state.items, cache: state.pantry, missingBasics: state.missingBasics, version: VERSION, source: 'link', name: testerName() });
+  startRungQuiz({ kitchen, inventory: inventory(), items: state.items, cache: state.pantry, missingBasics: state.missingBasics, version: VERSION, source: 'link', kitchenSource: 'link', name: testerName() });
+}
+
+// Sample kitchens (1.52.0): the bare site, with no #k= link, opens on "Pick the kitchen closest
+// to yours" (data/test-kitchens/kitchens.json). A pick goes straight into Confirm your foods.
+// Closing the picker leaves the paste box, so a custom list still works. Links skip all this.
+async function openSamplePicker() {
+  if (linkCode(location.hash) || !document.body.classList.contains('testing')) return;
+  let kitchens = [];
+  try {
+    const res = await fetch('data/test-kitchens/kitchens.json', { cache: 'no-cache' });
+    if (res.ok) kitchens = importKitchens(await res.text());
+  } catch { return; }
+  if (!kitchens.length || linkCode(location.hash)) return;
+  startKitchenPicker({ kitchens, onPick: openSampleKitchen });
+}
+function openSampleKitchen(kitchen) {
+  state.pickSource = 'inventory';
+  state.reviewingPaste = true;
+  state.kitchen = kitchen;
+  state.linked = false;
+  state.sample = true;
+  setItems(kitchen.items);
+  showPasteSummary(kitchen.items);
+  $('paste-proceed').textContent = 'Rate the recipes';
+  greet(Object.keys(buildRungQuiz({ kitchen, inventory: inventory() }).dishes).length);
+  startRungQuiz({ kitchen, inventory: inventory(), items: state.items, cache: state.pantry, missingBasics: state.missingBasics, version: VERSION, source: 'sample', kitchenSource: 'sample', name: '' });
 }
 
 init();

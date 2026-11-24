@@ -247,7 +247,8 @@ function predictPick(theta, outside, c, lam) {
  * @param {Array<{xa: number[], xb: number[], pick: 'a'|'b'|'either'|'neither', mood?: string}>} choices
  *        xa/xb are featureVector()s, Pierre already filled in.
  * @param {{prior?: number[]}} [opts] prior: θ to start from and pull toward (default FEATURES priors).
- * @returns {{theta, outside, lambdas, hits, looHits, priorHits, n}}
+ * @returns {{theta, outside, lambdas, hits, looHits, priorHits, priorOutside, pairN, pairHits, priorPairHits, n}}
+ *          pairN/pairHits/priorPairHits: strict a/b picks only, where the outside threshold plays no part.
  */
 export function fitMarco(choices, { alpha = 2, moods = ['fresh', 'okay', 'tired'], minPerMood = 4, prior: start } = {}) {
   // `start` (FEATURES order) replaces the priors, e.g. the weights the app runs on now.
@@ -285,7 +286,20 @@ export function fitMarco(choices, { alpha = 2, moods = ['fresh', 'okay', 'tired'
   const outside = all.at(-1);
   const score = (th, out, cs) => cs.filter((c) => predictPick(th, out, c, lambdas[c.mood] ?? 1) === c.pick).length;
   const hits = score(theta, outside, choices);
-  const priorHits = score(prior.slice(0, -1), 0, choices);
+  // 1.52.0 (Fable, batch prep): the prior gets its own fitted "would you cook it" threshold. Until
+  // now it was scored with outside pinned at 0 while `hits` used the fitted one, so on star-derived
+  // picks today's weights looked far worse than they are (35/76 vs 63/76 LOO).
+  const priorTheta = prior.slice(0, -1);
+  const priorOutside = fitOutside(choiceRows(choices, lambdas), priorTheta, { alpha });
+  const priorHits = score(priorTheta, priorOutside, choices);
+  // Strict a/b picks only, where no threshold is involved: which of the two is easier.
+  const pairs = choices.filter((c) => c.pick === 'a' || c.pick === 'b');
+  const pairPick = (th, c) => {
+    const lam = lambdas[c.mood] ?? 1;
+    return utility(th, c.xa, lam) >= utility(th, c.xb, lam) ? 'a' : 'b';
+  };
+  const pairHits = pairs.filter((c) => pairPick(theta, c) === c.pick).length;
+  const priorPairHits = pairs.filter((c) => pairPick(priorTheta, c) === c.pick).length;
   // Leave-one-out: would Marco have predicted each tap without seeing it?
   let looHits = null;
   if (choices.length >= 3 && choices.length <= 150) {
@@ -296,7 +310,31 @@ export function fitMarco(choices, { alpha = 2, moods = ['fresh', 'okay', 'tired'
       if (predictPick(th.slice(0, -1), th.at(-1), choices[i], lambdas[choices[i].mood] ?? 1) === choices[i].pick) looHits++;
     }
   }
-  return { theta, outside, lambdas, hits, looHits, priorHits, n: choices.length };
+  return { theta, outside, lambdas, hits, looHits, priorHits, priorOutside, pairN: pairs.length, pairHits, priorPairHits, n: choices.length };
+}
+
+/**
+ * The outside threshold alone, with θ held fixed: a 1-D MAP logistic fit of the last column of
+ * choiceRows (pulled toward 0 by alpha), so fixed weights are scored on the same terms as fitted ones.
+ */
+function fitOutside(rows, theta, { alpha = 1, iterations = 30 } = {}) {
+  let o = 0;
+  for (let it = 0; it < iterations; it++) {
+    let g = alpha * o;
+    let h = alpha;
+    for (const r of rows) {
+      const k = r.x.at(-1);
+      if (!k) continue;
+      const wt = r.w ?? 1;
+      const p = sigmoid(r.x.slice(0, -1).reduce((acc, v, j) => acc + v * theta[j], 0) + k * o);
+      g += wt * (p - r.y) * k;
+      h += wt * p * (1 - p) * k * k;
+    }
+    const step = g / h;
+    o -= step;
+    if (Math.abs(step) < 1e-9) break;
+  }
+  return o;
 }
 
 /**
