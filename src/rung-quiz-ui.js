@@ -195,7 +195,9 @@ function renderPicker() {
   shownKey = 'picker';
   shownAt = performance.now();
   sheetId = null;
-  const brief = (k) => esc(String(k.notes ?? '').split(/[;.]\s/)[0].slice(0, 90));
+  // 1.54.0: persona kitchens describe the person, so the picker shows that; others show the cookware.
+  const brief = (k) => esc(k.persona ?? String(k.notes ?? '').split(/[;.]\s/)[0].slice(0, 90));
+  const personas = picker.kitchens.some((k) => k.persona);
   root.innerHTML = `
     <header class="rq-top">
       <button class="rq-icon" data-act="close" type="button" aria-label="Close">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -204,8 +206,8 @@ function renderPicker() {
     </header>
     <main class="rq-body" data-kind="picker">
       <p class="rq-eyebrow">Harvey’s</p>
-      <h1 class="rq-q">Pick the kitchen closest to yours</h1>
-      <p class="rq-hint">You’ll tick what you have and untick what you don’t next.</p>
+      <h1 class="rq-q">${personas ? 'Which of these sounds most like you?' : 'Pick the kitchen closest to yours'}</h1>
+      <p class="rq-hint">${personas ? 'Next, make the kitchen yours: untick what you don’t have, add what you do.' : 'You’ll tick what you have and untick what you don’t next.'}</p>
       <div class="rq-cats">${picker.kitchens.map((k, i) => `<button class="rq-cat rq-kitchen" data-act="pickkitchen" data-i="${i}" type="button">${HX}<b>${esc(k.kitchen)}</b><span>${brief(k) || `${(k.items ?? []).length} items`}</span>${CHEV}</button>`).join('')}</div>
     </main>
     <footer class="rq-foot"></footer>`;

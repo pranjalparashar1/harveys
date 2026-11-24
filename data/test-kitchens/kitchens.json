@@ -1,62 +1,227 @@
 [
  {
-  "kitchen": "Aspirational bachelor (test persona)",
+  "kitchen": "L1 · Mostly orders in",
+  "level": 1,
+  "diet": "veg+eggs",
+  "persona": "I order in. Maggi, an omelette, and that’s about it.",
+  "notes": "Kettle, single induction, small nonstick pan; nothing else; Orders in most days. Can boil water, make Maggi and an omelette or scrambled egg in a nonstick pan, and that's it. Doesn't want to cook more. Sparse fridge, leftovers from takeaway. Can't chop.",
   "items": [
+   {
+    "name": "single induction cooktop",
+    "category": "appliance"
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance"
+   },
+   {
+    "name": "small nonstick frying pan",
+    "category": "cookware"
+   },
+   {
+    "name": "plastic spatula",
+    "category": "utensil"
+   },
+   {
+    "name": "mugs",
+    "category": "utensil"
+   },
+   {
+    "name": "plates",
+    "category": "utensil"
+   },
    {
     "name": "eggs",
     "category": "protein"
    },
    {
-    "name": "soya chunks",
-    "category": "protein"
-   },
-   {
-    "name": "whey protein",
-    "category": "protein"
-   },
-   {
-    "name": "paneer",
-    "category": "dairy"
-   },
-   {
-    "name": "greek yogurt",
-    "category": "dairy"
-   },
-   {
-    "name": "toned milk",
-    "category": "dairy"
-   },
-   {
-    "name": "cheese slices",
-    "category": "dairy"
-   },
-   {
-    "name": "butter",
-    "category": "dairy"
-   },
-   {
-    "name": "rolled oats",
+    "name": "Maggi noodles",
     "category": "grain"
    },
    {
-    "name": "quinoa",
+    "name": "cup noodles",
     "category": "grain"
    },
    {
-    "name": "brown rice",
-    "category": "grain"
-   },
-   {
-    "name": "whole wheat pasta",
-    "category": "grain"
-   },
-   {
-    "name": "moong dal",
-    "category": "grain"
-   },
-   {
-    "name": "multigrain bread",
+    "name": "white bread",
     "category": "bread"
+   },
+   {
+    "name": "Amul butter",
+    "category": "dairy"
+   },
+   {
+    "name": "Amul cheese slices",
+    "category": "dairy"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "instant coffee",
+    "category": "drink"
+   },
+   {
+    "name": "cornflakes",
+    "category": "grain"
+   },
+   {
+    "name": "ketchup",
+    "category": "condiment"
+   },
+   {
+    "name": "chocolate hazelnut spread",
+    "category": "sweet"
+   },
+   {
+    "name": "frozen aloo parathas",
+    "category": "bread"
+   },
+   {
+    "name": "bananas",
+    "category": "fruit"
+   },
+   {
+    "name": "salt",
+    "category": "spice"
+   },
+   {
+    "name": "black pepper",
+    "category": "spice"
+   },
+   {
+    "name": "leftover takeaway dal makhani",
+    "category": "other"
+   }
+  ]
+ },
+ {
+  "kitchen": "L2 · Cooks now and then",
+  "level": 2,
+  "diet": "veg+eggs",
+  "persona": "I mostly order in, but I make chai and try cooking now and then.",
+  "notes": "Kettle, 2-burner gas plus induction, saucepan, nonstick pan and kadhai, microwave; Still orders in, but wants to cook now and then. Makes tea in a saucepan. A few spices, one dal, no rice. Slow, clumsy with a knife, will try a new thing if it's simple.",
+  "items": [
+   {
+    "name": "single induction cooktop",
+    "category": "appliance"
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance"
+   },
+   {
+    "name": "small nonstick frying pan",
+    "category": "cookware"
+   },
+   {
+    "name": "plastic spatula",
+    "category": "utensil"
+   },
+   {
+    "name": "mugs",
+    "category": "utensil"
+   },
+   {
+    "name": "plates",
+    "category": "utensil"
+   },
+   {
+    "name": "2-burner gas stove",
+    "category": "appliance"
+   },
+   {
+    "name": "saucepan",
+    "category": "cookware"
+   },
+   {
+    "name": "nonstick kadhai",
+    "category": "cookware"
+   },
+   {
+    "name": "microwave",
+    "category": "appliance"
+   },
+   {
+    "name": "butter knife",
+    "category": "utensil"
+   },
+   {
+    "name": "ladle",
+    "category": "utensil"
+   },
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "Maggi noodles",
+    "category": "grain"
+   },
+   {
+    "name": "cup noodles",
+    "category": "grain"
+   },
+   {
+    "name": "white bread",
+    "category": "bread"
+   },
+   {
+    "name": "Amul butter",
+    "category": "dairy"
+   },
+   {
+    "name": "Amul cheese slices",
+    "category": "dairy"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "instant coffee",
+    "category": "drink"
+   },
+   {
+    "name": "cornflakes",
+    "category": "grain"
+   },
+   {
+    "name": "ketchup",
+    "category": "condiment"
+   },
+   {
+    "name": "chocolate hazelnut spread",
+    "category": "sweet"
+   },
+   {
+    "name": "frozen aloo parathas",
+    "category": "bread"
+   },
+   {
+    "name": "bananas",
+    "category": "fruit"
+   },
+   {
+    "name": "salt",
+    "category": "spice"
+   },
+   {
+    "name": "black pepper",
+    "category": "spice"
+   },
+   {
+    "name": "leftover takeaway dal makhani",
+    "category": "other"
+   },
+   {
+    "name": "tea leaves",
+    "category": "drink"
+   },
+   {
+    "name": "sugar",
+    "category": "sweet"
    },
    {
     "name": "onion",
@@ -67,11 +232,344 @@
     "category": "veg"
    },
    {
+    "name": "frozen peas",
+    "category": "veg"
+   },
+   {
+    "name": "frozen sweet corn",
+    "category": "veg"
+   },
+   {
+    "name": "yellow moong dal",
+    "category": "grain"
+   },
+   {
+    "name": "instant oats",
+    "category": "grain"
+   },
+   {
+    "name": "curd",
+    "category": "dairy"
+   },
+   {
+    "name": "honey",
+    "category": "sweet"
+   },
+   {
+    "name": "roasted peanuts",
+    "category": "snack"
+   },
+   {
+    "name": "ginger garlic paste",
+    "category": "condiment"
+   },
+   {
+    "name": "schezwan chutney",
+    "category": "condiment"
+   },
+   {
+    "name": "ready-to-eat rajma masala pouch",
+    "category": "other"
+   },
+   {
+    "name": "turmeric",
+    "category": "spice"
+   },
+   {
+    "name": "red chilli powder",
+    "category": "spice"
+   },
+   {
+    "name": "cumin seeds",
+    "category": "spice"
+   },
+   {
+    "name": "garam masala",
+    "category": "spice"
+   },
+   {
+    "name": "cooking oil",
+    "category": "fat"
+   }
+  ]
+ },
+ {
+  "kitchen": "L3 · Basic cook, watches macros",
+  "level": 3,
+  "diet": "veg+eggs",
+  "persona": "I can cook the basics, and I’m starting to watch my protein.",
+  "notes": "Adds blender, pressure cooker, sandwich maker, egg boiler, knife and board; Basic cooking skills. Can boil and peel eggs, blend a shake, do a simple sabzi. Starting to care about protein. Has bought some healthy-shelf things they haven't figured out yet.",
+  "items": [
+   {
+    "name": "single induction cooktop",
+    "category": "appliance"
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance"
+   },
+   {
+    "name": "small nonstick frying pan",
+    "category": "cookware"
+   },
+   {
+    "name": "plastic spatula",
+    "category": "utensil"
+   },
+   {
+    "name": "mugs",
+    "category": "utensil"
+   },
+   {
+    "name": "plates",
+    "category": "utensil"
+   },
+   {
+    "name": "2-burner gas stove",
+    "category": "appliance"
+   },
+   {
+    "name": "saucepan",
+    "category": "cookware"
+   },
+   {
+    "name": "nonstick kadhai",
+    "category": "cookware"
+   },
+   {
+    "name": "microwave",
+    "category": "appliance"
+   },
+   {
+    "name": "butter knife",
+    "category": "utensil"
+   },
+   {
+    "name": "ladle",
+    "category": "utensil"
+   },
+   {
+    "name": "blender",
+    "category": "appliance"
+   },
+   {
+    "name": "3-litre pressure cooker",
+    "category": "cookware"
+   },
+   {
+    "name": "sandwich maker",
+    "category": "appliance"
+   },
+   {
+    "name": "kitchen knife",
+    "category": "utensil"
+   },
+   {
+    "name": "chopping board",
+    "category": "utensil"
+   },
+   {
+    "name": "shaker bottle",
+    "category": "utensil"
+   },
+   {
+    "name": "egg boiler",
+    "category": "appliance"
+   },
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "Maggi noodles",
+    "category": "grain"
+   },
+   {
+    "name": "cup noodles",
+    "category": "grain"
+   },
+   {
+    "name": "white bread",
+    "category": "bread"
+   },
+   {
+    "name": "Amul butter",
+    "category": "dairy"
+   },
+   {
+    "name": "Amul cheese slices",
+    "category": "dairy"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "instant coffee",
+    "category": "drink"
+   },
+   {
+    "name": "cornflakes",
+    "category": "grain"
+   },
+   {
+    "name": "ketchup",
+    "category": "condiment"
+   },
+   {
+    "name": "chocolate hazelnut spread",
+    "category": "sweet"
+   },
+   {
+    "name": "frozen aloo parathas",
+    "category": "bread"
+   },
+   {
+    "name": "bananas",
+    "category": "fruit"
+   },
+   {
+    "name": "salt",
+    "category": "spice"
+   },
+   {
+    "name": "black pepper",
+    "category": "spice"
+   },
+   {
+    "name": "leftover takeaway dal makhani",
+    "category": "other"
+   },
+   {
+    "name": "tea leaves",
+    "category": "drink"
+   },
+   {
+    "name": "sugar",
+    "category": "sweet"
+   },
+   {
+    "name": "onion",
+    "category": "veg"
+   },
+   {
+    "name": "tomato",
+    "category": "veg"
+   },
+   {
+    "name": "frozen peas",
+    "category": "veg"
+   },
+   {
+    "name": "frozen sweet corn",
+    "category": "veg"
+   },
+   {
+    "name": "yellow moong dal",
+    "category": "grain"
+   },
+   {
+    "name": "instant oats",
+    "category": "grain"
+   },
+   {
+    "name": "curd",
+    "category": "dairy"
+   },
+   {
+    "name": "honey",
+    "category": "sweet"
+   },
+   {
+    "name": "roasted peanuts",
+    "category": "snack"
+   },
+   {
+    "name": "ginger garlic paste",
+    "category": "condiment"
+   },
+   {
+    "name": "schezwan chutney",
+    "category": "condiment"
+   },
+   {
+    "name": "ready-to-eat rajma masala pouch",
+    "category": "other"
+   },
+   {
+    "name": "turmeric",
+    "category": "spice"
+   },
+   {
+    "name": "red chilli powder",
+    "category": "spice"
+   },
+   {
+    "name": "cumin seeds",
+    "category": "spice"
+   },
+   {
+    "name": "garam masala",
+    "category": "spice"
+   },
+   {
+    "name": "cooking oil",
+    "category": "fat"
+   },
+   {
+    "name": "paneer",
+    "category": "dairy"
+   },
+   {
+    "name": "Greek yogurt",
+    "category": "dairy"
+   },
+   {
+    "name": "whey protein",
+    "category": "protein"
+   },
+   {
+    "name": "peanut butter",
+    "category": "spread"
+   },
+   {
+    "name": "rolled oats",
+    "category": "grain"
+   },
+   {
+    "name": "multigrain bread",
+    "category": "bread"
+   },
+   {
+    "name": "canned chickpeas",
+    "category": "protein"
+   },
+   {
+    "name": "moong sprouts",
+    "category": "protein"
+   },
+   {
+    "name": "mozzarella",
+    "category": "dairy"
+   },
+   {
+    "name": "hummus",
+    "category": "spread"
+   },
+   {
+    "name": "potato",
+    "category": "veg"
+   },
+   {
+    "name": "sweet potato",
+    "category": "veg"
+   },
+   {
     "name": "capsicum",
     "category": "veg"
    },
    {
-    "name": "spinach",
+    "name": "cucumber",
     "category": "veg"
    },
    {
@@ -83,7 +581,7 @@
     "category": "veg"
    },
    {
-    "name": "frozen sweet corn",
+    "name": "coriander leaves",
     "category": "veg"
    },
    {
@@ -91,56 +589,193 @@
     "category": "fruit"
    },
    {
-    "name": "banana",
+    "name": "apple",
     "category": "fruit"
-   },
-   {
-    "name": "olive oil",
-    "category": "fat"
-   },
-   {
-    "name": "ghee",
-    "category": "fat"
-   },
-   {
-    "name": "peanut butter",
-    "category": "nuts_seeds"
-   },
-   {
-    "name": "almonds",
-    "category": "nuts_seeds"
    },
    {
     "name": "chia seeds",
     "category": "nuts_seeds"
    },
    {
-    "name": "flax seeds",
-    "category": "nuts_seeds"
+    "name": "chaat masala",
+    "category": "spice"
    },
    {
-    "name": "makhana",
-    "category": "snack"
+    "name": "chilli flakes",
+    "category": "spice"
    },
    {
-    "name": "honey",
-    "category": "sweet"
+    "name": "oregano",
+    "category": "spice"
    },
    {
-    "name": "soy sauce",
-    "category": "condiment"
+    "name": "mustard seeds",
+    "category": "spice"
    },
    {
-    "name": "peri peri sauce",
-    "category": "condiment"
+    "name": "coriander powder",
+    "category": "spice"
+   }
+  ]
+ },
+ {
+  "kitchen": "L4 · Ambitious, protein-focused",
+  "level": 4,
+  "diet": "veg+eggs",
+  "persona": "I cook a lot, track macros, and own way too many spices.",
+  "notes": "Adds air fryer, tawa, rice cooker, kitchen scale, grater; Cooks rice, chops veg (slowly), knows soya, eggs in every form and paneer. Tracks macros. Very aspirational: the biggest spice rack of the five, garlic and onion powder included, but almost no sauces or condiments.",
+  "items": [
+   {
+    "name": "single induction cooktop",
+    "category": "appliance"
    },
    {
-    "name": "apple cider vinegar",
-    "category": "condiment"
+    "name": "electric kettle",
+    "category": "appliance"
+   },
+   {
+    "name": "small nonstick frying pan",
+    "category": "cookware"
+   },
+   {
+    "name": "plastic spatula",
+    "category": "utensil"
+   },
+   {
+    "name": "mugs",
+    "category": "utensil"
+   },
+   {
+    "name": "plates",
+    "category": "utensil"
+   },
+   {
+    "name": "2-burner gas stove",
+    "category": "appliance"
+   },
+   {
+    "name": "saucepan",
+    "category": "cookware"
+   },
+   {
+    "name": "nonstick kadhai",
+    "category": "cookware"
+   },
+   {
+    "name": "microwave",
+    "category": "appliance"
+   },
+   {
+    "name": "butter knife",
+    "category": "utensil"
+   },
+   {
+    "name": "ladle",
+    "category": "utensil"
+   },
+   {
+    "name": "blender",
+    "category": "appliance"
+   },
+   {
+    "name": "3-litre pressure cooker",
+    "category": "cookware"
+   },
+   {
+    "name": "sandwich maker",
+    "category": "appliance"
+   },
+   {
+    "name": "kitchen knife",
+    "category": "utensil"
+   },
+   {
+    "name": "chopping board",
+    "category": "utensil"
+   },
+   {
+    "name": "shaker bottle",
+    "category": "utensil"
+   },
+   {
+    "name": "egg boiler",
+    "category": "appliance"
+   },
+   {
+    "name": "air fryer",
+    "category": "appliance"
+   },
+   {
+    "name": "tawa",
+    "category": "cookware"
+   },
+   {
+    "name": "kitchen scale",
+    "category": "appliance"
+   },
+   {
+    "name": "rice cooker",
+    "category": "appliance"
+   },
+   {
+    "name": "steel strainer",
+    "category": "utensil"
+   },
+   {
+    "name": "grater",
+    "category": "utensil"
+   },
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "Maggi noodles",
+    "category": "grain"
+   },
+   {
+    "name": "cup noodles",
+    "category": "grain"
+   },
+   {
+    "name": "white bread",
+    "category": "bread"
+   },
+   {
+    "name": "Amul butter",
+    "category": "dairy"
+   },
+   {
+    "name": "Amul cheese slices",
+    "category": "dairy"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "instant coffee",
+    "category": "drink"
+   },
+   {
+    "name": "cornflakes",
+    "category": "grain"
    },
    {
     "name": "ketchup",
     "category": "condiment"
+   },
+   {
+    "name": "chocolate hazelnut spread",
+    "category": "sweet"
+   },
+   {
+    "name": "frozen aloo parathas",
+    "category": "bread"
+   },
+   {
+    "name": "bananas",
+    "category": "fruit"
    },
    {
     "name": "salt",
@@ -151,6 +786,66 @@
     "category": "spice"
    },
    {
+    "name": "leftover takeaway dal makhani",
+    "category": "other"
+   },
+   {
+    "name": "tea leaves",
+    "category": "drink"
+   },
+   {
+    "name": "sugar",
+    "category": "sweet"
+   },
+   {
+    "name": "onion",
+    "category": "veg"
+   },
+   {
+    "name": "tomato",
+    "category": "veg"
+   },
+   {
+    "name": "frozen peas",
+    "category": "veg"
+   },
+   {
+    "name": "frozen sweet corn",
+    "category": "veg"
+   },
+   {
+    "name": "yellow moong dal",
+    "category": "grain"
+   },
+   {
+    "name": "instant oats",
+    "category": "grain"
+   },
+   {
+    "name": "curd",
+    "category": "dairy"
+   },
+   {
+    "name": "honey",
+    "category": "sweet"
+   },
+   {
+    "name": "roasted peanuts",
+    "category": "snack"
+   },
+   {
+    "name": "ginger garlic paste",
+    "category": "condiment"
+   },
+   {
+    "name": "schezwan chutney",
+    "category": "condiment"
+   },
+   {
+    "name": "ready-to-eat rajma masala pouch",
+    "category": "other"
+   },
+   {
     "name": "turmeric",
     "category": "spice"
    },
@@ -159,15 +854,7 @@
     "category": "spice"
    },
    {
-    "name": "kashmiri chilli powder",
-    "category": "spice"
-   },
-   {
     "name": "cumin seeds",
-    "category": "spice"
-   },
-   {
-    "name": "coriander powder",
     "category": "spice"
    },
    {
@@ -175,15 +862,91 @@
     "category": "spice"
    },
    {
+    "name": "cooking oil",
+    "category": "fat"
+   },
+   {
+    "name": "paneer",
+    "category": "dairy"
+   },
+   {
+    "name": "Greek yogurt",
+    "category": "dairy"
+   },
+   {
+    "name": "whey protein",
+    "category": "protein"
+   },
+   {
+    "name": "peanut butter",
+    "category": "spread"
+   },
+   {
+    "name": "rolled oats",
+    "category": "grain"
+   },
+   {
+    "name": "multigrain bread",
+    "category": "bread"
+   },
+   {
+    "name": "canned chickpeas",
+    "category": "protein"
+   },
+   {
+    "name": "moong sprouts",
+    "category": "protein"
+   },
+   {
+    "name": "mozzarella",
+    "category": "dairy"
+   },
+   {
+    "name": "hummus",
+    "category": "spread"
+   },
+   {
+    "name": "potato",
+    "category": "veg"
+   },
+   {
+    "name": "sweet potato",
+    "category": "veg"
+   },
+   {
+    "name": "capsicum",
+    "category": "veg"
+   },
+   {
+    "name": "cucumber",
+    "category": "veg"
+   },
+   {
+    "name": "garlic",
+    "category": "veg"
+   },
+   {
+    "name": "green chilli",
+    "category": "veg"
+   },
+   {
+    "name": "coriander leaves",
+    "category": "veg"
+   },
+   {
+    "name": "lemon",
+    "category": "fruit"
+   },
+   {
+    "name": "apple",
+    "category": "fruit"
+   },
+   {
+    "name": "chia seeds",
+    "category": "nuts_seeds"
+   },
+   {
     "name": "chaat masala",
-    "category": "spice"
-   },
-   {
-    "name": "kasuri methi",
-    "category": "spice"
-   },
-   {
-    "name": "mustard seeds",
     "category": "spice"
    },
    {
@@ -192,22 +955,267 @@
    },
    {
     "name": "oregano",
-    "category": "herb"
-   },
-   {
-    "name": "cinnamon powder",
     "category": "spice"
    },
    {
-    "name": "black coffee",
-    "category": "drink"
+    "name": "mustard seeds",
+    "category": "spice"
    },
    {
-    "name": "green tea bags",
-    "category": "drink"
+    "name": "coriander powder",
+    "category": "spice"
    },
    {
-    "name": "milk frother",
+    "name": "basmati rice",
+    "category": "grain"
+   },
+   {
+    "name": "brown rice",
+    "category": "grain"
+   },
+   {
+    "name": "quinoa",
+    "category": "grain"
+   },
+   {
+    "name": "soya chunks",
+    "category": "protein"
+   },
+   {
+    "name": "tofu",
+    "category": "protein"
+   },
+   {
+    "name": "tray of 30 eggs",
+    "category": "protein"
+   },
+   {
+    "name": "low-fat paneer",
+    "category": "dairy"
+   },
+   {
+    "name": "sattu",
+    "category": "grain"
+   },
+   {
+    "name": "besan",
+    "category": "grain"
+   },
+   {
+    "name": "kala chana",
+    "category": "protein"
+   },
+   {
+    "name": "chana dal",
+    "category": "grain"
+   },
+   {
+    "name": "spinach",
+    "category": "veg"
+   },
+   {
+    "name": "mushrooms",
+    "category": "veg"
+   },
+   {
+    "name": "broccoli",
+    "category": "veg"
+   },
+   {
+    "name": "zucchini",
+    "category": "veg"
+   },
+   {
+    "name": "carrot",
+    "category": "veg"
+   },
+   {
+    "name": "spring onion",
+    "category": "veg"
+   },
+   {
+    "name": "ghee",
+    "category": "fat"
+   },
+   {
+    "name": "olive oil",
+    "category": "fat"
+   },
+   {
+    "name": "almonds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "flax seeds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "garlic powder",
+    "category": "spice"
+   },
+   {
+    "name": "onion powder",
+    "category": "spice"
+   },
+   {
+    "name": "smoked paprika",
+    "category": "spice"
+   },
+   {
+    "name": "kashmiri chilli powder",
+    "category": "spice"
+   },
+   {
+    "name": "cinnamon sticks",
+    "category": "spice"
+   },
+   {
+    "name": "star anise",
+    "category": "spice"
+   },
+   {
+    "name": "bay leaves",
+    "category": "spice"
+   },
+   {
+    "name": "green cardamom",
+    "category": "spice"
+   },
+   {
+    "name": "cloves",
+    "category": "spice"
+   },
+   {
+    "name": "fennel seeds",
+    "category": "spice"
+   },
+   {
+    "name": "ajwain",
+    "category": "spice"
+   },
+   {
+    "name": "hing",
+    "category": "spice"
+   },
+   {
+    "name": "amchur",
+    "category": "spice"
+   },
+   {
+    "name": "kasuri methi",
+    "category": "spice"
+   },
+   {
+    "name": "pav bhaji masala",
+    "category": "spice"
+   },
+   {
+    "name": "chole masala",
+    "category": "spice"
+   },
+   {
+    "name": "sambar masala",
+    "category": "spice"
+   },
+   {
+    "name": "peri peri seasoning",
+    "category": "spice"
+   },
+   {
+    "name": "Italian seasoning",
+    "category": "spice"
+   },
+   {
+    "name": "curry leaves",
+    "category": "spice"
+   },
+   {
+    "name": "cumin powder",
+    "category": "spice"
+   }
+  ]
+ },
+ {
+  "kitchen": "L5 · Confident home cook",
+  "level": 5,
+  "diet": "veg+eggs",
+  "persona": "I cook anything, keep it simple, and have the sauces to show for it.",
+  "notes": "Everything above plus a second pan and kadai; air fryer, induction, microwave, blender, scale; Cooks anything, runs two or three pans at once. Every veg protein plus eggs, rice, poha, dal, chole, chana, rajma. Spices cut down to essentials, a good shelf of condiments, sauces and shortcuts.",
+  "items": [
+   {
+    "name": "single induction cooktop",
+    "category": "appliance"
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance"
+   },
+   {
+    "name": "small nonstick frying pan",
+    "category": "cookware"
+   },
+   {
+    "name": "plastic spatula",
+    "category": "utensil"
+   },
+   {
+    "name": "mugs",
+    "category": "utensil"
+   },
+   {
+    "name": "plates",
+    "category": "utensil"
+   },
+   {
+    "name": "2-burner gas stove",
+    "category": "appliance"
+   },
+   {
+    "name": "saucepan",
+    "category": "cookware"
+   },
+   {
+    "name": "nonstick kadhai",
+    "category": "cookware"
+   },
+   {
+    "name": "microwave",
+    "category": "appliance"
+   },
+   {
+    "name": "butter knife",
+    "category": "utensil"
+   },
+   {
+    "name": "ladle",
+    "category": "utensil"
+   },
+   {
+    "name": "blender",
+    "category": "appliance"
+   },
+   {
+    "name": "3-litre pressure cooker",
+    "category": "cookware"
+   },
+   {
+    "name": "sandwich maker",
+    "category": "appliance"
+   },
+   {
+    "name": "kitchen knife",
+    "category": "utensil"
+   },
+   {
+    "name": "chopping board",
+    "category": "utensil"
+   },
+   {
+    "name": "shaker bottle",
+    "category": "utensil"
+   },
+   {
+    "name": "egg boiler",
     "category": "appliance"
    },
    {
@@ -215,7 +1223,27 @@
     "category": "appliance"
    },
    {
-    "name": "microwave",
+    "name": "tawa",
+    "category": "cookware"
+   },
+   {
+    "name": "kitchen scale",
+    "category": "appliance"
+   },
+   {
+    "name": "rice cooker",
+    "category": "appliance"
+   },
+   {
+    "name": "steel strainer",
+    "category": "utensil"
+   },
+   {
+    "name": "grater",
+    "category": "utensil"
+   },
+   {
+    "name": "Philips air fryer",
     "category": "appliance"
    },
    {
@@ -223,19 +1251,437 @@
     "category": "appliance"
    },
    {
-    "name": "nonstick pan",
+    "name": "large saucepan",
     "category": "cookware"
    },
    {
-    "name": "nonstick kadai",
+    "name": "steel kadai",
     "category": "cookware"
    },
    {
-    "name": "metal spatula",
+    "name": "frying pan",
     "category": "cookware"
+   },
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "Maggi noodles",
+    "category": "grain"
+   },
+   {
+    "name": "cup noodles",
+    "category": "grain"
+   },
+   {
+    "name": "white bread",
+    "category": "bread"
+   },
+   {
+    "name": "Amul butter",
+    "category": "dairy"
+   },
+   {
+    "name": "Amul cheese slices",
+    "category": "dairy"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "instant coffee",
+    "category": "drink"
+   },
+   {
+    "name": "cornflakes",
+    "category": "grain"
+   },
+   {
+    "name": "ketchup",
+    "category": "condiment"
+   },
+   {
+    "name": "chocolate hazelnut spread",
+    "category": "sweet"
+   },
+   {
+    "name": "frozen aloo parathas",
+    "category": "bread"
+   },
+   {
+    "name": "bananas",
+    "category": "fruit"
+   },
+   {
+    "name": "salt",
+    "category": "spice"
+   },
+   {
+    "name": "black pepper",
+    "category": "spice"
+   },
+   {
+    "name": "leftover takeaway dal makhani",
+    "category": "other"
+   },
+   {
+    "name": "tea leaves",
+    "category": "drink"
+   },
+   {
+    "name": "sugar",
+    "category": "sweet"
+   },
+   {
+    "name": "onion",
+    "category": "veg"
+   },
+   {
+    "name": "tomato",
+    "category": "veg"
+   },
+   {
+    "name": "frozen peas",
+    "category": "veg"
+   },
+   {
+    "name": "frozen sweet corn",
+    "category": "veg"
+   },
+   {
+    "name": "yellow moong dal",
+    "category": "grain"
+   },
+   {
+    "name": "instant oats",
+    "category": "grain"
+   },
+   {
+    "name": "curd",
+    "category": "dairy"
+   },
+   {
+    "name": "honey",
+    "category": "sweet"
+   },
+   {
+    "name": "roasted peanuts",
+    "category": "snack"
+   },
+   {
+    "name": "ginger garlic paste",
+    "category": "condiment"
+   },
+   {
+    "name": "schezwan chutney",
+    "category": "condiment"
+   },
+   {
+    "name": "ready-to-eat rajma masala pouch",
+    "category": "other"
+   },
+   {
+    "name": "turmeric",
+    "category": "spice"
+   },
+   {
+    "name": "red chilli powder",
+    "category": "spice"
+   },
+   {
+    "name": "cumin seeds",
+    "category": "spice"
+   },
+   {
+    "name": "garam masala",
+    "category": "spice"
+   },
+   {
+    "name": "cooking oil",
+    "category": "fat"
+   },
+   {
+    "name": "paneer",
+    "category": "dairy"
+   },
+   {
+    "name": "Greek yogurt",
+    "category": "dairy"
+   },
+   {
+    "name": "whey protein",
+    "category": "protein"
+   },
+   {
+    "name": "peanut butter",
+    "category": "spread"
+   },
+   {
+    "name": "rolled oats",
+    "category": "grain"
+   },
+   {
+    "name": "multigrain bread",
+    "category": "bread"
+   },
+   {
+    "name": "canned chickpeas",
+    "category": "protein"
+   },
+   {
+    "name": "moong sprouts",
+    "category": "protein"
+   },
+   {
+    "name": "mozzarella",
+    "category": "dairy"
+   },
+   {
+    "name": "hummus",
+    "category": "spread"
+   },
+   {
+    "name": "potato",
+    "category": "veg"
+   },
+   {
+    "name": "sweet potato",
+    "category": "veg"
+   },
+   {
+    "name": "capsicum",
+    "category": "veg"
+   },
+   {
+    "name": "cucumber",
+    "category": "veg"
+   },
+   {
+    "name": "garlic",
+    "category": "veg"
+   },
+   {
+    "name": "green chilli",
+    "category": "veg"
+   },
+   {
+    "name": "coriander leaves",
+    "category": "veg"
+   },
+   {
+    "name": "lemon",
+    "category": "fruit"
+   },
+   {
+    "name": "apple",
+    "category": "fruit"
+   },
+   {
+    "name": "chia seeds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "chaat masala",
+    "category": "spice"
+   },
+   {
+    "name": "chilli flakes",
+    "category": "spice"
+   },
+   {
+    "name": "oregano",
+    "category": "spice"
+   },
+   {
+    "name": "mustard seeds",
+    "category": "spice"
+   },
+   {
+    "name": "coriander powder",
+    "category": "spice"
+   },
+   {
+    "name": "basmati rice",
+    "category": "grain"
+   },
+   {
+    "name": "brown rice",
+    "category": "grain"
+   },
+   {
+    "name": "quinoa",
+    "category": "grain"
+   },
+   {
+    "name": "soya chunks",
+    "category": "protein"
+   },
+   {
+    "name": "tofu",
+    "category": "protein"
+   },
+   {
+    "name": "tray of 30 eggs",
+    "category": "protein"
+   },
+   {
+    "name": "low-fat paneer",
+    "category": "dairy"
+   },
+   {
+    "name": "sattu",
+    "category": "grain"
+   },
+   {
+    "name": "besan",
+    "category": "grain"
+   },
+   {
+    "name": "kala chana",
+    "category": "protein"
+   },
+   {
+    "name": "chana dal",
+    "category": "grain"
+   },
+   {
+    "name": "spinach",
+    "category": "veg"
+   },
+   {
+    "name": "mushrooms",
+    "category": "veg"
+   },
+   {
+    "name": "broccoli",
+    "category": "veg"
+   },
+   {
+    "name": "zucchini",
+    "category": "veg"
+   },
+   {
+    "name": "carrot",
+    "category": "veg"
+   },
+   {
+    "name": "spring onion",
+    "category": "veg"
+   },
+   {
+    "name": "ghee",
+    "category": "fat"
+   },
+   {
+    "name": "olive oil",
+    "category": "fat"
+   },
+   {
+    "name": "almonds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "flax seeds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "hing",
+    "category": "spice"
+   },
+   {
+    "name": "kasuri methi",
+    "category": "spice"
+   },
+   {
+    "name": "curry leaves",
+    "category": "spice"
+   },
+   {
+    "name": "Nakpro whey protein",
+    "category": "protein"
+   },
+   {
+    "name": "protein bread",
+    "category": "bread"
+   },
+   {
+    "name": "fusilli",
+    "category": "grain"
+   },
+   {
+    "name": "makhana",
+    "category": "snack"
+   },
+   {
+    "name": "poha",
+    "category": "grain"
+   },
+   {
+    "name": "rajma",
+    "category": "protein"
+   },
+   {
+    "name": "kabuli chana",
+    "category": "protein"
+   },
+   {
+    "name": "toor dal",
+    "category": "grain"
+   },
+   {
+    "name": "hung curd",
+    "category": "dairy"
+   },
+   {
+    "name": "fresh cream",
+    "category": "dairy"
+   },
+   {
+    "name": "soy sauce",
+    "category": "condiment"
+   },
+   {
+    "name": "white vinegar",
+    "category": "condiment"
+   },
+   {
+    "name": "sriracha",
+    "category": "condiment"
+   },
+   {
+    "name": "eggless mayo",
+    "category": "condiment"
+   },
+   {
+    "name": "kasundi mustard",
+    "category": "condiment"
+   },
+   {
+    "name": "peri peri sauce",
+    "category": "condiment"
+   },
+   {
+    "name": "green chutney",
+    "category": "condiment"
+   },
+   {
+    "name": "tamarind chutney",
+    "category": "condiment"
+   },
+   {
+    "name": "aglio olio paste",
+    "category": "condiment"
+   },
+   {
+    "name": "Knorr veg stock cubes",
+    "category": "condiment"
+   },
+   {
+    "name": "frozen parathas",
+    "category": "bread"
    }
-  ],
-  "diet": "veg+eggs",
-  "notes": "single working Indian male, 25-35, getting fitter; lots of ingredients, little technique; no kettle, saucepan or pressure cooker; stirs nonstick with a metal spatula"
+  ]
  }
 ]
