@@ -7,7 +7,7 @@ import { buildInventory } from '../src/brain/inventory.js';
 import { buildRungQuiz, encodeRungResult } from '../src/brain/rung-quiz.js';
 
 const cache = JSON.parse(readFileSync(new URL('../data/ingredient-cache.json', import.meta.url), 'utf8'));
-const [kitchen] = loadKitchens(readFileSync(new URL('../data/test-kitchens/kitchens.json', import.meta.url), 'utf8'));
+const [kitchen] = loadKitchens(readFileSync(new URL('./fixtures/bachelor-kitchen.json', import.meta.url), 'utf8'));
 const quiz = buildRungQuiz({ kitchen, inventory: buildInventory(kitchen.items, { cache }) });
 const NOW = Date.parse('2026-11-22T12:00:00Z');
 const result = encodeRungResult(quiz, { marco: {}, pierre: {}, white: {} }, { version: '1.33.0', at: '2026-11-22T11:00:00Z', testerId: 't-abc123' });

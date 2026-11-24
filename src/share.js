@@ -1,6 +1,8 @@
 // share.html (1.34.0): paste or upload the video agent's kitchen JSON, get one taste-test link
 // per kitchen, and send it on WhatsApp or iMessage in one tap. The kitchen rides in the link
 // itself (src/brain/share-link.js), so nothing is uploaded and every link works at once.
+// 1.52.0: or pick one of the sample kitchens (data/test-kitchens/kitchens.json), type the
+// tester's name on its card, and copy: two taps.
 import { importKitchens, buildInventory } from './brain/index.js';
 import { buildRungQuiz } from './brain/rung-quiz.js';
 import { encodeKitchen, linkFor, guessName, cleanName } from './brain/share-link.js';
@@ -9,7 +11,7 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SITE = new URL('./', location.href).href; // "Try it" opens on this copy of the site
 const PUBLIC = /github\.io/.test(location.host) ? SITE : 'https://pranjalparashar1.github.io/harveys/';
-const DEFAULT_MSG = 'Hi {name}! Here’s your Harvey’s taste test, made from your kitchen video. It takes a few minutes and it’s all taps:\n{link}';
+const DEFAULT_MSG = 'Hi {name}! Here’s your Harvey’s taste test. It takes a few minutes and it’s all taps:\n{link}';
 const KEYS = { text: 'harveys.share.text', msg: 'harveys.share.msg', names: 'harveys.share.names' };
 const get = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const set = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { /* private mode */ } };
@@ -45,6 +47,11 @@ async function make() {
     $('out').replaceChildren();
     return;
   }
+  await makeFrom(kitchens);
+}
+
+/** Kitchens → their cards, each with its link code and what its tester will see. */
+async function makeFrom(kitchens) {
   made = await Promise.all(kitchens.map(async (k) => ({ k, code: await encodeKitchen(k), name: names[k.kitchen] ?? guessName(k.kitchen), ...preview(k) })));
   render();
 }
@@ -128,6 +135,33 @@ $('out').addEventListener('click', async (e) => {
 });
 
 $('make').addEventListener('click', () => { buzz(); make(); });
+
+// ── Sample kitchens (1.52.0) ─────────────────────────────────────────────────
+// A sample kitchen's name is an archetype ("Hostel room, kettle only"), not a person, so its
+// card starts with no name: type the tester's. Raw JSON above still works for a custom kitchen.
+let presets = [];
+async function loadPresets() {
+  try {
+    const res = await fetch('data/test-kitchens/kitchens.json', { cache: 'no-cache' });
+    if (!res.ok) return;
+    presets = importKitchens(await res.text());
+  } catch { return; }
+  if (!presets.length) return;
+  const sel = $('preset');
+  sel.innerHTML = `<option value="">Choose one</option>${presets.map((k, i) => `<option value="${i}">${esc(k.kitchen)}</option>`).join('')}${presets.length > 1 ? `<option value="all">All ${presets.length}</option>` : ''}`;
+  $('pick-card').hidden = false;
+}
+$('preset').addEventListener('change', async (e) => {
+  const v = e.target.value;
+  $('err').hidden = true;
+  if (v === '') { made = []; $('out').replaceChildren(); return; }
+  buzz();
+  const picked = v === 'all' ? presets : [presets[Number(v)]];
+  for (const k of picked) if (!(k.kitchen in names)) names[k.kitchen] = '';
+  await makeFrom(picked);
+  if (picked.length === 1) $('out').querySelector('.kname input')?.focus();
+});
+loadPresets();
 $('file').addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   if (!f) return;

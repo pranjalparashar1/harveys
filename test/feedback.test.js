@@ -9,7 +9,7 @@ import { checkResult } from '../relay/worker.js';
 import { blankFeedback, cleanFeedback, quickDishes, splitIdeas, placeIdea, summariseFeedback, feedbackReport } from '../src/brain/feedback.js';
 
 const cache = JSON.parse(readFileSync(new URL('../data/ingredient-cache.json', import.meta.url), 'utf8'));
-const [kitchen] = loadKitchens(readFileSync(new URL('../data/test-kitchens/kitchens.json', import.meta.url), 'utf8'));
+const [kitchen] = loadKitchens(readFileSync(new URL('./fixtures/bachelor-kitchen.json', import.meta.url), 'utf8'));
 const quiz = buildRungQuiz({ kitchen, inventory: buildInventory(kitchen.items, { cache }) });
 const [d1, d2] = Object.keys(quiz.dishes);
 

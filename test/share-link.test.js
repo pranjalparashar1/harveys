@@ -5,7 +5,7 @@ import { encodeKitchen, decodeKitchen, kitchenLink, linkCode, linkName, guessNam
 import { importKitchens } from '../src/brain/kitchens.js';
 import { kitchenId } from '../src/brain/kitchen-test.js';
 
-const [kitchen] = JSON.parse(readFileSync(new URL('../data/test-kitchens/kitchens.json', import.meta.url), 'utf8'));
+const [kitchen] = JSON.parse(readFileSync(new URL('./fixtures/bachelor-kitchen.json', import.meta.url), 'utf8'));
 
 test('a kitchen survives the link: same items, same kitchen id, so results line up', async () => {
   const back = await decodeKitchen(await encodeKitchen(kitchen));

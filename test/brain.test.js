@@ -366,11 +366,14 @@ test('5B: no vetoed dish appears on any rung', () => {
   for (const g of r.ladder) for (const x of [g.pick, ...g.alternatives]) assert.ok(!vetoed.has(x.meal.id) && x.pierre.tier !== 'veto', x.meal.id);
 });
 
-test('5B ladder trace: demo kitchen, Wednesday 7 PM: whey on 1, toast on 2, sandwich on 3, aglio olio on 4', () => {
+// 1.52.0: the no-cook butter and cheese sandwich (thin-kitchen dishes) now edges the whey bowl
+// on rung 1 at these big targets; the whey bowl is its alternative, and still the golden pick.
+test('5B ladder trace: demo kitchen, Wednesday 7 PM: cheese sandwich on 1, toast on 2, sandwich on 3, aglio olio on 4', () => {
   const r = rank({ inventory: buildInventory(DEMO_KITCHEN), targets: BIG, context: WED_7PM, catalogue: CATALOGUE });
   const pick = Object.fromEntries(r.ladder.map((g) => [g.rung, g.pick.meal.id]));
   assert.deepEqual(r.ladder.map((g) => g.rung), [1, 2, 3, 4]);
-  assert.match(pick[1], /whey/);
+  assert.equal(pick[1], 'butter_cheese_sandwich');
+  assert.ok(r.ladder.find((g) => g.rung === 1).alternatives.some((a) => /whey/.test(a.meal.id)));
   assert.equal(pick[2], 'airfryer_protein_cheese_toast');
   assert.match(pick[3], /sandwich/);
   assert.equal(pick[4], 'pasta_aglio_olio_paneer');

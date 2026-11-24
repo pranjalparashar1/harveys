@@ -64,6 +64,8 @@ export const FOODS = {
   spinach: { label: 'Spinach', group: 'veg', synonyms: ['spinach', 'palak'] },
   frozen_peas: { label: 'Frozen peas', group: 'veg', synonyms: ['peas', 'frozen peas', 'matar', 'green peas'] },
   sweet_corn: { label: 'Sweet corn', group: 'veg', synonyms: ['sweet corn', 'corn', 'frozen corn'] },
+  // 1.52.0: potato joins the fixed ids for the air-fried wedges (thin sample kitchens). Pierre already rates potato@air_fried.
+  potato: { label: 'Potato', group: 'veg', synonyms: ['potato', 'potatoes', 'aloo', 'alu'] },
   lemon: { label: 'Lemon', group: 'veg', synonyms: ['lemon', 'lime', 'nimbu'] },
   // Tea and coffee with milk (1.36.0, pranjal 22 Nov): made only when spotted with milk.
   tea: { label: 'Tea leaves', group: 'drink', synonyms: ['tea', 'chai', 'chai patti', 'tea leaves', 'tea powder', 'tata tea', 'red label', 'tea bags', 'black tea', 'assam tea'] },
