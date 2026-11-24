@@ -1685,7 +1685,7 @@ export const CATALOGUE = [
     source: 'estimate',
   },
   // ── Thin kitchens (1.52.0, Fable's sample-kitchen batch prep, 24 Nov) ──────────────────
-  // Nine dishes that need neither a pan nor an onion, so a bare, hostel or minimal sample kitchen
+  // Ten dishes that need neither a pan nor an onion, so a bare, hostel or minimal sample kitchen
   // still gets a real list: no-cook, kettle, blender, one pot, air fryer. Every number
   // is an ESTIMATE. Nothing here duplicates kettle_oats, pot_khichdi, dal_rice_pot,
   // egg_drop_maggi, curd_peanut_banana_bowl or airfryer_paneer_tikka (that one needs curd).
@@ -1782,7 +1782,7 @@ export const CATALOGUE = [
     source: 'estimate',
   },
   {
-    // No oats: raw oats are cook-first (pranjal's rule), so this is the plain banana shake.
+    // No oats here: the oat version is banana_oats_shake below.
     id: 'banana_shake',
     name: 'Banana milkshake',
     kind: 'meal',
@@ -1898,6 +1898,32 @@ export const CATALOGUE = [
     attention: 1,
     cleanup: { dishes: 3, greasy: 1 },
     macros: { protein: 6, kcal: 360, fiber: 5 },
+    source: 'estimate',
+  },
+  {
+    // pranjal, 24 Nov: the cook-first exception (config.pierreRules.cookFirstExceptions): raw
+    // oats are fine blended into a shake. Kept beside the plain banana shake for oat kitchens.
+    id: 'banana_oats_shake',
+    name: 'Banana oats shake',
+    kind: 'meal',
+    form: 'shake',
+    parts: [{ id: 'milk' }, { id: 'banana' }, { id: 'oats' }],
+    equipment: ['blender'],
+    utensils: ['mug'],
+    ingredients: [
+      { id: 'milk', amount: '300 ml', prep: 'measure' },
+      { id: 'banana', amount: '1, broken in', prep: 'ready' },
+      { id: 'oats', amount: '30 g', prep: 'measure' },
+      { anyOf: ['whey', 'peanut_butter'], amount: '1 scoop or 1 tbsp', prep: 'measure', optional: true },
+      { id: 'honey', amount: '1 tsp', prep: 'measure', optional: true },
+    ],
+    steps: [
+      { text: 'Put the milk, banana and oats (and whey or peanut butter) in the blender and blend 45 seconds.', active: 2 },
+      { text: 'Pour and rinse the jar.', active: 1 },
+    ],
+    attention: 0,
+    cleanup: { dishes: 2, greasy: 0 },
+    macros: { protein: 15, kcal: 410, fiber: 4 },
     source: 'estimate',
   },
 ];

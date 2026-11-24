@@ -10,15 +10,16 @@ import { cookingRuleProblems } from '../src/brain/validate.js';
 import { pierreTier, FORMS } from '../src/brain/ingredients.js';
 import { checkMeal, judgeMeal } from '../src/brain/ranker.js';
 import { loadKitchens } from '../src/brain/kitchen-test.js';
+import { DEFAULT_CONFIG } from '../src/brain/config.js';
 import { buildRungQuiz, encodeRungResult, batchChecks, batchCheckLines, isEggDish, isAirFryerDish, todayOrder, RUNG_FORMAT } from '../src/brain/rung-quiz.js';
 
 const THIN = ['dahi_poha', 'butter_cheese_sandwich', 'pb_banana_sandwich', 'kettle_banana_peanut_oats', 'banana_shake',
-  'cheese_pasta_pot', 'maggi_boiled_eggs', 'airfryer_masala_paneer', 'airfryer_potato_wedges'];
+  'cheese_pasta_pot', 'maggi_boiled_eggs', 'airfryer_masala_paneer', 'airfryer_potato_wedges', 'banana_oats_shake'];
 const PAN = new Set(['pan', 'frying_pan', 'tawa', 'kadai']);
 const needsOnion = (m) => m.ingredients.some((i) => !i.optional && (i.anyOf ?? [i.id]).every((x) => x === 'onion' || x === 'spring_onion'));
 const noPanNoOnion = (m) => !(m.equipment ?? []).some((e) => PAN.has(e)) && !needsOnion(m);
 
-test('thin kitchens: the 9 new dishes need no pan and no onion, and pass every rule', () => {
+test('thin kitchens: the 10 new dishes need no pan and no onion, and pass every rule', () => {
   for (const id of THIN) {
     const m = CATALOGUE.find((d) => d.id === id);
     assert.ok(m, id);
@@ -58,6 +59,18 @@ test('thin kitchens: a hostel kettle kitchen and a one-pot kitchen get a real li
   for (const id of ['kettle_banana_peanut_oats', 'pb_banana_sandwich', 'dahi_poha']) assert.ok(kettle.includes(id), id);
   const pot = dishes(['induction', 'saucepan', 'maggi', 'eggs', 'pasta', 'cheese slices', 'ketchup']);
   for (const id of ['maggi_boiled_eggs', 'cheese_pasta_pot']) assert.ok(pot.includes(id), id);
+});
+
+test('cook-first exception: raw oats pass in a shake, and only there (pranjal, 24 Nov)', () => {
+  const shake = CATALOGUE.find((d) => d.id === 'banana_oats_shake');
+  assert.equal(pierreTier(shake.parts, shake.form).tier, 'pass');
+  // Everywhere else oats stay cook-first: a raw-oat bowl or cold bowl still vetoes.
+  for (const form of ['bowl', 'cold_bowl', 'one-pot']) assert.equal(pierreTier([{ id: 'oats' }, { id: 'milk' }, { id: 'banana' }], form).tier, 'veto', form);
+  // Other cook-first foods get no pass in a shake: raw poha does not.
+  assert.equal(pierreTier([{ id: 'milk' }, { id: 'banana' }, { id: 'poha' }], 'shake').tier, 'veto');
+  // The rule is a switch in config: without the exception the shake vetoes again.
+  const rules = { ...DEFAULT_CONFIG.pierreRules, cookFirstExceptions: [] };
+  assert.equal(pierreTier(shake.parts, shake.form, { rules }).tier, 'veto');
 });
 
 test('priorHits: fixed weights get their own fitted threshold, so they are scored like the fit', () => {

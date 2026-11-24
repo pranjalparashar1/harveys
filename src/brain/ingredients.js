@@ -512,10 +512,13 @@ export function pierreTier(parts, form, { modifiers = [], inventory = [], verdic
   modifiers = modifiers.filter((id) => MODIFIERS[id]);
   const grammar = FORMS[form] ?? OPEN_FORM;
   const p = dishProfile(parts, kb, techniques, modifiers);
-  const slotted = slotParts(parts, kb);
+  // A cook-first exception (rules.cookFirstExceptions: oats in a shake) is blended in raw, so it
+  // thickens as an add-on rather than standing as the dish's base.
+  const excepted = (id) => (rules?.cookFirstExceptions ?? []).some((e) => e.id === id && e.form === form);
+  const slotted = slotParts(parts.map((x) => (typeof x !== 'string' && !x.technique && !x.slot && excepted(x.id) ? { ...x, slot: 'addOn' } : x)), kb);
   const why = [];
   // Inedible raw (Step 5 phase raw_inedible): pranjal's cook-first list, and raw eggs.
-  const raw = slotted.filter((x) => x.state === 'raw' && (cookFirst(x.id, kb) || foodClassOf(x.id) === 'delicate_protein')).map((x) => x.id);
+  const raw = slotted.filter((x) => x.state === 'raw' && ((cookFirst(x.id, kb) && !excepted(x.id)) || foodClassOf(x.id) === 'delicate_protein')).map((x) => x.id);
   const physics = physicsVetoes(slotted, modifiers, rules);
   // Raw garlic vetoes a dish where nothing is cooked (pranjal, 20 Nov: "for now").
   const sharp = slotted.some((x) => x.state !== 'raw') ? [] : slotted.filter((x) => kb.foods?.[x.id]?.vetoUncooked).map((x) => x.id);
