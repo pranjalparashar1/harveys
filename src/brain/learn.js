@@ -76,6 +76,13 @@ export function prePrepUnits(minutes) {
  * which the caller fills in). A dish may carry `counts` (the user's own dishes
  * say "2 things to peel" instead of listing ingredients); counts win.
  */
+// 1.51.0: cracking or peeling eggs costs more than its minutes. Both testers who rated effort
+// (Banana Singh 1.48.0, Purujeet 1.50.0) put boiled eggs and 6 of 7 egg dishes at "Some effort",
+// a level above what Harvey's placed them; 2 extra hands-on minutes per egg dish took friction's
+// agreement with their ratings from 41/55 pairs to 45/55. Waiting and kit are unchanged.
+export const EGG_HANDLING_MINUTES = 2;
+const handlesEggs = (dish) => (dish.ingredients ?? []).some((i) => !i.optional && i.id === 'eggs');
+
 export function rawFeatures(dish) {
   const c = dish.counts ?? {};
   const core = (dish.ingredients ?? []).filter((i) => !i.optional);
@@ -88,7 +95,7 @@ export function rawFeatures(dish) {
   return {
     protein: Number(c.protein ?? dish.macros?.protein) || 0,
     tools: c.tools ?? kit.length + smallKit.length,
-    handsOn: c.handsOn ?? sum('active'),
+    handsOn: c.handsOn ?? sum('active') + (handlesEggs(dish) ? EGG_HANDLING_MINUTES : 0),
     waiting: c.waiting ?? sum('passive'),
     prePrepMinutes: c.prePrepMinutes ?? dish.prePrep?.minutes ?? 0,
     peels: c.peels ?? peelCut.filter(isPeel).length,

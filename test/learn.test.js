@@ -169,3 +169,15 @@ test('"Equivalent" pulls two dishes toward equal utility', () => {
   assert.ok(gap(fit.theta) < gap(prior), `gap ${gap(fit.theta).toFixed(3)} < prior ${gap(prior).toFixed(3)}`);
   assert.ok(fit.outside < 0.5, 'you would cook either');
 });
+
+test('1.51.0: an egg dish carries 2 extra hands-on minutes for cracking or peeling', async () => {
+  const { rawFeatures: raw, EGG_HANDLING_MINUTES } = await import('../src/brain/learn.js');
+  const steps = [{ text: 'Boil.', active: 1, passive: 9 }];
+  const eggs = raw({ ingredients: [{ id: 'eggs' }], steps });
+  const plain = raw({ ingredients: [{ id: 'rice' }], steps });
+  const optional = raw({ ingredients: [{ id: 'rice' }, { id: 'eggs', optional: true }], steps });
+  assert.equal(EGG_HANDLING_MINUTES, 2);
+  assert.equal(eggs.handsOn, plain.handsOn + 2);
+  assert.equal(optional.handsOn, plain.handsOn);
+  assert.equal(raw({ ingredients: [{ id: 'eggs' }], steps, counts: { handsOn: 3 } }).handsOn, 3);
+});
