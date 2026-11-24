@@ -13,6 +13,7 @@
 import { buildRungQuiz, encodeRungResult, CANT, EFFORT_STARS, TASTE_STARS, WANT_STARS } from './brain/rung-quiz.js';
 import { labelFor } from './brain/vocabulary.js';
 import { CATALOGUE } from './brain/catalogue.js';
+import { expandTemplates } from './brain/templates.js';
 import { withConfirmed, matchTyped, listedSplit, addChoices, FOOD_GROUPS } from './brain/confirm.js';
 import { sendResult, flush, setToken, outbox } from './send.js';
 import { startFresh } from './fresh.js';
@@ -263,7 +264,7 @@ function invFor(conf) {
 }
 /** Ids of the dishes this kitchen can make, counted the way the reveal counts them. */
 const mealsIn = (inv) => new Set(rank({
-  inventory: inv, targets: TARGETS, context: { hour: MOMENT.hour, weekday: MOMENT.weekday, kind: quiz?.kind ?? 'meal' }, catalogue: CATALOGUE, config: DEFAULT_CONFIG,
+  inventory: inv, targets: TARGETS, context: { hour: MOMENT.hour, weekday: MOMENT.weekday, kind: quiz?.kind ?? 'meal' }, catalogue: expandTemplates(CATALOGUE, inv), config: DEFAULT_CONFIG,
 }).ranked.map((r) => r.meal.id));
 
 // ── "+3 meal ideas" (1.49.0) ────────────────────────────────────────────────
@@ -501,7 +502,7 @@ function thinkScreen() {
   const items = (quiz.kitchen.items ?? []).length - d.removed.length + d.have.length + d.typed.length;
   const lines = [
     items > 0 ? `Reading the ${items} things in your kitchen` : 'Reading your kitchen',
-    `Checking ${CATALOGUE.length} recipes against your pots and pans`,
+    `Checking ${quiz.catalogue?.length ?? CATALOGUE.length} recipes against your pots and pans`,
     'Balancing protein and calories',
     'Putting the easiest first',
   ];
@@ -759,7 +760,7 @@ const needName = (b) => (b.need.kind !== 'food' ? `${aOrAn(b.need.label)} ${b.ne
 
 function bonusInfoScreen(back) {
   const b = quiz.bonus;
-  const meal = CATALOGUE.find((m) => m.id === b.id);
+  const meal = mealById(b.id);
   const steps = meal?.steps ?? [];
   const others = b.unlocks.filter((u) => u.id !== b.id);
   const thing = needName(b);
@@ -990,9 +991,12 @@ function commit(s) {
 }
 
 // ── The recipe, over the dish ───────────────────────────────────────────────
+/** A dish by id: one the kitchen opened from a template (1.54.0), or the catalogue's own. */
+const mealById = (id) => quiz?.catalogue?.find((m) => m.id === id) ?? CATALOGUE.find((m) => m.id === id);
 const ingName = (i) => {
   const ids = (i.anyOf ?? [i.id]).filter((x) => x && !String(x).startsWith('role:'));
-  return ids.map((x, n) => (n ? labelFor(x).toLowerCase() : labelFor(x))).join(' or ');
+  const words = ids.map((x, n) => (n ? labelFor(x).toLowerCase() : labelFor(x))).join(' or ');
+  return words.charAt(0).toUpperCase() + words.slice(1); // open-ended items ("x:apple") label in lower case
 };
 
 // 1.46.0 (pranjal: "the close is jittery"): the sheet moves only by transitions on transform,
@@ -1003,7 +1007,7 @@ const ingName = (i) => {
 let sheetDragged = 0;
 function openRecipe(id) {
   const d = dishOf(id);
-  const meal = CATALOGUE.find((m) => m.id === id);
+  const meal = mealById(id);
   if (!d || !meal) return;
   sheetId = id;
   const meta = [METHOD[d.rung], d.protein != null ? `${Math.round(d.protein)} g protein` : '', d.kcal != null ? `${Math.round(d.kcal)} kcal` : ''].filter(Boolean);

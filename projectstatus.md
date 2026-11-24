@@ -157,3 +157,13 @@ Findings from the two star-rating runs (Banana 1.48, Purujeet 1.50):
 2. After each batch: `node scripts/kitchen-tests.mjs score` and `feedback`; check `confirm.removed`, `confirm.unmatched` ("New from testers"), `feedback.makes`, egg and air-fryer effort agreement, and taste on the easiest dishes. Tell pranjal what's new.
 3. Build a small set of no-pan, no-onion dishes for thin kitchens, replayed against the real kitchens in `data/kitchen-tests/` with before/after counts.
 4. Only refit `frictionTheta` from tester stars once there are several more testers; always clamp positives and never overwrite pranjal's baseline without asking.
+
+---
+
+## 5. 1.54.0 (24 Nov): persona kitchens and open-slot templates
+
+- **Persona kitchens.** `data/test-kitchens/kitchens.json` holds L1 to L5 (pranjal's personas). L1 to L4 are cumulative. L5 is pranjal: everything below except L4's vanity spices, plus condiments and shortcuts. Each kitchen has `persona` (the picker line) and `level`. The bare site asks "Which of these sounds most like you?".
+- **No static recipes for testers (pranjal).** He chose option C: the 76 catalogue dishes are **templates whose slots open** (`src/brain/templates.js`). A *swap* fills a slot with a kitchen item from the same group, cooked the same way (paneer@air_fried → tofu/mushroom/potato; banana → apple/mango; peanuts → almonds; tomato → cucumber/capsicum/carrot). An *add-on* puts one extra vegetable into a bhurji, omelette, chaat or fried rice. Each one is allowed only if Pierre has rated that food in that state, and every variant then goes through Pierre's vetoes and tiers. Tofu stands in for paneer (`template.proxy`). Knife-free templates stay knife-free. Eggs, dal and legumes are never microwaved, and fats are never swapped.
+- **About 12 dishes per tester (pranjal), stratified.** `stratify()` goes round-robin over rungs 1 to 4 and alternates written templates with opened variants, one per template before any second. `DECK_MAX = 12`.
+- Results stay additive: `dishes[id].template` and `kitchen.level`. The relay is untouched.
+- Known: the matcher reads "ready-to-eat rajma pouch" as raw rajma and "leftover takeaway dal makhani" as raw dal. The recipe sheet calls rung 3 "On the stove" even when the knife is what put a dish there.

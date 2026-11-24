@@ -277,15 +277,18 @@ test('1.48.0: results still waiting go out as beacons when the page is closed, a
 // 1.49.0: Banana Singh (23 Nov) added paneer, a pan and a pressure cooker; 21 dishes were
 // cookable but rung 3's cap showed 8 and none with paneer. Free slots now fill to DECK_MAX,
 // dishes the additions unlocked first.
-test('a crowded rung shows every cookable dish, preferred dishes first', async () => {
+test('a crowded kitchen rates about 12 dishes across every rung it reaches, preferred dishes first', async () => {
   const { buildRungQuiz, DECK_MAX } = await import('../src/brain/rung-quiz.js');
   const { withConfirmed } = await import('../src/brain/confirm.js');
   const { readFileSync } = await import('node:fs');
   const r = JSON.parse(readFileSync(new URL('../data/kitchen-tests/taste-2026-11-23-kitchen_video_1-1n287-t-q94cu22qk.json', import.meta.url), 'utf8'));
   const inv = withConfirmed(r.kitchen.items, r.confirm.have, {}, []);
   const q = buildRungQuiz({ kitchen: r.kitchen, inventory: inv });
-  assert.equal(DECK_MAX, Infinity);
-  assert.equal(q.deck.length, q.total); // every cookable dish is rated
+  assert.equal(DECK_MAX, 12); // 1.54.0 (pranjal): stratified cap
+  assert.equal(q.deck.length, Math.min(DECK_MAX, q.total));
+  const reached = new Set(q.deck.map((d) => q.dishes[d].rung));
+  const { rank } = await import('../src/brain/ranker.js');
+  assert.ok(reached.size >= 2);
   const p = buildRungQuiz({ kitchen: r.kitchen, inventory: inv, prefer: new Set(['stovetop_paneer_bhurji']) });
   assert.ok(p.deck.includes('stovetop_paneer_bhurji'));
 });
