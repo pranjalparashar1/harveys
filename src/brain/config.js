@@ -69,6 +69,10 @@ export const DEFAULT_CONFIG = Object.freeze({
   // (a sautéed tomato is not a sauce, raw pasta is inedible) are permanent; these lists and
   // switches are where they meet pranjal's answers, and each rests on one to seven of them.
   pierreRules: Object.freeze({
+    // pranjal, 24 Nov ("add it as an exception"): raw oats blended into a shake are fine for now.
+    // Narrow on purpose: only these food+form pairs skip the cook-first veto; oats stay cook-first
+    // in every other form (a raw-oat bowl still vetoes).
+    cookFirstExceptions: Object.freeze([Object.freeze({ id: 'oats', form: 'shake' })]),
     // Sharp raw veg (raw onion) with no lemon is no clash on a cooked base (toast, rice): the
     // toasted paneer sandwich with raw onion passed (holdout). Raw bread, tomato, onion and
     // paneer (Step 4) and pan-fried paneer with raw onion and tomato (Step 4) didn't.
