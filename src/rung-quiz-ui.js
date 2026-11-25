@@ -20,6 +20,7 @@ import { startFresh } from './fresh.js';
 import { blankFeedback, splitIdeas, norm } from './brain/feedback.js';
 import { rank } from './brain/ranker.js';
 import { MOMENT, TARGETS } from './brain/kitchen-test.js';
+import { buildInventory } from './brain/inventory.js';
 import { DEFAULT_CONFIG } from './brain/config.js';
 
 const KEY = 'harveys.rq.v1';
@@ -117,10 +118,12 @@ function screens() {
 /** Screens Back passes over: the thinking pause. */
 const passOver = (s) => s.kind === 'think';
 
-export function startRungQuiz({ kitchen, inventory, version, source, name = '', onExit, items = null, cache = {}, missingBasics = [], kitchenSource = null }) {
-  opts = { version, source, name, onExit, items, cache, missingBasics, inventory, kitchenSource };
+export function startRungQuiz({ kitchen, inventory, version, source, name = '', onExit, items = null, cache = {}, missingBasics = [], kitchenSource = null, below = null }) {
+  // 1.55.0: `below` = the persona kitchen one level down. Its dishes give way to this level's own.
+  const belowInv = below?.items ? buildInventory(below.items, { cache, missingBasics }) : null;
+  opts = { version, source, name, onExit, items, cache, missingBasics, inventory, kitchenSource, below: belowInv };
   kitchenIn = kitchen;
-  quiz = buildRungQuiz({ kitchen, inventory });
+  quiz = buildRungQuiz({ kitchen, inventory, below: belowInv });
   store = loadStore();
   run = store.runs[quiz.id];
   listed = items ? listedSplit(items) : { food: [], kit: [] };
@@ -251,7 +254,7 @@ function rebuild(conf) {
   // 1.49.0: dishes the tester's additions unlocked get the free rating slots first.
   const before = mealsIn(opts.inventory);
   const prefer = new Set([...mealsIn(inv)].filter((id) => !before.has(id)));
-  quiz = buildRungQuiz({ kitchen: kitchenIn, inventory: inv, prefer });
+  quiz = buildRungQuiz({ kitchen: kitchenIn, inventory: inv, prefer, below: opts.below });
 }
 /** The kitchen as the confirm screens have it: unticked items out, added ones in. */
 function invFor(conf) {

@@ -105,14 +105,21 @@ export function seededShuffle(list, seed) {
  * tester's additions unlocked go first, then Harvey's order. Written templates and opened variants
  * alternate, and a template's second variant waits until every other template on that rung has
  * had one (no three paneer tikkas).
+ *
+ * 1.55.0: `fresh` = dishes this kitchen opens that the persona level below it doesn't. They go
+ * next after `prefer`. The persona kitchens are cumulative, so without this every level from L2
+ * up got the same easiest dishes at the top of each rung (Harvey's order is the same everywhere)
+ * and the testers at L2, L3 and L4 rated mostly the same Maggi and oats. Lower-level dishes
+ * still fill a rung that has too few new ones, which keeps a few shared dishes across levels.
  */
-export function stratify(pool, { max = DECK_MAX, prefer = null } = {}) {
+export function stratify(pool, { max = DECK_MAX, prefer = null, fresh = null } = {}) {
   const real = pool.filter((x) => !x.away);
   if (real.length <= max) return real;
   const root = (x) => x.meal.template?.from ?? x.meal.id;
+  const first = (x) => (prefer?.has(x.meal.id) ? 0 : fresh?.has(x.meal.id) ? 1 : 2);
   const queues = {};
   for (const rung of [1, 2, 3, 4]) {
-    const list = real.filter((x) => x.rung === rung).sort((a, b) => (prefer?.has(a.meal.id) ? 0 : 1) - (prefer?.has(b.meal.id) ? 0 : 1) || byRungOrder(a, b));
+    const list = real.filter((x) => x.rung === rung).sort((a, b) => first(a) - first(b) || byRungOrder(a, b));
     // Two lanes, taken in turn: the templates as written, and the dishes the kitchen opened from
     // them (one per template before any template's second), so testers rate both kinds.
     const originals = list.filter((x) => !x.meal.template);
@@ -137,6 +144,20 @@ const shortHow = (meal) => {
   return names.slice(0, 5).join(', ').replace(/_/g, ' ');
 };
 
+/** Ids in `pool` that the `below` inventory can't make (its own catalogue, opened the same way). */
+export function freshAt(pool, below, { kind = 'meal', verdicts = PIERRE_SEED, config = DEFAULT_CONFIG } = {}) {
+  const r = rank({ inventory: below, targets: TARGETS, context: { hour: MOMENT.hour, weekday: MOMENT.weekday, kind }, catalogue: expandTemplates(CATALOGUE, below), verdicts, config });
+  const have = new Set(r.ranked.filter((x) => !x.away).map((x) => x.meal.id));
+  return new Set(pool.filter((x) => !have.has(x.meal.id)).map((x) => x.meal.id));
+}
+
+/** The persona kitchen one level below `kitchen` in `kitchens` (cumulative L1–L5), or null. */
+export function levelBelow(kitchen, kitchens) {
+  const n = Number(kitchen?.level);
+  if (!Number.isFinite(n) || n <= 1) return null;
+  return (kitchens ?? []).find((k) => Number(k?.level) === n - 1) ?? null;
+}
+
 /**
  * An inventory (buildInventory's) → the quiz: groups of up to PER_RUNG dishes in Harvey's own
  * order (easier rung first, then byRungOrder), plus a shown order per section.
@@ -148,7 +169,7 @@ const shortHow = (meal) => {
  * dishes; past that the bigger rung's last dish makes room. Only a kitchen with one dish in
  * all leaves a group of one (White only, no sorts).
  */
-export function buildRungQuiz({ kitchen, inventory, catalogue = null, verdicts = PIERRE_SEED, config = DEFAULT_CONFIG, prefer = null, deckMax = DECK_MAX }) {
+export function buildRungQuiz({ kitchen, inventory, catalogue = null, verdicts = PIERRE_SEED, config = DEFAULT_CONFIG, prefer = null, deckMax = DECK_MAX, below = null }) {
   const id = kitchenId(kitchen);
   // 1.54.0: no catalogue given → the catalogue as this kitchen opens it (open-slot templates).
   catalogue ??= expandTemplates(CATALOGUE, inventory);
@@ -163,7 +184,10 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = null, verdicts =
   const realFirst = (a, b) => (a.away ? 1 : 0) - (b.away ? 1 : 0) || byRungOrder(a, b);
   const byRung = {};
   let groups = [];
-  const chosen = stratify(pool, { max: deckMax, prefer });
+  // 1.55.0: `below` = the inventory of the persona level under this one (L1 has none). The
+  // dishes it can't make are this level's own, and they get the deck's slots first.
+  const fresh = below ? freshAt(pool, below, { kind, verdicts, config }) : null;
+  const chosen = stratify(pool, { max: deckMax, prefer, fresh });
   for (const rung of [1, 2, 3, 4]) {
     const items = chosen.filter((x) => x.rung === rung).sort(realFirst);
     if (!items.length) continue;
@@ -186,6 +210,8 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = null, verdicts =
         ...(x.away ? { away: x.away } : {}),
         // 1.54.0, additive: the template a dish was opened from and what filled its slot.
         ...(x.meal.template ? { template: x.meal.template } : {}),
+        // 1.55.0, additive: true when the persona level below this one can't make the dish.
+        ...(fresh?.has(x.meal.id) ? { fresh: true } : {}),
         protein: x.meal.macros?.protein ?? null, kcal: x.meal.macros?.kcal ?? null,
         harveys: { order: byRung[x.rung].indexOf(x), tier: x.pierre.tier, friction: round(x.friction), score: round(x.score) },
         raw: compactRaw(x.raw),

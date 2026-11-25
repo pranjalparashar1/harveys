@@ -74,3 +74,29 @@ test('stratify: round-robin across rungs, one variant per template before a seco
   assert.ok(out.includes('d') && out.includes('e'));
   assert.ok(!out.includes('a~2'));
 });
+
+// 1.55.0 (pranjal, 25 Nov): "why is Harvey's suggesting the same recipes to all levels?"
+test('persona decks: each level leads with dishes the level below can’t make', async () => {
+  const { levelBelow } = await import('../src/brain/rung-quiz.js');
+  const decks = kitchens.map((k) => {
+    const below = levelBelow(k, kitchens);
+    return buildRungQuiz({ kitchen: k, inventory: buildInventory(k.items), below: below ? buildInventory(below.items) : null });
+  });
+  assert.equal(levelBelow(kitchens[0], kitchens), null);
+  for (let i = 1; i < decks.length; i++) {
+    const shared = decks[i].deck.filter((d) => decks[i - 1].deck.includes(d));
+    assert.ok(shared.length <= 3, `${kitchens[i].kitchen} repeats ${shared.length} of L${i}'s dishes: ${shared}`);
+    const fresh = decks[i].deck.filter((d) => decks[i].dishes[d].fresh).length;
+    assert.ok(fresh >= decks[i].deck.length / 2, `${kitchens[i].kitchen}: ${fresh} new dishes`);
+  }
+});
+
+test('frozen and ready-to-eat items are set aside: no food id, no dish', async () => {
+  const { matchTyped } = await import('../src/brain/confirm.js');
+  const have = inv(['ready-to-eat rajma masala pouch', 'leftover takeaway dal makhani', 'frozen peas', 'frozen aloo parathas', 'peas', 'canned chickpeas']);
+  assert.deepEqual(have.setAside, ['ready-to-eat rajma masala pouch', 'leftover takeaway dal makhani', 'frozen peas', 'frozen aloo parathas']);
+  for (const id of ['rajma', 'dal']) assert.ok(!have.have.has(id), id);
+  assert.ok(have.have.has('frozen_peas') && have.have.has('chickpeas'));
+  assert.equal(matchTyped('frozen sweet corn').id, null);
+  for (const k of kitchens) for (const i of k.items) assert.ok(!/frozen|ready-to-eat|takeaway|pouch/i.test(i.name), `${k.kitchen}: ${i.name}`);
+});

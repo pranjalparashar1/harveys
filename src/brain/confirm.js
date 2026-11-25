@@ -8,7 +8,7 @@ import { CATALOGUE } from './catalogue.js';
 import { DEFAULT_CONFIG } from './config.js';
 import { buildInventory, matchName, SYNONYMS } from './inventory.js';
 import { rank } from './ranker.js';
-import { kindOf, labelFor, FOODS, ASSUMED_STAPLES } from './vocabulary.js';
+import { kindOf, labelFor, FOODS, ASSUMED_STAPLES, isSetAside } from './vocabulary.js';
 import { MOMENT, TARGETS } from './kitchen-test.js';
 
 /** Things most Indian kitchens have that a video often misses: jars, a vessel on a hook. */
@@ -123,7 +123,7 @@ export const FUZZY_MIN = 0.75;
 export function matchTyped(text) {
   const t = clean(text);
   const out = { text: String(text ?? '').replace(/\s+/g, ' ').trim().slice(0, 60), id: null, label: null, how: null };
-  if (t.length < 2) return out;
+  if (t.length < 2 || isSetAside(t)) return out;
   const exact = matchName(t);
   if (exact) return { ...out, id: exact, label: labelFor(exact), how: 'exact' };
   if (t.length < 4) return out;

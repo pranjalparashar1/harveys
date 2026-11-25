@@ -1,7 +1,7 @@
 // Turns the AI's free-form list of "things it saw" into the brain's inventory.
 // Pure: no DOM, no network.
 
-import { FOODS, EQUIPMENT, ASSUMED_BASICS, ASSUMED_STAPLES } from './vocabulary.js';
+import { FOODS, EQUIPMENT, ASSUMED_BASICS, ASSUMED_STAPLES, isSetAside } from './vocabulary.js';
 import { profileOf, roleToken, ID_ROLES } from './pantry.js';
 
 const ALL = { ...FOODS, ...EQUIPMENT, ...ASSUMED_BASICS };
@@ -23,7 +23,7 @@ function clean(text) {
 /** Maps a free-text name to a canonical id, or null. */
 export function matchName(name) {
   const text = clean(name);
-  if (!text) return null;
+  if (!text || isSetAside(text)) return null;
   for (const { id, phrase } of SYNONYMS) if (text === phrase) return id;
   const padded = ` ${text} `;
   for (const { id, phrase } of SYNONYMS) if (padded.includes(` ${phrase} `)) return id;
@@ -35,12 +35,13 @@ export function matchName(name) {
  * @param {{missingBasics?: string[], cache?: object}} [options]  basics the user says they don't have;
  *   cache = flash-lite classifications (pantry.js), keyed by cleaned name
  * @returns {{have: Set<string>, missingBasics: Set<string>, matched: Array<{name: string, id: string}>,
- *   unmatched: string[], extras: object[], roles: Map<string, string[]>, labels: Map<string, string>, excluded: string[]}}
+ *   unmatched: string[], extras: object[], roles: Map<string, string[]>, labels: Map<string, string>, excluded: string[], setAside: string[]}}
  *
  * Open-ended since 1.29.0: a name with no vocabulary id still joins the inventory as an
  * extra ('x:soy_sauce') with a profile, and its seasoning roles join `have` as 'role:umami'
  * etc., so a dish's "any acid" slot can use vinegar. `unmatched` now lists only the names
- * nothing could profile (worth a flash-lite classification). Non-veg items go to `excluded`.
+ * nothing could profile (worth a flash-lite classification). Non-veg items go to `excluded`,
+ * frozen and ready-to-eat ones to `setAside` (1.55.0, see SET_ASIDE).
  */
 export function buildInventory(items, options = {}) {
   const have = new Set();
@@ -48,6 +49,7 @@ export function buildInventory(items, options = {}) {
   const unmatched = [];
   const extras = [];
   const excluded = [];
+  const setAside = [];
   const roles = new Map();
   const labels = new Map();
   const addRoles = (list, id) => {
@@ -60,6 +62,7 @@ export function buildInventory(items, options = {}) {
   for (const item of items ?? []) {
     const name = typeof item === 'string' ? item : item?.name;
     const canonical = typeof item === 'object' ? item?.canonical : null;
+    if (isSetAside(name)) { setAside.push(name); continue; }
     let id = canonical && ALL[canonical] ? canonical : matchName(name) ?? matchName(canonical);
     // A kit item never stands in for a food: a "milk frother" is not milk (1.47.0).
     if (id && FOODS[id] && KIT_CATEGORIES.has(String(item?.category ?? '').toLowerCase())) id = null;
@@ -86,7 +89,7 @@ export function buildInventory(items, options = {}) {
   }
   const missing = new Set(options.missingBasics ?? []);
   for (const id of ASSUMED_STAPLES) if (!missing.has(id) && !have.has(id)) { have.add(id); addRoles(ID_ROLES[id], id); }
-  return { have, missingBasics: missing, matched, unmatched, extras, roles, labels, excluded };
+  return { have, missingBasics: missing, matched, unmatched, extras, roles, labels, excluded, setAside };
 }
 
 /** Splits pasted text into item names: lines, commas, semicolons; drops bullets and numbering. */
