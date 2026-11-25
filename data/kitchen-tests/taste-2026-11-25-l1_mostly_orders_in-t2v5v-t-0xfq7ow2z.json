@@ -1,0 +1,607 @@
+{
+ "format": "harveys-rung-quiz/1",
+ "version": "1.54.0",
+ "at": "2026-11-25T07:52:00.002Z",
+ "source": "sample",
+ "kitchenId": "l1_mostly_orders_in-t2v5v",
+ "testerId": "t-0xfq7ow2z",
+ "runNo": 2,
+ "kitchenSource": "sample",
+ "kitchen": {
+  "kitchen": "L1 · Mostly orders in",
+  "diet": "veg+eggs",
+  "notes": "Kettle, single induction, small nonstick pan; nothing else; Orders in most days. Can boil water, make Maggi and an omelette or scrambled egg in a nonstick pan, and that's it. Doesn't want to cook more. Sparse fridge, leftovers from takeaway. Can't chop.",
+  "level": 1,
+  "items": [
+   {
+    "name": "single induction cooktop",
+    "category": "appliance"
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance"
+   },
+   {
+    "name": "small nonstick frying pan",
+    "category": "cookware"
+   },
+   {
+    "name": "plastic spatula",
+    "category": "utensil"
+   },
+   {
+    "name": "mugs",
+    "category": "utensil"
+   },
+   {
+    "name": "plates",
+    "category": "utensil"
+   },
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "Maggi noodles",
+    "category": "grain"
+   },
+   {
+    "name": "cup noodles",
+    "category": "grain"
+   },
+   {
+    "name": "white bread",
+    "category": "bread"
+   },
+   {
+    "name": "Amul butter",
+    "category": "dairy"
+   },
+   {
+    "name": "Amul cheese slices",
+    "category": "dairy"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "instant coffee",
+    "category": "drink"
+   },
+   {
+    "name": "cornflakes",
+    "category": "grain"
+   },
+   {
+    "name": "ketchup",
+    "category": "condiment"
+   },
+   {
+    "name": "chocolate hazelnut spread",
+    "category": "sweet"
+   },
+   {
+    "name": "frozen aloo parathas",
+    "category": "bread"
+   },
+   {
+    "name": "bananas",
+    "category": "fruit"
+   },
+   {
+    "name": "salt",
+    "category": "spice"
+   },
+   {
+    "name": "black pepper",
+    "category": "spice"
+   },
+   {
+    "name": "leftover takeaway dal makhani",
+    "category": "other"
+   }
+  ]
+ },
+ "moment": "Weeknight, 9 PM, tired",
+ "targets": {
+  "protein": 60,
+  "calories": 1200,
+  "fiber": 20
+ },
+ "directions": {
+  "marco": "easiest first",
+  "pierre": "tastiest first",
+  "white": "tap order = preference"
+ },
+ "unmovedConfirmed": true,
+ "confirm": {
+  "asked": [],
+  "have": [],
+  "typed": [],
+  "unmatched": [],
+  "burners": null,
+  "noStove": false,
+  "removed": [
+   "Frozen aloo parathas",
+   "Black pepper",
+   "Eggs",
+   "Leftover takeaway dal makhani",
+   "Cornflakes",
+   "Electric kettle"
+  ],
+  "listed": 18,
+  "ms": 29589
+ },
+ "ingredients": {
+  "used": [
+   "plates",
+   "white bread",
+   "Amul butter",
+   "Amul cheese slices"
+  ],
+  "unused": [
+   {
+    "name": "single induction cooktop",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Fusilli aglio olio with air-fried paneer",
+      "why": "missing a pot to boil in, Air fryer, Pasta (fusilli etc.), Paneer, Garlic"
+     },
+     {
+      "dish": "Boiled eggs with salt and pepper",
+      "why": "missing a pot to boil in, Eggs"
+     },
+     {
+      "dish": "Boiled egg sandwich",
+      "why": "missing a pot to boil in, Eggs"
+     },
+     {
+      "dish": "Oats cooked in milk",
+      "why": "missing a pot to boil in, Oats"
+     }
+    ]
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "small nonstick frying pan",
+    "category": "cookware",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Fusilli aglio olio with air-fried paneer",
+      "why": "missing a pot to boil in, Air fryer, Pasta (fusilli etc.), Paneer, Garlic"
+     },
+     {
+      "dish": "Butter omelette",
+      "why": "missing Eggs"
+     },
+     {
+      "dish": "Egg bhurji",
+      "why": "missing Eggs, Onion, Tomato"
+     },
+     {
+      "dish": "Tawa paneer cheese sandwich",
+      "why": "missing Paneer"
+     }
+    ]
+   },
+   {
+    "name": "plastic spatula",
+    "category": "utensil",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Fusilli aglio olio with air-fried paneer",
+      "why": "missing a pot to boil in, Air fryer, Pasta (fusilli etc.), Paneer, Garlic"
+     },
+     {
+      "dish": "Butter omelette",
+      "why": "missing Eggs"
+     },
+     {
+      "dish": "Egg bhurji",
+      "why": "missing Eggs, Onion, Tomato"
+     },
+     {
+      "dish": "Tawa paneer cheese sandwich",
+      "why": "missing Paneer"
+     }
+    ]
+   },
+   {
+    "name": "mugs",
+    "category": "utensil",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "eggs",
+    "category": "protein",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "Maggi noodles",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Maggi",
+      "why": "missing a pot to boil in"
+     },
+     {
+      "dish": "Cheese Maggi",
+      "why": "missing a pot to boil in"
+     },
+     {
+      "dish": "Maggi with a fried egg",
+      "why": "missing a pot to boil in, Eggs"
+     },
+     {
+      "dish": "Maggi with an egg stirred in",
+      "why": "missing a pot to boil in, Eggs"
+     }
+    ]
+   },
+   {
+    "name": "cup noodles",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Microwave mug omelette",
+      "why": "missing Microwave, Eggs"
+     },
+     {
+      "dish": "Chai and buttered toast",
+      "why": "missing Saucepan / pot, Tea leaves"
+     },
+     {
+      "dish": "Chai, boiled eggs and toast",
+      "why": "missing Saucepan / pot, Tea leaves, Eggs"
+     },
+     {
+      "dish": "Banana milkshake",
+      "why": "missing Blender / mixer"
+     }
+    ]
+   },
+   {
+    "name": "milk",
+    "category": "dairy",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Whey and makhana bowl",
+      "why": "missing Whey protein, Makhana"
+     },
+     {
+      "dish": "Microwave protein oats",
+      "why": "missing Microwave, Oats, Whey protein"
+     },
+     {
+      "dish": "Oats cooked in milk",
+      "why": "missing a pot to boil in, Oats"
+     },
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "missing Electric kettle, Oats, Peanuts or something crunchy or Peanut butter"
+     }
+    ]
+   },
+   {
+    "name": "instant coffee",
+    "category": "drink",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Milk coffee",
+      "why": "a snack, and the test shows meals"
+     }
+    ]
+   },
+   {
+    "name": "cornflakes",
+    "category": "grain",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "ketchup",
+    "category": "condiment",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Microwave paneer wrap",
+      "why": "missing Microwave, Wraps / roti, Paneer"
+     },
+     {
+      "dish": "Bread omelette",
+      "why": "missing Eggs"
+     },
+     {
+      "dish": "Roti egg roll",
+      "why": "missing Wraps / roti, Eggs"
+     },
+     {
+      "dish": "Soya chunk pasta in one pot",
+      "why": "missing a pot to boil in, Pasta (fusilli etc.), Soya chunks"
+     }
+    ]
+   },
+   {
+    "name": "chocolate hazelnut spread",
+    "category": "sweet",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "missing Electric kettle, Oats, Peanuts or something crunchy or Peanut butter"
+     }
+    ]
+   },
+   {
+    "name": "frozen aloo parathas",
+    "category": "bread",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "bananas",
+    "category": "fruit",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Curd and whey protein bowl",
+      "why": "missing Curd / yogurt, Whey protein"
+     },
+     {
+      "dish": "Microwave protein oats",
+      "why": "missing Microwave, Oats, Whey protein"
+     },
+     {
+      "dish": "Oats cooked in milk",
+      "why": "missing a pot to boil in, Oats"
+     },
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "missing Electric kettle, Oats, Peanuts or something crunchy or Peanut butter"
+     }
+    ]
+   },
+   {
+    "name": "salt",
+    "category": "spice",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Fusilli aglio olio with air-fried paneer",
+      "why": "missing a pot to boil in, Air fryer, Pasta (fusilli etc.), Paneer, Garlic"
+     },
+     {
+      "dish": "Microwave paneer bhurji (no chopping)",
+      "why": "missing Microwave, Paneer"
+     },
+     {
+      "dish": "Boiled eggs with salt and pepper",
+      "why": "missing a pot to boil in, Eggs"
+     },
+     {
+      "dish": "Boiled egg sandwich",
+      "why": "missing a pot to boil in, Eggs"
+     }
+    ]
+   },
+   {
+    "name": "black pepper",
+    "category": "spice",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "leftover takeaway dal makhani",
+    "category": "other",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   }
+  ],
+  "gaps": [
+   "electric kettle",
+   "mugs",
+   "eggs",
+   "cornflakes",
+   "frozen aloo parathas",
+   "black pepper",
+   "leftover takeaway dal makhani"
+  ],
+  "blockers": [
+   {
+    "thing": "Eggs",
+    "dishes": [
+     "Butter omelette",
+     "Bread omelette",
+     "Masala French toast"
+    ]
+   },
+   {
+    "thing": "a pot to boil in",
+    "dishes": [
+     "Maggi",
+     "Cheese Maggi"
+    ]
+   },
+   {
+    "thing": "Air fryer",
+    "dishes": [
+     "Air-fryer protein bread cheese toast"
+    ]
+   },
+   {
+    "thing": "Blender / mixer",
+    "dishes": [
+     "Banana milkshake"
+    ]
+   },
+   {
+    "thing": "Paneer",
+    "dishes": [
+     "Tawa paneer cheese sandwich"
+    ]
+   }
+  ]
+ },
+ "dishes": {
+  "butter_cheese_sandwich": {
+   "name": "Butter and cheese sandwich",
+   "rung": 1,
+   "harveys": {
+    "order": 0,
+    "tier": "floor",
+    "friction": 0.526,
+    "score": 0.212
+   },
+   "raw": {
+    "protein": 14,
+    "tools": 1,
+    "handsOn": 2,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 1,
+    "attention": 0,
+    "cleanup": 1
+   }
+  }
+ },
+ "marco": [],
+ "pierre": [],
+ "white": [],
+ "flow": "stars",
+ "order": [
+  "butter_cheese_sandwich"
+ ],
+ "stars": [
+  {
+   "id": "butter_cheese_sandwich",
+   "effort": 5,
+   "taste": 3,
+   "cant": null,
+   "ms": 11223
+  }
+ ],
+ "difficulty": {
+  "scale": [
+   "Effortless",
+   "Easy",
+   "Some effort",
+   "Hard work",
+   "Too much tonight"
+  ],
+  "from": "effort stars, level = 6 - stars",
+  "ratings": [
+   {
+    "id": "butter_cheese_sandwich",
+    "level": 1,
+    "ms": 11223
+   }
+  ],
+  "stoppedEarly": false
+ },
+ "bonus": {
+  "id": "plain_omelette",
+  "name": "Butter omelette",
+  "rung": 3,
+  "need": {
+   "id": "eggs",
+   "label": "Eggs",
+   "kind": "food"
+  },
+  "unlocks": [
+   "plain_omelette",
+   "bread_omelette",
+   "egg_toast_pan"
+  ],
+  "harveys": {
+   "tier": "pass",
+   "friction": 2.278,
+   "score": -2.224
+  },
+  "raw": {
+   "protein": 19,
+   "tools": 3,
+   "handsOn": 7,
+   "waiting": 0,
+   "prePrepMinutes": 0,
+   "peels": 0,
+   "cuts": 0,
+   "steps": 3,
+   "attention": 2,
+   "cleanup": 4.5
+  },
+  "effort": 4,
+  "taste": 5,
+  "cant": null,
+  "want": 5,
+  "have": false,
+  "ms": 9568
+ },
+ "feedback": {
+  "chips": [],
+  "skipped": true,
+  "allGood": false,
+  "wrongItems": [],
+  "missedItems": [],
+  "dishIdeas": [],
+  "tooHard": [],
+  "wouldntEat": [],
+  "wouldntWhy": [],
+  "confusing": [],
+  "note": "",
+  "makes": "",
+  "ms": null
+ }
+}
