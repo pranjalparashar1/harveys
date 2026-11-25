@@ -1,0 +1,830 @@
+{
+ "format": "harveys-rung-quiz/1",
+ "version": "1.54.0",
+ "at": "2026-11-25T08:39:12.638Z",
+ "source": "sample",
+ "kitchenId": "l1_mostly_orders_in-t2v5v",
+ "testerId": "t-z5w3nx9nn",
+ "runNo": 3,
+ "kitchenSource": "sample",
+ "kitchen": {
+  "kitchen": "L1 · Mostly orders in",
+  "diet": "veg+eggs",
+  "notes": "Kettle, single induction, small nonstick pan; nothing else; Orders in most days. Can boil water, make Maggi and an omelette or scrambled egg in a nonstick pan, and that's it. Doesn't want to cook more. Sparse fridge, leftovers from takeaway. Can't chop.",
+  "level": 1,
+  "items": [
+   {
+    "name": "single induction cooktop",
+    "category": "appliance"
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance"
+   },
+   {
+    "name": "small nonstick frying pan",
+    "category": "cookware"
+   },
+   {
+    "name": "plastic spatula",
+    "category": "utensil"
+   },
+   {
+    "name": "mugs",
+    "category": "utensil"
+   },
+   {
+    "name": "plates",
+    "category": "utensil"
+   },
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "Maggi noodles",
+    "category": "grain"
+   },
+   {
+    "name": "cup noodles",
+    "category": "grain"
+   },
+   {
+    "name": "white bread",
+    "category": "bread"
+   },
+   {
+    "name": "Amul butter",
+    "category": "dairy"
+   },
+   {
+    "name": "Amul cheese slices",
+    "category": "dairy"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "instant coffee",
+    "category": "drink"
+   },
+   {
+    "name": "cornflakes",
+    "category": "grain"
+   },
+   {
+    "name": "ketchup",
+    "category": "condiment"
+   },
+   {
+    "name": "chocolate hazelnut spread",
+    "category": "sweet"
+   },
+   {
+    "name": "frozen aloo parathas",
+    "category": "bread"
+   },
+   {
+    "name": "bananas",
+    "category": "fruit"
+   },
+   {
+    "name": "salt",
+    "category": "spice"
+   },
+   {
+    "name": "black pepper",
+    "category": "spice"
+   },
+   {
+    "name": "leftover takeaway dal makhani",
+    "category": "other"
+   }
+  ]
+ },
+ "moment": "Weeknight, 9 PM, tired",
+ "targets": {
+  "protein": 60,
+  "calories": 1200,
+  "fiber": 20
+ },
+ "directions": {
+  "marco": "easiest first",
+  "pierre": "tastiest first",
+  "white": "tap order = preference"
+ },
+ "unmovedConfirmed": true,
+ "confirm": {
+  "asked": [],
+  "have": [
+   "chaat_masala",
+   "chilli_flakes",
+   "oregano",
+   "peanut_butter",
+   "honey",
+   "curd",
+   "tea",
+   "green_tea",
+   "kadai"
+  ],
+  "typed": [],
+  "unmatched": [],
+  "burners": null,
+  "noStove": false,
+  "removed": [
+   "Frozen aloo parathas",
+   "Chocolate hazelnut spread",
+   "Leftover takeaway dal makhani",
+   "Cornflakes"
+  ],
+  "listed": 18,
+  "ms": 3156
+ },
+ "ingredients": {
+  "used": [
+   "single induction cooktop",
+   "small nonstick frying pan",
+   "plastic spatula",
+   "plates",
+   "eggs",
+   "Maggi noodles",
+   "white bread",
+   "Amul butter",
+   "Amul cheese slices",
+   "ketchup",
+   "bananas",
+   "salt",
+   "black pepper"
+  ],
+  "unused": [
+   {
+    "name": "electric kettle",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "missing Oats"
+     },
+     {
+      "dish": "Kettle oats with banana and peanuts (no milk)",
+      "why": "missing Oats, Peanuts or something crunchy"
+     }
+    ]
+   },
+   {
+    "name": "mugs",
+    "category": "utensil",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "cup noodles",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Microwave mug omelette",
+      "why": "missing Microwave"
+     },
+     {
+      "dish": "Chai and buttered toast",
+      "why": "missing Saucepan / pot"
+     },
+     {
+      "dish": "Chai, boiled eggs and toast",
+      "why": "missing Saucepan / pot"
+     },
+     {
+      "dish": "Banana milkshake",
+      "why": "missing Blender / mixer"
+     }
+    ]
+   },
+   {
+    "name": "milk",
+    "category": "dairy",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Whey and makhana bowl",
+      "why": "missing Whey protein, Makhana"
+     },
+     {
+      "dish": "Microwave protein oats",
+      "why": "missing Microwave, Oats, Whey protein"
+     },
+     {
+      "dish": "Oats cooked in milk",
+      "why": "missing Oats"
+     },
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "missing Oats"
+     }
+    ]
+   },
+   {
+    "name": "instant coffee",
+    "category": "drink",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Milk coffee",
+      "why": "a snack, and the test shows meals"
+     }
+    ]
+   },
+   {
+    "name": "cornflakes",
+    "category": "grain",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "chocolate hazelnut spread",
+    "category": "sweet",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "frozen aloo parathas",
+    "category": "bread",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "leftover takeaway dal makhani",
+    "category": "other",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   }
+  ],
+  "gaps": [
+   "mugs",
+   "cornflakes",
+   "chocolate hazelnut spread",
+   "frozen aloo parathas",
+   "leftover takeaway dal makhani"
+  ],
+  "blockers": [
+   {
+    "thing": "Rice",
+    "dishes": [
+     "Egg fried rice",
+     "Curd rice",
+     "Egg rice in one pot"
+    ]
+   },
+   {
+    "thing": "Air fryer",
+    "dishes": [
+     "Air-fryer protein bread cheese toast",
+     "Air-fryer egg-in-a-hole on protein bread"
+    ]
+   },
+   {
+    "thing": "Oats",
+    "dishes": [
+     "Oats cooked in milk",
+     "Kettle oats with milk and peanuts"
+    ]
+   },
+   {
+    "thing": "Pasta (fusilli etc.)",
+    "dishes": [
+     "Pasta with eggs stirred in",
+     "One-pot ketchup cheese pasta"
+    ]
+   },
+   {
+    "thing": "Saucepan / pot",
+    "dishes": [
+     "Chai and buttered toast",
+     "Chai, boiled eggs and toast"
+    ]
+   }
+  ]
+ },
+ "dishes": {
+  "curd_peanut_banana_bowl": {
+   "name": "Curd, banana and peanut bowl",
+   "rung": 1,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 0.526,
+    "score": 0.501
+   },
+   "raw": {
+    "protein": 17,
+    "tools": 1,
+    "handsOn": 2,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 1,
+    "attention": 0,
+    "cleanup": 1
+   }
+  },
+  "pb_banana_sandwich": {
+   "name": "Peanut butter and banana sandwich",
+   "rung": 1,
+   "harveys": {
+    "order": 1,
+    "tier": "pass",
+    "friction": 0.526,
+    "score": 0.493
+   },
+   "raw": {
+    "protein": 16,
+    "tools": 1,
+    "handsOn": 2,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 1,
+    "attention": 0,
+    "cleanup": 1
+   }
+  },
+  "butter_cheese_sandwich": {
+   "name": "Butter and cheese sandwich",
+   "rung": 1,
+   "harveys": {
+    "order": 2,
+    "tier": "pass",
+    "friction": 0.526,
+    "score": 0.212
+   },
+   "raw": {
+    "protein": 14,
+    "tools": 1,
+    "handsOn": 2,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 1,
+    "attention": 0,
+    "cleanup": 1
+   }
+  },
+  "maggi_cheese": {
+   "name": "Cheese Maggi",
+   "rung": 3,
+   "harveys": {
+    "order": 0,
+    "tier": "crave",
+    "friction": 1.163,
+    "score": -0.876
+   },
+   "raw": {
+    "protein": 10,
+    "tools": 2,
+    "handsOn": 1.5,
+    "waiting": 5,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 1,
+    "cleanup": 2
+   }
+  },
+  "egg_drop_maggi": {
+   "name": "Maggi with an egg stirred in",
+   "rung": 3,
+   "harveys": {
+    "order": 1,
+    "tier": "pass",
+    "friction": 1.267,
+    "score": -0.599
+   },
+   "raw": {
+    "protein": 18,
+    "tools": 2,
+    "handsOn": 4,
+    "waiting": 5,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 1,
+    "cleanup": 1
+   }
+  },
+  "maggi": {
+   "name": "Maggi",
+   "rung": 3,
+   "harveys": {
+    "order": 2,
+    "tier": "pass",
+    "friction": 1.071,
+    "score": -0.969
+   },
+   "raw": {
+    "protein": 6,
+    "tools": 2,
+    "handsOn": 1,
+    "waiting": 4,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 1,
+    "attention": 1,
+    "cleanup": 2
+   }
+  },
+  "maggi_boiled_eggs": {
+   "name": "Maggi with boiled eggs (one pot)",
+   "rung": 3,
+   "harveys": {
+    "order": 3,
+    "tier": "pass",
+    "friction": 1.717,
+    "score": -1.246
+   },
+   "raw": {
+    "protein": 18,
+    "tools": 2,
+    "handsOn": 6,
+    "waiting": 12,
+    "prePrepMinutes": 0,
+    "peels": 1,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 1
+   }
+  },
+  "boiled_eggs": {
+   "name": "Boiled eggs with salt and pepper",
+   "rung": 3,
+   "harveys": {
+    "order": 4,
+    "tier": "pass",
+    "friction": 1.863,
+    "score": -1.336
+   },
+   "raw": {
+    "protein": 25,
+    "tools": 1,
+    "handsOn": 7,
+    "waiting": 14,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 2
+   }
+  },
+  "bread_omelette": {
+   "name": "Bread omelette",
+   "rung": 3,
+   "harveys": {
+    "order": 5,
+    "tier": "pass",
+    "friction": 1.988,
+    "score": -1.631
+   },
+   "raw": {
+    "protein": 19,
+    "tools": 2,
+    "handsOn": 7,
+    "waiting": 1,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 2,
+    "cleanup": 3.5
+   }
+  },
+  "boiled_egg_sandwich": {
+   "name": "Boiled egg sandwich",
+   "rung": 3,
+   "harveys": {
+    "order": 6,
+    "tier": "pass",
+    "friction": 2.242,
+    "score": -1.666
+   },
+   "raw": {
+    "protein": 26,
+    "tools": 2,
+    "handsOn": 9,
+    "waiting": 14,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 4,
+    "attention": 1,
+    "cleanup": 2
+   }
+  },
+  "pot_egg_bhurji": {
+   "name": "Plain egg bhurji (no chopping)",
+   "rung": 3,
+   "harveys": {
+    "order": 7,
+    "tier": "floor",
+    "friction": 1.887,
+    "score": -1.663
+   },
+   "raw": {
+    "protein": 19,
+    "tools": 2,
+    "handsOn": 6,
+    "waiting": 1,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 2,
+    "cleanup": 3.5
+   }
+  },
+  "maggi_fried_egg": {
+   "name": "Maggi with a fried egg",
+   "rung": 4,
+   "harveys": {
+    "order": 0,
+    "tier": "crave",
+    "friction": 2.536,
+    "score": -2.716
+   },
+   "raw": {
+    "protein": 12,
+    "tools": 4,
+    "handsOn": 6.5,
+    "waiting": 4,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 2,
+    "cleanup": 4.5
+   }
+  }
+ },
+ "marco": [],
+ "pierre": [],
+ "white": [],
+ "flow": "stars",
+ "order": [
+  "maggi_boiled_eggs",
+  "pb_banana_sandwich",
+  "boiled_egg_sandwich",
+  "bread_omelette",
+  "egg_drop_maggi",
+  "maggi",
+  "maggi_cheese",
+  "pot_egg_bhurji",
+  "curd_peanut_banana_bowl",
+  "maggi_fried_egg",
+  "butter_cheese_sandwich",
+  "boiled_eggs"
+ ],
+ "stars": [
+  {
+   "id": "curd_peanut_banana_bowl",
+   "effort": 4,
+   "taste": 2,
+   "cant": null,
+   "ms": 3238
+  },
+  {
+   "id": "pb_banana_sandwich",
+   "effort": 4,
+   "taste": 4,
+   "cant": null,
+   "ms": 2922
+  },
+  {
+   "id": "butter_cheese_sandwich",
+   "effort": 5,
+   "taste": 4,
+   "cant": null,
+   "ms": 3480
+  },
+  {
+   "id": "maggi_cheese",
+   "effort": 5,
+   "taste": 5,
+   "cant": null,
+   "ms": 1548
+  },
+  {
+   "id": "egg_drop_maggi",
+   "effort": 4,
+   "taste": 3,
+   "cant": null,
+   "ms": 3186
+  },
+  {
+   "id": "maggi",
+   "effort": 5,
+   "taste": 5,
+   "cant": null,
+   "ms": 1653
+  },
+  {
+   "id": "maggi_boiled_eggs",
+   "effort": 3,
+   "taste": 4,
+   "cant": null,
+   "ms": 2689646
+  },
+  {
+   "id": "boiled_eggs",
+   "effort": 4,
+   "taste": 3,
+   "cant": null,
+   "ms": 3864
+  },
+  {
+   "id": "bread_omelette",
+   "effort": 5,
+   "taste": 5,
+   "cant": null,
+   "ms": 1878
+  },
+  {
+   "id": "boiled_egg_sandwich",
+   "effort": 2,
+   "taste": 3,
+   "cant": null,
+   "ms": 11855
+  },
+  {
+   "id": "pot_egg_bhurji",
+   "effort": 5,
+   "taste": 3,
+   "cant": null,
+   "ms": 5655
+  },
+  {
+   "id": "maggi_fried_egg",
+   "effort": 4,
+   "taste": 5,
+   "cant": null,
+   "ms": 2886
+  }
+ ],
+ "difficulty": {
+  "scale": [
+   "Effortless",
+   "Easy",
+   "Some effort",
+   "Hard work",
+   "Too much tonight"
+  ],
+  "from": "effort stars, level = 6 - stars",
+  "ratings": [
+   {
+    "id": "curd_peanut_banana_bowl",
+    "level": 2,
+    "ms": 3238
+   },
+   {
+    "id": "pb_banana_sandwich",
+    "level": 2,
+    "ms": 2922
+   },
+   {
+    "id": "butter_cheese_sandwich",
+    "level": 1,
+    "ms": 3480
+   },
+   {
+    "id": "maggi_cheese",
+    "level": 1,
+    "ms": 1548
+   },
+   {
+    "id": "egg_drop_maggi",
+    "level": 2,
+    "ms": 3186
+   },
+   {
+    "id": "maggi",
+    "level": 1,
+    "ms": 1653
+   },
+   {
+    "id": "maggi_boiled_eggs",
+    "level": 3,
+    "ms": 2689646
+   },
+   {
+    "id": "boiled_eggs",
+    "level": 2,
+    "ms": 3864
+   },
+   {
+    "id": "bread_omelette",
+    "level": 1,
+    "ms": 1878
+   },
+   {
+    "id": "boiled_egg_sandwich",
+    "level": 4,
+    "ms": 11855
+   },
+   {
+    "id": "pot_egg_bhurji",
+    "level": 1,
+    "ms": 5655
+   },
+   {
+    "id": "maggi_fried_egg",
+    "level": 2,
+    "ms": 2886
+   }
+  ],
+  "stoppedEarly": false
+ },
+ "bonus": {
+  "id": "kettle_oats",
+  "name": "Kettle oats with milk and peanuts",
+  "rung": 2,
+  "need": {
+   "id": "oats",
+   "label": "Oats",
+   "kind": "food"
+  },
+  "unlocks": [
+   "kettle_oats",
+   "pot_milk_oats"
+  ],
+  "harveys": {
+   "tier": "pass",
+   "friction": 0.876,
+   "score": -0.022
+  },
+  "raw": {
+   "protein": 16,
+   "tools": 2,
+   "handsOn": 2,
+   "waiting": 5,
+   "prePrepMinutes": 0,
+   "peels": 0,
+   "cuts": 0,
+   "steps": 2,
+   "attention": 0,
+   "cleanup": 1
+  },
+  "effort": 4,
+  "taste": 3,
+  "cant": null,
+  "want": 3,
+  "have": false,
+  "ms": 9990
+ },
+ "feedback": {
+  "chips": [],
+  "skipped": true,
+  "allGood": false,
+  "wrongItems": [],
+  "missedItems": [],
+  "dishIdeas": [],
+  "tooHard": [],
+  "wouldntEat": [],
+  "wouldntWhy": [],
+  "confusing": [],
+  "note": "",
+  "makes": "",
+  "ms": null
+ }
+}
