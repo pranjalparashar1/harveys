@@ -1,0 +1,2546 @@
+{
+ "format": "harveys-rung-quiz/1",
+ "version": "1.55.0",
+ "at": "2026-11-25T13:42:34.057Z",
+ "source": "sample",
+ "kitchenId": "l5_confident_home_cook-ewsny",
+ "testerId": "t-q9yauzidm",
+ "runNo": 2,
+ "kitchenSource": "sample",
+ "kitchen": {
+  "kitchen": "L5 · Confident home cook",
+  "diet": "veg+eggs",
+  "notes": "Everything above plus a second pan and kadai; air fryer, induction, microwave, blender, scale; Cooks anything, runs two or three pans at once. Every veg protein plus eggs, rice, poha, dal, chole, chana, rajma. Spices cut down to essentials, a good shelf of condiments, sauces and shortcuts.",
+  "level": 5,
+  "items": [
+   {
+    "name": "single induction cooktop",
+    "category": "appliance"
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance"
+   },
+   {
+    "name": "small nonstick frying pan",
+    "category": "cookware"
+   },
+   {
+    "name": "plastic spatula",
+    "category": "utensil"
+   },
+   {
+    "name": "mugs",
+    "category": "utensil"
+   },
+   {
+    "name": "plates",
+    "category": "utensil"
+   },
+   {
+    "name": "2-burner gas stove",
+    "category": "appliance"
+   },
+   {
+    "name": "saucepan",
+    "category": "cookware"
+   },
+   {
+    "name": "nonstick kadhai",
+    "category": "cookware"
+   },
+   {
+    "name": "microwave",
+    "category": "appliance"
+   },
+   {
+    "name": "butter knife",
+    "category": "utensil"
+   },
+   {
+    "name": "ladle",
+    "category": "utensil"
+   },
+   {
+    "name": "blender",
+    "category": "appliance"
+   },
+   {
+    "name": "3-litre pressure cooker",
+    "category": "cookware"
+   },
+   {
+    "name": "sandwich maker",
+    "category": "appliance"
+   },
+   {
+    "name": "kitchen knife",
+    "category": "utensil"
+   },
+   {
+    "name": "chopping board",
+    "category": "utensil"
+   },
+   {
+    "name": "shaker bottle",
+    "category": "utensil"
+   },
+   {
+    "name": "egg boiler",
+    "category": "appliance"
+   },
+   {
+    "name": "air fryer",
+    "category": "appliance"
+   },
+   {
+    "name": "tawa",
+    "category": "cookware"
+   },
+   {
+    "name": "kitchen scale",
+    "category": "appliance"
+   },
+   {
+    "name": "rice cooker",
+    "category": "appliance"
+   },
+   {
+    "name": "steel strainer",
+    "category": "utensil"
+   },
+   {
+    "name": "grater",
+    "category": "utensil"
+   },
+   {
+    "name": "Philips air fryer",
+    "category": "appliance"
+   },
+   {
+    "name": "induction cooktop",
+    "category": "appliance"
+   },
+   {
+    "name": "large saucepan",
+    "category": "cookware"
+   },
+   {
+    "name": "steel kadai",
+    "category": "cookware"
+   },
+   {
+    "name": "frying pan",
+    "category": "cookware"
+   },
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "Maggi noodles",
+    "category": "grain"
+   },
+   {
+    "name": "cup noodles",
+    "category": "grain"
+   },
+   {
+    "name": "white bread",
+    "category": "bread"
+   },
+   {
+    "name": "Amul butter",
+    "category": "dairy"
+   },
+   {
+    "name": "Amul cheese slices",
+    "category": "dairy"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "instant coffee",
+    "category": "drink"
+   },
+   {
+    "name": "cornflakes",
+    "category": "grain"
+   },
+   {
+    "name": "ketchup",
+    "category": "condiment"
+   },
+   {
+    "name": "chocolate hazelnut spread",
+    "category": "sweet"
+   },
+   {
+    "name": "bananas",
+    "category": "fruit"
+   },
+   {
+    "name": "salt",
+    "category": "spice"
+   },
+   {
+    "name": "black pepper",
+    "category": "spice"
+   },
+   {
+    "name": "tea leaves",
+    "category": "drink"
+   },
+   {
+    "name": "sugar",
+    "category": "sweet"
+   },
+   {
+    "name": "onion",
+    "category": "veg"
+   },
+   {
+    "name": "tomato",
+    "category": "veg"
+   },
+   {
+    "name": "yellow moong dal",
+    "category": "grain"
+   },
+   {
+    "name": "instant oats",
+    "category": "grain"
+   },
+   {
+    "name": "curd",
+    "category": "dairy"
+   },
+   {
+    "name": "honey",
+    "category": "sweet"
+   },
+   {
+    "name": "roasted peanuts",
+    "category": "snack"
+   },
+   {
+    "name": "ginger garlic paste",
+    "category": "condiment"
+   },
+   {
+    "name": "schezwan chutney",
+    "category": "condiment"
+   },
+   {
+    "name": "turmeric",
+    "category": "spice"
+   },
+   {
+    "name": "red chilli powder",
+    "category": "spice"
+   },
+   {
+    "name": "cumin seeds",
+    "category": "spice"
+   },
+   {
+    "name": "garam masala",
+    "category": "spice"
+   },
+   {
+    "name": "cooking oil",
+    "category": "fat"
+   },
+   {
+    "name": "paneer",
+    "category": "dairy"
+   },
+   {
+    "name": "Greek yogurt",
+    "category": "dairy"
+   },
+   {
+    "name": "whey protein",
+    "category": "protein"
+   },
+   {
+    "name": "peanut butter",
+    "category": "spread"
+   },
+   {
+    "name": "rolled oats",
+    "category": "grain"
+   },
+   {
+    "name": "multigrain bread",
+    "category": "bread"
+   },
+   {
+    "name": "canned chickpeas",
+    "category": "protein"
+   },
+   {
+    "name": "moong sprouts",
+    "category": "protein"
+   },
+   {
+    "name": "mozzarella",
+    "category": "dairy"
+   },
+   {
+    "name": "hummus",
+    "category": "spread"
+   },
+   {
+    "name": "potato",
+    "category": "veg"
+   },
+   {
+    "name": "sweet potato",
+    "category": "veg"
+   },
+   {
+    "name": "capsicum",
+    "category": "veg"
+   },
+   {
+    "name": "cucumber",
+    "category": "veg"
+   },
+   {
+    "name": "garlic",
+    "category": "veg"
+   },
+   {
+    "name": "green chilli",
+    "category": "veg"
+   },
+   {
+    "name": "coriander leaves",
+    "category": "veg"
+   },
+   {
+    "name": "lemon",
+    "category": "fruit"
+   },
+   {
+    "name": "apple",
+    "category": "fruit"
+   },
+   {
+    "name": "chia seeds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "chaat masala",
+    "category": "spice"
+   },
+   {
+    "name": "chilli flakes",
+    "category": "spice"
+   },
+   {
+    "name": "oregano",
+    "category": "spice"
+   },
+   {
+    "name": "mustard seeds",
+    "category": "spice"
+   },
+   {
+    "name": "coriander powder",
+    "category": "spice"
+   },
+   {
+    "name": "basmati rice",
+    "category": "grain"
+   },
+   {
+    "name": "brown rice",
+    "category": "grain"
+   },
+   {
+    "name": "quinoa",
+    "category": "grain"
+   },
+   {
+    "name": "soya chunks",
+    "category": "protein"
+   },
+   {
+    "name": "tofu",
+    "category": "protein"
+   },
+   {
+    "name": "tray of 30 eggs",
+    "category": "protein"
+   },
+   {
+    "name": "low-fat paneer",
+    "category": "dairy"
+   },
+   {
+    "name": "sattu",
+    "category": "grain"
+   },
+   {
+    "name": "besan",
+    "category": "grain"
+   },
+   {
+    "name": "kala chana",
+    "category": "protein"
+   },
+   {
+    "name": "chana dal",
+    "category": "grain"
+   },
+   {
+    "name": "spinach",
+    "category": "veg"
+   },
+   {
+    "name": "mushrooms",
+    "category": "veg"
+   },
+   {
+    "name": "broccoli",
+    "category": "veg"
+   },
+   {
+    "name": "zucchini",
+    "category": "veg"
+   },
+   {
+    "name": "carrot",
+    "category": "veg"
+   },
+   {
+    "name": "spring onion",
+    "category": "veg"
+   },
+   {
+    "name": "ghee",
+    "category": "fat"
+   },
+   {
+    "name": "olive oil",
+    "category": "fat"
+   },
+   {
+    "name": "almonds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "flax seeds",
+    "category": "nuts_seeds"
+   },
+   {
+    "name": "hing",
+    "category": "spice"
+   },
+   {
+    "name": "kasuri methi",
+    "category": "spice"
+   },
+   {
+    "name": "curry leaves",
+    "category": "spice"
+   },
+   {
+    "name": "Nakpro whey protein",
+    "category": "protein"
+   },
+   {
+    "name": "protein bread",
+    "category": "bread"
+   },
+   {
+    "name": "fusilli",
+    "category": "grain"
+   },
+   {
+    "name": "makhana",
+    "category": "snack"
+   },
+   {
+    "name": "poha",
+    "category": "grain"
+   },
+   {
+    "name": "rajma",
+    "category": "protein"
+   },
+   {
+    "name": "kabuli chana",
+    "category": "protein"
+   },
+   {
+    "name": "toor dal",
+    "category": "grain"
+   },
+   {
+    "name": "hung curd",
+    "category": "dairy"
+   },
+   {
+    "name": "fresh cream",
+    "category": "dairy"
+   },
+   {
+    "name": "soy sauce",
+    "category": "condiment"
+   },
+   {
+    "name": "white vinegar",
+    "category": "condiment"
+   },
+   {
+    "name": "sriracha",
+    "category": "condiment"
+   },
+   {
+    "name": "eggless mayo",
+    "category": "condiment"
+   },
+   {
+    "name": "kasundi mustard",
+    "category": "condiment"
+   },
+   {
+    "name": "peri peri sauce",
+    "category": "condiment"
+   },
+   {
+    "name": "green chutney",
+    "category": "condiment"
+   },
+   {
+    "name": "tamarind chutney",
+    "category": "condiment"
+   },
+   {
+    "name": "aglio olio paste",
+    "category": "condiment"
+   },
+   {
+    "name": "Knorr veg stock cubes",
+    "category": "condiment"
+   }
+  ]
+ },
+ "moment": "Weeknight, 9 PM, tired",
+ "targets": {
+  "protein": 60,
+  "calories": 1200,
+  "fiber": 20
+ },
+ "directions": {
+  "marco": "easiest first",
+  "pierre": "tastiest first",
+  "white": "tap order = preference"
+ },
+ "unmovedConfirmed": true,
+ "confirm": {
+  "asked": [],
+  "have": [],
+  "typed": [],
+  "unmatched": [],
+  "burners": null,
+  "noStove": false,
+  "removed": [
+   "Sweet potato",
+   "Spinach",
+   "Apple",
+   "Broccoli",
+   "Zucchini",
+   "Kasundi mustard",
+   "Tamarind chutney",
+   "Aglio olio paste",
+   "Knorr veg stock cubes",
+   "Peri peri sauce",
+   "Schezwan chutney",
+   "Chocolate hazelnut spread",
+   "Egg boiler"
+  ],
+  "listed": 119,
+  "ms": 195157
+ },
+ "ingredients": {
+  "used": [
+   "single induction cooktop",
+   "electric kettle",
+   "small nonstick frying pan",
+   "plastic spatula",
+   "plates",
+   "saucepan",
+   "microwave",
+   "ladle",
+   "kitchen knife",
+   "chopping board",
+   "air fryer",
+   "steel strainer",
+   "Philips air fryer",
+   "induction cooktop",
+   "large saucepan",
+   "frying pan",
+   "eggs",
+   "Maggi noodles",
+   "Amul cheese slices",
+   "milk",
+   "ketchup",
+   "salt",
+   "onion",
+   "instant oats",
+   "curd",
+   "honey",
+   "roasted peanuts",
+   "ginger garlic paste",
+   "turmeric",
+   "cooking oil",
+   "paneer",
+   "Greek yogurt",
+   "whey protein",
+   "rolled oats",
+   "garlic",
+   "lemon",
+   "chaat masala",
+   "chilli flakes",
+   "mustard seeds",
+   "soya chunks",
+   "tray of 30 eggs",
+   "low-fat paneer",
+   "olive oil",
+   "almonds",
+   "Nakpro whey protein",
+   "protein bread",
+   "fusilli",
+   "makhana",
+   "poha",
+   "hung curd"
+  ],
+  "unused": [
+   {
+    "name": "mugs",
+    "category": "utensil",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "2-burner gas stove",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Fusilli aglio olio with air-fried paneer",
+      "why": "made with Induction cooktop instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried tofu",
+      "why": "made with Induction cooktop instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried mushroom",
+      "why": "cookable, but #8 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried potato",
+      "why": "cookable, but #7 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "nonstick kadhai",
+    "category": "cookware",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Fusilli aglio olio with air-fried paneer",
+      "why": "made with Saucepan / pot instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried tofu",
+      "why": "made with Saucepan / pot instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried mushroom",
+      "why": "cookable, but #8 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried potato",
+      "why": "cookable, but #7 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "butter knife",
+    "category": "utensil",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "blender",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Banana milkshake",
+      "why": "cookable, but #6 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Banana oats shake",
+      "why": "cookable, but #5 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "3-litre pressure cooker",
+    "category": "cookware",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Fusilli aglio olio with air-fried paneer",
+      "why": "made with Saucepan / pot instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried tofu",
+      "why": "made with Saucepan / pot instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried mushroom",
+      "why": "cookable, but #8 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried potato",
+      "why": "cookable, but #7 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "sandwich maker",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Paneer cheese grilled sandwich",
+      "why": "cookable, but #13 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "shaker bottle",
+    "category": "utensil",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Whey shake with milk",
+      "why": "a snack, and the test shows meals"
+     }
+    ]
+   },
+   {
+    "name": "egg boiler",
+    "category": "appliance",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "tawa",
+    "category": "cookware",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Fusilli aglio olio with air-fried paneer",
+      "why": "made with Frying pan instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried tofu",
+      "why": "made with Frying pan instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried mushroom",
+      "why": "cookable, but #8 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried potato",
+      "why": "cookable, but #7 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "kitchen scale",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "rice cooker",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Fusilli aglio olio with air-fried paneer",
+      "why": "made with Saucepan / pot instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried tofu",
+      "why": "made with Saucepan / pot instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried mushroom",
+      "why": "cookable, but #8 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried potato",
+      "why": "cookable, but #7 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "grater",
+    "category": "utensil",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "steel kadai",
+    "category": "cookware",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Fusilli aglio olio with air-fried paneer",
+      "why": "made with Saucepan / pot instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried tofu",
+      "why": "made with Saucepan / pot instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried mushroom",
+      "why": "cookable, but #8 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried potato",
+      "why": "cookable, but #7 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "cup noodles",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Chai and buttered toast",
+      "why": "cookable, but #27 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Chai, boiled eggs and toast",
+      "why": "cookable, but #36 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Banana milkshake",
+      "why": "cookable, but #6 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Banana oats shake",
+      "why": "cookable, but #5 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "white bread",
+    "category": "bread",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Air-fryer protein bread cheese toast",
+      "why": "made with Protein bread instead"
+     },
+     {
+      "dish": "Boiled egg sandwich",
+      "why": "cookable, but #10 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer egg-in-a-hole on protein bread",
+      "why": "cookable, but #14 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Paneer cheese grilled sandwich",
+      "why": "cookable, but #13 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "Amul butter",
+    "category": "dairy",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Microwave paneer bhurji (no chopping)",
+      "why": "cookable, but #12 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Boiled egg sandwich",
+      "why": "cookable, but #10 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Butter omelette",
+      "why": "cookable, but #11 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer egg-in-a-hole on protein bread",
+      "why": "cookable, but #14 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "instant coffee",
+    "category": "drink",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Milk coffee",
+      "why": "a snack, and the test shows meals"
+     }
+    ]
+   },
+   {
+    "name": "cornflakes",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "cookable, but #2 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Kettle oats with milk and almonds",
+      "why": "made with Honey instead"
+     },
+     {
+      "dish": "Curd, banana and peanut bowl",
+      "why": "cookable, but #3 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Dahi poha (no cooking)",
+      "why": "made with Peanuts instead"
+     }
+    ]
+   },
+   {
+    "name": "chocolate hazelnut spread",
+    "category": "sweet",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "bananas",
+    "category": "fruit",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Curd and whey protein bowl",
+      "why": "cookable, but #7 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Microwave protein oats",
+      "why": "cookable, but #10 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Oats cooked in milk",
+      "why": "cookable, but #5 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "cookable, but #2 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "black pepper",
+    "category": "spice",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Boiled eggs with salt and pepper",
+      "why": "cookable, but #7 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Boiled egg sandwich",
+      "why": "cookable, but #10 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Butter omelette",
+      "why": "cookable, but #11 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Plain egg bhurji (no chopping)",
+      "why": "cookable, but #34 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "tea leaves",
+    "category": "drink",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Chai and buttered toast",
+      "why": "cookable, but #27 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Chai, boiled eggs and toast",
+      "why": "cookable, but #36 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Chai",
+      "why": "a snack, and the test shows meals"
+     }
+    ]
+   },
+   {
+    "name": "sugar",
+    "category": "sweet",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "cookable, but #2 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Kettle oats with milk and almonds",
+      "why": "made with Honey instead"
+     }
+    ]
+   },
+   {
+    "name": "tomato",
+    "category": "veg",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Egg bhurji",
+      "why": "cookable, but #21 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Egg bhurji with capsicum",
+      "why": "cookable, but #44 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Classic paneer bhurji",
+      "why": "cookable, but #17 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Classic paneer bhurji with capsicum",
+      "why": "cookable, but #42 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "yellow moong dal",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Open-pot dal",
+      "why": "cookable, but #19 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Open-pot dal khichdi",
+      "why": "cookable, but #39 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Dal and rice, one pot after the other",
+      "why": "cookable, but #18 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Pressure-cooker moong dal khichdi",
+      "why": "needs Rice, Dal soaked first"
+     }
+    ]
+   },
+   {
+    "name": "schezwan chutney",
+    "category": "condiment",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "red chilli powder",
+    "category": "spice",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Microwave paneer bhurji (no chopping)",
+      "why": "cookable, but #12 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer paneer tikka",
+      "why": "cookable, but #16 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer tofu tikka",
+      "why": "cookable, but #17 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer mushroom tikka",
+      "why": "cookable, but #19 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "cumin seeds",
+    "category": "spice",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Soya and jeera rice in one pot",
+      "why": "cookable, but #26 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Dahi poha (no cooking)",
+      "why": "made with Chaat masala instead"
+     },
+     {
+      "dish": "Dahi poha (no cooking) with almonds",
+      "why": "made with Chaat masala instead"
+     }
+    ]
+   },
+   {
+    "name": "garam masala",
+    "category": "spice",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Air-fryer paneer tikka",
+      "why": "cookable, but #16 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer tofu tikka",
+      "why": "cookable, but #17 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer mushroom tikka",
+      "why": "cookable, but #19 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer potato tikka",
+      "why": "cookable, but #18 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "peanut butter",
+    "category": "spread",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "cookable, but #2 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Curd, banana and peanut bowl",
+      "why": "cookable, but #3 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Peanut butter and banana sandwich",
+      "why": "cookable, but #1 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Kettle oats with banana and peanuts (no milk)",
+      "why": "cookable, but #4 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "multigrain bread",
+    "category": "bread",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Air-fryer protein bread cheese toast",
+      "why": "made with Protein bread instead"
+     },
+     {
+      "dish": "Boiled egg sandwich",
+      "why": "cookable, but #10 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer egg-in-a-hole on protein bread",
+      "why": "cookable, but #14 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Paneer cheese grilled sandwich",
+      "why": "cookable, but #13 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "canned chickpeas",
+    "category": "protein",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Chana chaat",
+      "why": "needs Chickpeas (boiled or canned) soaked first"
+     },
+     {
+      "dish": "Chana chaat with cucumber",
+      "why": "needs Chickpeas (boiled or canned) soaked first"
+     },
+     {
+      "dish": "Chana chaat with capsicum",
+      "why": "needs Chickpeas (boiled or canned) soaked first"
+     },
+     {
+      "dish": "Chana chaat with carrot",
+      "why": "needs Chickpeas (boiled or canned) soaked first"
+     }
+    ]
+   },
+   {
+    "name": "moong sprouts",
+    "category": "protein",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Moong sprouts salad",
+      "why": "cookable, but #30 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Moong sprouts salad with cucumber",
+      "why": "cookable, but #31 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Moong sprouts salad with capsicum",
+      "why": "cookable, but #28 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Moong sprouts salad with carrot",
+      "why": "cookable, but #29 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "mozzarella",
+    "category": "dairy",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Air-fryer protein bread cheese toast",
+      "why": "made with Cheese slices instead"
+     },
+     {
+      "dish": "Paneer cheese grilled sandwich",
+      "why": "cookable, but #13 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Tawa paneer cheese sandwich",
+      "why": "cookable, but #35 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Cheese Maggi",
+      "why": "cookable, but #1 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "hummus",
+    "category": "spread",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "potato",
+    "category": "veg",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Fusilli aglio olio with air-fried potato",
+      "why": "cookable, but #7 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer potato tikka",
+      "why": "cookable, but #18 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fried masala potato cubes",
+      "why": "cookable, but #7 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fried potato wedges",
+      "why": "cookable, but #9 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "sweet potato",
+    "category": "veg",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "capsicum",
+    "category": "veg",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Egg bhurji with capsicum",
+      "why": "cookable, but #44 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer paneer tikka",
+      "why": "cookable, but #16 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer tofu tikka",
+      "why": "cookable, but #17 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer mushroom tikka",
+      "why": "cookable, but #19 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "cucumber",
+    "category": "veg",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Moong sprouts salad with cucumber",
+      "why": "cookable, but #31 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Boiled egg chaat with cucumber",
+      "why": "cookable, but #16 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Chana chaat with cucumber",
+      "why": "needs Chickpeas (boiled or canned) soaked first"
+     },
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "cookable, but #2 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "green chilli",
+    "category": "veg",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Egg bhurji",
+      "why": "cookable, but #21 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Egg bhurji with capsicum",
+      "why": "cookable, but #44 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Classic paneer bhurji",
+      "why": "cookable, but #17 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Classic paneer bhurji with capsicum",
+      "why": "cookable, but #42 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "coriander leaves",
+    "category": "veg",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "apple",
+    "category": "fruit",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "chia seeds",
+    "category": "nuts_seeds",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "oregano",
+    "category": "spice",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Soya chunk pasta in one pot",
+      "why": "made with Chilli flakes instead"
+     },
+     {
+      "dish": "One-pot ketchup cheese pasta",
+      "why": "cookable, but #25 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "coriander powder",
+    "category": "spice",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "basmati rice",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Open-pot dal khichdi",
+      "why": "cookable, but #39 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Curd rice",
+      "why": "cookable, but #8 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Egg rice in one pot",
+      "why": "cookable, but #38 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Dal and rice, one pot after the other",
+      "why": "cookable, but #18 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "brown rice",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Open-pot dal khichdi",
+      "why": "cookable, but #39 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Curd rice",
+      "why": "cookable, but #8 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Egg rice in one pot",
+      "why": "cookable, but #38 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Dal and rice, one pot after the other",
+      "why": "cookable, but #18 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "quinoa",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "tofu",
+    "category": "protein",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "sattu",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "besan",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Besan chilla",
+      "why": "cookable, but #5 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Besan chilla with capsicum",
+      "why": "cookable, but #9 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "kala chana",
+    "category": "protein",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Pressure-cooker kala chana",
+      "why": "needs Kala chana soaked first"
+     }
+    ]
+   },
+   {
+    "name": "chana dal",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Open-pot dal",
+      "why": "cookable, but #19 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Open-pot dal khichdi",
+      "why": "cookable, but #39 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Dal and rice, one pot after the other",
+      "why": "cookable, but #18 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Pressure-cooker moong dal khichdi",
+      "why": "needs Rice, Dal soaked first"
+     }
+    ]
+   },
+   {
+    "name": "spinach",
+    "category": "veg",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "mushrooms",
+    "category": "veg",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Fusilli aglio olio with air-fried mushroom",
+      "why": "cookable, but #8 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fryer mushroom tikka",
+      "why": "cookable, but #19 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Air-fried masala mushroom cubes",
+      "why": "cookable, but #8 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "broccoli",
+    "category": "veg",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "zucchini",
+    "category": "veg",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "carrot",
+    "category": "veg",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Moong sprouts salad with carrot",
+      "why": "cookable, but #29 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Boiled egg chaat with carrot",
+      "why": "cookable, but #14 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Chana chaat with carrot",
+      "why": "needs Chickpeas (boiled or canned) soaked first"
+     },
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "cookable, but #2 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "spring onion",
+    "category": "veg",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Egg fried rice with spring onion",
+      "why": "needs Rice soaked first"
+     },
+     {
+      "dish": "Egg fried rice with spring onion and capsicum",
+      "why": "needs Rice soaked first"
+     }
+    ]
+   },
+   {
+    "name": "ghee",
+    "category": "fat",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Microwave paneer bhurji (no chopping)",
+      "why": "cookable, but #12 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Butter omelette",
+      "why": "cookable, but #11 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Tawa paneer cheese sandwich",
+      "why": "cookable, but #35 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Classic paneer bhurji",
+      "why": "cookable, but #17 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "flax seeds",
+    "category": "nuts_seeds",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "cookable, but #2 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Curd, banana and peanut bowl",
+      "why": "cookable, but #3 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Dahi poha (no cooking)",
+      "why": "made with Peanuts instead"
+     },
+     {
+      "dish": "Kettle oats with banana and peanuts (no milk)",
+      "why": "cookable, but #4 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "hing",
+    "category": "spice",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "kasuri methi",
+    "category": "spice",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "curry leaves",
+    "category": "spice",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "rajma",
+    "category": "protein",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Pressure-cooker rajma",
+      "why": "needs Rajma soaked first"
+     }
+    ]
+   },
+   {
+    "name": "kabuli chana",
+    "category": "protein",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Chana chaat",
+      "why": "needs Chickpeas (boiled or canned) soaked first"
+     },
+     {
+      "dish": "Chana chaat with cucumber",
+      "why": "needs Chickpeas (boiled or canned) soaked first"
+     },
+     {
+      "dish": "Chana chaat with capsicum",
+      "why": "needs Chickpeas (boiled or canned) soaked first"
+     },
+     {
+      "dish": "Chana chaat with carrot",
+      "why": "needs Chickpeas (boiled or canned) soaked first"
+     }
+    ]
+   },
+   {
+    "name": "toor dal",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Open-pot dal",
+      "why": "cookable, but #19 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Open-pot dal khichdi",
+      "why": "cookable, but #39 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Dal and rice, one pot after the other",
+      "why": "cookable, but #18 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Pressure-cooker moong dal khichdi",
+      "why": "needs Rice, Dal soaked first"
+     }
+    ]
+   },
+   {
+    "name": "fresh cream",
+    "category": "dairy",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "soy sauce",
+    "category": "condiment",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Soya chunk pasta in one pot",
+      "why": "made with Ketchup instead"
+     }
+    ]
+   },
+   {
+    "name": "white vinegar",
+    "category": "condiment",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Moong sprouts salad",
+      "why": "cookable, but #30 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Moong sprouts salad with cucumber",
+      "why": "cookable, but #31 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Moong sprouts salad with capsicum",
+      "why": "cookable, but #28 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Moong sprouts salad with carrot",
+      "why": "cookable, but #29 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "sriracha",
+    "category": "condiment",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Air-fryer protein bread cheese toast",
+      "why": "made with Chilli flakes instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried paneer",
+      "why": "made with Chilli flakes instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried tofu",
+      "why": "made with Chilli flakes instead"
+     },
+     {
+      "dish": "Fusilli aglio olio with air-fried mushroom",
+      "why": "cookable, but #8 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "eggless mayo",
+    "category": "condiment",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Soya chunk pasta in one pot",
+      "why": "made with Ketchup instead"
+     },
+     {
+      "dish": "Air-fried potato wedges",
+      "why": "cookable, but #9 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Microwave paneer wrap",
+      "why": "missing Wraps / roti"
+     }
+    ]
+   },
+   {
+    "name": "kasundi mustard",
+    "category": "condiment",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "peri peri sauce",
+    "category": "condiment",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "green chutney",
+    "category": "condiment",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Moong sprouts salad",
+      "why": "cookable, but #30 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Moong sprouts salad with cucumber",
+      "why": "cookable, but #31 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Moong sprouts salad with capsicum",
+      "why": "cookable, but #28 on its rung (only the top dishes are shown)"
+     },
+     {
+      "dish": "Moong sprouts salad with carrot",
+      "why": "cookable, but #29 on its rung (only the top dishes are shown)"
+     }
+    ]
+   },
+   {
+    "name": "tamarind chutney",
+    "category": "condiment",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "aglio olio paste",
+    "category": "condiment",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "Knorr veg stock cubes",
+    "category": "condiment",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   }
+  ],
+  "gaps": [
+   "mugs",
+   "butter knife",
+   "egg boiler",
+   "kitchen scale",
+   "grater",
+   "chocolate hazelnut spread",
+   "schezwan chutney",
+   "hummus",
+   "sweet potato",
+   "coriander leaves",
+   "apple",
+   "chia seeds",
+   "coriander powder",
+   "quinoa",
+   "tofu",
+   "sattu",
+   "spinach",
+   "broccoli",
+   "zucchini",
+   "hing",
+   "kasuri methi",
+   "curry leaves",
+   "fresh cream",
+   "kasundi mustard",
+   "peri peri sauce",
+   "tamarind chutney",
+   "aglio olio paste",
+   "Knorr veg stock cubes"
+  ],
+  "blockers": [
+   {
+    "thing": "Sweet corn",
+    "dishes": [
+     "Butter corn and peanut chaat",
+     "Butter corn and almonds chaat"
+    ]
+   },
+   {
+    "thing": "Wraps / roti",
+    "dishes": [
+     "Microwave paneer wrap",
+     "Roti egg roll"
+    ]
+   }
+  ]
+ },
+ "dishes": {
+  "whey_makhana_bowl": {
+   "name": "Whey and makhana bowl",
+   "rung": 1,
+   "harveys": {
+    "order": 0,
+    "tier": "floor",
+    "friction": 0.533,
+    "score": 0.674
+   },
+   "raw": {
+    "protein": 27,
+    "tools": 1,
+    "handsOn": 2,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 0,
+    "cleanup": 1
+   }
+  },
+  "dahi_poha": {
+   "name": "Dahi poha (no cooking)",
+   "rung": 1,
+   "harveys": {
+    "order": 1,
+    "tier": "floor",
+    "friction": 0.705,
+    "score": 0.002
+   },
+   "raw": {
+    "protein": 14,
+    "tools": 1,
+    "handsOn": 2,
+    "waiting": 5,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 0,
+    "cleanup": 1
+   }
+  },
+  "dahi_poha~almonds": {
+   "name": "Dahi poha (no cooking) with almonds",
+   "rung": 1,
+   "harveys": {
+    "order": 2,
+    "tier": "floor",
+    "friction": 0.705,
+    "score": -0.043
+   },
+   "raw": {
+    "protein": 13,
+    "tools": 1,
+    "handsOn": 2,
+    "waiting": 5,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 0,
+    "cleanup": 1
+   },
+   "template": {
+    "from": "dahi_poha",
+    "swap": {
+     "peanuts": "almonds"
+    }
+   }
+  },
+  "airfryer_protein_cheese_toast": {
+   "name": "Air-fryer protein bread cheese toast",
+   "rung": 2,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 0.845,
+    "score": 0.285
+   },
+   "raw": {
+    "protein": 20,
+    "tools": 1,
+    "handsOn": 1.5,
+    "waiting": 5,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 1,
+    "cleanup": 1
+   }
+  },
+  "kettle_oats~almonds": {
+   "name": "Kettle oats with milk and almonds",
+   "rung": 2,
+   "harveys": {
+    "order": 1,
+    "tier": "pass",
+    "friction": 0.876,
+    "score": -0.067
+   },
+   "raw": {
+    "protein": 15,
+    "tools": 2,
+    "handsOn": 2,
+    "waiting": 5,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 0,
+    "cleanup": 1
+   },
+   "template": {
+    "from": "kettle_oats",
+    "swap": {
+     "peanuts": "almonds"
+    }
+   }
+  },
+  "microwave_poha": {
+   "name": "Microwave peanut poha",
+   "rung": 2,
+   "harveys": {
+    "order": 2,
+    "tier": "floor",
+    "friction": 1.447,
+    "score": -1.068
+   },
+   "raw": {
+    "protein": 12,
+    "tools": 2,
+    "handsOn": 2.5,
+    "waiting": 8,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 2.5
+   }
+  },
+  "poha": {
+   "name": "Kanda poha with peanuts",
+   "rung": 3,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 4.082,
+    "score": -5.076
+   },
+   "raw": {
+    "protein": 9,
+    "tools": 5,
+    "handsOn": 11,
+    "waiting": 5,
+    "prePrepMinutes": 15,
+    "peels": 1,
+    "cuts": 0,
+    "steps": 4,
+    "attention": 2,
+    "cleanup": 8
+   }
+  },
+  "soya_pasta_pot": {
+   "name": "Soya chunk pasta in one pot",
+   "rung": 3,
+   "harveys": {
+    "order": 1,
+    "tier": "floor",
+    "friction": 1.548,
+    "score": -0.5
+   },
+   "raw": {
+    "protein": 26,
+    "tools": 2,
+    "handsOn": 5,
+    "waiting": 10,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 1,
+    "cleanup": 1
+   }
+  },
+  "poha~almonds": {
+   "name": "Kanda poha with almonds",
+   "rung": 3,
+   "harveys": {
+    "order": 2,
+    "tier": "floor",
+    "friction": 4.082,
+    "score": -5.121
+   },
+   "raw": {
+    "protein": 8,
+    "tools": 5,
+    "handsOn": 11,
+    "waiting": 5,
+    "prePrepMinutes": 15,
+    "peels": 1,
+    "cuts": 0,
+    "steps": 4,
+    "attention": 2,
+    "cleanup": 8
+   },
+   "template": {
+    "from": "poha",
+    "swap": {
+     "peanuts": "almonds"
+    }
+   }
+  },
+  "maggi_fried_egg": {
+   "name": "Maggi with a fried egg",
+   "rung": 4,
+   "harveys": {
+    "order": 0,
+    "tier": "crave",
+    "friction": 2.536,
+    "score": -2.716
+   },
+   "raw": {
+    "protein": 12,
+    "tools": 4,
+    "handsOn": 6.5,
+    "waiting": 4,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 2,
+    "cleanup": 4.5
+   }
+  },
+  "pasta_aglio_olio_paneer": {
+   "name": "Fusilli aglio olio with air-fried paneer",
+   "rung": 4,
+   "harveys": {
+    "order": 1,
+    "tier": "pass",
+    "friction": 5.168,
+    "score": -5.299
+   },
+   "raw": {
+    "protein": 33,
+    "tools": 7,
+    "handsOn": 16,
+    "waiting": 18,
+    "prePrepMinutes": 0,
+    "peels": 1,
+    "cuts": 1,
+    "steps": 6,
+    "attention": 2,
+    "cleanup": 9
+   }
+  },
+  "pasta_aglio_olio_paneer~tofu": {
+   "name": "Fusilli aglio olio with air-fried tofu",
+   "rung": 4,
+   "harveys": {
+    "order": 2,
+    "tier": "pass",
+    "friction": 5.168,
+    "score": -5.644
+   },
+   "raw": {
+    "protein": 27,
+    "tools": 7,
+    "handsOn": 16,
+    "waiting": 18,
+    "prePrepMinutes": 0,
+    "peels": 1,
+    "cuts": 1,
+    "steps": 6,
+    "attention": 2,
+    "cleanup": 9
+   },
+   "template": {
+    "from": "pasta_aglio_olio_paneer",
+    "swap": {
+     "paneer": "tofu"
+    },
+    "proxy": "tofu"
+   }
+  }
+ },
+ "marco": [],
+ "pierre": [],
+ "white": [],
+ "flow": "stars",
+ "order": [
+  "pasta_aglio_olio_paneer",
+  "poha",
+  "airfryer_protein_cheese_toast",
+  "kettle_oats~almonds",
+  "dahi_poha",
+  "microwave_poha",
+  "maggi_fried_egg",
+  "whey_makhana_bowl",
+  "poha~almonds",
+  "pasta_aglio_olio_paneer~tofu",
+  "soya_pasta_pot",
+  "dahi_poha~almonds"
+ ],
+ "stars": [
+  {
+   "id": "whey_makhana_bowl",
+   "effort": 5,
+   "taste": 2,
+   "cant": null,
+   "ms": 2493
+  },
+  {
+   "id": "dahi_poha",
+   "effort": 4,
+   "taste": 3,
+   "cant": null,
+   "ms": 5337
+  },
+  {
+   "id": "dahi_poha~almonds",
+   "effort": 3,
+   "taste": 2,
+   "cant": null,
+   "ms": 4527
+  },
+  {
+   "id": "airfryer_protein_cheese_toast",
+   "effort": 5,
+   "taste": 5,
+   "cant": null,
+   "ms": 1705
+  },
+  {
+   "id": "kettle_oats~almonds",
+   "effort": 4,
+   "taste": 3,
+   "cant": null,
+   "ms": 4531
+  },
+  {
+   "id": "microwave_poha",
+   "effort": 4,
+   "taste": 3,
+   "cant": null,
+   "ms": 4352
+  },
+  {
+   "id": "poha",
+   "effort": 3,
+   "taste": 5,
+   "cant": null,
+   "ms": 3929
+  },
+  {
+   "id": "soya_pasta_pot",
+   "effort": 1,
+   "taste": 2,
+   "cant": null,
+   "ms": 5683
+  },
+  {
+   "id": "poha~almonds",
+   "effort": 5,
+   "taste": 3,
+   "cant": null,
+   "ms": 3347
+  },
+  {
+   "id": "maggi_fried_egg",
+   "effort": 5,
+   "taste": 5,
+   "cant": null,
+   "ms": 1470
+  },
+  {
+   "id": "pasta_aglio_olio_paneer",
+   "effort": 2,
+   "taste": 5,
+   "cant": null,
+   "ms": 6849
+  },
+  {
+   "id": "pasta_aglio_olio_paneer~tofu",
+   "effort": 2,
+   "taste": 2,
+   "cant": null,
+   "ms": 7287
+  }
+ ],
+ "difficulty": {
+  "scale": [
+   "Effortless",
+   "Easy",
+   "Some effort",
+   "Hard work",
+   "Too much tonight"
+  ],
+  "from": "effort stars, level = 6 - stars",
+  "ratings": [
+   {
+    "id": "whey_makhana_bowl",
+    "level": 1,
+    "ms": 2493
+   },
+   {
+    "id": "dahi_poha",
+    "level": 2,
+    "ms": 5337
+   },
+   {
+    "id": "dahi_poha~almonds",
+    "level": 3,
+    "ms": 4527
+   },
+   {
+    "id": "airfryer_protein_cheese_toast",
+    "level": 1,
+    "ms": 1705
+   },
+   {
+    "id": "kettle_oats~almonds",
+    "level": 2,
+    "ms": 4531
+   },
+   {
+    "id": "microwave_poha",
+    "level": 2,
+    "ms": 4352
+   },
+   {
+    "id": "poha",
+    "level": 3,
+    "ms": 3929
+   },
+   {
+    "id": "soya_pasta_pot",
+    "level": 5,
+    "ms": 5683
+   },
+   {
+    "id": "poha~almonds",
+    "level": 1,
+    "ms": 3347
+   },
+   {
+    "id": "maggi_fried_egg",
+    "level": 1,
+    "ms": 1470
+   },
+   {
+    "id": "pasta_aglio_olio_paneer",
+    "level": 4,
+    "ms": 6849
+   },
+   {
+    "id": "pasta_aglio_olio_paneer~tofu",
+    "level": 4,
+    "ms": 7287
+   }
+  ],
+  "stoppedEarly": false
+ },
+ "bonus": {
+  "id": "paneer_wrap",
+  "name": "Microwave paneer wrap",
+  "rung": 2,
+  "need": {
+   "id": "tortilla",
+   "label": "Wraps / roti",
+   "kind": "food"
+  },
+  "unlocks": [
+   "paneer_wrap",
+   "egg_roll"
+  ],
+  "harveys": {
+   "tier": "pass",
+   "friction": 1.086,
+   "score": -0.064
+  },
+  "raw": {
+   "protein": 24,
+   "tools": 2,
+   "handsOn": 4,
+   "waiting": 1,
+   "prePrepMinutes": 0,
+   "peels": 0,
+   "cuts": 0,
+   "steps": 2,
+   "attention": 0,
+   "cleanup": 2
+  },
+  "effort": 3,
+  "taste": 3,
+  "cant": null,
+  "want": 2,
+  "have": false,
+  "ms": 21573
+ },
+ "feedback": {
+  "chips": [],
+  "skipped": true,
+  "allGood": false,
+  "wrongItems": [],
+  "missedItems": [],
+  "dishIdeas": [],
+  "tooHard": [],
+  "wouldntEat": [],
+  "wouldntWhy": [],
+  "confusing": [],
+  "note": "",
+  "makes": "",
+  "ms": null
+ }
+}
