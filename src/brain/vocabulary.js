@@ -9,6 +9,17 @@
 /** @typedef {'food'|'appliance'|'cookware'|'utensil'} ItemKind */
 
 /**
+ * 1.55.0 (pranjal, 25 Nov): frozen and ready-to-eat foods are left out for now. A "ready-to-eat
+ * rajma pouch" read as raw rajma and "leftover takeaway dal makhani" as raw dal, so dishes asked
+ * to cook them from scratch. Such an item never maps to a food id and joins no dish; the
+ * inventory lists it under `setAside`. Frozen-food support comes later. Canned chickpeas stay:
+ * they are cooked chickpeas, and the chickpea dishes already skip the soak for them.
+ */
+export const SET_ASIDE = /\b(frozen|ready[\s-]*to[\s-]*(eat|cook|heat)|rte|heat[\s-]*(and|n|&)[\s-]*eat|take[\s-]*away|takeout|leftovers?|pouch|microwave\s+meal)\b/i;
+/** True for a frozen or ready-to-eat item (see SET_ASIDE). */
+export const isSetAside = (name) => SET_ASIDE.test(String(name ?? ''));
+
+/**
  * How an ingredient is handled. `peel_chop` is the old catch-all; `peel`
  * (garlic, onion) and `cut` (paneer cubes, tomato) are Friction v2's split.
  */
@@ -62,8 +73,9 @@ export const FOODS = {
   capsicum: { label: 'Capsicum', group: 'veg', synonyms: ['capsicum', 'bell pepper', 'shimla mirch'] },
   cucumber: { label: 'Cucumber', group: 'veg', synonyms: ['cucumber', 'kheera'] },
   spinach: { label: 'Spinach', group: 'veg', synonyms: ['spinach', 'palak'] },
-  frozen_peas: { label: 'Frozen peas', group: 'veg', synonyms: ['peas', 'frozen peas', 'matar', 'green peas'] },
-  sweet_corn: { label: 'Sweet corn', group: 'veg', synonyms: ['sweet corn', 'corn', 'frozen corn'] },
+  // 1.55.0: the id keeps its old name; "frozen …" items are set aside (SET_ASIDE below).
+  frozen_peas: { label: 'Green peas', group: 'veg', synonyms: ['peas', 'matar', 'green peas'] },
+  sweet_corn: { label: 'Sweet corn', group: 'veg', synonyms: ['sweet corn', 'corn'] },
   // 1.52.0: potato joins the fixed ids for the air-fried wedges (thin sample kitchens). Pierre already rates potato@air_fried.
   potato: { label: 'Potato', group: 'veg', synonyms: ['potato', 'potatoes', 'aloo', 'alu'] },
   lemon: { label: 'Lemon', group: 'veg', synonyms: ['lemon', 'lime', 'nimbu'] },

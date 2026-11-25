@@ -25,7 +25,8 @@ function resolveItem(name, inventory) {
   for (const m of inventory.matched ?? []) if (nameKey(m.name) === k) { ids.add(m.id); for (const r of ID_ROLES[m.id] ?? []) roles.add(r); }
   for (const p of inventory.extras ?? []) if (nameKey(p.name) === k) { ids.add(p.as ?? p.id); for (const r of p.roles ?? []) roles.add(r); }
   const excluded = (inventory.excluded ?? []).some((n) => nameKey(n) === k);
-  return { ids: [...ids], roles: [...roles], excluded };
+  const setAside = (inventory.setAside ?? []).some((n) => nameKey(n) === k);
+  return { ids: [...ids], roles: [...roles], excluded, setAside };
 }
 
 /** How a catalogue dish refers to these ids: 'direct' (named), 'role' (a seasoning slot), or null. */
@@ -104,9 +105,10 @@ export function ingredientUsage({ items, inventory, ranking, shown, catalogue, k
   const out = (items ?? []).map((item) => {
     const name = typeof item === 'string' ? item : item?.name;
     const category = typeof item === 'object' ? item?.category ?? null : null;
-    const { ids, roles, excluded } = resolveItem(name, inventory);
+    const { ids, roles, excluded, setAside } = resolveItem(name, inventory);
     const kit = ids.some(isKit) || category === 'appliance' || category === 'cookware';
     if (excluded) return { name, category, status: 'not_veg', kit, usedIn: [], reasons: [] };
+    if (setAside) return { name, category, status: 'set_aside', kit, usedIn: [], reasons: [{ dish: null, why: 'frozen or ready-to-eat: left out for now' }] };
     if (!ids.length) return { name, category, status: 'unknown', kit, usedIn: [], reasons: [{ dish: null, why: 'Harvey’s couldn’t tell what this is' }] };
     const usedIn = [...shownSet].map((id) => ranked.get(id)).filter((x) => x && ids.some((i) => usedIds(x).has(i))).map((x) => x.meal.name);
     if (usedIn.length) return { name, category, status: 'used', kit, usedIn, reasons: [] };
@@ -138,7 +140,7 @@ export function ingredientUsage({ items, inventory, ranking, shown, catalogue, k
     blockers,
     used: out.length - unused.length,
     unused: unused.length,
-    gaps: unused.filter((x) => x.reasons.length === 1 && x.reasons[0].dish === null).map((x) => x.name),
+    gaps: unused.filter((x) => x.status !== 'set_aside' && x.reasons.length === 1 && x.reasons[0].dish === null).map((x) => x.name),
   };
 }
 

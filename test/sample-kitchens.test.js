@@ -150,7 +150,8 @@ test('kitchen-tests.mjs score runs cleanly on data/kitchen-tests and prints the 
   assert.match(out, /^Eggs: /m);
   assert.match(out, /^Air fryer: /m);
   assert.match(out, /^Easy vs tasty: /m);
-  const m = /Marco: (\d+) picks, fit (\d+), leave-one-out (\d+), today's weights (\d+)/.exec(out);
+  // Leave-one-out is skipped past 150 picks (learn.js), which the 25 Nov testers crossed: '-' then.
+  const m = /Marco: (\d+) picks, fit (\d+), leave-one-out (\d+|-), today's weights (\d+)/.exec(out);
   assert.ok(m, out.slice(-800));
   assert.ok(Number(m[4]) > 35, `today's weights ${m[4]} (35 with outside pinned at 0)`);
   assert.match(out, /strict a\/b picks only/);

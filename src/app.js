@@ -12,11 +12,11 @@ import { prepareImage } from './ai/images.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 import { startRungQuiz, startKitchenPicker } from './rung-quiz-ui.js';
-import { buildRungQuiz } from './brain/rung-quiz.js';
+import { buildRungQuiz, levelBelow } from './brain/rung-quiz.js';
 import { decodeKitchen, linkCode, linkName } from './brain/share-link.js';
 import { startFresh, reloadIfStale } from './fresh.js';
 
-const VERSION = '1.54.0';
+const VERSION = '1.55.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -1064,6 +1064,7 @@ async function openSharedKitchen() {
 // Sample kitchens (1.52.0): the bare site, with no #k= link, opens on "Pick the kitchen closest
 // to yours" (data/test-kitchens/kitchens.json). A pick goes straight into Confirm your foods.
 // Closing the picker leaves the paste box, so a custom list still works. Links skip all this.
+let sampleKitchens = []; // 1.55.0: the persona list, so a level's deck can favour its own dishes
 async function openSamplePicker() {
   if (linkCode(location.hash) || !document.body.classList.contains('testing')) return;
   let kitchens = [];
@@ -1072,6 +1073,7 @@ async function openSamplePicker() {
     if (res.ok) kitchens = importKitchens(await res.text());
   } catch { return; }
   if (!kitchens.length || linkCode(location.hash)) return;
+  sampleKitchens = kitchens;
   startKitchenPicker({ kitchens, onPick: openSampleKitchen });
 }
 function openSampleKitchen(kitchen) {
@@ -1084,7 +1086,7 @@ function openSampleKitchen(kitchen) {
   showPasteSummary(kitchen.items);
   $('paste-proceed').textContent = 'Rate the recipes';
   greet(Object.keys(buildRungQuiz({ kitchen, inventory: inventory() }).dishes).length);
-  startRungQuiz({ kitchen, inventory: inventory(), items: state.items, cache: state.pantry, missingBasics: state.missingBasics, version: VERSION, source: 'sample', kitchenSource: 'sample', name: '' });
+  startRungQuiz({ kitchen, inventory: inventory(), items: state.items, cache: state.pantry, missingBasics: state.missingBasics, version: VERSION, source: 'sample', kitchenSource: 'sample', name: '', below: levelBelow(kitchen, sampleKitchens) });
 }
 
 init();

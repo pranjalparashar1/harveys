@@ -4,7 +4,7 @@
   "level": 1,
   "diet": "veg+eggs",
   "persona": "I order in. Maggi, an omelette, and that’s about it.",
-  "notes": "Kettle, single induction, small nonstick pan; nothing else; Orders in most days. Can boil water, make Maggi and an omelette or scrambled egg in a nonstick pan, and that's it. Doesn't want to cook more. Sparse fridge, leftovers from takeaway. Can't chop.",
+  "notes": "Kettle, single induction, small nonstick pan; nothing else; Orders in most days. Can boil water, make Maggi and an omelette or scrambled egg in a nonstick pan, and that's it. Doesn't want to cook more. Sparse fridge. Can't chop.",
   "items": [
    {
     "name": "single induction cooktop",
@@ -75,10 +75,6 @@
     "category": "sweet"
    },
    {
-    "name": "frozen aloo parathas",
-    "category": "bread"
-   },
-   {
     "name": "bananas",
     "category": "fruit"
    },
@@ -89,10 +85,6 @@
    {
     "name": "black pepper",
     "category": "spice"
-   },
-   {
-    "name": "leftover takeaway dal makhani",
-    "category": "other"
    }
   ]
  },
@@ -196,10 +188,6 @@
     "category": "sweet"
    },
    {
-    "name": "frozen aloo parathas",
-    "category": "bread"
-   },
-   {
     "name": "bananas",
     "category": "fruit"
    },
@@ -210,10 +198,6 @@
    {
     "name": "black pepper",
     "category": "spice"
-   },
-   {
-    "name": "leftover takeaway dal makhani",
-    "category": "other"
    },
    {
     "name": "tea leaves",
@@ -229,14 +213,6 @@
    },
    {
     "name": "tomato",
-    "category": "veg"
-   },
-   {
-    "name": "frozen peas",
-    "category": "veg"
-   },
-   {
-    "name": "frozen sweet corn",
     "category": "veg"
    },
    {
@@ -266,10 +242,6 @@
    {
     "name": "schezwan chutney",
     "category": "condiment"
-   },
-   {
-    "name": "ready-to-eat rajma masala pouch",
-    "category": "other"
    },
    {
     "name": "turmeric",
@@ -421,10 +393,6 @@
     "category": "sweet"
    },
    {
-    "name": "frozen aloo parathas",
-    "category": "bread"
-   },
-   {
     "name": "bananas",
     "category": "fruit"
    },
@@ -435,10 +403,6 @@
    {
     "name": "black pepper",
     "category": "spice"
-   },
-   {
-    "name": "leftover takeaway dal makhani",
-    "category": "other"
    },
    {
     "name": "tea leaves",
@@ -454,14 +418,6 @@
    },
    {
     "name": "tomato",
-    "category": "veg"
-   },
-   {
-    "name": "frozen peas",
-    "category": "veg"
-   },
-   {
-    "name": "frozen sweet corn",
     "category": "veg"
    },
    {
@@ -491,10 +447,6 @@
    {
     "name": "schezwan chutney",
     "category": "condiment"
-   },
-   {
-    "name": "ready-to-eat rajma masala pouch",
-    "category": "other"
    },
    {
     "name": "turmeric",
@@ -770,10 +722,6 @@
     "category": "sweet"
    },
    {
-    "name": "frozen aloo parathas",
-    "category": "bread"
-   },
-   {
     "name": "bananas",
     "category": "fruit"
    },
@@ -784,10 +732,6 @@
    {
     "name": "black pepper",
     "category": "spice"
-   },
-   {
-    "name": "leftover takeaway dal makhani",
-    "category": "other"
    },
    {
     "name": "tea leaves",
@@ -803,14 +747,6 @@
    },
    {
     "name": "tomato",
-    "category": "veg"
-   },
-   {
-    "name": "frozen peas",
-    "category": "veg"
-   },
-   {
-    "name": "frozen sweet corn",
     "category": "veg"
    },
    {
@@ -840,10 +776,6 @@
    {
     "name": "schezwan chutney",
     "category": "condiment"
-   },
-   {
-    "name": "ready-to-eat rajma masala pouch",
-    "category": "other"
    },
    {
     "name": "turmeric",
@@ -1307,10 +1239,6 @@
     "category": "sweet"
    },
    {
-    "name": "frozen aloo parathas",
-    "category": "bread"
-   },
-   {
     "name": "bananas",
     "category": "fruit"
    },
@@ -1321,10 +1249,6 @@
    {
     "name": "black pepper",
     "category": "spice"
-   },
-   {
-    "name": "leftover takeaway dal makhani",
-    "category": "other"
    },
    {
     "name": "tea leaves",
@@ -1340,14 +1264,6 @@
    },
    {
     "name": "tomato",
-    "category": "veg"
-   },
-   {
-    "name": "frozen peas",
-    "category": "veg"
-   },
-   {
-    "name": "frozen sweet corn",
     "category": "veg"
    },
    {
@@ -1377,10 +1293,6 @@
    {
     "name": "schezwan chutney",
     "category": "condiment"
-   },
-   {
-    "name": "ready-to-eat rajma masala pouch",
-    "category": "other"
    },
    {
     "name": "turmeric",
@@ -1677,10 +1589,6 @@
    {
     "name": "Knorr veg stock cubes",
     "category": "condiment"
-   },
-   {
-    "name": "frozen parathas",
-    "category": "bread"
    }
   ]
  }
