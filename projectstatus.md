@@ -213,3 +213,10 @@ Findings from the two star-rating runs (Banana 1.48, Purujeet 1.50):
   - Chai with buttered toast: two items that each pass, so the meal passes. A ruling on `chai_toast` in `PIERRE_SEED` (floor → pass, L2 to L5), not a general rule: Pierre judges plain buttered toast as fat only, so a "each part passes" rule wouldn't reach it without passing fat on bread in general.
   - Stay floor, as pranjal said: paneer cheese sandwich, one-pot cheese pasta, the bare savoury peanut oats (oats, peanuts, oil, one spice), soya jeera rice (boiled soya, cumin oil), kadhai dal with no tadka (ghee on top only). No catalogue dish has a tadka dal or a richer savoury oats yet, so there was nothing to lift.
   - Benchmark and holdout sheets still score exact 42/52.
+
+## 10. 1.61.0 (26 Nov): free kitchen scan from photos or a video
+- **No key needed to scan.** With no API key saved, Scan sends the photos to the relay's `POST /scan` (`relay/scan.js`), which asks Gemini flash-lite (3.1, then 3.5) with Harvey's own key, held only as the Worker's `GEMINI_API_KEY` secret. A saved key still scans directly, as before. Same `{have, other}` reply, read by the same `parseInventory()`, so the screens after a scan don't change.
+- **Video.** "Photos or video" accepts a short clip. `extractVideoKeyframes()` (`src/ai/images.js`) cuts it into 4 to 8 stills on the phone (one per ~3 s, 640 px JPEG); the video itself is never uploaded.
+- **Limits.** App origin only; 1 to 8 JPEGs, 2.5 MB; 3 scans per IP per 24 h and 400 a day in all, counted in a Durable Object (`ScanQuota`) by salted IP hash; a scan Gemini couldn't answer isn't counted. Used up, off or offline: one line, then "Start from a kitchen like yours" (the L1 to L5 picker) or "Use your own API key".
+- **Deploy** is now with wrangler from `relay/` (the Worker imports the app's prompt): `npx wrangler secret put GEMINI_API_KEY`, then `npx wrangler deploy`. See `relay/README.md`.
+- Checked 26 Nov: in Cloudflare's local runtime (`wrangler dev`) with pranjal's key, a labelled photo came back as eggs, paneer, oats from `gemini-3.1-flash-lite` in 1 to 3.3 s; the 4th scan from one IP got 429.

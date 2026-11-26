@@ -7,6 +7,22 @@
 // result with sane ids and date; the file name is built here, never taken from the request;
 // files are create-only (nobody can overwrite anyone's result); ~20 sends per IP per 10 min.
 // The token never leaves Cloudflare. To switch sending off, delete the GITHUB_TOKEN secret.
+//
+// 1.61.0, free kitchen scan: POST /scan takes up to 8 compressed JPEG photos (or video
+// keyframes, cut on the phone) and answers {have, other, model, ms} from Gemini flash-lite,
+// so a new user needs no API key. The Gemini key is the GEMINI_API_KEY secret: never sent
+// back, never logged. Limits: the app's origin only; 1–8 JPEGs, ≤ 2.5 MB in all; 3 scans per
+// IP per 24 h (only a scan that read something counts) and a daily ceiling for the whole
+// Worker. To switch scanning off, delete the GEMINI_API_KEY secret.
+//
+// Deployed with wrangler (relay/wrangler.toml) because /scan shares the app's own prompt and
+// Gemini client (src/ai/), so the dashboard copy-paste of 1.33.0 no longer works.
+
+import { handleScan, ScanQuota } from './scan.js';
+
+// The scan counter's Durable Object class (wrangler.toml binds it as SCAN_QUOTA). Cloudflare
+// treats every export of this file as an entry point, so constants live in scan.js, not here.
+export { ScanQuota };
 
 const REPO = 'pranjalparashar1/harveys';
 const DIR = 'data/kitchen-tests';
@@ -48,32 +64,41 @@ function limited(ip, now = Date.now()) {
 
 const b64 = (s) => { let bin = ''; for (const b of new TextEncoder().encode(s)) bin += String.fromCharCode(b); return btoa(bin); };
 
-export default {
-  async fetch(request, env) {
-    const origin = request.headers.get('Origin') ?? '';
-    const allowed = ORIGINS.includes(origin) || LOCAL.test(origin);
-    const cors = { 'Access-Control-Allow-Origin': allowed ? origin : ORIGINS[0], 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400', Vary: 'Origin' };
-    const reply = (status, body) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
-    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
-    if (request.method === 'GET') return reply(200, { ok: true, relay: 'harveys', ready: !!env.GITHUB_TOKEN });
-    if (request.method !== 'POST') return reply(405, { ok: false, error: 'POST only' });
-    if (!allowed) return reply(403, { ok: false, error: 'origin' });
-    if (!env.GITHUB_TOKEN) return reply(503, { ok: false, error: 'relay off' });
-    if (Number(request.headers.get('Content-Length') ?? 0) > MAX_BYTES) return reply(413, { ok: false, error: 'too big' });
-    if (limited(request.headers.get('CF-Connecting-IP') ?? 'unknown')) return reply(429, { ok: false, error: 'slow down' });
+/** The Worker, with its outside world injectable for tests. */
+export function makeWorker(deps = {}) {
+  return {
+    async fetch(request, env) {
+      const origin = request.headers.get('Origin') ?? '';
+      const allowed = ORIGINS.includes(origin) || LOCAL.test(origin);
+      const cors = { 'Access-Control-Allow-Origin': allowed ? origin : ORIGINS[0], 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Expose-Headers': 'Retry-After', 'Access-Control-Max-Age': '86400', Vary: 'Origin' };
+      const reply = (status, body, extra = {}) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json', ...extra } });
+      const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
+      if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+      if (request.method === 'GET') return reply(200, { ok: true, relay: 'harveys', ready: !!env.GITHUB_TOKEN, scan: !!env.GEMINI_API_KEY });
+      if (request.method !== 'POST') return reply(405, { ok: false, error: 'POST only' });
+      if (!allowed) return reply(403, { ok: false, error: 'origin' });
+      if (limited(request.headers.get('CF-Connecting-IP') ?? 'unknown')) return reply(429, { ok: false, error: 'slow down' });
+      if (path === '/scan') return handleScan(request, env, reply, deps);
 
-    const check = checkResult(await request.text());
-    if (!check.ok) return reply(400, check);
+      // Everything else is a taste-test result, exactly as in 1.33.0.
+      if (!env.GITHUB_TOKEN) return reply(503, { ok: false, error: 'relay off' });
+      if (Number(request.headers.get('Content-Length') ?? 0) > MAX_BYTES) return reply(413, { ok: false, error: 'too big' });
 
-    const url = `https://api.github.com/repos/${env.REPO || REPO}/contents/${check.path.split('/').map(encodeURIComponent).join('/')}`;
-    const res = await fetch(url, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'harveys-relay' },
-      body: JSON.stringify({ message: check.message, content: b64(check.content) }),
-    });
-    if (res.ok) return reply(200, { ok: true, path: check.path });
-    // Already there (a resend after a lost answer): it's in, and nobody overwrites a result.
-    if (res.status === 422) return reply(200, { ok: true, path: check.path, existed: true });
-    return reply(502, { ok: false, error: `github ${res.status}` });
-  },
-};
+      const check = checkResult(await request.text());
+      if (!check.ok) return reply(400, check);
+
+      const url = `https://api.github.com/repos/${env.REPO || REPO}/contents/${check.path.split('/').map(encodeURIComponent).join('/')}`;
+      const res = await (deps.fetch ?? fetch)(url, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'harveys-relay' },
+        body: JSON.stringify({ message: check.message, content: b64(check.content) }),
+      });
+      if (res.ok) return reply(200, { ok: true, path: check.path });
+      // Already there (a resend after a lost answer): it's in, and nobody overwrites a result.
+      if (res.status === 422) return reply(200, { ok: true, path: check.path, existed: true });
+      return reply(502, { ok: false, error: `github ${res.status}` });
+    },
+  };
+}
+
+export default makeWorker();

@@ -62,9 +62,9 @@
       <h2 id="photos-title">Kitchen</h2>
       <div class="pickers t-hide">
         <label class="dropzone" for="photo-input">
-          <input id="photo-input" type="file" accept="image/*" multiple>
+          <input id="photo-input" type="file" accept="image/*,video/*" multiple>
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>
-          <span class="dz-title">Photos</span>
+          <span class="dz-title">Photos or video</span>
         </label>
         <label class="dropzone" for="camera-input">
           <input id="camera-input" type="file" accept="image/*" capture="environment">
@@ -88,6 +88,10 @@
         <button class="btn link quiet edit-list" id="paste-edit" data-haptic type="button">Edit list</button>
       </div>
       <p class="error" id="scan-error" role="alert" hidden></p>
+      <div class="row scan-fallback" id="scan-fallback" hidden>
+        <button class="btn" id="fallback-sample" data-haptic type="button">Start from a kitchen like yours</button>
+        <button class="btn ghost" id="fallback-key" data-haptic type="button">Use your own API key</button>
+      </div>
     </section>
 
     <!-- Spotted (only after a scan; never restored on reload) -->
@@ -152,7 +156,7 @@
     <section id="result" aria-live="polite" hidden></section>
 
     <details class="debug t-hide" id="debug">
-      <summary><span>Debug · <span id="version">1.59.0</span></span></summary>
+      <summary><span>Debug · <span id="version">1.61.0</span></span></summary>
       <div id="debug-body"></div>
       <button class="btn" id="copy-debug" type="button">Copy for Claude</button>
     </details>

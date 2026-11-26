@@ -1,0 +1,18 @@
+# Harvey's relay (relay/worker.js): taste-test Send since 1.33.0, free kitchen scan since 1.61.0.
+# Deploy from this folder:  npx wrangler secret put GEMINI_API_KEY  then  npx wrangler deploy
+# Secrets (GITHUB_TOKEN, GEMINI_API_KEY) are set with `wrangler secret put` and never live here.
+name = "harveys-send"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+# Keep anything set in the dashboard (REPO, SCAN_PER_IP, SCAN_DAILY_CAP, SCAN_SALT) on deploy.
+keep_vars = true
+
+# Scan counts: one SQLite-backed Durable Object (available on the free plan).
+[[durable_objects.bindings]]
+name = "SCAN_QUOTA"
+class_name = "ScanQuota"
+
+[[migrations]]
+tag = "v1-scan-quota"
+new_sqlite_classes = ["ScanQuota"]
