@@ -26,7 +26,7 @@ import { rateRedirect } from './brain/share-link.js';
 import { norm } from './brain/feedback.js';
 import { reloadIfStale } from './fresh.js';
 
-const VERSION = '1.61.0';
+const VERSION = '1.62.0';
 const MAX_PHOTOS = 8;
 const SCAN_DEADLINE_MS = 12000;
 const $ = (id) => document.getElementById(id);

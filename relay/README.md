@@ -39,8 +39,9 @@ What the Worker allows: only requests from `pranjalparashar1.github.io`, only a 
 - **Model:** `gemini-3.1-flash-lite`, then `gemini-3.5-flash-lite` if 3.1 is busy or silent. Flash-lite only (`SCAN_MODELS` in `scan.js` refuses anything else).
 - **Limits:** the app's origin only; 3 scans per IP per 24 hours; 400 scans a day across everyone. A scan Gemini could not answer is not counted. Counts live in a Durable Object (`ScanQuota`, global, free plan), keyed by a salted hash of the IP, never the IP itself, and expire after a day.
 - **The key:** the `GEMINI_API_KEY` secret. Never sent back to the phone, never logged; Gemini's own error text is not passed on either. To switch scanning off, delete the secret: the app then offers "Start from a kitchen like yours" or "Use your own API key".
-- **Optional settings** (Worker → Settings → Variables, kept across deploys): `SCAN_PER_IP`, `SCAN_DAILY_CAP`, `SCAN_SALT`.
-- **Check it:** `GET /` now also says `"scan": true` once the key is set.
+- **Failsafe:** see below. Scanning switches itself off and stays off until you reset it by hand.
+- **Optional settings** (Worker → Settings → Variables, kept across deploys): `SCAN_PER_IP`, `SCAN_DAILY_CAP`, `SCAN_MONTHLY_CAP`, `SCAN_SALT`.
+- **Check it:** `GET /` now also says `"scan": true` once the key is set, or `"scan": false, "off": "<why>"` while the failsafe holds it off.
 
 **Deploy** (needs Node; from this `relay/` folder; the first time, `npx wrangler login` opens the browser to sign in to Cloudflare):
 
@@ -50,3 +51,24 @@ npx wrangler deploy
 ```
 
 The first command asks for the key (paste it; it goes straight to Cloudflare). The second uploads `worker.js` with `scan.js` and the app's prompt bundled in, keeps the `GITHUB_TOKEN` secret and any dashboard variables, and creates the `ScanQuota` Durable Object. If wrangler warns that the Worker was edited in the dashboard, say yes: this replaces the pasted 1.33.0 copy with the same code plus `/scan`.
+
+## Failsafe (1.62.0): scanning stops until you switch it back on
+
+The free scan switches itself **off** and stays off (through new days, new months, redeploys and restarts) when either of these happens:
+
+1. **Monthly cap:** 1,500 scans in a calendar month (UTC), counting failed ones too. Change it with a `SCAN_MONTHLY_CAP` variable.
+2. **Gemini says the money or quota is gone:** a 429 for a daily or billing quota, a 403 (key refused, API or billing off), or a 400 that names the key or billing. A short per-minute 429 from a burst of users does not count, because it clears itself.
+
+While it's off, `/scan` answers `503 scan off`, so nothing reaches Gemini. The app then offers "Start from a kitchen like yours" and the own-key box. `GET /` shows why it's off, for example `{"scan": false, "off": "monthly cap of 1500 scans reached"}`.
+
+The counts and the off switch live in the `ScanQuota` Durable Object: one global copy, one request at a time. A cold start or a second Worker copy can't skip them. (The Cache API was ruled out because it does nothing on a `workers.dev` address, and KV is eventually consistent.)
+
+**To switch it back on**, from `relay/`, set the reset word to anything new, such as today's date:
+
+```
+npx wrangler secret put SCAN_RESET
+```
+
+Type a value that is different from the last one, such as `2026-12-01`. The off switch lifts at once and the month's count starts again from 0. Reusing an old value does nothing.
+
+**To switch it off by hand:** `npx wrangler secret delete GEMINI_API_KEY`.

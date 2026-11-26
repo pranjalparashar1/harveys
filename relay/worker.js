@@ -18,7 +18,7 @@
 // Deployed with wrangler (relay/wrangler.toml) because /scan shares the app's own prompt and
 // Gemini client (src/ai/), so the dashboard copy-paste of 1.33.0 no longer works.
 
-import { handleScan, ScanQuota } from './scan.js';
+import { handleScan, ScanQuota, quotaFor } from './scan.js';
 
 // The scan counter's Durable Object class (wrangler.toml binds it as SCAN_QUOTA). Cloudflare
 // treats every export of this file as an entry point, so constants live in scan.js, not here.
@@ -74,7 +74,15 @@ export function makeWorker(deps = {}) {
       const reply = (status, body, extra = {}) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json', ...extra } });
       const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
       if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
-      if (request.method === 'GET') return reply(200, { ok: true, relay: 'harveys', ready: !!env.GITHUB_TOKEN, scan: !!env.GEMINI_API_KEY });
+      if (request.method === 'GET') {
+        // scan: true only with a key AND no failsafe latch. The app asks this before offering a free scan.
+        let scan = !!env.GEMINI_API_KEY;
+        let off = null;
+        if (scan) {
+          try { const st = await quotaFor(env, deps).status(); off = st.latch?.reason ?? null; scan = !off; } catch { /* count store unreachable: say on, /scan decides */ }
+        }
+        return reply(200, { ok: true, relay: 'harveys', ready: !!env.GITHUB_TOKEN, scan, ...(off ? { off } : {}) });
+      }
       if (request.method !== 'POST') return reply(405, { ok: false, error: 'POST only' });
       if (!allowed) return reply(403, { ok: false, error: 'origin' });
       if (limited(request.headers.get('CF-Connecting-IP') ?? 'unknown')) return reply(429, { ok: false, error: 'slow down' });

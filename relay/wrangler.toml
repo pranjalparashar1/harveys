@@ -3,8 +3,10 @@
 # Secrets (GITHUB_TOKEN, GEMINI_API_KEY) are set with `wrangler secret put` and never live here.
 name = "harveys-send"
 main = "worker.js"
-compatibility_date = "2026-11-01"
+compatibility_date = "2026-11-22"
 workers_dev = true
+# Matches the dashboard (pranjal's first deploy, 26 Nov), so deploys don't ask to overwrite it.
+preview_urls = false
 # Keep anything set in the dashboard (REPO, SCAN_PER_IP, SCAN_DAILY_CAP, SCAN_SALT) on deploy.
 keep_vars = true
 
@@ -16,3 +18,11 @@ class_name = "ScanQuota"
 [[migrations]]
 tag = "v1-scan-quota"
 new_sqlite_classes = ["ScanQuota"]
+
+# Workers Logs, as in the dashboard. Only request lines and status codes land there: the code
+# never calls console.*, so no key, photo or Gemini reply is ever logged (test/scan.test.js checks).
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true

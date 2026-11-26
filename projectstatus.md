@@ -221,3 +221,7 @@ Findings from the two star-rating runs (Banana 1.48, Purujeet 1.50):
 - **Limits.** App origin only; 1 to 8 JPEGs, 2.5 MB; 3 scans per IP per 24 h and 400 a day in all, counted in a Durable Object (`ScanQuota`) by salted IP hash; a scan Gemini couldn't answer isn't counted. Used up, off or offline: one line, then "Start from a kitchen like yours" (the L1 to L5 picker) or "Use your own API key".
 - **Deploy** is now with wrangler from `relay/` (the Worker imports the app's prompt): `npx wrangler secret put GEMINI_API_KEY`, then `npx wrangler deploy`. See `relay/README.md`.
 - Checked 26 Nov: in Cloudflare's local runtime (`wrangler dev`) with pranjal's key, a labelled photo came back as eggs, paneer, oats from `gemini-3.1-flash-lite` in 1 to 3.3 s; the 4th scan from one IP got 429.
+
+## 11. 1.62.0 (26 Nov): failsafe on the free scan
+- pranjal: "if free usage runs out I have to manually change something". The free scan now switches itself off and stays off when 1,500 scans have gone out in a month (`SCAN_MONTHLY_CAP`), or when Gemini answers that a daily or billing quota is gone, or that the key or billing was refused. A per-minute 429 doesn't count. It is stored in the `ScanQuota` Durable Object, so restarts and redeploys don't clear it. To switch it back on: `npx wrangler secret put SCAN_RESET` with a new value (relay/README.md → Failsafe).
+- `relay/wrangler.toml` now matches the dashboard (compatibility date 2026-11-22, preview URLs off, Workers Logs on), so deploys stop warning. Nothing in the Worker writes to the console, and a test checks that.

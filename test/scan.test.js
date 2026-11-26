@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeWorker } from '../relay/worker.js';
-import { checkScan, scanReply, takeScan, refundScan, memoryStore, hashIp, SCAN_MODELS, SCAN_MAX_BYTES, ScanQuota } from '../relay/scan.js';
+import { checkScan, scanReply, takeScan, refundScan, memoryStore, hashIp, SCAN_MODELS, SCAN_MAX_BYTES, SCAN_MONTHLY_CAP, ScanQuota, latchReason } from '../relay/scan.js';
 import { parseInventory, scanViaRelay, scanUrl, AIError } from '../src/ai/providers.js';
 import { keyframeTimes, isVideo } from '../src/ai/images.js';
 
@@ -190,7 +190,7 @@ test('scan: quota bookkeeping, hashed IPs, and the Durable Object round trip', a
   assert.ok(alarm > Date.now(), 'a clean-up alarm is set');
   mem.set('ip:old', { value: [1], until: 1 });
   await dobj.alarm();
-  assert.ok(!mem.has('ip:old') && mem.size === 2, 'expired counts are deleted');
+  assert.ok(!mem.has('ip:old') && [...mem.keys()].sort().join() === `all:${new Date().toISOString().slice(0, 10)},ip:${h},month:${new Date().toISOString().slice(0, 7)}:`, 'expired counts are deleted');
 });
 
 test('relay: GET says whether Send and Scan are on; Send itself is unchanged by /scan', async () => {
@@ -313,4 +313,79 @@ test('home hook: your own key first, else the free scan once the relay says it i
   await scanPhotos({ ai: { apiKey: 'AIza-x', provider: 'gemini', model: 'gemini-3.5-flash-lite', models: [] }, images: [img()], fetchImpl: async (url) => { own.push(url); return geminiOk(); } });
   assert.match(own[0], /generativelanguage/);
   resetFreeScan();
+});
+
+// ── Failsafe (pranjal, 26 Nov): run out, and scanning stays off until a manual reset ──────────
+test('failsafe: the monthly cap switches the free scan off, and a new day, month or cold start does not bring it back', async () => {
+  let t = Date.parse('2026-11-26T10:00:00Z');
+  const h = harness({ env: { GEMINI_API_KEY: 'k', SCAN_MONTHLY_CAP: '3', SCAN_PER_IP: '99' }, now: () => t });
+  for (let i = 0; i < 3; i++) assert.equal((await h.post(body(1), { ip: `ip${i}` })).status, 200);
+  const off = await h.post(body(1), { ip: 'new' });
+  assert.equal(off.status, 503);
+  assert.deepEqual(await off.json(), { ok: false, error: 'scan off' }, 'the app reads this as scanOff: key box + kitchen like yours');
+  assert.equal(h.calls.length, 3, 'nothing more reaches Gemini');
+  const get = await (await h.worker.fetch(new Request('https://relay.example/'), h.env)).json();
+  assert.equal(get.scan, false, 'GET says off, so the page shows the key box straight away');
+  assert.match(get.off, /monthly cap of 3/);
+  t = Date.parse('2026-12-02T10:00:00Z'); // a new month: still off
+  assert.equal((await h.post(body(1), { ip: 'dec' })).status, 503);
+  // Reset by hand: a new SCAN_RESET value (wrangler secret put SCAN_RESET) lifts it and starts a fresh count.
+  h.env.SCAN_RESET = '2026-12-02';
+  assert.equal((await h.post(body(1), { ip: 'dec' })).status, 200);
+  assert.equal((await (await h.worker.fetch(new Request('https://relay.example/'), h.env)).json()).scan, true);
+});
+
+test('failsafe: failed scans still count for the month (they may have cost something)', async () => {
+  const h = harness({ env: { GEMINI_API_KEY: 'k', SCAN_MONTHLY_CAP: '2', SCAN_PER_IP: '99' }, gemini: async () => ({ ok: false, status: 503, text: async () => 'busy' }) });
+  assert.equal((await h.post(body(1))).status, 502);
+  assert.equal((await h.post(body(1))).status, 502);
+  assert.equal((await h.post(body(1))).status, 503);
+  assert.equal(SCAN_MONTHLY_CAP, 1500);
+});
+
+test('failsafe: Gemini saying quota or billing is gone latches at once; a per-minute burst does not', async () => {
+  const daily = JSON.stringify({ error: { code: 429, message: 'You exceeded your current quota, please check your plan and billing details.', status: 'RESOURCE_EXHAUSTED', details: [{ violations: [{ quotaId: 'GenerateRequestsPerDayPerProjectPerModel-FreeTier' }] }] } });
+  const minute = JSON.stringify({ error: { code: 429, message: 'You exceeded your current quota, please check your plan and billing details.', status: 'RESOURCE_EXHAUSTED', details: [{ violations: [{ quotaId: 'GenerateRequestsPerMinutePerProjectPerModel' }] }] } });
+  assert.match(latchReason(429, daily), /quota or billing/);
+  assert.equal(latchReason(429, minute), null);
+  assert.match(latchReason(429, 'Resource has been exhausted'), /429/, 'an unclear 429 latches: the safe side');
+  assert.match(latchReason(403, 'PERMISSION_DENIED billing disabled'), /403/);
+  assert.match(latchReason(400, 'API key expired. Please renew the API key.'), /400/);
+  assert.equal(latchReason(400, 'Invalid JSON payload: thinkingConfig'), null, 'a speed setting a model rejects is retried, not latched');
+  assert.equal(latchReason(503, 'high demand'), null);
+
+  const h = harness({ env: { GEMINI_API_KEY: 'k', SCAN_PER_IP: '99' }, gemini: async () => ({ ok: false, status: 429, text: async () => daily, clone() { return this; } }) });
+  const res = await h.post(body(1));
+  assert.equal(res.status, 503);
+  assert.deepEqual(await res.json(), { ok: false, error: 'scan off' });
+  const n = h.calls.length;
+  assert.equal((await h.post(body(1))).status, 503);
+  assert.equal(h.calls.length, n, 'latched: Gemini is not called again');
+  const get = await (await h.worker.fetch(new Request('https://relay.example/'), h.env)).json();
+  assert.equal(get.scan, false);
+  assert.match(get.off, /quota or billing/);
+  assert.ok(!JSON.stringify(get).includes('RESOURCE'), "Gemini's text stays inside");
+
+  // One model's quota gone while the other answers: the scan is served, the next one is not.
+  let first = true;
+  const mixed = harness({ env: { GEMINI_API_KEY: 'k', SCAN_PER_IP: '99' }, gemini: async (url) => (/3\.1/.test(url) && first ? ((first = false), { ok: false, status: 429, text: async () => daily }) : geminiOk(['eggs'])) });
+  assert.equal((await mixed.post(body(1))).status, 200);
+  assert.equal((await mixed.post(body(1))).status, 503);
+
+  // A per-minute 429 does not latch.
+  let n429 = 0;
+  const burst = harness({ env: { GEMINI_API_KEY: 'k', SCAN_PER_IP: '99' }, gemini: async () => (n429++ < 1 ? { ok: false, status: 429, text: async () => minute } : geminiOk(['oats'])) });
+  assert.equal((await burst.post(body(1))).status, 200);
+  assert.equal((await burst.post(body(1))).status, 200);
+});
+
+test('logs: nothing the Worker runs ever writes to the console (Workers Logs is on)', async () => {
+  const { readFileSync } = await import('node:fs');
+  for (const f of ['../relay/worker.js', '../relay/scan.js', '../src/ai/providers.js', '../src/ai/prompt.js', '../src/brain/vocabulary.js']) {
+    assert.doesNotMatch(readFileSync(new URL(f, import.meta.url), 'utf8'), /\bconsole\.(log|info|warn|error|debug|trace)\(/, f);
+  }
+  const toml = readFileSync(new URL('../relay/wrangler.toml', import.meta.url), 'utf8');
+  assert.match(toml, /compatibility_date = "2026-11-22"/);
+  assert.match(toml, /preview_urls = false/);
+  assert.doesNotMatch(toml, /GEMINI_API_KEY\s*=/, 'secrets never live in the config');
 });
