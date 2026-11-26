@@ -277,18 +277,40 @@ test('1.48.0: results still waiting go out as beacons when the page is closed, a
 // 1.49.0: Banana Singh (23 Nov) added paneer, a pan and a pressure cooker; 21 dishes were
 // cookable but rung 3's cap showed 8 and none with paneer. Free slots now fill to DECK_MAX,
 // dishes the additions unlocked first.
-test('a crowded kitchen rates about 12 dishes across every rung it reaches, preferred dishes first', async () => {
+test('a crowded kitchen rates every dish it can make, across every rung, preferred dishes first', async () => {
   const { buildRungQuiz, DECK_MAX } = await import('../src/brain/rung-quiz.js');
   const { withConfirmed } = await import('../src/brain/confirm.js');
   const { readFileSync } = await import('node:fs');
   const r = JSON.parse(readFileSync(new URL('../data/kitchen-tests/taste-2026-11-23-kitchen_video_1-1n287-t-q94cu22qk.json', import.meta.url), 'utf8'));
   const inv = withConfirmed(r.kitchen.items, r.confirm.have, {}, []);
   const q = buildRungQuiz({ kitchen: r.kitchen, inventory: inv });
-  assert.equal(DECK_MAX, 12); // 1.54.0 (pranjal): stratified cap
-  assert.equal(q.deck.length, Math.min(DECK_MAX, q.total));
+  assert.equal(DECK_MAX, Infinity); // 1.57.0 (pranjal): every dish, no cap
+  assert.equal(q.deck.length, q.total);
+  // Stopping early still leaves a spread: the first round of the rate order covers each rung once.
+  const rungsReached = new Set(q.deck.map((d) => q.dishes[d].rung)).size;
+  assert.equal(new Set(q.rateOrder.slice(0, rungsReached).map((d) => q.dishes[d].rung)).size, rungsReached);
+  const pi = buildRungQuiz({ kitchen: r.kitchen, inventory: inv, prefer: new Set(['stovetop_paneer_bhurji']) });
+  assert.ok(pi.rateOrder.indexOf('stovetop_paneer_bhurji') < rungsReached, 'a preferred dish comes in the first round');
   const reached = new Set(q.deck.map((d) => q.dishes[d].rung));
   const { rank } = await import('../src/brain/ranker.js');
   assert.ok(reached.size >= 2);
   const p = buildRungQuiz({ kitchen: r.kitchen, inventory: inv, prefer: new Set(['stovetop_paneer_bhurji']) });
   assert.ok(p.deck.includes('stovetop_paneer_bhurji'));
+});
+
+// 1.57.0 (pranjal, 26 Nov): every dish, stop any time, one-tap reasons for a low taste rating.
+test('stars result: rated of total, Done with quiz, and why only on a low taste rating', async () => {
+  const { buildRungQuiz, encodeRungResult } = await import('../src/brain/rung-quiz.js');
+  const { importKitchens } = await import('../src/brain/kitchens.js');
+  const { readFileSync } = await import('node:fs');
+  const ks = importKitchens(readFileSync(new URL('../data/test-kitchens/kitchens.json', import.meta.url), 'utf8'));
+  const k = ks[ks.length - 1];
+  const q = buildRungQuiz({ kitchen: k, inventory: buildInventory(k.items) });
+  const [a, b] = q.rateOrder;
+  const f = encodeRungResult(q, { stars: { [a]: { effort: 4, taste: 2, why: ['bland', 'nope'] }, [b]: { effort: 3, taste: 5, why: ['odd'] } }, done: true }, { version: 'x', at: 'y', testerId: 't' });
+  assert.equal(f.rated, 2);
+  assert.equal(f.of, q.deck.length);
+  assert.equal(f.done, true);
+  assert.deepEqual(f.stars.find((x) => x.id === a).why, ['bland']);
+  assert.equal(f.stars.find((x) => x.id === b).why, undefined);
 });

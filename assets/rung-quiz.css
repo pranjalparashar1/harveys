@@ -474,3 +474,10 @@
 @media (prefers-reduced-motion: reduce) { .rq-toast { transition: opacity .2s ease; transform: translate3d(-50%, 0, 0); } }
 /* 1.52.0: the sample-kitchen picker on the bare site. One big tap per kitchen; notes kept to two lines. */
 .rq-kitchen span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* 1.57.0: every dish is in the deck, so a rater can stop and send at any time. */
+.rq-doneq { display: block; margin: 18px auto 4px; color: var(--muted); font-weight: 600; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; }
+.rq-tastewhy { margin-top: 10px; }
+.rq-tastewhy.appear { animation: rq-in .28s var(--settle) both; }
+.rq-whytags { display: flex; flex-wrap: wrap; gap: 8px; }
+.rq-whytags .rq-tag { min-height: 42px; font-size: 14.5px; }

@@ -42,7 +42,34 @@ export const THIN_FILL = 8;
 // pranjal, 23 Nov: "let them rate all dishes, it's fine": no cap, every cookable dish is rated.
 // 1.54.0 (pranjal, 24 Nov): open-slot templates make far more dishes (the L5 kitchen opens 100+),
 // so a tester rates about 12, stratified across rungs (see stratify()).
-export const DECK_MAX = 12;
+// 1.57.0 (pranjal, 26 Nov: "give all possible recipes and I'll rate as many myself"): no cap
+// again. The deck is every dish the kitchen opens, in a stratified order (rateOrderOf), so a
+// rater who taps "Done with quiz" early still leaves a spread across rungs and templates.
+export const DECK_MAX = Infinity;
+/** 1.57.0: one-tap reasons for a low taste rating (1 or 2 stars). Optional, never blocks Next. */
+export const TASTE_WHY = [
+  { id: 'ingredient', label: 'Don’t like an ingredient' },
+  { id: 'odd', label: 'Odd combination' },
+  { id: 'bland', label: 'Bland' },
+  { id: 'texture', label: 'Dry or all one texture' },
+  { id: 'filling', label: 'Not filling' },
+];
+/**
+ * 1.57.0: the order dishes are rated in. stratify()'s round-robin (rung 1, 2, 3, 4, 1, …), each
+ * round shuffled by seed, so stopping at any point leaves an even spread across rungs, and the
+ * position still says nothing about effort (the 1.48.0 reason for shuffling at all).
+ */
+export function rateOrderOf(ordered, seed) {
+  const out = [];
+  let round = [];
+  const flush = (n) => { out.push(...(round.length > 1 ? seededShuffle(round, `${seed}|${n}`) : round)); round = []; };
+  ordered.forEach((x) => {
+    if (round.some((y) => y.rung === x.rung)) flush(out.length);
+    round.push(x);
+  });
+  flush(out.length);
+  return out.map((x) => x.meal.id);
+}
 export const CRITERIA = [
   { id: 'macros', label: 'Macros' },
   { id: 'difficulty', label: 'Effort' },
@@ -114,7 +141,6 @@ export function seededShuffle(list, seed) {
  */
 export function stratify(pool, { max = DECK_MAX, prefer = null, fresh = null } = {}) {
   const real = pool.filter((x) => !x.away);
-  if (real.length <= max) return real;
   const root = (x) => x.meal.template?.from ?? x.meal.id;
   const first = (x) => (prefer?.has(x.meal.id) ? 0 : fresh?.has(x.meal.id) ? 1 : 2);
   const queues = {};
@@ -237,7 +263,8 @@ export function buildRungQuiz({ kitchen, inventory, catalogue = null, verdicts =
   // 1.42.0: the card stack, in Harvey's order (easiest rung first, cookable before one-away),
   // and a seeded shuffle for rating, so ratings aren't read off the order Harvey showed.
   const deck = Object.values(dishes).sort((a, b) => a.rung - b.rung || (a.away ? 1 : 0) - (b.away ? 1 : 0) || a.harveys.order - b.harveys.order || a.id.localeCompare(b.id)).map((d) => d.id);
-  const rateOrder = seededShuffle(deck, `${id}|rate`);
+  // 1.57.0: the stratified order, shuffled one round at a time (was a shuffle of the whole deck).
+  const rateOrder = rateOrderOf(chosen, `${id}|rate`);
   const bonus = bonusPick({ r, kind, inventory, catalogue, verdicts, config, shown: new Set(deck) });
   return { id, kitchen, kind, catalogue, rungs, dishes, steps, usage, deck, rateOrder, cookable: deck.filter((d) => !dishes[d].away).length, total: r.ranked.length, bonus };
 }
@@ -326,7 +353,9 @@ const starsOut = (quiz, answers) => {
     const a = answers.stars[id];
     // 1.46.0: what's missing is a multi-pick; cant stays the first, cants holds them all.
     const cants = [...new Set(a.cants ?? (a.cant ? [a.cant] : []))].filter((c) => cant.has(c));
-    return { id, effort: ok(a.effort), taste: ok(a.taste), cant: cants[0] ?? null, ...(cants.length ? { cants } : {}), ms: a.ms ?? null };
+    // 1.57.0, additive: why = the one-tap reasons for a low taste rating (TASTE_WHY ids).
+    const why = ok(a.taste) && a.taste <= 2 ? [...new Set(a.why ?? [])].filter((w) => TASTE_WHY.some((t) => t.id === w)) : [];
+    return { id, effort: ok(a.effort), taste: ok(a.taste), cant: cants[0] ?? null, ...(cants.length ? { cants } : {}), ...(why.length ? { why } : {}), ms: a.ms ?? null };
   }).filter((x) => x.effort || x.taste || x.cant);
   const rated = stars.filter((x) => x.effort);
   return {
@@ -334,6 +363,8 @@ const starsOut = (quiz, answers) => {
     // 1.48.0: the order the dishes were rated in (before, Harvey's easiest-first deck).
     order: quiz.rateOrder ?? deck,
     stars,
+    // 1.57.0, additive: how many dishes the rater got through, of how many the kitchen opens.
+    rated: stars.length, of: deck.length, ...(answers.done ? { done: true } : {}),
     // Effort stars on the old difficulty scale, so rungMarcoChoices and the reports read them as before.
     difficulty: rated.length ? { scale: DIFFICULTY.map((x) => x.label), from: 'effort stars, level = 6 - stars', ratings: rated.map((x) => ({ id: x.id, level: 6 - x.effort, ms: x.ms })), stoppedEarly: rated.length < deck.length } : null,
   };

@@ -72,7 +72,7 @@ test('templates: a knife-free dish stays knife-free, and names are unique', () =
   }
 });
 
-test('persona kitchens: about 12 dishes each, every reached rung rated, variants included where opened', () => {
+test('persona kitchens: every dish each, every reached rung rated, variants included where opened', () => {
   for (const k of kitchens) {
     const q = buildRungQuiz({ kitchen: k, inventory: buildInventory(k.items) });
     assert.ok(q.deck.length <= DECK_MAX && q.deck.length >= 1, k.kitchen);
@@ -101,10 +101,13 @@ test('persona decks: each level leads with dishes the level below can’t make',
   });
   assert.equal(levelBelow(kitchens[0], kitchens), null);
   for (let i = 1; i < decks.length; i++) {
-    const shared = decks[i].deck.filter((d) => decks[i - 1].deck.includes(d));
-    assert.ok(shared.length <= 3, `${kitchens[i].kitchen} repeats ${shared.length} of L${i}'s dishes: ${shared}`);
-    const fresh = decks[i].deck.filter((d) => decks[i].dishes[d].fresh).length;
-    assert.ok(fresh >= decks[i].deck.length / 2, `${kitchens[i].kitchen}: ${fresh} new dishes`);
+    // 1.57.0: every dish is in the deck, so levels share dishes; what the level below can't
+    // make still comes first in the rating order (the first dozen a rater sees).
+    const head = decks[i].rateOrder.slice(0, 12);
+    const shared = head.filter((d) => decks[i - 1].deck.includes(d));
+    assert.ok(shared.length <= 3, `${kitchens[i].kitchen} repeats ${shared.length} of L${i}'s dishes early: ${shared}`);
+    const fresh = head.filter((d) => decks[i].dishes[d].fresh).length;
+    assert.ok(fresh >= head.length / 2, `${kitchens[i].kitchen}: ${fresh} new dishes`);
   }
 });
 
