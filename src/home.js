@@ -26,7 +26,7 @@ import { rateRedirect } from './brain/share-link.js';
 import { norm } from './brain/feedback.js';
 import { reloadIfStale } from './fresh.js';
 
-const VERSION = '1.62.0';
+const VERSION = '1.63.0';
 const MAX_PHOTOS = 8;
 const SCAN_DEADLINE_MS = 12000;
 const $ = (id) => document.getElementById(id);
@@ -615,7 +615,9 @@ async function scan() {
     show(err);
     show($('scan-fallback'), !state.kitchen);
     // 1.61.0: free scans used up or off: your own key is the other way on.
-    if (e instanceof AIError && (e.kind === 'freeLimit' || e.kind === 'scanOff')) { editingKey = true; renderKey(); }
+    if (e instanceof AIError && ['freeLimit', 'scanOff', 'scanBroken'].includes(e.kind)) { editingKey = true; renderKey(); }
+    // 1.63.0: the real cause, small and quiet under the error, for pranjal's testing ("gemini 400 … API_KEY_INVALID").
+    if (e instanceof AIError && e.code && e.kind !== 'freeLimit') err.append(h('small', { class: 'hm-code' }, e.code));
   } finally {
     btn.classList.remove('shimmer');
     renderScanButton();
