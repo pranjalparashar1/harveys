@@ -11,6 +11,7 @@
 .hm-label { margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .hm-error { margin: 0 0 14px; padding: 10px 12px; border-radius: 12px; background: var(--no-soft); color: var(--no-ink); font-size: 15px; font-weight: 400; }
 .hm-error[hidden] { display: none; }
+.hm-error .hm-code { display: block; margin-top: 4px; font-size: 12px; opacity: 0.6; overflow-wrap: anywhere; }
 
 /* ── First visit ─────────────────────────────────────────────────────────── */
 .hm-welcome { padding-top: 18px; }

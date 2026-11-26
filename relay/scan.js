@@ -149,6 +149,20 @@ export function latchReason(status, body = '') {
   return null;
 }
 
+/**
+ * Gemini's error, reduced to codes that are safe to send to the phone and show in Debug:
+ * the HTTP status, Google's status word and the ErrorInfo reason, e.g.
+ * { http: 400, status: 'INVALID_ARGUMENT', reason: 'API_KEY_INVALID' }. Never the message
+ * text, which can quote the request. Pure.
+ */
+export function geminiCode(http, body = '') {
+  const word = (v) => (typeof v === 'string' && /^[A-Z][A-Z0-9_]{1,63}$/.test(v) ? v : null);
+  let err = null;
+  try { err = JSON.parse(String(body))?.error ?? null; } catch { /* not JSON */ }
+  const reason = Array.isArray(err?.details) ? err.details.map((d) => word(d?.reason)).find(Boolean) ?? null : null;
+  return { http: Number(http) || 0, status: word(err?.status), reason };
+}
+
 /** A scan that failed upstream (Gemini busy, nothing read) gives its slot back. */
 export async function refundScan(store, { key, day, at }) {
   const mine = (await store.get(key)) ?? [];
@@ -230,17 +244,20 @@ export async function handleScan(request, env, reply, deps) {
     monthlyCap: Number(env.SCAN_MONTHLY_CAP) || SCAN_MONTHLY_CAP,
     ...(deps.now ? { now: deps.now() } : {}),
   });
-  if (!got.ok && got.scope === 'off') return reply(503, { ok: false, error: 'scan off' });
+  if (!got.ok && got.scope === 'off') return reply(503, { ok: false, error: 'scan off', off: got.reason ?? null });
   if (!got.ok) return reply(429, { ok: false, error: 'limit', scope: got.scope, retryAfter: got.retryAfter, message: LIMIT_MESSAGE[got.scope] }, { 'Retry-After': String(got.retryAfter) });
 
   // Every Gemini reply is looked at for "quota or billing gone" before anything else reads it.
+  // The last Gemini error's codes go back with a failure, so Debug shows the real cause.
   let trip = null;
+  let gemini = null;
   const f = deps.fetch ?? fetch;
   const watched = async (url, init) => {
     const res = await f(url, init);
-    if (!res.ok && [400, 403, 429].includes(res.status)) {
+    if (!res.ok) {
       const body = await (res.clone?.() ?? res).text?.().catch(() => '') ?? '';
-      trip ??= latchReason(res.status, body);
+      gemini = geminiCode(res.status, body);
+      if ([400, 403, 429].includes(res.status)) trip ??= latchReason(res.status, body);
     }
     return res;
   };
@@ -263,12 +280,12 @@ export async function handleScan(request, env, reply, deps) {
     await quota.refund(got.slot).catch(() => {});
     if (trip) {
       await quota.latch(trip).catch(() => {});
-      return reply(503, { ok: false, error: 'scan off' });
+      return reply(503, { ok: false, error: 'scan off', off: trip, gemini });
     }
-    // Only the kind goes back: Gemini's own error text could carry request details.
+    // The kind and Gemini's codes go back, never Gemini's text, which could quote the request.
     const kind = e instanceof AIError ? e.kind : 'error';
     const status = kind === 'timeout' ? 504 : kind === 'invalidKey' ? 503 : 502;
-    return reply(status, { ok: false, error: kind === 'invalidKey' ? 'scan off' : kind });
+    return reply(status, { ok: false, error: kind === 'invalidKey' ? 'scan off' : kind, gemini });
   }
 }
 

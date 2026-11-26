@@ -45,7 +45,7 @@ export function detectProvider(key) {
 }
 
 export class AIError extends Error {
-  /** @param {'noKey'|'invalidKey'|'rateLimited'|'overloaded'|'timeout'|'modelUnavailable'|'badRequest'|'network'|'malformedResponse'|'imageTooLarge'|'freeLimit'|'scanOff'} kind */
+  /** @param {'noKey'|'invalidKey'|'rateLimited'|'overloaded'|'timeout'|'modelUnavailable'|'badRequest'|'network'|'malformedResponse'|'imageTooLarge'|'freeLimit'|'scanOff'|'scanBroken'} kind */
   constructor(kind, detail = '', status = 0) {
     super(AIError.message(kind));
     this.kind = kind;
@@ -69,6 +69,7 @@ export class AIError extends Error {
       imageTooLarge: 'Those photos are too large to send together. Try fewer photos.',
       freeLimit: "That's today's free scans.",
       scanOff: 'Free scanning is off right now.',
+      scanBroken: "The free scan isn't working right now.",
       noKey: 'Scanning needs an AI key for now.',
     }[kind];
   }
@@ -446,40 +447,71 @@ function thin(images, max) {
   return Array.from({ length: max }, (_, i) => images[Math.round((i * (images.length - 1)) / (max - 1))]);
 }
 
-export async function scanViaRelay({ images, relay, fetchImpl = fetch, timeoutMs = RELAY_TIMEOUT_MS, onEvent = () => {} }) {
+/** Gemini's codes from a relay failure, as one short Debug line: "gemini 400 INVALID_ARGUMENT API_KEY_INVALID". */
+export function geminiLine(g) {
+  if (!g || typeof g !== 'object') return '';
+  return ['gemini', g.http || null, g.status, g.reason].filter(Boolean).join(' ');
+}
+
+/**
+ * A relay failure → an AIError with an honest kind (1.63.0). Only a real Gemini overload or rate
+ * limit reads as "overloaded"; anything else that broke reads as scanBroken, never as "busy".
+ */
+export function relayError(status, out) {
+  const code = out?.error ?? '';
+  const g = geminiLine(out?.gemini);
+  const busy = ['overloaded', 'rateLimited'].includes(code) || [500, 502, 503, 504].includes(out?.gemini?.http) && code !== 'badRequest';
+  const kind = status === 429 ? 'freeLimit'
+    : status === 503 ? 'scanOff'
+      : status === 504 || code === 'timeout' ? 'timeout'
+        : status === 413 ? 'imageTooLarge'
+          : busy ? 'overloaded'
+            : 'scanBroken';
+  const err = new AIError(kind, ['free scan:', `HTTP ${status}`, code, g, out?.off ? `off: ${out.off}` : ''].filter(Boolean).join(' '), status);
+  err.code = [code, g].filter(Boolean).join(' · ') || `HTTP ${status}`;
+  if (kind === 'freeLimit') {
+    if (out?.message) err.message = out.message;
+    err.retryAfter = Number(out?.retryAfter) || null;
+    err.scope = out?.scope ?? null;
+  }
+  return err;
+}
+
+export async function scanViaRelay({ images, relay, fetchImpl = fetch, timeoutMs = RELAY_TIMEOUT_MS, retryMs = 1500, onEvent = () => {} }) {
   const t0 = Date.now();
   const send = thin(images, RELAY_MAX_IMAGES).map(({ base64, mediaType }) => ({ base64, mediaType }));
   const body = JSON.stringify({ images: send });
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  onEvent({ stage: 'sent', model: 'free scan', bytes: body.length, ms: 0 });
-  let res;
-  try {
-    res = await fetchImpl(scanUrl(relay), { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body, signal: controller.signal });
-  } catch (e) {
-    clearTimeout(timer);
-    const err = e?.name === 'AbortError' ? new AIError('timeout', `free scan: no answer within ${Math.round(timeoutMs / 1000)} s`) : new AIError('network', `free scan: ${String(e?.message ?? e).slice(0, 200)}`);
-    onEvent({ stage: 'model', model: 'free scan', ok: false, kind: err.kind, detail: err.detail, ms: Date.now() - t0 });
-    throw err;
-  }
-  clearTimeout(timer);
-  const out = await res.json().catch(() => null);
-  if (!res.ok) {
-    const code = out?.error ?? '';
-    const kind = res.status === 429 ? 'freeLimit'
-      : res.status === 503 ? 'scanOff'
-        : res.status === 504 || code === 'timeout' ? 'timeout'
-          : res.status === 413 ? 'imageTooLarge'
-            : res.status === 400 || res.status === 415 || res.status === 403 ? 'badRequest'
-              : 'overloaded';
-    const err = new AIError(kind, `free scan: HTTP ${res.status} ${code}`.trim(), res.status);
-    if (kind === 'freeLimit') {
-      if (out?.message) err.message = out.message;
-      err.retryAfter = Number(out?.retryAfter) || null;
-      err.scope = out?.scope ?? null;
+  const once = async () => {
+    const left = timeoutMs - (Date.now() - t0);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Math.max(1000, left));
+    onEvent({ stage: 'sent', model: 'free scan', bytes: body.length, ms: Date.now() - t0 });
+    let res;
+    try {
+      res = await fetchImpl(scanUrl(relay), { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body, signal: controller.signal });
+    } catch (e) {
+      throw e?.name === 'AbortError' ? new AIError('timeout', `free scan: no answer within ${Math.round(timeoutMs / 1000)} s`) : new AIError('network', `free scan: ${String(e?.message ?? e).slice(0, 200)}`);
+    } finally {
+      clearTimeout(timer);
     }
-    onEvent({ stage: 'model', model: 'free scan', ok: false, kind, status: res.status, detail: err.detail, ms: Date.now() - t0 });
-    throw err;
+    const out = await res.json().catch(() => null);
+    if (!res.ok) throw relayError(res.status, out);
+    return out;
+  };
+  let out;
+  try {
+    try {
+      out = await once();
+    } catch (e) {
+      // One retry, only when Gemini was really busy, and only if there's time for it.
+      if (e.kind !== 'overloaded' || timeoutMs - (Date.now() - t0) < retryMs + 4000) throw e;
+      onEvent({ stage: 'model', model: 'free scan', ok: false, kind: e.kind, status: e.status, detail: e.detail, ms: Date.now() - t0 });
+      await new Promise((r) => setTimeout(r, retryMs));
+      out = await once();
+    }
+  } catch (e) {
+    onEvent({ stage: 'model', model: 'free scan', ok: false, kind: e.kind, status: e.status, detail: e.detail, ms: Date.now() - t0 });
+    throw e;
   }
   const items = out && Array.isArray(out.have) ? parseInventory(JSON.stringify({ have: out.have, other: out.other ?? [] })) : null;
   if (!items) throw new AIError('malformedResponse', 'free scan: unreadable reply');

@@ -112,7 +112,7 @@ test('scan: bad origin, no key, junk and oversize bodies are refused before Gemi
   const off = harness({ env: {} });
   const res = await off.post();
   assert.equal(res.status, 503);
-  assert.deepEqual(await res.json(), { ok: false, error: 'scan off' });
+  assert.equal((await res.json()).error, 'scan off');
   assert.equal(off.calls.length, 0);
   // Local dev servers are allowed, as for Send.
   assert.equal((await harness().post(body(), { origin: 'http://localhost:8000' })).status, 200);
@@ -147,7 +147,7 @@ test('scan: a scan Gemini could not answer gives its slot back, and its error te
   const bad = harness({ gemini: async () => ({ ok: false, status: 403, text: async () => 'denied' }) });
   const res = await bad.post(body(1));
   assert.equal(res.status, 503);
-  assert.deepEqual(await res.json(), { ok: false, error: 'scan off' }, "a dead server key reads as 'scan off', never as the user's key");
+  assert.equal((await res.json()).error, 'scan off', "a dead server key reads as 'scan off', never as the user's key");
 });
 
 test('scan: a daily ceiling across every IP protects the bill', async () => {
@@ -322,7 +322,7 @@ test('failsafe: the monthly cap switches the free scan off, and a new day, month
   for (let i = 0; i < 3; i++) assert.equal((await h.post(body(1), { ip: `ip${i}` })).status, 200);
   const off = await h.post(body(1), { ip: 'new' });
   assert.equal(off.status, 503);
-  assert.deepEqual(await off.json(), { ok: false, error: 'scan off' }, 'the app reads this as scanOff: key box + kitchen like yours');
+  assert.equal((await off.json()).error, 'scan off', 'the app reads this as scanOff: key box + kitchen like yours');
   assert.equal(h.calls.length, 3, 'nothing more reaches Gemini');
   const get = await (await h.worker.fetch(new Request('https://relay.example/'), h.env)).json();
   assert.equal(get.scan, false, 'GET says off, so the page shows the key box straight away');
@@ -357,7 +357,7 @@ test('failsafe: Gemini saying quota or billing is gone latches at once; a per-mi
   const h = harness({ env: { GEMINI_API_KEY: 'k', SCAN_PER_IP: '99' }, gemini: async () => ({ ok: false, status: 429, text: async () => daily, clone() { return this; } }) });
   const res = await h.post(body(1));
   assert.equal(res.status, 503);
-  assert.deepEqual(await res.json(), { ok: false, error: 'scan off' });
+  assert.equal((await res.json()).error, 'scan off');
   const n = h.calls.length;
   assert.equal((await h.post(body(1))).status, 503);
   assert.equal(h.calls.length, n, 'latched: Gemini is not called again');
@@ -388,4 +388,66 @@ test('logs: nothing the Worker runs ever writes to the console (Workers Logs is 
   assert.match(toml, /compatibility_date = "2026-11-22"/);
   assert.match(toml, /preview_urls = false/);
   assert.doesNotMatch(toml, /GEMINI_API_KEY\s*=/, 'secrets never live in the config');
+});
+
+// ── 1.63.0: honest errors (pranjal saw "overloaded" for what was Gemini refusing the request) ──
+test('errors: the Worker sends back Gemini codes, never its text', async () => {
+  const { geminiCode } = await import('../relay/scan.js');
+  const bad = JSON.stringify({ error: { code: 400, message: 'API key not valid. key=AIza-secret', status: 'INVALID_ARGUMENT', details: [{ '@type': 'x', reason: 'API_KEY_INVALID' }] } });
+  assert.deepEqual(geminiCode(400, bad), { http: 400, status: 'INVALID_ARGUMENT', reason: 'API_KEY_INVALID' });
+  assert.deepEqual(geminiCode(503, 'high demand'), { http: 503, status: null, reason: null });
+  assert.deepEqual(geminiCode(400, JSON.stringify({ error: { status: 'lower case or <script>', details: [{ reason: 'a b' }] } })), { http: 400, status: null, reason: null });
+
+  const h = harness({ env: { GEMINI_API_KEY: 'k', SCAN_PER_IP: '99' }, gemini: async () => ({ ok: false, status: 400, text: async () => JSON.stringify({ error: { code: 400, message: 'Unable to process input image. secret', status: 'INVALID_ARGUMENT' } }) }) });
+  const res = await h.post(body(1), { ip: 'codes-1' });
+  assert.equal(res.status, 502);
+  const out = await res.json();
+  assert.equal(out.error, 'badRequest');
+  assert.deepEqual(out.gemini, { http: 400, status: 'INVALID_ARGUMENT', reason: null });
+  assert.ok(!JSON.stringify(out).includes('secret'));
+  // A latched key error says why it is off.
+  const k = harness({ env: { GEMINI_API_KEY: 'k', SCAN_PER_IP: '99' }, gemini: async () => ({ ok: false, status: 400, text: async () => bad }) });
+  const off = await (await k.post(body(1), { ip: 'codes-2' })).json();
+  assert.equal(off.error, 'scan off');
+  assert.match(off.off, /key or billing/);
+  assert.equal(off.gemini.reason, 'API_KEY_INVALID');
+  const again = await (await k.post(body(1), { ip: 'codes-3' })).json();
+  assert.match(again.off, /key or billing/, 'later scans say why too');
+});
+
+test('errors: only a real overload reads as "overloaded"; a refused request reads as "isn\'t working"', async () => {
+  const { relayError } = await import('../src/ai/providers.js');
+  const bad = relayError(502, { error: 'badRequest', gemini: { http: 400, status: 'INVALID_ARGUMENT', reason: 'API_KEY_INVALID' } });
+  assert.equal(bad.kind, 'scanBroken');
+  assert.equal(bad.message, "The free scan isn't working right now.");
+  assert.equal(bad.code, 'badRequest · gemini 400 INVALID_ARGUMENT API_KEY_INVALID');
+  assert.equal(relayError(502, { error: 'overloaded', gemini: { http: 503 } }).kind, 'overloaded');
+  assert.equal(relayError(502, { error: 'rateLimited', gemini: { http: 429 } }).kind, 'overloaded');
+  assert.equal(relayError(500, null).kind, 'scanBroken', 'a crashed Worker is not "busy"');
+  assert.equal(relayError(502, { error: 'malformedResponse' }).kind, 'scanBroken');
+  assert.equal(relayError(503, { error: 'scan off', off: 'monthly cap of 1500 scans reached' }).kind, 'scanOff');
+  assert.match(relayError(503, { error: 'scan off', off: 'monthly cap of 1500 scans reached' }).detail, /monthly cap/);
+});
+
+test('errors: one retry on a real overload, none on anything else', async () => {
+  const run = async (replies) => {
+    let n = 0;
+    const fetchImpl = async () => { const r = replies[Math.min(n++, replies.length - 1)]; return { ok: r.status === 200, status: r.status, json: async () => r.body }; };
+    const out = await scanViaRelay({ images: [img()], relay: 'https://r.example/', fetchImpl, retryMs: 5 }).then((x) => x, (e) => e);
+    return { out, n };
+  };
+  const ok = { status: 200, body: { have: ['eggs'], other: [] } };
+  const busy = { status: 502, body: { error: 'overloaded', gemini: { http: 503 } } };
+  const broken = { status: 502, body: { error: 'badRequest', gemini: { http: 400 } } };
+  let r = await run([busy, ok]);
+  assert.equal(r.n, 2);
+  assert.deepEqual(r.out.map((i) => i.canonical), ['eggs']);
+  r = await run([busy, busy]);
+  assert.equal(r.n, 2, 'only one retry');
+  assert.equal(r.out.kind, 'overloaded');
+  r = await run([broken, ok]);
+  assert.equal(r.n, 1, 'a refused request is not retried');
+  assert.equal(r.out.kind, 'scanBroken');
+  r = await run([{ status: 429, body: { error: 'limit' } }, ok]);
+  assert.equal(r.n, 1);
 });
