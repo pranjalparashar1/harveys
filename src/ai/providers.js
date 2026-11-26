@@ -45,7 +45,7 @@ export function detectProvider(key) {
 }
 
 export class AIError extends Error {
-  /** @param {'invalidKey'|'rateLimited'|'overloaded'|'timeout'|'modelUnavailable'|'badRequest'|'network'|'malformedResponse'|'imageTooLarge'} kind */
+  /** @param {'noKey'|'invalidKey'|'rateLimited'|'overloaded'|'timeout'|'modelUnavailable'|'badRequest'|'network'|'malformedResponse'|'imageTooLarge'} kind */
   constructor(kind, detail = '', status = 0) {
     super(AIError.message(kind));
     this.kind = kind;
@@ -67,6 +67,7 @@ export class AIError extends Error {
       network: "Couldn't reach the provider. Check your connection and try again.",
       malformedResponse: 'The provider sent back something unreadable. Try again, or add items by hand.',
       imageTooLarge: 'Those photos are too large to send together. Try fewer photos.',
+      noKey: 'Scanning needs an AI key for now.',
     }[kind];
   }
 }

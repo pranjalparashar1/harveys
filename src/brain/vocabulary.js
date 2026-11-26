@@ -108,6 +108,8 @@ export const EQUIPMENT = {
   kettle: { label: 'Electric kettle', kind: 'appliance', synonyms: ['kettle', 'electric kettle'] },
   blender: { label: 'Blender / mixer', kind: 'appliance', synonyms: ['blender', 'mixer', 'mixer grinder', 'nutribullet', 'hand blender'] },
   kitchen_scale: { label: 'Kitchen scale', kind: 'appliance', synonyms: ['kitchen scale', 'weighing scale', 'food scale'] },
+  // 1.60.0: its own id, so "egg boiler" on a list is kit, not eggs. No dish needs one yet.
+  egg_boiler: { label: 'Egg boiler', kind: 'appliance', synonyms: ['egg boiler', 'egg cooker', 'electric egg boiler'] },
   pressure_cooker: { label: 'Pressure cooker', kind: 'cookware', synonyms: ['pressure cooker', 'cooker', 'prestige cooker', 'hawkins'] },
   saucepan: { label: 'Saucepan / pot', kind: 'cookware', synonyms: ['saucepan', 'pot', 'steel pot', 'stock pot', 'patila', 'boiling pot'] },
   frying_pan: { label: 'Frying pan', kind: 'cookware', synonyms: ['frying pan', 'pan', 'nonstick pan', 'non-stick pan', 'skillet', 'fry pan'] },
@@ -123,7 +125,8 @@ export const ASSUMED_BASICS = {
   fork: { label: 'Fork', synonyms: ['fork', 'forks'] },
   mug: { label: 'Mug / glass', synonyms: ['mug', 'cup', 'glass', 'tumbler'] },
   shaker: { label: 'Shaker bottle', synonyms: ['shaker', 'shaker bottle', 'protein shaker'] },
-  knife: { label: 'Kitchen knife', synonyms: ['knife', 'kitchen knife', 'chef knife', 'paring knife'] },
+  // 1.60.0: "butter knife" is a knife, not butter (the longest phrase wins).
+  knife: { label: 'Kitchen knife', synonyms: ['knife', 'kitchen knife', 'chef knife', 'paring knife', 'butter knife', 'bread knife'] },
   cutting_board: { label: 'Cutting board', synonyms: ['cutting board', 'chopping board', 'chopping block'] },
   spatula: { label: 'Spatula / ladle', synonyms: ['spatula', 'ladle', 'turner', 'karchi', 'tongs'] },
   // 1.39.0: assumed, not a hard filter. It blocked 5 dishes in every tester kitchen, and a lid held ajar drains rice.

@@ -5,6 +5,7 @@ import {
   buildInventory, matchName, rank, contextLambda,
 } from '../src/brain/index.js';
 import { DEMO_KITCHEN } from '../src/demo-kitchen.js';
+import { PIERRE_SEED, pierreTier } from '../src/brain/index.js';
 import { ROLES } from '../src/brain/pantry.js';
 
 const TARGETS = { protein: 40, calories: 800, fiber: 15 };
@@ -410,4 +411,20 @@ test('5C: fitted friction weights are costs (none positive) and cover every fric
   const keys = FEATURES.filter((f) => !f.payoff).map((f) => f.key).sort();
   assert.deepEqual(Object.keys(DEFAULT_CONFIG.frictionTheta).sort(), keys);
   for (const k of keys) assert.ok(DEFAULT_CONFIG.frictionTheta[k] <= 0, `${k} = ${DEFAULT_CONFIG.frictionTheta[k]}`);
+});
+
+// 1.60.0: the bare-kitchen egg flags (HANDOVER §15.6 q1). Each was a Pierre floor that read wrong.
+test('plain egg bhurji, egg rice and egg pasta pass in a bare kitchen; buttered pasta stays floor', () => {
+  const tierIn = (names, id) => {
+    const r = rank({ inventory: buildInventory(names), targets: TARGETS, context: { hour: 19, weekday: 3, kind: 'meal' }, catalogue: CATALOGUE, verdicts: PIERRE_SEED });
+    const hit = [...r.ranked, ...r.vetoed].find((x) => x.meal.id === id);
+    assert.ok(hit, `${id} is cookable in ${names.join(', ')}`);
+    return hit.pierre;
+  };
+  const stove = ['induction', 'saucepan'];
+  assert.equal(tierIn([...stove, 'eggs', 'butter', 'white bread', 'salt'], 'pot_egg_bhurji').tier, 'pass', 'bread on the side was "a bhurji has no base"');
+  assert.equal(tierIn([...stove, 'eggs', 'pasta', 'oil', 'salt'], 'egg_pasta_pot').tier, 'pass');
+  assert.equal(tierIn([...stove, 'eggs', 'rice', 'oil', 'salt'], 'egg_rice').tier, 'pass');
+  const butter = pierreTier([{ id: 'pasta', technique: 'boiled' }, { id: 'butter' }], 'coated_base', { modifiers: ['salt'] });
+  assert.equal(butter.tier, 'floor');
 });

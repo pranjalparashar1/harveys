@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Harvey</title>
-  <meta name="description" content="Scan your kitchen. Harvey picks the meal you'll actually cook.">
-  <!-- The preview WhatsApp and iMessage show for a share link (1.34.0) -->
+  <title>Harvey’s</title>
+  <!-- 1.60.0: a taste-test link (#n=…&k=…) from before the move opens on rate.html, at once -->
+  <script>if (/(?:^#|&)k=[A-Za-z0-9_-]/.test(location.hash)) location.replace('rate.html' + location.hash);</script>
+  <meta name="description" content="What should I cook right now, from what I already have, that I’ll actually make?">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Harvey’s">
-  <meta property="og:title" content="Your Harvey’s taste test">
-  <meta property="og:description" content="Made from your own kitchen. A few minutes, all taps.">
+  <meta property="og:title" content="Harvey’s">
+  <meta property="og:description" content="What you’ll actually cook tonight, from what’s already in your kitchen.">
   <meta property="og:image" content="https://pranjalparashar1.github.io/harveys/assets/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -19,48 +20,58 @@
   <meta name="color-scheme" content="dark">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Harvey’s">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d97757'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='36' text-anchor='middle' fill='%23fff'%3EH%3C/text%3E%3C/svg%3E">
   <link rel="preload" href="assets/fonts/poppins-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/poppins-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/styles.css">
   <link rel="stylesheet" href="assets/rung-quiz.css">
+  <link rel="stylesheet" href="assets/home.css">
 </head>
-<body class="testing">
-  <main class="shell">
-    <!-- The tester's greeting (1.35.0): "Hi, Riya" from the share link's #n=, kept on this phone -->
-    <header class="greet" id="greet">
-      <p class="greet-eyebrow">Harvey’s</p>
-      <h1 id="hi">Hi there</h1>
-      <p class="greet-lead" id="hi-lead">Paste what’s in your kitchen, then tap Use this list.</p>
-    </header>
+<body class="home">
+  <main class="shell hm" id="app" aria-busy="true">
 
-    <!-- Key: a quiet one-line row once saved -->
-    <section class="card t-hide" id="step-key" aria-label="AI key">
-      <div class="key-saved" id="key-saved" hidden>
-        <span class="dot" aria-hidden="true"></span>
-        <span class="key-name" id="key-name"></span>
-        <select id="model" aria-label="Model"></select>
-        <button class="btn link" id="change-key" data-haptic type="button">Change</button>
+    <!-- First visit: three ways in (1.60.0) -->
+    <section class="hm-view hm-welcome" id="welcome" hidden>
+      <p class="hm-eyebrow">Harvey’s</p>
+      <h1 class="hm-title">What will you actually cook tonight?</h1>
+      <p class="hm-error" id="welcome-error" role="alert" hidden></p>
+      <div class="hm-paths">
+        <button class="hm-path primary" id="go-scan" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <b>Scan your kitchen</b><span>Photos of your shelves and fridge</span>
+        </button>
+        <button class="hm-path" id="go-persona" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>
+          <b>Start from a kitchen like yours</b><span>Pick one, then make it yours</span>
+        </button>
       </div>
-      <div id="key-edit">
-        <label class="field">
-          <span>API key</span>
-          <input id="api-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-ant-…, sk-… or AIza…">
-        </label>
-        <p class="detected" id="detected"></p>
-        <div class="row">
-          <button class="btn primary" id="save-key" data-haptic type="button">Save</button>
-          <button class="btn ghost" id="cancel-key" data-haptic type="button" hidden>Cancel</button>
-          <button class="btn link quiet" id="forget-key" type="button" hidden>Forget key</button>
+      <details class="hm-paste" id="paste">
+        <summary>Paste a list, or use your own AI app</summary>
+        <div class="hm-paste-in">
+          <textarea id="paste-text" rows="6" placeholder="eggs&#10;paneer, butter, bread&#10;pressure cooker" aria-label="Kitchen items, one per line or comma-separated"></textarea>
+          <button class="btn primary wide" id="paste-go" type="button">Use this list</button>
+          <div class="hm-ai">
+            <button class="btn" id="copy-prompt" type="button">Copy the prompt</button>
+            <div class="hm-ai-links" id="ai-links">
+              <a class="btn ghost" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT</a>
+              <a class="btn ghost" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini</a>
+              <a class="btn ghost" href="https://claude.ai/new" target="_blank" rel="noopener">Claude</a>
+            </div>
+          </div>
         </div>
-      </div>
-      <p class="error" id="key-error" role="alert" hidden></p>
+      </details>
     </section>
 
-    <!-- Kitchen -->
-    <section class="card" id="step-photos" aria-labelledby="photos-title">
-      <h2 id="photos-title">Kitchen</h2>
-      <div class="pickers t-hide">
+    <!-- Scan: photos now; a short video joins in the next build -->
+    <section class="hm-view hm-scan" id="scan-view" hidden>
+      <header class="hm-bar">
+        <button class="rq-icon" id="scan-back" type="button" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <p class="hm-eyebrow">Scan</p>
+        <span class="rq-icon ghost"></span>
+      </header>
+      <h1 class="hm-title sm">Photograph your shelves, fridge and stove</h1>
+      <div class="pickers">
         <label class="dropzone" for="photo-input">
           <input id="photo-input" type="file" accept="image/*" multiple>
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>
@@ -72,93 +83,75 @@
           <span class="dz-title">Camera</span>
         </label>
       </div>
-      <ul class="thumbs t-hide" id="thumbs"></ul>
-      <p class="mini t-hide" id="photo-status" aria-live="polite"></p>
-      <button class="btn primary xl wide t-hide" id="scan" data-haptic type="button" disabled>Scan</button>
-      <button class="btn link sample t-hide" id="use-demo" data-haptic type="button">Sample kitchen</button>
-      <details class="add-dish paste-list" id="paste-list" open>
-        <summary>Paste a list</summary>
-        <textarea id="paste-text" rows="5" placeholder="eggs&#10;paneer, butter, protein bread&#10;air fryer&#10;&#10;or a kitchen JSON" aria-label="Kitchen items, one per line or comma-separated"></textarea>
-        <button class="btn wide" id="paste-go" data-haptic type="button">Use this list</button>
-      </details>
-      <div id="paste-summary" hidden>
-        <p class="tally-head">Spotted</p>
-        <div class="tallies" id="paste-groups"></div>
-        <button class="btn primary xl wide" id="paste-proceed" data-haptic type="button">Proceed</button>
-        <button class="btn link quiet edit-list" id="paste-edit" data-haptic type="button">Edit list</button>
-      </div>
-      <p class="error" id="scan-error" role="alert" hidden></p>
-    </section>
-
-    <!-- Spotted (only after a scan; never restored on reload) -->
-    <section class="card rise t-hide" id="step-inventory" aria-labelledby="inv-title" hidden>
-      <div class="card-head">
-        <h2 id="inv-title">Spotted</h2>
-        
-      </div>
-      <div id="inventory-groups"></div>
-      <form class="add-row" id="add-form">
-        <input id="add-input" type="text" placeholder="Add" autocomplete="off" aria-label="Add an item">
-        <button class="btn" type="submit" aria-label="Add">+</button>
-      </form>
-      <details class="basics">
-        <summary>Basics</summary>
-        <div class="chips" id="basics"></div>
-      </details>
-    </section>
-
-    <!-- Ingredient check (?debug, 1.33.0): every listed item, used by the taste test's dishes or not, and why -->
-    <section class="card rise t-hide usage" id="usage" aria-labelledby="usage-title" hidden>
-      <div class="card-head"><h2 id="usage-title">Ingredient check</h2></div>
-      <p class="mini" id="usage-sum"></p>
-      <div class="segmented" id="usage-tabs" role="radiogroup" aria-label="Used or not">
-        <button type="button" role="radio" data-haptic data-value="unused" aria-checked="true">Not used</button>
-        <button type="button" role="radio" data-haptic data-value="used" aria-checked="false">Used</button>
-      </div>
-      <div id="usage-body"></div>
-      <div class="usage-actions">
-        <button class="btn" id="usage-copy" data-haptic type="button">Copy for Claude</button>
-        <button class="btn" id="usage-quiz" data-haptic type="button">Taste test</button>
-      </div>
-    </section>
-
-    <!-- Right now -->
-    <section class="card rise" id="step-context" aria-label="Right now" hidden>
-      <div class="segmented t-hide" id="kind" role="radiogroup" aria-label="Meal or snack">
-        <button type="button" role="radio" data-haptic data-value="meal">Meal</button>
-        <button type="button" role="radio" data-haptic data-value="snack">Snack</button>
-      </div>
-      <div class="ctx-grid t-hide">
+      <ul class="thumbs" id="thumbs"></ul>
+      <p class="mini" id="photo-status" aria-live="polite"></p>
+      <!-- Your own AI key, until Harvey's scans for you -->
+      <div class="hm-key" id="key-box" hidden>
         <label class="field">
-          <span>When</span>
-          <select id="when">
-            <option value="now">Now</option>
-            <option value="weekday-evening">Weekday, 7 pm</option>
-            <option value="weekday-late">Weekday, 10:30 pm</option>
-            <option value="weekend-lunch">Weekend, 1 pm</option>
-          </select>
+          <span>Your AI key</span>
+          <input id="api-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="AIza…, sk-ant-… or sk-…">
         </label>
-        <label class="field"><span>Protein</span><span class="unit-input"><input id="t-protein" type="number" inputmode="numeric" min="0" step="5"><i>g</i></span></label>
-        <label class="field"><span>Calories</span><span class="unit-input"><input id="t-calories" type="number" inputmode="numeric" min="0" step="50"><i>kcal</i></span></label>
-        <label class="field"><span>Fiber</span><span class="unit-input"><input id="t-fiber" type="number" inputmode="numeric" min="0" step="1"><i>g</i></span></label>
+        <p class="detected" id="detected"></p>
+        <button class="btn" id="save-key" type="button" disabled>Save key</button>
       </div>
-      <div class="group t-hide" id="soaked-wrap" hidden>
-        <h3>Soaked</h3>
-        <div class="chips" id="soaked"></div>
+      <div class="hm-key-saved" id="key-saved" hidden>
+        <span class="dot" aria-hidden="true"></span><span id="key-name"></span>
+        <button class="btn link quiet" id="change-key" type="button">Change</button>
       </div>
-      <button class="btn primary wide" id="decide" data-haptic type="button">What should I cook?</button>
+      <p class="hm-error" id="scan-error" role="alert" hidden></p>
+      <button class="btn link" id="scan-fallback" type="button" hidden>Start from a kitchen like yours</button>
+      <div class="hm-foot">
+        <button class="btn primary xl wide" id="scan" type="button" disabled>Scan</button>
+      </div>
     </section>
 
-    <section id="result" aria-live="polite" hidden></section>
+    <!-- Home: the saved kitchen's effort ladder, straight away -->
+    <section class="hm-view hm-home" id="home" hidden>
+      <header class="hm-top">
+        <p class="hm-eyebrow">Harvey’s</p>
+        <button class="hm-pill" id="open-kitchen" type="button" aria-haspopup="dialog">My kitchen <b id="kitchen-count">0</b></button>
+        <button class="hm-pill" id="rescan" type="button">Rescan</button>
+      </header>
+      <h1 class="hm-title" id="home-title">Pick your effort</h1>
+      <div class="segmented hm-kind" id="kind" role="radiogroup" aria-label="Meal or snack">
+        <button type="button" role="radio" data-value="meal" aria-checked="true">Meal</button>
+        <button type="button" role="radio" data-value="snack" aria-checked="false">Snack</button>
+      </div>
+      <div class="hm-soaked" id="soaked-wrap" hidden>
+        <p class="hm-label">Soaked today</p>
+        <div class="hm-chips" id="soaked"></div>
+      </div>
+      <div id="ladder" aria-live="polite"></div>
+      <div id="extras"></div>
+    </section>
 
-    <details class="debug t-hide" id="debug">
-      <summary><span>Debug · <span id="version">1.59.0</span></span></summary>
-      <div id="debug-body"></div>
-      <button class="btn" id="copy-debug" type="button">Copy for Claude</button>
-    </details>
-    <!-- pranjal's way in: the workbench, behind a password (src/gate.js) -->
-    <footer class="sig"><button id="start-fresh" type="button">Start fresh</button><a href="owner.html">pranjal</a></footer>
+    <footer class="sig hm-sig" id="sig"><span id="version">1.60.0</span><a href="owner.html">pranjal</a></footer>
   </main>
-  <script type="module" src="src/app.js"></script>
+
+  <!-- My kitchen: untick what ran out, add what's new, back it up -->
+  <dialog class="hm-sheet" id="kitchen-sheet" aria-labelledby="sheet-title">
+    <div class="hm-sheet-in">
+      <header class="hm-sheet-top">
+        <h2 id="sheet-title">My kitchen</h2>
+        <button class="btn link" id="sheet-done" type="button">Done</button>
+      </header>
+      <form class="rq-add rq-find hm-find" id="find-form" role="search">
+        <input id="find" type="search" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="none" placeholder="Add more" aria-label="Add more: search foods and cookware">
+      </form>
+      <div class="hm-found" id="found" aria-live="polite"></div>
+      <div id="sheet-items"></div>
+      <div class="hm-sheet-actions">
+        <button class="btn wide" id="recheck" type="button">Check it all again</button>
+        <button class="btn wide" id="copy-backup" type="button">Copy backup link</button>
+        <input class="hm-backup" id="backup-out" type="text" readonly hidden aria-label="Backup link">
+        <button class="btn link quiet hm-forget" id="forget-kitchen" type="button">Start over</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- After Cooked this -->
+  <div class="hm-ranout" id="ranout" role="region" aria-label="Ran out?" hidden></div>
+
+  <script type="module" src="src/home.js"></script>
 </body>
 </html>
