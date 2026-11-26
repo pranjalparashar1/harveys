@@ -62,7 +62,6 @@ export const LOOKUP = {
   cream: P('dairy', ['fat'], { foodClass: 'pure_or_emulsified_fat' }),
   'cheese spread': P('dairy', ['fat', 'salt', 'umami'], { as: 'cheese', foodClass: 'dense_protein_dairy' }),
   parmesan: P('dairy', ['salt', 'umami'], { as: 'cheese', foodClass: 'dense_protein_dairy', per100g: { protein: 35, kcal: 400, fiber: 0 } }),
-  tofu: P('protein', [], { foodClass: 'dense_protein_dairy', per100g: { protein: 12, kcal: 120, fiber: 1 } }),
   coriander: P('herb', ['fresh'], { foodClass: 'aromatic_herb_acid' }),
   mint: P('herb', ['fresh'], { foodClass: 'aromatic_herb_acid' }),
   'curry leaves': P('herb', ['fresh'], { foodClass: 'aromatic_herb_acid' }),

@@ -29,6 +29,10 @@ export const DEFAULT_CONFIG = Object.freeze({
   // Payoff: progress to what is still remaining today, capped at the target.
   payoffWeights: Object.freeze({ protein: 3, calories: 1, fiber: 0.75 }),
 
+  // 1.56.0 (pranjal, 26 Nov): inside a rung and tier, dishes within 3 g of protein of the
+  // leader (and at most 0.1 more friction) count as a tie, broken savoury before sweet (orderRung).
+  tie: Object.freeze({ proteinGrams: 3, friction: 0.1 }),
+
   // Branded items with a label count fully, generic estimates a little less.
   confidenceFactor: Object.freeze({ label: 1, estimate: 0.9, ai: 0.8 }), // ai = macros guessed by the AI
 
