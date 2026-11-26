@@ -113,13 +113,15 @@ for (const r of tastes) {
   const s = scoreRungResult(r);
   console.log(`## Taste test: ${s.kitchen}  [${s.kitchenId}]  tester ${s.tester || s.testerId}`);
   if (s.flow === 'stars') {
+    if (r.of) console.log(`   Deck:   rated ${r.rated} of ${r.of}${r.done ? ' (Done with quiz)' : ''}`);
     console.log(`   Stars:  ${s.stars.both}/${s.stars.n} rated for both; can't make: ${Object.entries(s.stars.cant).map(([k, v]) => `${k} ${v}`).join(', ') || '-'}`);
     console.log(`   Effort: ${s.difficulty.n} rated, ${s.difficulty.pairs} pairs apart, Harvey agrees on ${pct(s.difficulty.agree)}; ${s.marco.pairs} Marco pairs`);
     console.log(`   Taste:  ${s.stars.tastePairs} pairs apart on Pierre's tiers, Pierre agrees on ${pct(s.stars.tasteAgree)}`);
     for (const x of r.stars ?? []) {
       const d = r.dishes[x.id];
       if (!d) continue;
-      starTally[x.id] ??= { name: d.name, tier: d.harveys.tier, effort: [], taste: [], cant: {} };
+      starTally[x.id] ??= { name: d.name, tier: d.harveys.tier, effort: [], taste: [], cant: {}, why: {} };
+      for (const w of x.why ?? []) starTally[x.id].why[w] = (starTally[x.id].why[w] ?? 0) + 1; // 1.57.0
       if (x.effort) starTally[x.id].effort.push(x.effort);
       if (x.taste) starTally[x.id].taste.push(x.taste);
       if (x.cant) starTally[x.id].cant[x.cant] = (starTally[x.id].cant[x.cant] ?? 0) + 1;
@@ -174,6 +176,7 @@ if (tastes.length) {
     console.log(`Stars, hardest (fewest effort stars): ${stl.filter((d) => d.effort.length).sort((a, b) => avg5(a.effort) - avg5(b.effort)).slice(0, 8).map((d) => fmt(d, 'effort')).join(', ') || '-'}`);
     console.log(`Stars, least tasty: ${stl.filter((d) => d.taste.length).sort((a, b) => avg5(a.taste) - avg5(b.taste)).slice(0, 8).map((d) => fmt(d, 'taste')).join(', ') || '-'}`);
     console.log(`Stars, low taste on a dish Pierre likes: ${stl.filter((d) => d.taste.length && avg5(d.taste) <= 2.5 && ['crave', 'pass'].includes(d.tier)).map((d) => `${fmt(d, 'taste')} [${d.tier}]`).join('; ') || '-'}`);
+    console.log(`Why low taste (1.57.0 one-tap reasons): ${stl.filter((d) => Object.keys(d.why ?? {}).length).map((d) => `${d.name} [${Object.entries(d.why).map(([k, v]) => `${k} ${v}`).join(', ')}]`).join('; ') || '-'}`);
     console.log(`Can't make: ${stl.filter((d) => Object.keys(d.cant).length).map((d) => `${d.name} [${Object.entries(d.cant).map(([k, v]) => `${k} ${v}`).join(', ')}]`).join('; ') || '-'}`);
   }
   console.log(`What decided White's picks (points, most first): ${Object.entries(criteria).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ') || '-'}`);

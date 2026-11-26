@@ -102,7 +102,7 @@ test('ingredient check: every item is used or has a reason, and the result keeps
   assert.equal(eggs.status, 'used');
   // 1.39.0: a strainer is assumed, so the pasta dish is in; a dish still out says what it misses.
   const out = u.items.find((x) => x.status !== 'used' && x.reasons[0]?.dish);
-  assert.match(out.reasons[0].why, /^missing |snack|rung|slot|Pierre|soak|diet/);
+  assert.match(out.reasons[0].why, /^missing |snack|rung|slot|Pierre|soak|diet|made with/);
   assert.ok(u.gaps.includes('quinoa'));
   const file = encodeRungResult(quiz, { marco: {}, pierre: {}, white: {} }, { version: 'x', at: 'y', testerId: 't' });
   assert.ok(file.ingredients.used.includes('eggs'));

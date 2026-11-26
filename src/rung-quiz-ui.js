@@ -10,7 +10,7 @@
 // are ignored.
 //
 // The brain work is src/brain/rung-quiz.js; this file is screens, storage and sending.
-import { buildRungQuiz, encodeRungResult, CANT, EFFORT_STARS, TASTE_STARS, WANT_STARS } from './brain/rung-quiz.js';
+import { buildRungQuiz, encodeRungResult, CANT, EFFORT_STARS, TASTE_STARS, WANT_STARS, TASTE_WHY } from './brain/rung-quiz.js';
 import { labelFor } from './brain/vocabulary.js';
 import { CATALOGUE } from './brain/catalogue.js';
 import { expandTemplates } from './brain/templates.js';
@@ -546,8 +546,8 @@ function revealScreen(back) {
         <h1 class="rq-count"><span class="rq-num-big" data-to="${ideas}">${ideas}</span><span>meal and snack ${ideas === 1 ? 'idea' : 'ideas'} for your kitchen</span></h1>
         ${more ? `<p class="rq-lead">${n} you can make now, ${more} need${more === 1 ? 's' : ''} one more thing.</p>` : ''}
         <div class="rq-explain rq-seq" style="--s:1">
-          <p class="rq-explain-q">${ideas > quiz.deck.length ? `Now rate ${quiz.deck.length} of them, one at a time` : 'Now rate each idea, one at a time'}</p>
-          <p class="rq-explain-n">Give each one as many stars as you like. The stars are for the food, not your kitchen.</p>
+          <p class="rq-explain-q">${quiz.deck.length > 12 ? 'Rate as many as you like, one at a time' : 'Now rate each idea, one at a time'}</p>
+          <p class="rq-explain-n">Give each one as many stars as you like. The stars are for the food, not your kitchen.${quiz.deck.length > 12 ? ' Tap <b>Done with quiz</b> whenever you want to stop and send. Your ratings are saved as you go.' : ''}</p>
           ${demo('effort', 'Effort')}
           ${demo('taste', 'Taste')}
         </div>
@@ -642,11 +642,14 @@ const cantsOf = (a) => a.cants ?? (a.cant ? [a.cant] : []);
 const cantOn = (a) => !!(a.cantOpen || a.cant || a.cants?.length);
 /** 1.46.0: a dish is done when it's rated, or when they can't make it and said what's missing. */
 const isDone = (id) => { const a = starOf(id); return cantOn(a) ? cantsOf(a).length > 0 : !!(a.effort && a.taste); };
+/** 1.57.0: dishes rated so far (any star or a can't-make), and how many are left. */
+const ratedCount = () => quiz.deck.filter((id) => { const a = run.answers.stars[id]; return a && (a.effort || a.taste || cantsOf(a).length); }).length;
+const unrated = () => quiz.deck.filter((id) => !isDone(id)).length;
 
 function dishScreen(s, back) {
   const d = dishOf(s.id);
   const total = quiz.deck.length;
-  const last = s.i === total - 1;
+  const last = s.i === total - 1; // eyebrow below: "Idea 5 of 81", all of them since 1.57.0
   const body = `
       <p class="rq-eyebrow">Idea ${s.i + 1} of ${total}</p>
       <h1 class="rq-dname">${esc(d.name)}</h1>
@@ -658,13 +661,18 @@ function dishScreen(s, back) {
       <p class="rq-ifcould" hidden>If you could make it, how would you rate it? <span>Optional</span></p>
       ${askRow(s.id, 'effort')}
       ${askRow(s.id, 'taste')}
+      <div class="rq-tastewhy" hidden role="group" aria-label="Why not tasty">
+        <p class="rq-cant-q">Why? <span>Optional, tap any.</span></p>
+        <div class="rq-whytags">${TASTE_WHY.map((w) => `<button class="rq-tag" data-act="tastewhy" data-id="${esc(s.id)}" data-why="${w.id}" type="button" aria-pressed="false"><span>${esc(w.label)}</span></button>`).join('')}</div>
+      </div>
       <div class="rq-cantbox">
         <button class="rq-tile rq-canttoggle" data-act="cant" data-id="${esc(s.id)}" type="button" aria-pressed="false" aria-expanded="false">${HX}<span class="rq-box" aria-hidden="true">${TICK}</span><span class="rq-tl">I can’t make this</span></button>
         <div class="rq-cantwhy" hidden role="group" aria-label="What’s missing">
           <p class="rq-cant-q">What’s missing? <span>Tap one or both.</span></p>
           <div class="rq-tiles add">${CANT.map((c) => `<button class="rq-tile" data-act="cantwhy" data-id="${esc(s.id)}" data-why="${c.id}" type="button" aria-pressed="false">${HX}<span class="rq-box" aria-hidden="true">${TICK}</span><span class="rq-tl">${esc(c.label)}</span></button>`).join('')}</div>
         </div>
-      </div>`;
+      </div>
+      ${ratedCount() ? `<button class="btn link rq-doneq" data-act="doneq" type="button">Done with quiz · send ${ratedCount()} rated</button>` : ''}`;
   return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>${last ? 'Next' : 'Next idea'}</span></button>` };
 }
 
@@ -704,6 +712,18 @@ function syncDish(id) {
     }
     root.querySelector('.rq-ifcould').hidden = !cant;
   }
+  // 1.57.0: a low taste rating (1 or 2) offers one-tap reasons; they never block Next.
+  const tw = root.querySelector('.rq-tastewhy');
+  if (tw) {
+    const low = !cant && a.taste > 0 && a.taste <= 2;
+    if (low && tw.hidden) { tw.hidden = false; tw.classList.add('appear'); }
+    if (!low) tw.hidden = true;
+    for (const t of tw.querySelectorAll('.rq-tag')) {
+      const on = (a.why ?? []).includes(t.dataset.why);
+      t.classList.toggle('on', on);
+      t.setAttribute('aria-pressed', String(on));
+    }
+  }
   const have = root.querySelector('.rq-have');
   if (have) { have.classList.toggle('on', !!w.have); have.setAttribute('aria-pressed', String(!!w.have)); }
   const done = bonus ? !!(a.effort && a.taste && (w.want || w.have)) : isDone(id);
@@ -735,7 +755,8 @@ function setStar(id, kind, n) {
 /** 1.48.0: after a rating, bring the next question into view. On an iPhone SE the taste row
  * sat half under the footer and "I can't make this" was off screen, with nothing to say so. */
 function showNext() {
-  const next = root.querySelector('.rq-ask:not(.set):not(.off)') ?? root.querySelector('.rq-cantbox');
+  const tw = root.querySelector('.rq-tastewhy:not([hidden])');
+  const next = root.querySelector('.rq-ask:not(.set):not(.off)') ?? tw ?? root.querySelector('.rq-cantbox');
   if (!next) return;
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
   requestAnimationFrame(() => next.scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' }));
@@ -800,7 +821,7 @@ function endScreen() {
   const who = run.name ? `, ${esc(run.name)}` : '';
   const own = opts.source === 'link' && !!run.name; // their own phone, from their own link
   const copy = {
-    '': [`That’s all${who}. Thank you!`, ''],
+    '': run.answers.done && unrated() ? [`Thank you${who}!`, `You rated ${ratedCount()} of ${quiz.deck.length}. Send them now; you can keep rating after.`] : [`That’s all${who}. Thank you!`, ''],
     sending: ['Sending…', 'Putting your answers in Harvey’s.'],
     sent: [`Sent. Thank you${who}!`, own ? 'Your ratings are in Harvey’s.' : 'Hand the phone to the next person.'],
     queued: [`Saved. Thank you${who}!`, `Leave this page open for a minute so it can send${waiting > 1 ? ` (${waiting} waiting)` : ''}.`],
@@ -830,6 +851,7 @@ function endScreen() {
       : `<button class="btn primary xl rq-go" data-act="send" type="button"${st === 'sending' ? ' disabled' : ''}>${HX}<span>${st === 'sending' ? 'Sending…' : 'Send to Harvey’s'}</span></button>`;
   const alt = [
     !st ? `<button class="btn link" data-act="back" type="button">Back</button>` : '',
+    done && unrated() ? `<button class="btn link" data-act="keeprating" type="button">Keep rating (${unrated()} left)</button>` : '',
     done && !own ? '<button class="btn link" data-act="close" type="button">Done for now</button>' : '',
     done && own ? '<button class="btn link" data-act="nextperson" type="button">Someone else wants a go</button>' : '',
     ask ? '<button class="btn link" data-act="github" type="button">Post on GitHub instead</button>' : '',
@@ -880,6 +902,32 @@ function onClick(e) {
   if (act === 'star') return setStar(el.dataset.id, el.dataset.kind, Number(el.dataset.n));
   if (act === 'cant') return cantTap(el.dataset.id);
   if (act === 'cantwhy') return cantTap(el.dataset.id, el.dataset.why);
+  if (act === 'tastewhy') {
+    const a = (run.answers.stars[el.dataset.id] ??= {});
+    const w = el.dataset.why;
+    a.why = (a.why ?? []).includes(w) ? a.why.filter((x) => x !== w) : [...(a.why ?? []), w];
+    save();
+    return syncDish(el.dataset.id);
+  }
+  // 1.57.0 (pranjal, 26 Nov): "Done with quiz" stops whenever the rater likes and goes to Send.
+  if (act === 'doneq') {
+    commit(s);
+    run.answers.done = true;
+    run.at = list.findIndex((x) => x.kind === 'end'); // the bonus is skipped: it asks three more ratings
+    save();
+    return render();
+  }
+  // After a send: carry on from the first dish not yet rated. A later send replaces this one.
+  if (act === 'keeprating') {
+    const at = list.findIndex((x) => x.kind === 'dish' && !isDone(x.id));
+    if (at < 0) return;
+    run.sent = false;
+    run.answers.done = false;
+    sendState = '';
+    run.at = at;
+    save();
+    return render();
+  }
   if (act === 'havebonus') { const w = run.answers.bonusItem; w.have = !w.have; if (w.have) w.want = 0; save(); return syncDish(quiz.bonus.id); }
   if (act === 'untick') {
     const d = draft();
