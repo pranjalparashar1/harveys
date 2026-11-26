@@ -1,6 +1,6 @@
 // Open-slot templates (1.54.0, pranjal 24 Nov: "option C"). The catalogue's dishes are no longer
 // the only dishes: each one is a template whose slots any item of the same kind can fill, so a
-// kitchen with mushrooms and tofu gets air-fried mushroom tikka and tofu bhurji without anyone
+// kitchen with mushrooms gets air-fried mushroom tikka and mushroom bhurji without anyone
 // writing them. Every variant goes through the same rank(): checkMeal, Pierre's tiers and vetoes,
 // Marco's friction from its (rewritten) steps. Nothing here decides; it only proposes.
 //
@@ -11,8 +11,10 @@
 //   add    one extra vegetable joins a form that takes one (bhurji, omelette, poha, chaat…), with
 //          its own prep step, again only if Pierre has rated it in that state.
 //
-// Stand-ins (`proxy`): a food Pierre has never rated but that is physically the same class (tofu
-// for paneer) is tasted as the food it stands in for. Marked on the dish, so the data can say so.
+// 1.56.0 (pranjal, 26 Nov): tofu is gone (it stood in for paneer and testers rated the same
+// aglio olio 5★ with paneer, 2★ with tofu), and with it the stand-in (`proxy`) mechanism it was
+// the only user of. Soya chunks are never swapped into or out of a dish (NEVER_SWAP); the soya
+// dishes as written stay.
 //
 // pranjal's hard rules hold on every variant: never microwave eggs, dal or legumes; tadka goes in
 // oil or ghee (templates already say so, and swaps never touch the fat). Vegetarian plus eggs.
@@ -22,13 +24,14 @@ import { PIERRE_RAW } from './pierre-raw.js';
 
 /** Foods that are never microwaved (pranjal): eggs, dal and legumes. */
 export const NEVER_MICROWAVE = new Set(['eggs', 'dal', 'chickpeas', 'rajma', 'kala_chana', 'sprouts']);
+/** Foods no swap ever takes out of a dish or puts into one (pranjal, 26 Nov: soya always rates low). */
+export const NEVER_SWAP = new Set(['soya_chunks']);
 
 // A member: pierre = the id Pierre tastes; have = inventory tokens that mean this food;
 // word = how steps and names call it; prep = PREP_KINDS for its slot; macros per serving (ESTIMATE).
 const F = (pierre, word, have, prep, macros, extra = {}) => ({ pierre, word, have: [pierre, ...have], prep, macros, ...extra });
 const MEMBERS = {
   paneer: F('paneer', 'paneer', [], 'cut', { protein: 18, kcal: 265, fiber: 0 }),
-  tofu: F('paneer', 'tofu', ['x:tofu', 'x:firm_tofu'], 'cut', { protein: 12, kcal: 120, fiber: 1 }, { proxy: 'tofu' }),
   mushroom: F('mushroom', 'mushroom', ['x:mushroom', 'x:mushrooms', 'x:button_mushrooms'], 'cut', { protein: 4, kcal: 35, fiber: 2 }),
   potato: F('potato', 'potato', ['x:potato', 'x:potatoes'], 'peel_chop', { protein: 4, kcal: 160, fiber: 4 }),
   banana: F('banana', 'banana', [], 'peel', { protein: 1, kcal: 105, fiber: 3 }),
@@ -55,7 +58,7 @@ const MEMBERS = {
  * listed (paneer@microwaved stays paneer: Pierre has no microwaved mushroom).
  */
 export const SWAPS = [
-  { id: 'cubes', members: ['paneer', 'tofu', 'mushroom', 'potato'], techniques: ['air_fried', 'pan_fried', 'sauteed', null] },
+  { id: 'cubes', members: ['paneer', 'mushroom', 'potato'], techniques: ['air_fried', 'pan_fried', 'sauteed', null] },
   { id: 'fruit', members: ['banana', 'apple', 'mango', 'pomegranate'], techniques: [null] },
   { id: 'nuts', members: ['peanuts', 'almonds', 'walnuts', 'cashews'], techniques: [null, 'roasted'] },
   { id: 'raw_veg', members: ['tomato', 'cucumber', 'capsicum', 'carrot', 'onion'], techniques: [null] },
@@ -74,7 +77,7 @@ const ADD_NEEDS_PAN = new Set(['bhurji', 'griddle', 'coated_base']);
 export const MAX_VARIANTS = 3;
 
 const ratedAs = (food, technique, kb) => (technique ? Boolean(kb.tech?.[`${food}@${technique}`]) : Boolean(kb.foods?.[food]));
-const memberOf = (food) => Object.entries(MEMBERS).find(([, m]) => m.pierre === food && !m.proxy)?.[0] ?? null;
+const memberOf = (food) => Object.entries(MEMBERS).find(([, m]) => m.pierre === food)?.[0] ?? null;
 const ownedToken = (m, have) => m.have.find((t) => have.has(t)) ?? null;
 const KNIFE = new Set(['cut', 'peel_chop']);
 /** A template written knife-free stays knife-free: "(no chopping)" dishes are for kitchens without a board. */
@@ -107,7 +110,8 @@ export function variantsOf(meal, have, kb = PIERRE_RAW) {
   const inside = partIds(meal);
   // ── swaps ──
   for (const part of meal.parts ?? []) {
-    const group = SWAPS.find((g) => g.members.some((k) => MEMBERS[k].pierre === part.id && !MEMBERS[k].proxy) && g.techniques.includes(part.technique ?? null));
+    if (NEVER_SWAP.has(part.id)) continue;
+    const group = SWAPS.find((g) => g.members.some((k) => MEMBERS[k].pierre === part.id) && g.techniques.includes(part.technique ?? null));
     if (!group) continue;
     const fromKey = memberOf(part.id);
     // Wedges are a cut of potato, not a slot: paneer wedges aren't a dish.
@@ -118,7 +122,7 @@ export function variantsOf(meal, have, kb = PIERRE_RAW) {
     for (const key of group.members) {
       if (key === fromKey || out.length >= MAX_VARIANTS) continue;
       const to = MEMBERS[key];
-      if (inside.has(to.pierre) && !to.proxy) continue;
+      if (inside.has(to.pierre) || NEVER_SWAP.has(to.pierre)) continue;
       const token = ownedToken(to, have);
       if (!token) continue;
       if (part.technique === 'microwaved' && NEVER_MICROWAVE.has(to.pierre)) continue;
@@ -159,7 +163,7 @@ function swapVariant(meal, part, ing, from, to, token, key) {
     parts, ingredients,
     steps: meal.steps.map((s) => ({ ...s, text: swapText(s.text, from, to) })),
     macros: d, source: 'estimate',
-    template: { from: meal.id, swap: { [memberOf(part.id) ?? part.id]: key }, ...(to.proxy ? { proxy: to.proxy } : {}) },
+    template: { from: meal.id, swap: { [memberOf(part.id) ?? part.id]: key } },
   };
 }
 
@@ -189,7 +193,7 @@ function addVariant(meal, m, token, key, technique) {
 
 /**
  * The catalogue as this kitchen opens it: every template, then its variants. A template the
- * kitchen can't make still opens (its paneer may be the only thing missing, and tofu fills it).
+ * kitchen can't make still opens (its paneer may be the only thing missing, and mushroom fills it).
  */
 export function expandTemplates(catalogue, inventory, kb = PIERRE_RAW) {
   const have = inventory?.have ?? new Set();

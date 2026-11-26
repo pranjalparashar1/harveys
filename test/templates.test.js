@@ -6,24 +6,41 @@ import { CATALOGUE } from '../src/brain/catalogue.js';
 import { buildInventory } from '../src/brain/inventory.js';
 import { importKitchens } from '../src/brain/kitchens.js';
 import { rank } from '../src/brain/ranker.js';
-import { expandTemplates, variantsOf, NEVER_MICROWAVE } from '../src/brain/templates.js';
+import { expandTemplates, variantsOf, NEVER_MICROWAVE, NEVER_SWAP } from '../src/brain/templates.js';
 import { buildRungQuiz, stratify, DECK_MAX } from '../src/brain/rung-quiz.js';
 import { PIERRE_RAW } from '../src/brain/pierre-raw.js';
 
 const kitchens = importKitchens(readFileSync(new URL('../data/test-kitchens/kitchens.json', import.meta.url), 'utf8'));
 const inv = (names) => buildInventory(names.map((name) => ({ name })));
 
-test('templates: tofu and mushrooms open paneer slots, cooked the same way', () => {
+test('templates: mushrooms open paneer slots, cooked the same way; tofu opens nothing', () => {
   const have = inv(['tofu', 'mushrooms', 'air fryer', 'curd', 'garam masala', 'capsicum']);
-  const ids = expandTemplates(CATALOGUE, have).map((m) => m.id);
-  assert.ok(ids.includes('airfryer_paneer_tikka~tofu'));
+  const all = expandTemplates(CATALOGUE, have);
+  const ids = all.map((m) => m.id);
   assert.ok(ids.includes('airfryer_paneer_tikka~mushroom'));
-  const tofu = expandTemplates(CATALOGUE, have).find((m) => m.id === 'airfryer_paneer_tikka~tofu');
-  assert.equal(tofu.name, 'Air-fryer tofu tikka');
-  assert.equal(tofu.template.proxy, 'tofu');
-  assert.ok(tofu.steps.every((s) => !/paneer/i.test(s.text)));
-  const r = rank({ inventory: have, targets: { protein: 30, kcal: 600 }, catalogue: expandTemplates(CATALOGUE, have) });
-  assert.ok(r.ranked.some((x) => x.meal.id === 'airfryer_paneer_tikka~tofu'));
+  const mush = all.find((m) => m.id === 'airfryer_paneer_tikka~mushroom');
+  assert.ok(mush.steps.every((s) => !/paneer/i.test(s.text)));
+  // 1.56.0 (pranjal, 26 Nov): tofu is dropped entirely, so it fills no slot and names no dish.
+  assert.ok(all.every((m) => !/tofu/i.test(`${m.id} ${m.name} ${m.steps.map((s) => s.text).join(' ')}`)), 'no tofu dish');
+  assert.ok(all.every((m) => !m.template?.proxy), 'no stand-ins left');
+  const r = rank({ inventory: have, targets: { protein: 30, kcal: 600 }, catalogue: all });
+  assert.ok(r.ranked.some((x) => x.meal.id === 'airfryer_paneer_tikka~mushroom'));
+  assert.ok(!kitchens.some((k) => k.items.some((i) => /tofu/i.test(i.name))), 'no persona kitchen lists tofu');
+});
+
+test('templates: soya chunks are never swapped into or out of a dish (pranjal, 26 Nov)', () => {
+  assert.ok(NEVER_SWAP.has('soya_chunks'));
+  const extra = ['soya chunks', 'paneer', 'mushrooms', 'potato', 'air fryer', 'pasta', 'rice', 'curd', 'onion', 'capsicum', 'tomato'];
+  const kits = [...kitchens.map((k) => buildInventory(k.items)), inv(extra)];
+  for (const have of kits) {
+    for (const m of expandTemplates(CATALOGUE, have).filter((x) => x.template)) {
+      const src = CATALOGUE.find((c) => c.id === m.template.from);
+      const soya = (d) => d.parts.some((p) => p.id === 'soya_chunks');
+      // A soya dish opens no swap (an add-on vegetable may still join it), and no swap brings soya in.
+      if (m.template.swap) assert.ok(!soya(src) && !soya(m), m.id);
+      if (m.template.add) assert.equal(soya(m), soya(src), m.id);
+    }
+  }
 });
 
 test('templates: every variant keeps pranjal’s rules and only uses ways Pierre has rated', () => {
