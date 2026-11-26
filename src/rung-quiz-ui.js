@@ -23,6 +23,7 @@ import { rank } from './brain/ranker.js';
 import { MOMENT, TARGETS } from './brain/kitchen-test.js';
 import { buildInventory } from './brain/inventory.js';
 import { DEFAULT_CONFIG } from './brain/config.js';
+import { confirmedItems } from './brain/kitchen-store.js';
 
 const KEY = 'harveys.rq.v1';
 const REPO_ISSUE = 'https://github.com/pranjalparashar1/harveys/issues/new';
@@ -106,6 +107,8 @@ let sheetId = null; // the recipe open over a dish
 
 /** Every screen, in order. Each dish is its own screen. */
 function screens() {
+  // 1.60.0: the home page's kitchen setup is the same three checks, and nothing else.
+  if (opts.setup) return [{ kind: 'confirm', side: 'food' }, { kind: 'ways' }, { kind: 'confirm', side: 'kit' }];
   const out = [{ kind: 'intro' }];
   // 1.59.0: how they cook comes between the foods and the cookware check.
   if (opts.items) out.push({ kind: 'confirm', side: 'food' }, { kind: 'ways' }, { kind: 'confirm', side: 'kit' });
@@ -158,6 +161,46 @@ export function startRungQuiz({ kitchen, inventory, version, source, name = '', 
   render(true);
 }
 
+// ── Set up your kitchen (1.60.0) ────────────────────────────────────────────
+// The home page (src/home.js) asks the same three things a tester is asked: confirm the foods,
+// how you cook, confirm the cookware. Then onDone({ items, ways }) gets the kitchen as confirmed,
+// and the overlay closes. Nothing is rated, sent or kept in the taste test's storage.
+export function startKitchenSetup({ items, cache = {}, missingBasics = [], ways = null, version, onDone, onExit }) {
+  const inventory = buildInventory(items, { cache, missingBasics });
+  opts = { version, source: 'setup', name: '', onExit, items, cache, missingBasics, inventory, kitchenSource: null, below: null, setup: { onDone } };
+  kitchenIn = { kitchen: 'My kitchen', items };
+  quiz = { id: 'setup', kind: 'meal', deck: [], dishes: {}, kitchen: kitchenIn, catalogue: CATALOGUE };
+  run = { testerId: 'setup', runNo: 0, name: '', v: version, answers: { marco: {}, pierre: {}, white: {}, stars: {}, bonusItem: {}, draft: { ...blankDraft(), ways: ways ? JSON.parse(JSON.stringify(ways)) : null }, feedback: blankFeedback() }, at: 0, sent: false };
+  listed = listedSplit(items);
+  choices = addChoices(items, { cache, missingBasics });
+  sendState = '';
+  panel = null;
+  picker = null;
+  ensureRoot();
+  root.hidden = false;
+  root.setAttribute('aria-label', 'Your kitchen');
+  document.documentElement.classList.add('rq-open');
+  guard();
+  render(true);
+}
+
+/** The setup's last Next: the kitchen as confirmed goes to the home page, and the overlay goes. */
+function finishSetup() {
+  const d = draft();
+  const done = opts.setup.onDone;
+  const out = { items: confirmedItems(opts.items, { removed: d.removed, have: d.have, typed: d.typed }), ways: d.ways ? JSON.parse(JSON.stringify(d.ways)) : null };
+  hideOverlay();
+  done?.(out);
+}
+
+/** Hides the overlay and takes back its history entry, so the phone's Back doesn't land on nothing. */
+function hideOverlay() {
+  root.hidden = true;
+  document.documentElement.classList.remove('rq-open');
+  toastEl?.classList.remove('show');
+  if (guarded) { guarded = false; try { history.back(); } catch { /* no history */ } }
+}
+
 /** The overlay every screen draws into, made once with its tap and Back handling. */
 function ensureRoot() {
   if (root) return;
@@ -197,8 +240,9 @@ function ensureRoot() {
 // one screen, one big tap per kitchen. The pick goes straight into Confirm your foods, where the
 // tester ticks what they have and unticks what they don't. Same tap filter as every other screen.
 let picker = null; // { kitchens, onPick, onExit } while the picker is showing
-export function startKitchenPicker({ kitchens, onPick, onExit }) {
-  picker = { kitchens, onPick, onExit };
+export function startKitchenPicker({ kitchens, onPick, onExit, release = false }) {
+  // release (1.60.0, the home page): closing the picker also takes back its history entry.
+  picker = { kitchens, onPick, onExit, release };
   ensureRoot();
   root.hidden = false;
   document.documentElement.classList.add('rq-open');
@@ -237,6 +281,7 @@ export function closeKitchenPicker() {
 function closePicker() {
   const p = picker;
   picker = null;
+  if (p?.release) hideOverlay();
   root.hidden = true;
   document.documentElement.classList.remove('rq-open');
   p?.onExit?.();
@@ -259,6 +304,7 @@ function onPop() {
 }
 
 function close() {
+  if (opts.setup) { hideOverlay(); return opts.onExit?.(); }
   root.hidden = true;
   document.documentElement.classList.remove('rq-open');
   opts.onExit?.();
@@ -266,7 +312,7 @@ function close() {
 
 /** The quiz again with what the tester confirmed: unticked items out, added ones in. */
 function rebuild(conf) {
-  if (!opts.items) return;
+  if (!opts.items || opts.setup) return;
   const inv = invFor(conf);
   // 1.49.0: dishes the tester's additions unlocked get the free rating slots first.
   const before = mealsIn(opts.inventory);
@@ -377,7 +423,7 @@ function render(enter = false) {
     <header class="rq-top${topIn}">
       <button class="rq-icon" data-act="close" type="button" aria-label="Close">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       ${ghost ? '<div class="rq-bar"></div>' : bar(list)}
-      <button class="rq-fresh" data-act="fresh" type="button">Start fresh</button>
+      ${opts.setup ? '<span class="rq-icon ghost"></span>' : '<button class="rq-fresh" data-act="fresh" type="button">Start fresh</button>'}
     </header>
     <main class="rq-body${enter ? '' : same ? ' still' : ' in'}" data-kind="${s.kind}${panel ? '-add' : ''}">${body}</main>
     <footer class="rq-foot">${foot}</footer>`;
@@ -482,7 +528,8 @@ function confirmScreen(side, back) {
       ${addedNoStove.length ? `<p class="rq-group">Added</p><div class="rq-tiles add">${addedNoStove.map((o) => tile(o.id || !o.text ? 'addopt' : 'typeddrop', optAttrs(o), o.label, true)).join('')}</div>` : ''}
       ${grouped.map(([label, list]) => `${label ? `<p class="rq-group">${esc(label)}</p>` : stoves.length || addedNoStove.length ? '<p class="rq-group">On the list</p>' : ''}<div class="rq-tiles">${list.map((r) => tile('untick', `data-name="${esc(r.name)}"`, r.name, !isRemoved(r.name))).join('')}</div>`).join('')}
       <button class="rq-more" data-act="more" type="button">${HX}<span>Have something else?</span><b>${PLUS}Add more</b></button>`;
-  return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>${food ? 'Confirm foods' : 'Confirm cookware'}</span></button>` };
+  const go = food ? 'Confirm foods' : opts.setup ? 'See what to cook' : 'Confirm cookware';
+  return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>${go}</span></button>` };
 }
 
 // ── How do you cook? (1.59.0) ───────────────────────────────────────────────
@@ -1094,6 +1141,7 @@ function onClick(e) {
   if (act === 'next') {
     if (el.getAttribute('aria-disabled') === 'true') return nudge();
     commit(s);
+    if (opts.setup && run.at === list.length - 1) return finishSetup();
     run.at = Math.min(list.length - 1, run.at + 1);
     save();
     return render();

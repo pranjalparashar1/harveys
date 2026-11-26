@@ -285,3 +285,32 @@ test('relay: worker.js exports only what Cloudflare can load (functions, classes
   }
   assert.equal(typeof mod.ScanQuota, 'function', 'the Durable Object class is exported for wrangler.toml');
 });
+
+test('home hook: your own key first, else the free scan once the relay says it is on, else noKey', async () => {
+  const mem = {};
+  globalThis.localStorage ??= { getItem: (k) => mem[k] ?? null, setItem: (k, v) => { mem[k] = String(v); }, removeItem: (k) => { delete mem[k]; } };
+  const { scanReady, scanPhotos, checkFreeScan, resetFreeScan, usesFreeScan } = await import('../src/ai/scan.js');
+  const { relayUrl } = await import('../src/send.js');
+  localStorage.removeItem('harveys.relay.v1');
+  resetFreeScan();
+  assert.equal(scanReady(null), false, 'not asked yet: no scan');
+  // An old relay (before the GEMINI_API_KEY secret) says nothing about scan: still off.
+  assert.equal(await checkFreeScan({ relay: relayUrl(), fetchImpl: async () => ({ ok: true, json: async () => ({ ok: true, relay: 'harveys', ready: true }) }) }), false);
+  assert.equal(scanReady(null), false);
+  assert.equal((await scanPhotos({ ai: null, images: [img()] }).catch((e) => e)).kind, 'noKey');
+  resetFreeScan();
+  assert.equal(await checkFreeScan({ relay: relayUrl(), fetchImpl: async () => ({ ok: true, json: async () => ({ ok: true, scan: true }) }) }), true);
+  assert.equal(scanReady(null), true);
+  assert.equal(usesFreeScan(null), true);
+  const urls = [];
+  const fetchImpl = async (url) => { urls.push(url); return { ok: true, status: 200, json: async () => ({ have: ['eggs'], other: [], model: 'gemini-3.1-flash-lite' }) }; };
+  const items = await scanPhotos({ ai: null, images: [img()], fetchImpl });
+  assert.equal(urls[0], `${relayUrl()}scan`);
+  assert.deepEqual(items.map((i) => i.canonical), ['eggs']);
+  // A saved key wins over the free scan.
+  assert.equal(usesFreeScan({ apiKey: 'AIza-x', provider: 'gemini' }), false);
+  const own = [];
+  await scanPhotos({ ai: { apiKey: 'AIza-x', provider: 'gemini', model: 'gemini-3.5-flash-lite', models: [] }, images: [img()], fetchImpl: async (url) => { own.push(url); return geminiOk(); } });
+  assert.match(own[0], /generativelanguage/);
+  resetFreeScan();
+});

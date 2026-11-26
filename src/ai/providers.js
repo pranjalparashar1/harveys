@@ -45,7 +45,7 @@ export function detectProvider(key) {
 }
 
 export class AIError extends Error {
-  /** @param {'invalidKey'|'rateLimited'|'overloaded'|'timeout'|'modelUnavailable'|'badRequest'|'network'|'malformedResponse'|'imageTooLarge'|'freeLimit'|'scanOff'} kind */
+  /** @param {'noKey'|'invalidKey'|'rateLimited'|'overloaded'|'timeout'|'modelUnavailable'|'badRequest'|'network'|'malformedResponse'|'imageTooLarge'|'freeLimit'|'scanOff'} kind */
   constructor(kind, detail = '', status = 0) {
     super(AIError.message(kind));
     this.kind = kind;
@@ -69,6 +69,7 @@ export class AIError extends Error {
       imageTooLarge: 'Those photos are too large to send together. Try fewer photos.',
       freeLimit: "That's today's free scans.",
       scanOff: 'Free scanning is off right now.',
+      noKey: 'Scanning needs an AI key for now.',
     }[kind];
   }
 }

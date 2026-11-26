@@ -153,3 +153,22 @@ test('cooking medium: dry air-fried potato floors with a cookedWith hint; oil cl
   assert.equal(pierreTier(dry.parts, 'bowl', { modifiers: dry.modifiers, rules: off }).repairs.length, 0);
   assert.ok(DEFAULT_CONFIG.pierreRules.dryHeatNeedsFat.provisional, 'marked PROVISIONAL');
 });
+
+// 1.60.0: the three bare-kitchen egg flags (docs/HANDOVER.md §15.6, question 1).
+test('an egg cooked in the fat coats a grain base; a plain fat still only greases it', () => {
+  assert.equal(coatingOf(P('rice@boiled,eggs@scrambled'), ['oil']).kind, 'egg_fat', 'egg rice');
+  assert.equal(coatingOf(P('pasta@boiled,eggs@scrambled,butter')).kind, 'egg_fat', 'eggs stirred into buttered pasta');
+  assert.equal(coatingOf(P('pasta@boiled,eggs@boiled'), ['oil']), null, 'a boiled egg on the side coats nothing');
+  assert.equal(coatingOf(P('pasta@boiled,paneer@pan_fried'), ['oil']), null, 'eggs only: pan-fried paneer is pieces');
+  assert.equal(tier('rice@boiled,eggs@scrambled', 'bowl', ['oil', 'salt']).computed, 'pass', 'egg rice');
+  assert.equal(tier('pasta@boiled,eggs@scrambled', 'coated_base', ['oil', 'salt']).computed, 'pass', 'egg pasta');
+  const butter = tier('pasta@boiled,butter', 'coated_base', ['salt']);
+  assert.equal(butter.computed, 'floor');
+  assert.match(butter.why.join(), /butter only greases it/);
+});
+
+test('bread on the side is a bhurji’s base', () => {
+  assert.equal(tier('eggs@scrambled,ghee,bread', 'bhurji', ['salt']).computed, 'pass');
+  assert.equal(tier('eggs@scrambled,ghee', 'bhurji', ['salt']).computed, 'pass');
+  assert.equal(tier('eggs@scrambled,oats', 'bhurji', ['salt']).computed, 'veto', 'raw oats are still cook-first');
+});

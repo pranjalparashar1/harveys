@@ -27,7 +27,7 @@
       '<input class="gate-input" type="password" autocomplete="current-password" autocapitalize="off" spellcheck="false" placeholder="Password" aria-label="Password" required>' +
       '<p class="gate-err" role="alert" hidden>Not that one.</p>' +
       '<button class="btn primary xl gate-go" type="submit">Open</button>' +
-      '<a class="btn link gate-back" href="./">Back to the taste test</a>';
+      '<a class="btn link gate-back" href="./">Back to Harvey’s</a>';
     document.body.prepend(box);
     var input = box.querySelector('input');
     var err = box.querySelector('.gate-err');
