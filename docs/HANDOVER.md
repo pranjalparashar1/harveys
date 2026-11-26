@@ -7,6 +7,8 @@
 
 **Original v2 documents** (added 21 Nov from pranjal's copies) are in [`docs/v2/`](v2/): the [v2 execution plan](v2/v2-execution-plan.pdf), its [review](v2/v2-execution-plan-review.md), Fable's [Pierre ontology (SFAH)](v2/pierre-ontology-sfah.md) and the [Step 5 handoff](v2/step-5-white-v2-handoff.md). Sections 6 to 8 below summarise them; where they differ, pranjal's later rules here win.
 
+> **Updated 26 Nov 2026 (v1.59.0):** start with [§15](#15-update-26-nov-2026-everything-from-1200-to-1590), which covers everything since this file was first written and wins where it differs.
+
 You have the code but none of the old project's memory, chat or files. Everything that only lived there is copied into this file. Where something lives only in the old project and isn't copied, this file says so.
 
 > **The repo is public.** Never commit secrets. pranjal holds their own Gemini API key and pastes it into the page; it lives only in their browser's `localStorage`. Ask them for it if you need a live scan test, and never write it into the repo, logs, PRs or memory.
@@ -405,3 +407,139 @@ node scripts/fit-prep.mjs <answers.txt> [--no-taste]     # fit Marco θ from the
 4. **Write the cookLog refit script** now (it's cheap) so that when pranjal has 20–30 dinners, the refit is one command. Until then, don't touch weights.
 
 Keep everything else frozen (§8) until those dinners exist.
+
+---
+
+## 15. Update, 26 Nov 2026: everything from 1.20.0 to 1.59.0
+
+**Written:** 26 Nov 2026, for an outside reviewer (Fable) who will suggest next steps. This section stands on its own; sections 0 to 14 describe Harvey's at 1.19.0 and are kept as history. Where they disagree, this section wins.
+**Repo:** `pranjalparashar1/harveys`, `main` at `38f53ee` (**v1.59.0**, PR #109 merged 26 Nov). `npm test`: 307 of 307 pass. A longer log of 21 to 24 Nov (PRs #53 to #100) is in [`projectstatus.md`](../projectstatus.md) at the repo root.
+**Live:** https://pranjalparashar1.github.io/harveys/ is now the **tester page**. Owner pages (`owner.html`, `share.html`, `train.html`, `prep.html`, `test.html`) sit behind a soft password gate.
+
+### 15.1 What changed in direction since 21 Nov
+
+- **The focus moved from pranjal's own kitchen to other people's kitchens.** On 21 Nov the plan was "pranjal cooks real dinners and taps Cooked this". Instead, from 22 Nov the project became a **tester loop**: other people rate the dishes Harvey's says their kitchen can make, for effort and for taste.
+- **Product direction (pranjal):** suggest the **easiest dishes first, after balancing for macros**. **No energy modifiers and no energy picker**: pranjal's Marco taps were made tired and are everyone's baseline. Card or carousel picking for real users is far off.
+- **Diet:** vegetarian plus eggs on every path. Non-veg (one tester asked for chicken) is deferred; pranjal decides later.
+- **Real testers first, then persona kitchens.** Three real testers (Harsh, Banana Singh, Purujeet) on 22 to 24 Nov, from kitchen videos. From 24 Nov, five synthetic **persona kitchens L1 to L5** that testers pick from ("Which of these sounds most like you?").
+
+### 15.2 What shipped, by version
+
+**21 Nov, finishing pranjal's own brain (1.20 to 1.29)**
+- **1.20.0 (#53):** Pierre round 3 ingested (14/26 exact out of sample; six misses, six different causes, so no new rule). 11 everyday staples added in their simplest honest form (dal tadka with rice, cooker chole/rajma/kala chana, paneer pulao, egg fried rice, Maggi three ways, air-fried soya, masala oats).
+- **1.21.0 (#55):** an unsoaked soak dish moves to a "For tomorrow" card.
+- **1.22.0 (#56):** `scripts/refit-cooklog.mjs` refits Marco from the Cooked this log (prints only).
+- **1.23.0 (#57):** AI recipes obey pranjal's cooking rules: never microwave eggs, dal or legumes; tadka in oil or ghee, never butter.
+- **1.24 to 1.28 (#58 to #66): Marco prep quiz** (`prep.html`), one dish two ways. Round 1 set today's weights shape; round 2 showed pranjal picks the more careful technique when it makes food better, so those picks moved to Pierre (`src/brain/technique-prefs.js`); round 3 refit was no better. Round 4 answers never came back. Energy multipliers were dropped (pranjal).
+- **1.29.0 (#68): open-ended pantry.** Any named ingredient gets a profile (`src/brain/pantry.js`); role slots (`role:heat`, `role:acid`) let sriracha or vinegar fill a slot. Kitchen importer and the cataloguing prompt for kitchen videos (`docs/catalogue-prompt.md`).
+
+**22 to 24 Nov, the tester loop (1.30 to 1.51)**
+- **Kitchen test mode, share links and a relay.** A tester films their kitchen; pranjal runs it through a video agent with the catalogue prompt; the JSON goes into `share.html`, which makes a named link (`#n=<name>&k=<kitchen>`, kitchen compressed in the fragment, nothing stored server-side). **Send** posts the result to a Cloudflare Worker (`relay/worker.js`) that commits it create-only to `data/kitchen-tests/taste-<date>-<kitchen>-<tester>.json`. Format `harveys-rung-quiz/1`, changed only additively, so the relay has never been redeployed.
+- **Brain fixes found by testing:** White's within-rung order now really uses Marco's score (before #71 the weights had no effect on rung picks); `config.frictionTheta` = the prep-quiz rounds 1 to 3 refit (adopted 22 Nov). Salt, oil and a strainer are always assumed. Real kitchens turned out to be ingredient-limited, not kit-limited, so pot, kettle, tawa, microwave and no-cook dishes were added (19 bare-kitchen dishes, chai meals, 5 one-pot protein dishes).
+- **The tester flow settled** (after card, swipe and list versions; pranjal ruled out dating-app swipes): Hello, confirm your foods, confirm your cookware (everything pre-ticked, untick what's wrong, "Add more" to add), then **one dish per screen** with effort stars and taste stars (5 = effortless / delicious), "I can't make this" with reasons, a bonus dish one item away, and Send. Dishes come in a shuffled order so position says nothing about effort.
+- **1.51.0 (#100):** egg dishes cost 2 extra hands-on minutes (testers rated egg dishes harder than Harvey's did; effort agreement 41/55 → 45/55).
+
+**24 to 26 Nov, persona kitchens and templates (1.52 to 1.59)**
+- **1.52.0 (#102):** sample-kitchen picker on the bare site and presets in `share.html`; **9 no-pan, no-onion dishes** (dahi poha, butter-cheese sandwich, PB-banana sandwich, kettle banana-peanut oats, banana shake, one-pot cheese pasta, Maggi with boiled eggs, air-fried masala paneer, air-fried potato wedges); a fair `priorHits` (today's weights get their own fitted threshold; was pinned at 0, which understated them, 35 → 58 of 76 picks); `kitchen-tests.mjs score` prints "Batch checks" for eggs, air fryer and easy vs tasty.
+- **1.53.0 (#103):** `banana_oats_shake`. Raw oats in a shake are a **cook-first exception** (`config.pierreRules.cookFirstExceptions`, food + form pairs); raw oats still veto in a bowl or a pot.
+- **1.54.0 (#104): persona kitchens L1 to L5 and open-slot templates** (see 15.3).
+- **1.55.0 (#105):** each level rates its own dishes; frozen and ready-to-eat foods set aside (see 15.3 and 15.4).
+- **1.56.0 (#106):** tofu dropped; soya never swapped; close macros count as a tie, savoury before sweet (see 15.3).
+- **1.57.0 (#107): rate every recipe** (see 15.3).
+- **1.58.0 (#108):** type-to-search on "Add more" (see 15.3).
+- **1.59.0 (#109):** "How do you cook?" screen; soya boils on its own; plain omelette, khichdi and chai with buttered toast pass (see 15.3 and 15.4).
+
+### 15.3 Current architecture (1.59.0)
+
+**Pierre (is it worth eating).** Culinary physics on Fable's SFAH ontology (§7), with pranjal's rules on top. Tiers: veto, floor, pass, crave. Crave comes only from pranjal's own verdicts (`PIERRE_SEED`); Pierre never computes crave. Pierre is a hard veto filter and the first sort key inside a rung.
+- **Flavour floor** (`config.pierreFloor`, provisional): a dish needs enough flavour (`flavourMin: 2`) and at least one texture. Fat alone does not clear it: a dish whose only strong flavour is fat (from butter, cheese, paneer, ghee) floors unless acid, chilli heat or something fresh comes with it. This came from pranjal's 20 Nov ratings, where paneer, cheese and butter on fat alone tasted bland. Two class-level exceptions, both 26 Nov:
+  - `fatCarries: ['delicate_protein']`: when a cooked egg is in the dish, fat at Medium clears the floor alone (plain omelette rule).
+  - `saltCarries: [['rice', 'dal']]`: cooked rice and dal together carry a dish on salt alone (khichdi rule).
+- **Cook-first** foods eaten raw veto, except the pairs in `cookFirstExceptions` (only oats in a shake).
+- **Technique preferences** from the prep quiz (`technique-prefs.js`): rinse rice, ghee tadka, fresh garlic and so on are Pierre's, and recipes use the preferred way.
+- **Rulings on specific dishes** live in `PIERRE_SEED` (e.g. `chai_toast` → pass).
+
+**Marco (will I make it).** Friction features (tools, hands-on minutes, waiting, pre-prep, peels, cuts, steps, attention, cleanup) weighted by `config.frictionTheta`: tools −0.682, handsOn −1.005, waiting −0.518, prePrep −0.367, peels 0, cuts 0, steps −0.036, attention −0.571, cleanup −0.734 (positive fits are clamped to 0). Eggs add 2 hands-on minutes. Score = payoff − λ × friction, where payoff is macros only (protein ×3, calories ×1, fiber ×0.75) capped at what's left today.
+
+**White (what to show): the ladder.** Four rungs by effort (rung 1 no-cook, 0 peels, 0 cuts; rung 2 heat from exactly one closed appliance, little attention; rung 4 two or more cooking units or attention ≥3; rung 3 the rest). Inside a rung: Pierre tier, then Marco score, then friction.
+- **Tie rule (1.56.0, pranjal chose "close macros count as a tie"):** `orderRung()` in `ranker.js` walks Marco's order; the leader plus every same-tier dish within **3 g protein and 0.1 friction** of it form a band (`config.tie`). Inside a band, **savoury before sweet** (`isSweet()`: fruit, honey, whey, jam, sugar, cocoa…). Why: at rung 1 every dish had identical friction and tier, so 1 g of estimated protein put the curd-banana-peanut bowl first, and testers rated it about 2★. The butter-cheese sandwich now leads rung 1 for L2 to L5.
+
+**Catalogue as open-slot templates (1.54.0, `src/brain/templates.js`).** pranjal: no static recipes for testers. The 77 catalogue dishes are templates whose slots open to the kitchen:
+- A **swap** fills a slot with a kitchen item from the same group cooked the same way (cubes: paneer, mushroom, potato; banana → apple, mango; peanuts → almonds; tomato → cucumber, capsicum, carrot). An **add-on** puts one extra vegetable into a bhurji, omelette, chaat or fried rice.
+- A swap is allowed only if Pierre has rated that food in that state, and every variant goes through Pierre's vetoes and tiers. Knife-free templates stay knife-free; eggs, dal and legumes are never microwaved; fats are never swapped.
+- `NEVER_SWAP` (soya chunks): soya is never swapped in or out. `BOIL_ALONE` (soya chunks): soya never shares boiling water; `test/soya-boil.test.js` checks every written and opened dish.
+
+**Persona kitchens (1.54.0, `data/test-kitchens/kitchens.json`).** Five cumulative kitchens, each with `persona` (the picker line) and `level`:
+
+| Level | Persona line | Items | Cookware summary |
+|---|---|---|---|
+| L1 | "I order in. Maggi, an omelette, and that's about it." | 20 | kettle, single induction, small nonstick pan |
+| L2 | "I mostly order in, but I make chai and try cooking now and then." | 42 | + 2-burner gas, saucepan, kadhai, microwave |
+| L3 | "I can cook the basics, and I'm starting to watch my protein." | 74 | + blender, pressure cooker, sandwich maker, egg boiler, knife and board |
+| L4 | "I cook a lot, track macros, and own way too many spices." | 121 | + air fryer, tawa, rice cooker, scale, grater |
+| L5 | "I cook anything, keep it simple, and have the sauces to show for it." | 128 | pranjal's kitchen: everything below minus L4's vanity spices, plus condiments and shortcuts |
+
+Because the kitchens are cumulative, every level first saw the same easy dishes (a bug: L2 and L3 shared 7 of 12). Since 1.55.0 a sample-kitchen run puts the dishes the level below can't make (`levelBelow()`, `freshAt()`) first. Share links don't carry the persona list and keep the plain order.
+
+**The tester flow at 1.59.0** (`src/rung-quiz-ui.js`):
+1. Hello (name from the link only), or on the bare site the persona picker.
+2. **Confirm your foods**, then **How do you cook?**, then **Confirm your cookware**.
+   - **Add more** (1.58.0) opens a search box above the groups: results by label and every synonym (Hindi and brand names), prefixes while typing, small typos only when nothing is spelled right; Enter adds the top hit; no match adds the words as typed. Set-aside words find nothing and say frozen and ready-made food isn't in Harvey's yet (`searchAdd`, `searchNote`, `EXTRA_ALIASES` in `src/brain/confirm.js`).
+   - **How do you cook?** (1.59.0, pranjal: ask for a way, not cookware) has four multi-pick questions plus "I don't": boil eggs (pot, pressure cooker, kettle, egg boiler), scramble eggs (frying pan, kadhai, tawa, pot, microwave), toast bread (toaster, tawa, pan, sandwich maker, air fryer, oven), boil water (kettle, pot, microwave). Each way maps to kit the ranker already knows (`src/brain/ways.js`, `WAYS`); picked kit joins the kitchen and shows under "Added" on the cookware check. Answers go to `confirm.ways`. The egg boiler opens no dish yet.
+3. **Rate every recipe** (1.57.0, pranjal: "give all possible recipes"): the deck is every dish the kitchen opens (L1 4, L2 26, L3 44, L4 68, L5 81), in `stratify()`'s round-robin across rungs (written and opened variants alternating), each round shuffled. **Done with quiz · send N rated** is on every dish screen; after sending, **Keep rating (N left)** continues and the next send replaces the earlier file. A taste rating of 1 or 2 shows optional why-chips (don't like an ingredient, odd combination, bland, dry or one texture, not filling) in `stars[].why`.
+4. Bonus dish (one item away), then an end screen with an optional "meals or foods you often make" box, then Send.
+
+### 15.4 pranjal's standing rulings (since 21 Nov)
+
+- **Pierre is meant to be a snob** (24 Nov). Low taste ratings on easy dishes are knee-jerk dismissals that testers reverse after trying, so don't tune Pierre toward average tester taste.
+- **Tofu is dropped entirely for now** (26 Nov). The same aglio olio got 5★ with paneer and 2★ with tofu. No tofu in templates, pantry or persona kitchens; a kitchen that lists tofu gets no tofu dish.
+- **Soya is never swapped into or for anything** (26 Nov), and **soya always boils on its own** (26 Nov): in shared water its flavour seeps into the pasta and the chunks can't be fished out and squeezed. `soya_pasta_pot` and `soya_jeera_rice` were rewritten (soya pasta: 4 steps, 7 min hands-on, 16 min waiting, 2 dishes; was 3, 5, 10, 1). Ratings of those two ids before 1.59.0 were for the co-boiled recipes.
+- **Frozen, ready-to-eat, takeaway, leftover and pouch items are set aside** (25 Nov, `SET_ASIDE` in `vocabulary.js`): no food id, join no dish, removed from the persona kitchens, shown in the ingredient check as `set_aside`. Canned chickpeas stay. Frozen-food support comes later.
+- **A plain omelette (eggs, cooking fat, salt) is a pass, never a floor** (26 Nov).
+- **Butter is a fat** (26 Nov); Pierre already classes it with oil, ghee and cream.
+- **Khichdi passes**: "the main flavor comes from the salt + rice + dal"; ghee on top is an enhancer (26 Nov).
+- **Chai with buttered toast passes**: separate items that each pass (26 Nov). Done as a ruling on `chai_toast`, not a general rule.
+- **Stay floor** (26 Nov, the fat-only list): paneer cheese sandwich, one-pot cheese pasta, bare savoury oats (oil, oats, onion, one or two masalas; richer builds may pass), soya jeera rice when the soya is only oil, salt and air fryer, dal without a tadka (passes with one). No catalogue dish has a tadka dal or a richer savoury oats yet.
+- **Raw oats in a shake are fine** (24 Nov), as a narrow cook-first exception.
+- **About 12 dishes per tester** (24 Nov), later replaced by **rate every recipe** (26 Nov).
+- **Close macros count as a tie**, savoury before sweet (26 Nov).
+- Carried from before: never merge without pranjal saying "merge it"; Gemini flash-lite only; weights come from real choices, never invented; no gradients, no swipe UI, minimal explanatory text, one thing per screen.
+
+### 15.5 Tester data so far (`data/kitchen-tests/`, 17 files)
+
+- **Real kitchens, 22 to 24 Nov** (Harsh, Banana Singh, Purujeet): showed real kitchens are ingredient-limited, egg dishes feel harder than Harvey's thought (fixed in 1.51.0), air fryer may feel easier than Harvey's ranks it (one or two signals, not acted on), and for one tester the easiest dishes were the least tasty.
+- **Analysis 1 (26 Nov morning): 6 persona runs on 25 Nov, 61 ratings** (L1 ×2, one abandoned after 1 dish; L2 and L3 on 1.54.0; L4 and L5 on 1.55.0).
+  - Pierre's tiers order taste correctly: crave 4.9★, pass 3.3★, floor 2.9★. Maggi with a fried egg 5★ from all four who saw it.
+  - Pierre's taste order vs testers: 0.95 (L1), 0.68 (L2), 0.85 (L3), 0.50 (L4, only 6 pairs), 0.91 (L5). Marco's effort order: 0.59 to 0.76.
+  - Tofu-for-paneer and soya dishes rated low (soya 2, 2, 3, 2★ though Pierre passes them); almond swaps never beat peanuts (kanda poha 5★ → 3★, dahi poha 3★ → 2★); the curd-banana-peanut bowl was Harvey's rung-1 pick for L1 to L4 but got about 2★. These drove 1.56.0.
+  - Taste rises with effort: rung 1 averages 2.9★ taste, 4.4★ effort; rung 4 3.9★ taste, 3.4★ effort. Six of seven testers gave their two easiest dishes 3★ or less (read as the knee-jerk pattern pranjal described, not a Pierre signal).
+  - Egg dishes 3.7★ effort vs 4.3★ for the rest; air-fryer dishes 3.9★ vs 4.2★. Aglio olio (2★ effort) and the co-boiled soya pasta (1★) were the hardest.
+  - A pooled Marco refit over 295 picks gave extreme weights and was not applied. `kitchen-tests.mjs` skips leave-one-out past 150 picks.
+  - Every tester skipped the feedback box.
+- **Analysis 2 (26 Nov, on 1.58.0): 4 new runs, 38 ratings** (L1 ×3 with thin decks of 3, 5 and 6 dishes; L2 ×1 rating all 24).
+  - Crave 5.0★ (2 ratings), pass 3.5★ (27), **floor 3.7★ (9)**: floor no longer sat below pass, because the fat-only floor put bread omelette, butter omelette and egg toast on the floor in L1's kitchen (no pepper or chilli), and L1 testers rated them 5★. Omelettes got 5★ taste from every tester. This drove the 1.59.0 omelette ruling.
+  - Marco's effort order: 1.00, 0.67, 1.00, 0.74. Pierre's taste order for L2: 0.64 (L1 decks too small to measure).
+  - Why-chips (L2 only, on 7 of 10 low ratings): bland ×5, four of them on dishes Pierre passes (boiled eggs with salt and pepper, boiled egg sandwich, masala oats, banana-peanut oats); ingredient ×3; odd ×1. L2 rated all four oat dishes 1 to 3★, and masala oats and the one-pot egg bhurji 1★ as bland. Here the tester was harsher than Pierre.
+  - No tofu or soya in any new deck (1.56.0 worked). The butter-cheese sandwich now leads rung 1 but averages 3.0★; one L1 tester asked for it without butter.
+  - Only one tester (an L1) filled in the feedback box.
+- Not yet tested on 1.59.0: no ratings have arrived since the How do you cook screen, the soya rewrite and the floor rulings went live.
+
+### 15.6 Open questions and backlog
+
+Open questions (raised, not decided):
+1. **Two egg floor flags that look wrong.** In a bare kitchen, `egg_pasta_pot` and `egg_rice` floor with "nothing to coat it", and `pot_egg_bhurji` floors with "a bhurji has no base". Not yet looked into or ruled on. (`boiled_eggs` also floors there because it has no cooking fat, and `airfryer_egg_in_toast` because eggs@air_fried is unrated.)
+2. **Does plain buttered toast on its own pass?** Pierre floors it as fat only; the chai-and-toast ruling was made per dish so it wouldn't reach it. pranjal was asked and hasn't answered.
+3. **Easy vs tasty.** Rung-1 dishes average under 3★ taste while "easiest first" is the product direction. pranjal reads low taste on easy dishes as knee-jerk; L2's "bland" chips were on dishes Pierre passes.
+4. **Air fryer** may be easier than Harvey's ranks it; still only a few signals.
+5. **Marco refit needs more picks.** The pooled tester refit (295 picks) gives extreme weights; today's weights stay pranjal's prep-quiz fit. The Cooked this log never reached the 20 to 30 dinners planned on 21 Nov.
+6. **The feedback box is skipped.** One tester in ten filled it in, so the stars and why-chips are nearly all the qualitative signal.
+7. **Thin L1 decks** (3 to 6 dishes) give little to measure.
+
+Backlog (agreed or raised, not built):
+- **Frozen-food support** (set aside since 1.55.0; pranjal will add it later).
+- **Pre-prep suggestions** ("if you have time": poha 15 min, rice about 1 h, chickpeas overnight). Unsoaked dishes already go to a "For tomorrow" card (1.21.0); wording and broader use are open.
+- **Ready-made / store-bought shortcuts:** an owned ready-made item (aglio olio paste, roasted chana, cheese spread) should count as a pre-done technique and remove those steps' friction. Frozen for v1 in the Step 5 handoff.
+- **Egg boiler** is asked about but opens no dish.
+- **Non-veg** (chicken): deferred to pranjal.
+- Smaller: the video agent prompt is uploaded by hand (API later); matcher gaps for RTE items are moot while they're set aside; rung 3's sheet label says "On the stove" even when a knife put the dish there.
+- Still frozen from §8: Swift port, spoons, computed crave, umami gating, λ per mood.
