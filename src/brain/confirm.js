@@ -202,3 +202,104 @@ export function addChoices(items, { cache = {}, missingBasics = [] } = {}) {
   const kit = KIT_GROUPS.map((g) => ({ id: g.id, label: g.label, type: !!g.type, opts: g.ids.filter((id) => !base.have.has(id)).sort(order(kitFirst)).map((id) => ({ id, label: label(id) })) })).filter((g) => g.opts.length || g.type);
   return { food, kit, noStove: !STOVES.some((id) => base.have.has(id)) };
 }
+
+// ── Type to search (1.58.0) ─────────────────────────────────────────────────
+// pranjal, 26 Nov: "Add more" also gets a search box, so a tester can type "pan" or "dahi" and
+// tap the thing in one step instead of opening a group. The menus stay. The search covers the
+// same things the groups offer (so nothing already on the list, no salt or oil, no tofu), plus
+// each id's synonyms (Hindi and brand names) and a small alias list for the typed extras.
+
+/** Other names for the groups' typed extras (they have no vocabulary id, so no synonyms). */
+export const EXTRA_ALIASES = Object.freeze({
+  'Potato': ['aloo', 'alu'],
+  'Carrot': ['gajar'],
+  'Coriander leaves': ['dhania', 'dhaniya', 'cilantro', 'hara dhania'],
+  'Cauliflower': ['gobi', 'phool gobi'],
+  'Apple': ['seb'],
+  'Cumin (jeera)': ['zeera'],
+  'Coriander powder': ['dhania powder', 'dhaniya powder'],
+  'Hing': ['asafoetida'],
+  'Ajwain': ['carom seeds'],
+  'Soy sauce': ['soya sauce'],
+  'Pickle (achaar)': ['achar', 'aachar'],
+  'Green chutney': ['pudina chutney', 'hari chutney'],
+  'Chilli sauce': ['chili sauce', 'hot sauce', 'schezwan'],
+  'Vinegar': ['sirka'],
+  'Jam': ['jelly', 'kissan'],
+  'Atta': ['wheat flour', 'whole wheat flour', 'aata', 'chakki atta'],
+  'Sooji (rava)': ['suji', 'semolina', 'rawa'],
+  'Biscuits': ['cookies', 'parle g', 'marie'],
+  'Chips': ['crisps', 'lays', 'wafers'],
+  'Instant soup': ['soup packet', 'knorr soup'],
+  'Dry fruits': ['almonds', 'badam', 'cashews', 'kaju', 'raisins', 'kishmish', 'walnuts', 'akhrot'],
+});
+
+const PHRASES = new Map();
+for (const { id, phrase } of SYNONYMS) PHRASES.set(id, [...(PHRASES.get(id) ?? []), clean(phrase)]);
+
+function namesOf(o) {
+  const own = [clean(o.label)];
+  if (o.id) own.push(...(PHRASES.get(o.id) ?? []));
+  else own.push(...(EXTRA_ALIASES[o.text] ?? []).map(clean));
+  return [...new Set(own.filter((n) => n && !isSetAside(n)))];
+}
+
+/** How well a typed query fits one name, 0 when it doesn't. Typing in progress counts. */
+function fit(q, name) {
+  if (name === q) return 100;
+  if (name.startsWith(q)) return 90 - Math.min(9, name.length - q.length) / 2;
+  const words = name.split(' ');
+  if (words.some((w) => w.startsWith(q))) return 80;
+  if (q.length < 4) return 0;
+  // A slip: the whole name, a word, or the word's start as far as they've typed ("panir", "tamatr").
+  let s = sim(q, name);
+  for (const w of words) s = Math.max(s, sim(q, w), w.length > q.length ? sim(q, w.slice(0, q.length)) - 0.05 : 0);
+  // Search is looser than matchTyped (a wrong guess here is only a tile they don't tap), so a
+  // longer word may be two letters off: "panir" for paneer.
+  return s >= (q.length >= 5 ? SEARCH_FUZZY_MIN : FUZZY_MIN) ? 40 * s : 0;
+}
+const SEARCH_FUZZY_MIN = 0.65;
+
+/**
+ * What "Add more" offers that fits the typed query, best first: [{ ...opt, group, how }] where
+ * opt is { id, label } or { text, label } from addChoices() groups (one side's), and how is
+ * 'exact' (the query is one of its names) or 'near'. Set-aside words (frozen, takeaway…) find
+ * nothing, and set-aside extras are never offered.
+ */
+export function searchAdd(query, groups, { limit = 12 } = {}) {
+  const q = clean(query);
+  if (!q || isSetAside(q)) return [];
+  const out = [];
+  const seen = new Set();
+  groups.forEach((g, gi) => g.opts.forEach((o, oi) => {
+    // One tile per thing: the typed extra "Potato" and the potato id are the same to a tester.
+    const key = clean(o.label);
+    if (seen.has(key) || seen.has(o.id) || isSetAside(o.label)) return;
+    const names = namesOf(o);
+    const score = Math.max(0, ...names.map((n) => fit(q, n)));
+    if (!score) return;
+    seen.add(key);
+    if (o.id) seen.add(o.id);
+    out.push({ ...o, group: g.id, how: names.includes(q) ? 'exact' : 'near', score, at: gi * 1000 + oi });
+  }));
+  out.sort((a, b) => b.score - a.score || a.at - b.at);
+  // Typo guesses only when nothing is spelled right, and only the close ones ("dhania" isn't chana).
+  const top = out[0]?.score ?? 0;
+  const keep = out.filter((o) => (top >= 60 ? o.score >= 60 : o.score >= top - 4));
+  return keep.slice(0, limit).map(({ score, at, ...o }) => o);
+}
+
+/**
+ * What to tell them beside the results: { kind: 'assumed' } for salt or oil (always counted),
+ * { kind: 'listed', names } for things already on their list that fit the query, or null.
+ */
+export function searchNote(query, listedRows = []) {
+  const q = clean(query);
+  if (q.length < 2) return null;
+  const id = matchName(q);
+  if (id && ASSUMED_STAPLES.includes(id)) return { kind: 'assumed', names: [] };
+  // The same matching as the search itself, over what's on the list: "panir" finds Paneer there.
+  const rows = listedRows.map((r) => ({ id: r.id ?? null, text: r.id ? null : r.name, label: r.name }));
+  const onList = searchAdd(q, [{ id: 'listed', opts: rows }], { limit: 3 });
+  return onList.length ? { kind: 'listed', names: onList.map((o) => o.label) } : null;
+}

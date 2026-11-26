@@ -481,3 +481,12 @@
 .rq-tastewhy.appear { animation: rq-in .28s var(--settle) both; }
 .rq-whytags { display: flex; flex-wrap: wrap; gap: 8px; }
 .rq-whytags .rq-tag { min-height: 42px; font-size: 14.5px; }
+
+/* 1.58.0: type to search on "Add more" */
+.rq-find { margin-top: 6px; }
+.rq-find input { -webkit-appearance: none; appearance: none; }
+.rq-found:empty { display: none; }
+.rq-found { margin-top: 12px; }
+.rq-found .rq-hint { margin-bottom: 8px; }
+.rq-browse { margin-top: 18px; }
+.rq-browse[hidden] { display: none; }
