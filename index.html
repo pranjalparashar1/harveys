@@ -39,7 +39,7 @@
       <div class="hm-paths">
         <button class="hm-path primary" id="go-scan" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-          <b>Scan your kitchen</b><span>Photos of your shelves and fridge</span>
+          <b>Scan your kitchen</b><span>Photos or a short video</span>
         </button>
         <button class="hm-path" id="go-persona" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>
@@ -63,19 +63,19 @@
       </details>
     </section>
 
-    <!-- Scan: photos now; a short video joins in the next build -->
+    <!-- Scan: photos or a short video (1.61.0: free, no key needed, once the relay has scan on) -->
     <section class="hm-view hm-scan" id="scan-view" hidden>
       <header class="hm-bar">
         <button class="rq-icon" id="scan-back" type="button" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
         <p class="hm-eyebrow">Scan</p>
         <span class="rq-icon ghost"></span>
       </header>
-      <h1 class="hm-title sm">Photograph your shelves, fridge and stove</h1>
+      <h1 class="hm-title sm">Photograph or film your shelves, fridge and stove</h1>
       <div class="pickers">
         <label class="dropzone" for="photo-input">
-          <input id="photo-input" type="file" accept="image/*" multiple>
+          <input id="photo-input" type="file" accept="image/*,video/*" multiple>
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>
-          <span class="dz-title">Photos</span>
+          <span class="dz-title">Photos or video</span>
         </label>
         <label class="dropzone" for="camera-input">
           <input id="camera-input" type="file" accept="image/*" capture="environment">
@@ -85,7 +85,7 @@
       </div>
       <ul class="thumbs" id="thumbs"></ul>
       <p class="mini" id="photo-status" aria-live="polite"></p>
-      <!-- Your own AI key, until Harvey's scans for you -->
+      <!-- Your own AI key: shown when the free scan is off or used up -->
       <div class="hm-key" id="key-box" hidden>
         <label class="field">
           <span>Your AI key</span>
@@ -125,7 +125,7 @@
       <div id="extras"></div>
     </section>
 
-    <footer class="sig hm-sig" id="sig"><span id="version">1.60.0</span><a href="owner.html">pranjal</a></footer>
+    <footer class="sig hm-sig" id="sig"><span id="version">1.61.0</span><a href="owner.html">pranjal</a></footer>
   </main>
 
   <!-- My kitchen: untick what ran out, add what's new, back it up -->

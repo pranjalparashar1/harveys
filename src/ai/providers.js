@@ -45,7 +45,7 @@ export function detectProvider(key) {
 }
 
 export class AIError extends Error {
-  /** @param {'noKey'|'invalidKey'|'rateLimited'|'overloaded'|'timeout'|'modelUnavailable'|'badRequest'|'network'|'malformedResponse'|'imageTooLarge'} kind */
+  /** @param {'noKey'|'invalidKey'|'rateLimited'|'overloaded'|'timeout'|'modelUnavailable'|'badRequest'|'network'|'malformedResponse'|'imageTooLarge'|'freeLimit'|'scanOff'} kind */
   constructor(kind, detail = '', status = 0) {
     super(AIError.message(kind));
     this.kind = kind;
@@ -67,6 +67,8 @@ export class AIError extends Error {
       network: "Couldn't reach the provider. Check your connection and try again.",
       malformedResponse: 'The provider sent back something unreadable. Try again, or add items by hand.',
       imageTooLarge: 'Those photos are too large to send together. Try fewer photos.',
+      freeLimit: "That's today's free scans.",
+      scanOff: 'Free scanning is off right now.',
       noKey: 'Scanning needs an AI key for now.',
     }[kind];
   }
@@ -423,6 +425,71 @@ export async function scanKitchen({ images, deadlineMs = 12000, hedgeMs = 2500, 
   });
   if (photosRead === 0) throw lastError ?? new AIError('malformedResponse', 'no photo could be read');
   return Object.assign(items, { model: [...models].join(' + '), ms: Date.now() - t0, photosRead, photosTotal: images.length });
+}
+
+/**
+ * Free scan (1.61.0): no key on this phone, so the photos (or video keyframes) go to the
+ * relay's POST /scan, which asks Gemini flash-lite with Harvey's own key and answers
+ * {have, other, model, ms}. Same items out as scanKitchen(), so the screens after it are
+ * the same. A plain text/plain POST, so the browser sends no CORS preflight.
+ */
+export const RELAY_MAX_IMAGES = 8;
+const RELAY_TIMEOUT_MS = 15000; // the relay gives Gemini 11 s; iOS Safari kills requests near 60 s
+
+export function scanUrl(relay) {
+  return new URL('scan', String(relay).replace(/\/?$/, '/')).href;
+}
+
+/** Up to `max` images, spread evenly (a long video's frames, or too many photos). */
+function thin(images, max) {
+  if (images.length <= max) return images;
+  return Array.from({ length: max }, (_, i) => images[Math.round((i * (images.length - 1)) / (max - 1))]);
+}
+
+export async function scanViaRelay({ images, relay, fetchImpl = fetch, timeoutMs = RELAY_TIMEOUT_MS, onEvent = () => {} }) {
+  const t0 = Date.now();
+  const send = thin(images, RELAY_MAX_IMAGES).map(({ base64, mediaType }) => ({ base64, mediaType }));
+  const body = JSON.stringify({ images: send });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  onEvent({ stage: 'sent', model: 'free scan', bytes: body.length, ms: 0 });
+  let res;
+  try {
+    res = await fetchImpl(scanUrl(relay), { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body, signal: controller.signal });
+  } catch (e) {
+    clearTimeout(timer);
+    const err = e?.name === 'AbortError' ? new AIError('timeout', `free scan: no answer within ${Math.round(timeoutMs / 1000)} s`) : new AIError('network', `free scan: ${String(e?.message ?? e).slice(0, 200)}`);
+    onEvent({ stage: 'model', model: 'free scan', ok: false, kind: err.kind, detail: err.detail, ms: Date.now() - t0 });
+    throw err;
+  }
+  clearTimeout(timer);
+  const out = await res.json().catch(() => null);
+  if (!res.ok) {
+    const code = out?.error ?? '';
+    const kind = res.status === 429 ? 'freeLimit'
+      : res.status === 503 ? 'scanOff'
+        : res.status === 504 || code === 'timeout' ? 'timeout'
+          : res.status === 413 ? 'imageTooLarge'
+            : res.status === 400 || res.status === 415 || res.status === 403 ? 'badRequest'
+              : 'overloaded';
+    const err = new AIError(kind, `free scan: HTTP ${res.status} ${code}`.trim(), res.status);
+    if (kind === 'freeLimit') {
+      if (out?.message) err.message = out.message;
+      err.retryAfter = Number(out?.retryAfter) || null;
+      err.scope = out?.scope ?? null;
+    }
+    onEvent({ stage: 'model', model: 'free scan', ok: false, kind, status: res.status, detail: err.detail, ms: Date.now() - t0 });
+    throw err;
+  }
+  const items = out && Array.isArray(out.have) ? parseInventory(JSON.stringify({ have: out.have, other: out.other ?? [] })) : null;
+  if (!items) throw new AIError('malformedResponse', 'free scan: unreadable reply');
+  onEvent({ stage: 'model', model: `free scan · ${out.model ?? '?'}`, ok: true, ms: Date.now() - t0 });
+  return Object.assign(items, {
+    model: `free scan · ${out.model ?? 'gemini'}`,
+    ms: Date.now() - t0,
+    photosRead: out.photosRead ?? send.length,
+    photosTotal: out.photosTotal ?? send.length,
+  });
 }
 
 /** First balanced {…} in model text, parsed, or null. */

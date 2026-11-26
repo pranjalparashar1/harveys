@@ -7,16 +7,17 @@ import {
   PIERRE_SEED, cookLogEntry, liveRepairEntry, liveVerdicts, soakNeeds,
   importKitchens, looksLikeKitchenJson, classifyPrompt, parseClassification,
 } from './brain/index.js';
-import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, allowedModels, detectProvider, checkKey, pickModel, scanKitchen, designRecipes, callModel, AIError } from './ai/providers.js';
-import { prepareImage } from './ai/images.js';
+import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, allowedModels, detectProvider, checkKey, pickModel, scanKitchen, scanViaRelay, designRecipes, callModel, AIError } from './ai/providers.js';
+import { prepareMedia, isVideo } from './ai/images.js';
+import { relayUrl } from './send.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
-import { startRungQuiz, startKitchenPicker } from './rung-quiz-ui.js';
+import { startRungQuiz, startKitchenPicker, closeKitchenPicker } from './rung-quiz-ui.js';
 import { buildRungQuiz, levelBelow } from './brain/rung-quiz.js';
 import { decodeKitchen, linkCode, linkName } from './brain/share-link.js';
 import { startFresh, reloadIfStale } from './fresh.js';
 
-const VERSION = '1.60.0';
+const VERSION = '1.61.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -190,7 +191,8 @@ function renderThumbs() {
 function renderScanButton() {
   const btn = $('scan');
   const n = state.photos.length;
-  btn.disabled = !state.ai || n === 0;
+  // 1.61.0: no key needed. Without one, the photos go to the free scan on the relay.
+  btn.disabled = n === 0 || !(state.ai || relayUrl());
   setLabel(btn, n ? `Scan ${n} photo${n === 1 ? '' : 's'}` : 'Scan');
 }
 
@@ -201,23 +203,25 @@ async function addPhotos(fileList) {
   const status = $('photo-status');
   show(err, false);
   if (!files.length) return;
-  const room = MAX_PHOTOS - state.photos.length;
-  const take = files.slice(0, Math.max(0, room));
   const problems = [];
-  for (const [i, file] of take.entries()) {
-    status.textContent = 'Preparing…';
+  let dropped = 0;
+  for (const file of files) {
+    const room = MAX_PHOTOS - state.photos.length;
+    if (room <= 0) { dropped++; continue; }
+    // 1.61.0: a video becomes up to 8 stills on the phone (as many as there is room for); only the stills are sent.
+    status.textContent = isVideo(file) ? 'Reading the video…' : 'Preparing…';
     try {
       const t = performance.now();
-      const photo = await prepareImage(file);
-      photo.prepMs = Math.round(performance.now() - t);
-      state.photos.push(photo);
+      const frames = (await prepareMedia(file, { maxFrames: room })).slice(0, room);
+      const prepMs = Math.round((performance.now() - t) / frames.length);
+      state.photos.push(...frames.map((f) => ({ ...f, prepMs })));
       renderThumbs();
     } catch (e) {
       problems.push(e.message);
     }
   }
   status.textContent = '';
-  if (files.length > take.length) problems.push(`Up to ${MAX_PHOTOS} photos; ${files.length - take.length} left out.`);
+  if (dropped > 0) problems.push(`Up to ${MAX_PHOTOS} photos; ${dropped} left out.`);
   if (problems.length) {
     err.textContent = problems.join(' ');
     show(err);
@@ -248,14 +252,19 @@ async function scan() {
   setLabel(btn, 'Looking…');
   btn.classList.add('shimmer');
   let source = 'ai';
+  const free = !state.ai; // 1.61.0: your own key first; otherwise the free scan
+  show($('scan-fallback'), false);
   try {
-    const items = await scanKitchen({
-      ...state.ai,
-      images: state.photos,
-      deadlineMs: SCAN_DEADLINE_MS,
-      onStatus: () => {}, // progress lives on the button; counts stay off screen
-      onEvent: (e) => logDebug(run, debugEntry(e, since())),
-    });
+    const onEvent = (e) => logDebug(run, debugEntry(e, since()));
+    const items = free
+      ? await scanViaRelay({ images: state.photos, relay: relayUrl(), onEvent })
+      : await scanKitchen({
+        ...state.ai,
+        images: state.photos,
+        deadlineMs: SCAN_DEADLINE_MS,
+        onStatus: () => {}, // progress lives on the button; counts stay off screen
+        onEvent,
+      });
     logDebug(run, { stage: 'AI reply parsed', ms: since(), detail: `${items.length} items from ${items.photosRead} of ${items.photosTotal} photos (${items.model})` });
     setItems(items.map((i) => ({ ...i, source: 'ai' })));
     status.textContent = '';
@@ -264,6 +273,14 @@ async function scan() {
     err.textContent = explainError(e);
     show(err);
     status.textContent = '';
+    if (free && !state.items.length) {
+      // Free scan used up, off or unreachable: one line, two ways on. No sample dumped in.
+      show($('scan-fallback'));
+      btn.classList.remove('shimmer');
+      renderScanButton();
+      finishDebugRun(run, since());
+      return;
+    }
     // Fallback: never leave the page without a recipe.
     if (state.items.length) {
       source = 'last';
@@ -282,7 +299,7 @@ async function scan() {
   finishDebugRun(run, since());
   $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
   // Only ask for recipe ideas when the AI is answering; otherwise it would just time out again.
-  if (source === 'ai') askAIForRecipes();
+  if (source === 'ai' && !free) askAIForRecipes();
 }
 
 // ── Debug panel: what each stage took, and the real error ──────────────────
@@ -907,6 +924,14 @@ function init() {
     });
   }
   $('scan').addEventListener('click', scan);
+  $('fallback-sample').addEventListener('click', pickKitchenLikeYours);
+  $('fallback-key').addEventListener('click', () => {
+    show($('scan-fallback'), false);
+    show($('step-key'));
+    $('step-key').classList.remove('t-hide');
+    editKey();
+    $('step-key').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   $('copy-debug')?.addEventListener('click', copyDebug);
   $('usage-tabs')?.addEventListener('click', (e) => {
     const v = e.target.closest('button')?.dataset.value;
@@ -1075,6 +1100,27 @@ async function openSamplePicker() {
   if (!kitchens.length || linkCode(location.hash)) return;
   sampleKitchens = kitchens;
   startKitchenPicker({ kitchens, onPick: openSampleKitchen });
+}
+// 1.61.0: the free scan's fallback. The L1–L5 kitchens, then the usual Spotted list to edit.
+async function pickKitchenLikeYours() {
+  let kitchens = sampleKitchens;
+  if (!kitchens.length) {
+    try {
+      const res = await fetch('data/test-kitchens/kitchens.json', { cache: 'no-cache' });
+      if (res.ok) kitchens = sampleKitchens = importKitchens(await res.text());
+    } catch { /* offline: the built-in sample below */ }
+  }
+  const use = (kitchen) => {
+    closeKitchenPicker();
+    show($('scan-fallback'), false);
+    show($('scan-error'), false);
+    state.pickSource = 'inventory';
+    state.kitchen = kitchen;
+    setItems(kitchen.items.map((i) => ({ ...i, source: 'sample' })));
+    $('step-inventory').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  if (!kitchens.length) return use({ kitchen: 'Sample kitchen', items: DEMO_KITCHEN });
+  startKitchenPicker({ kitchens, onPick: use });
 }
 function openSampleKitchen(kitchen) {
   state.pickSource = 'inventory';

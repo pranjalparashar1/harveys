@@ -271,6 +271,13 @@ function renderPicker() {
     <footer class="rq-foot"></footer>`;
   root.scrollTop = 0;
 }
+/** Closes the kitchen picker without its onExit (1.61.0: the live page's scan fallback picks and moves on). */
+export function closeKitchenPicker() {
+  if (!root) return;
+  picker = null;
+  root.hidden = true;
+  document.documentElement.classList.remove('rq-open');
+}
 function closePicker() {
   const p = picker;
   picker = null;

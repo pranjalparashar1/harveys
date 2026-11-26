@@ -14,8 +14,8 @@ import {
 } from './brain/index.js';
 import { expandTemplates } from './brain/templates.js';
 import { PROVIDERS, DEFAULT_MODEL, allowedModels, detectProvider, checkKey, pickModel, callModel, AIError } from './ai/providers.js';
-import { scanReady, scanPhotos } from './ai/scan.js';
-import { prepareImage } from './ai/images.js';
+import { scanReady, scanPhotos, checkFreeScan } from './ai/scan.js';
+import { prepareMedia, isVideo } from './ai/images.js';
 import { startKitchenSetup, startKitchenPicker } from './rung-quiz-ui.js';
 import { addChoices, searchAdd, searchNote, matchTyped } from './brain/confirm.js';
 import {
@@ -26,7 +26,7 @@ import { rateRedirect } from './brain/share-link.js';
 import { norm } from './brain/feedback.js';
 import { reloadIfStale } from './fresh.js';
 
-const VERSION = '1.60.0';
+const VERSION = '1.61.0';
 const MAX_PHOTOS = 8;
 const SCAN_DEADLINE_MS = 12000;
 const $ = (id) => document.getElementById(id);
@@ -521,6 +521,8 @@ function showScan(from) {
   renderKey();
   renderThumbs();
   view('scan-view');
+  // 1.61.0: once the relay says the free scan is on, no key is needed and the key box hides.
+  checkFreeScan().then(() => renderKey());
 }
 
 let editingKey = false;
@@ -579,14 +581,17 @@ async function addPhotos(fileList) {
   const err = $('scan-error');
   show(err, false);
   if (!files.length) return;
-  const take = files.slice(0, Math.max(0, MAX_PHOTOS - state.photos.length));
   const problems = [];
-  $('photo-status').textContent = 'Preparing…';
-  for (const file of take) {
-    try { state.photos.push(await prepareImage(file)); renderThumbs(); } catch (e) { problems.push(e.message); }
+  let dropped = 0;
+  for (const file of files) {
+    const room = MAX_PHOTOS - state.photos.length;
+    if (room <= 0) { dropped++; continue; }
+    // 1.61.0: a video becomes up to 8 stills on the phone; only the stills are sent.
+    $('photo-status').textContent = isVideo(file) ? 'Reading the video…' : 'Preparing…';
+    try { state.photos.push(...(await prepareMedia(file, { maxFrames: room })).slice(0, room)); renderThumbs(); } catch (e) { problems.push(e.message); }
   }
   $('photo-status').textContent = '';
-  if (files.length > take.length) problems.push(`Up to ${MAX_PHOTOS} photos; ${files.length - take.length} left out.`);
+  if (dropped) problems.push(`Up to ${MAX_PHOTOS} photos; ${dropped} left out.`);
   if (problems.length) { err.textContent = problems.join(' '); show(err); }
   renderThumbs();
 }
@@ -609,6 +614,8 @@ async function scan() {
     err.textContent = e instanceof AIError ? e.message : `Something went wrong: ${e.message}`;
     show(err);
     show($('scan-fallback'), !state.kitchen);
+    // 1.61.0: free scans used up or off: your own key is the other way on.
+    if (e instanceof AIError && (e.kind === 'freeLimit' || e.kind === 'scanOff')) { editingKey = true; renderKey(); }
   } finally {
     btn.classList.remove('shimmer');
     renderScanButton();
