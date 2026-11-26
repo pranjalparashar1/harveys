@@ -196,7 +196,7 @@ test('scan: quota bookkeeping, hashed IPs, and the Durable Object round trip', a
 test('relay: GET says whether Send and Scan are on; Send itself is unchanged by /scan', async () => {
   const w = makeWorker();
   const get = await (await w.fetch(new Request('https://relay.example/'), { GITHUB_TOKEN: 't', GEMINI_API_KEY: 'k' })).json();
-  assert.deepEqual(get, { ok: true, relay: 'harveys', ready: true, scan: true });
+  assert.deepEqual(get, { ok: true, relay: 'harveys', ready: true, scan: true, log: true }); // 1.64.0: + log
   assert.equal((await (await w.fetch(new Request('https://relay.example/'), {})).json()).scan, false);
   // A taste-test result posted to the root is never mistaken for a scan.
   const r = await makeWorker().fetch(new Request('https://relay.example/', { method: 'POST', headers: { Origin: ORIGIN }, body: JSON.stringify({ images: [img()] }) }), { GEMINI_API_KEY: 'k' });

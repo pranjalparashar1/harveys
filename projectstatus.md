@@ -229,3 +229,11 @@ Findings from the two star-rating runs (Banana 1.48, Purujeet 1.50):
 ## 12. 1.63.0 (26 Nov): honest scan errors
 - pranjal's first live free scan said "Your AI provider is overloaded". The relay had actually answered `502 badRequest`: Gemini refused the request (most likely the Cloudflare secret isn't exactly the key, e.g. pasted with quotes, which gives exactly that 400), and the app showed every relay 502 as "overloaded".
 - Now: only a real Gemini overload or rate limit reads as "overloaded" and gets one retry after 1.5 s. Anything else reads "The free scan isn't working right now." with a small code line under it (e.g. `badRequest · gemini 400 INVALID_ARGUMENT API_KEY_INVALID`), and opens the own-key box. The Worker sends Gemini's HTTP status, status word and ErrorInfo reason (codes only, never its text), and says why when the failsafe has the scan off.
+
+## 13. 1.64.0 (26 Nov): Cooked this and Fix / Veto send themselves
+- Every "Cooked this" and "Fix / Veto" (home page, taste test and owner page) is still saved on the phone first, then queued in `harveys.liveOutbox.v1` and sent in the background to the relay's new `POST /log`. The Worker commits each one as a new file: `data/cook-logs/cook-<date>-<deviceId>-<eventId>.json` or `repair-…`. No taps, no banners, no login.
+- Anonymous: the only id is a random `harveys.deviceId` (10 letters and digits) made on the phone. No names, keys, emails or user agent. The relay rebuilds every event key by key, so anything unexpected is dropped.
+- Limits: app origin only, 16 KB, strict schema, 30 events per IP per 24 h on a counter apart from the taste test's. Create-only; a resend of the same eventId answers `duplicate: true`. No signal: the event waits and goes on the next open, every 30 s, when the phone is back online, or as a beacon when the page closes.
+- Refit: `node scripts/refit-cooklog.mjs` now pools `data/cook-logs/` (each event once), `--device <id>` for one phone, and lists `Live repairs (N)` underneath. Pastes and single files still work. It still never edits `config.frictionTheta`.
+- New log files don't redeploy Pages (`paths-ignore`). Debug on rate/owner shows `Live log: N dinners, M fixes saved, K pending send`.
+- **Deploy:** after merge, on Windows: `git pull`, then `npx wrangler deploy` from `harveys\relay`. No new secrets.

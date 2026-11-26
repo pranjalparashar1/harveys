@@ -9,7 +9,7 @@
 
 import {
   CATALOGUE, DEFAULT_CONFIG, buildInventory, parseItemList, labelFor, rank, PIERRE_SEED,
-  cookLogEntry, liveRepairEntry, liveVerdicts, soakNeeds, importKitchens, looksLikeKitchenJson,
+  cookLogEntry, liveRepairEntry, liveVerdicts, encodeLiveEvent, soakNeeds, importKitchens, looksLikeKitchenJson,
   classifyPrompt, parseClassification,
 } from './brain/index.js';
 import { expandTemplates } from './brain/templates.js';
@@ -25,8 +25,9 @@ import {
 import { rateRedirect } from './brain/share-link.js';
 import { norm } from './brain/feedback.js';
 import { reloadIfStale } from './fresh.js';
+import { queueLiveEvent, deviceId, newEventId } from './send.js';
 
-const VERSION = '1.63.0';
+const VERSION = '1.64.0';
 const MAX_PHOTOS = 8;
 const SCAN_DEADLINE_MS = 12000;
 const $ = (id) => document.getElementById(id);
@@ -249,6 +250,11 @@ function recipeFold(r) {
       h('p', { class: 'hm-macros' }, `${r.meal.macros.protein} g protein · ${r.meal.macros.kcal} kcal · ${r.meal.macros.fiber} g fiber`)));
 }
 
+// 1.64.0: saved on the phone first, then sent home in the background (src/send.js). Never in the way.
+function sendLive(kind, entry) {
+  try { queueLiveEvent(encodeLiveEvent({ kind, entry, deviceId: deviceId(), eventId: newEventId(), version: VERSION })); } catch { /* the local copy is what counts */ }
+}
+
 const TIERS_YOU_SAY = [['veto', 'Veto'], ['floor', 'Floor'], ['pass', 'Pass'], ['crave', 'Crave']];
 function fixDrawer(r) {
   const note = h('input', { type: 'text', class: 'hm-fix-note', placeholder: 'What would fix it?', 'aria-label': `What would fix ${r.meal.name}` });
@@ -259,8 +265,10 @@ function fixDrawer(r) {
 }
 function saveLiveRepair(r, tier, fix) {
   buzz();
-  state.liveRepairs = [...state.liveRepairs, liveRepairEntry({ item: r, tier, fix, at: new Date().toISOString() })].slice(-200);
+  const entry = liveRepairEntry({ item: r, tier, fix, at: new Date().toISOString() });
+  state.liveRepairs = [...state.liveRepairs, entry].slice(-200);
   store.set('liveRepairs', state.liveRepairs);
+  sendLive('repair', entry);
   state.fixing = null;
   decide();
 }
@@ -349,6 +357,7 @@ function cookedThis(r) {
   state.cookLog = [...state.cookLog, entry].slice(-500);
   store.set('cookLog', state.cookLog);
   state.cookedNow.add(r.meal.id);
+  sendLive('cook', entry);
   const have = inventory().have;
   const choices = ranOutChoices(r).filter((c) => have.has(c.id));
   renderLadder(state.result);
@@ -616,7 +625,7 @@ async function scan() {
     show($('scan-fallback'), !state.kitchen);
     // 1.61.0: free scans used up or off: your own key is the other way on.
     if (e instanceof AIError && ['freeLimit', 'scanOff', 'scanBroken'].includes(e.kind)) { editingKey = true; renderKey(); }
-    // 1.63.0: the real cause, small and quiet under the error, for pranjal's testing ("gemini 400 … API_KEY_INVALID").
+    // 1.64.0: the real cause, small and quiet under the error, for pranjal's testing ("gemini 400 … API_KEY_INVALID").
     if (e instanceof AIError && e.code && e.kind !== 'freeLimit') err.append(h('small', { class: 'hm-code' }, e.code));
   } finally {
     btn.classList.remove('shimmer');

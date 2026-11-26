@@ -4,6 +4,8 @@ Friends open the link, do the taste test, tap **Send to Harvey's**, and the resu
 
 Since 1.61.0 the same Worker also runs the **free kitchen scan** (`POST /scan`, code in [`scan.js`](scan.js)): a new user's photos, or stills cut from a short video on their phone, go to Gemini flash-lite with Harvey's own key, so nobody needs an API key to start. See [Free scan](#free-scan-1610) below.
 
+Since 1.64.0 it also takes the **live cook log** (`POST /log`): every "Cooked this" and "Fix / Veto" tap, sent in the background. See [Live cook log](#live-cook-log-1640) below.
+
 What the Worker allows: only requests from `pranjalparashar1.github.io`, only a valid `harveys-rung-quiz/1` result under 200 KB, a file name it builds itself, create-only (nobody can overwrite a result), and about 20 sends per IP per 10 minutes. To switch sending off, delete the `GITHUB_TOKEN` secret.
 
 ## Setup (about 5 minutes, once)
@@ -31,6 +33,15 @@ What the Worker allows: only requests from `pranjalparashar1.github.io`, only a 
 - Score them: `git pull && node scripts/kitchen-tests.mjs score`. The end of the output now lists the ingredient check across kitchens.
 - No signal on a friend's phone: the result waits on the phone and retries every 30 s while the page is open, and on the next open.
 - The old token-on-the-phone path (`#send=<token>`) still works as a fallback if the relay is ever down.
+
+## Live cook log (1.64.0)
+
+`POST /log` takes one `harveys-cook-log/1` ("Cooked this") or `harveys-live-repair/1` ("Fix / Veto") event, `{ format, version, deviceId, eventId, at, entry }`, and commits it as a new file `data/cook-logs/cook-<date>-<deviceId>-<eventId>.json` (or `repair-…`).
+
+- **Anonymous:** `deviceId` is a random id made on the phone; no names, keys or user agents. The Worker rebuilds the event from the keys it knows and drops the rest.
+- **Limits:** the app's origin only; 16 KB; strict schema; 30 events per IP per 24 h, counted apart from taste-test sends. Create-only: a resend of the same `eventId` answers `{ ok: true, duplicate: true }`.
+- **Refit:** `git pull && node scripts/refit-cooklog.mjs` pools the folder (`--device <id>` for one phone) and lists live Fix / Veto disagreements. It prints weights; it never edits config.
+- **Deploy:** no new secret (it uses `GITHUB_TOKEN`). From this folder: `npx wrangler deploy`. `GET /` then also says `"log": true`.
 
 ## Free scan (1.61.0)
 

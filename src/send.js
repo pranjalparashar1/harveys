@@ -11,6 +11,8 @@
 // open, every 30 s while the page is open, or when the phone comes back online.
 // One file per run, so sends never collide.
 
+import { randomId } from './brain/log.js';
+
 export const REPO = 'pranjalparashar1/harveys';
 export const DIR = 'data/kitchen-tests';
 /** The relay's address (relay/README.md). #relay=<url> overrides it on one phone, for testing. */
@@ -159,12 +161,92 @@ export function beaconOutbox(nav = globalThis.navigator) {
   return n;
 }
 
+// ── 1.64.0: the live log ("Cooked this", "Fix / Veto") ───────────────────────
+// Every event is saved on the phone first (marco.cookLog, marco.liveRepairs), then queued
+// here and sent in the background to the relay's POST /log, which commits it to
+// data/cook-logs/. Its own outbox and its own one-at-a-time chain, so it never touches the
+// taste test's. Only the relay sends these (no token path): no relay, they just wait.
+// The only id is a random deviceId made on this phone; no names, no keys, no user agent.
+
+const DEVICE_KEY = 'harveys.deviceId';
+const LIVE_KEY = 'harveys.liveOutbox.v1';
+const LIVE_MAX = 300;
+
+/** This phone's anonymous id: 10 random letters and digits, made once. */
+export function deviceId() {
+  let id = null;
+  try { id = localStorage.getItem(DEVICE_KEY); } catch { /* private mode */ }
+  if (id && /^[a-z0-9]{6,16}$/.test(id)) return id;
+  id = randomId(10);
+  try { localStorage.setItem(DEVICE_KEY, id); } catch { /* private mode: a new id each visit */ }
+  return id;
+}
+export const newEventId = () => randomId(12);
+export const liveOutbox = () => read(LIVE_KEY, []);
+export const liveLogUrl = () => { const r = relayUrl(); return r ? `${r.replace(/\/+$/, '')}/log` : null; };
+
+/** Queues one encoded live event (src/brain/log.js encodeLiveEvent) and sends it in the background. */
+export function queueLiveEvent(payload) {
+  write(LIVE_KEY, [...liveOutbox().filter((x) => x.eventId !== payload.eventId), payload].slice(-LIVE_MAX));
+  const p = flushLiveOutbox();
+  // A blip usually clears in seconds; the 30 s timer and 'online' cover the rest.
+  p.then(({ left }) => { if (left) for (const ms of [3e3, 10e3]) setTimeout(() => { if (liveOutbox().length) flushLiveOutbox(); }, ms); }, () => {});
+  return p;
+}
+
+let liveChain = Promise.resolve();
+const dropLive = (ids) => write(LIVE_KEY, liveOutbox().filter((x) => !ids.includes(x.eventId)));
+
+/** Sends everything in the live outbox, one flush at a time. → { sent, left, rejected } */
+export function flushLiveOutbox() {
+  const p = liveChain.then(flushLiveOnce, flushLiveOnce);
+  liveChain = p.catch(() => {});
+  return p;
+}
+
+async function flushLiveOnce() {
+  const url = liveLogUrl();
+  const box = liveOutbox();
+  if (!url || !box.length) return { sent: 0, left: box.length, rejected: 0 };
+  let sent = 0;
+  let rejected = 0;
+  for (const item of box) {
+    let res;
+    try { res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(item), keepalive: true }); } catch { break; }
+    if (res.ok) { sent++; dropLive([item.eventId]); continue; }
+    // Refused for good (bad shape, too big): drop it so it never blocks the rest. Still on the phone in marco.*.
+    if (res.status === 400 || res.status === 413) { rejected++; dropLive([item.eventId]); continue; }
+    break; // 429, 5xx, relay off: try again later
+  }
+  return { sent, left: liveOutbox().length, rejected };
+}
+
+/** The page is going away with live events waiting: beacon them (a resend lands as a duplicate, which is fine). */
+export function beaconLiveOutbox(nav = globalThis.navigator) {
+  const url = liveLogUrl();
+  if (!url || typeof nav?.sendBeacon !== 'function') return 0;
+  let n = 0;
+  let bytes = 0;
+  for (const item of liveOutbox()) {
+    const body = JSON.stringify(item);
+    bytes += body.length;
+    if (bytes > 60_000) break;
+    try { if (nav.sendBeacon(url, body)) n++; } catch { /* no beacon */ }
+  }
+  return n;
+}
+
 if (typeof window !== 'undefined') {
   captureToken();
   flush();
-  window.addEventListener('online', () => { flush(); });
-  addEventListener('pagehide', () => beaconOutbox());
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') beaconOutbox(); });
+  flushLiveOutbox();
+  window.addEventListener('online', () => { flush(); flushLiveOutbox(); });
+  addEventListener('pagehide', () => { beaconOutbox(); beaconLiveOutbox(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { beaconOutbox(); beaconLiveOutbox(); } });
   // A friend may never open the page again: keep trying while it's open.
-  setInterval(() => { if (outbox().length && navigator.onLine !== false) flush(); }, 30e3);
+  setInterval(() => {
+    if (navigator.onLine === false) return;
+    if (outbox().length) flush();
+    if (liveOutbox().length) flushLiveOutbox();
+  }, 30e3);
 }

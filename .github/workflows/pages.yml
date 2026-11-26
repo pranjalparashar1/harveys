@@ -3,8 +3,8 @@ name: Test and deploy to GitHub Pages
 on:
   push:
     branches: [main]
-    # Taste tests sent from the phone land here; a new data file needs no redeploy.
-    paths-ignore: ['data/kitchen-tests/**']
+    # Taste tests and live cook logs sent from phones land here; a new data file needs no redeploy.
+    paths-ignore: ['data/kitchen-tests/**', 'data/cook-logs/**']
   pull_request:
   workflow_dispatch:
 

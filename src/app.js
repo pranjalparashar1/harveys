@@ -4,12 +4,12 @@
 import {
   CATALOGUE, DEFAULT_CONFIG, PROVISIONAL, ASSUMED_BASICS,
   buildInventory, parseItemList, kindOf, labelFor, rank, describeMissing,
-  PIERRE_SEED, cookLogEntry, liveRepairEntry, liveVerdicts, soakNeeds,
+  PIERRE_SEED, cookLogEntry, liveRepairEntry, liveVerdicts, encodeLiveEvent, soakNeeds,
   importKitchens, looksLikeKitchenJson, classifyPrompt, parseClassification,
 } from './brain/index.js';
 import { PROVIDERS, DEFAULT_MODEL, FALLBACK_MODELS, allowedModels, detectProvider, checkKey, pickModel, scanKitchen, scanViaRelay, designRecipes, callModel, AIError } from './ai/providers.js';
 import { prepareMedia, isVideo } from './ai/images.js';
-import { relayUrl } from './send.js';
+import { relayUrl, queueLiveEvent, deviceId, newEventId, liveOutbox } from './send.js';
 import { validateMeal } from './brain/validate.js';
 import { DEMO_KITCHEN } from './demo-kitchen.js';
 import { startRungQuiz, startKitchenPicker, closeKitchenPicker } from './rung-quiz-ui.js';
@@ -17,7 +17,7 @@ import { buildRungQuiz, levelBelow } from './brain/rung-quiz.js';
 import { decodeKitchen, linkCode, linkName } from './brain/share-link.js';
 import { startFresh, reloadIfStale } from './fresh.js';
 
-const VERSION = '1.63.0';
+const VERSION = '1.64.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 
@@ -345,8 +345,10 @@ function renderDebug() {
   const summary = times.length
     ? `Last ${times.length} scans to a recipe: typical ${(sorted[Math.floor((sorted.length - 1) / 2)] / 1000).toFixed(1)} s, slowest ${(sorted[sorted.length - 1] / 1000).toFixed(1)} s, ${times.filter((t) => t.ok).length} answered by the AI.`
     : 'No scans yet.';
+  const pending = liveOutbox().length;
   box.replaceChildren(
     h('p', { class: 'mini' }, summary),
+    h('p', { class: 'mini' }, `Live log: ${state.cookLog.length} dinners, ${state.liveRepairs.length} fixes saved, ${pending} pending send.`),
     ...state.debug.map((run) => h('div', { class: 'debug-run' },
       h('h3', {}, `${run.kind === 'scan' ? 'Scan' : 'Recipe ideas'} at ${run.at}${run.total != null ? ` · ${(run.total / 1000).toFixed(1)} s total` : ' · running…'}`),
       h('table', { class: 'parts' }, h('tbody', {}, run.entries.map((e) =>
@@ -714,6 +716,11 @@ function whyTable(r) {
 }
 
 // ── White v2: the effort ladder ─────────────────────────────────────────────
+// 1.64.0: saved on the phone first, then sent home in the background (src/send.js). Never in the way.
+function sendLive(kind, entry) {
+  try { queueLiveEvent(encodeLiveEvent({ kind, entry, deviceId: deviceId(), eventId: newEventId(), version: VERSION })); } catch { /* the local copy is what counts */ }
+}
+
 const TIERS_YOU_SAY = [['veto', 'Veto'], ['floor', 'Floor'], ['pass', 'Pass'], ['crave', 'Crave']];
 
 function cookedThis(item) {
@@ -726,6 +733,7 @@ function cookedThis(item) {
   state.cookLog = [...state.cookLog, entry].slice(-500);
   store.set('cookLog', state.cookLog);
   state.cookedNow.add(item.meal.id);
+  sendLive('cook', entry);
   renderResult(state.result);
 }
 
@@ -733,6 +741,7 @@ function saveLiveRepair(item, tier, fix) {
   const entry = liveRepairEntry({ item, tier, fix, at: new Date().toISOString() });
   state.liveRepairs = [...state.liveRepairs, entry].slice(-200);
   store.set('liveRepairs', state.liveRepairs);
+  sendLive('repair', entry);
   state.fixing = null;
   decide();
 }
