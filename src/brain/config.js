@@ -65,6 +65,10 @@ export const DEFAULT_CONFIG = Object.freeze({
   pierreFloor: Object.freeze({
     flavours: Object.freeze(['fat', 'acid', 'heat', 'fresh', 'sugar']),
     notAlone: Object.freeze(['fat', 'sugar']),
+    // ...except with a cooked egg (pranjal, 26 Nov: "a plain omelette, eggs + cooking fat + salt,
+    // is a pass for sure, never a floor"). A cooked part of these classes carries the dish on salt
+    // and fat alone. Eggs only: paneer, cheese and butter on fat alone stay floor (Step 4b).
+    fatCarries: Object.freeze(['delicate_protein']),
     flavourMin: 2,
     texturesMin: 1,
   }),

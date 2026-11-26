@@ -477,10 +477,12 @@ export const verdictTier = (seed) => seed?.tier ?? { fail: 'veto', meh: 'floor',
 // You called 8 dishes bland that cleared the old floor on fat alone (paneer, cheese, butter).
 // `done`: the anchor is a row you rated done as it is (distance 0, a whey shake), so its
 // flavour is yours, not Pierre's to second-guess.
-function belowFloor(p, floor, done = false) {
+// `carried`: a cooked part of a floor.fatCarries class (a cooked egg) is in the dish, so fat
+// clears the floor alone (pranjal, 26 Nov: a plain omelette is a pass).
+function belowFloor(p, floor, done = false, carried = false) {
   const why = [];
   const strong = floor.flavours.filter((k) => (p.brought?.[k] ?? p.taste[k]) >= floor.flavourMin);
-  const alone = floor.notAlone ?? [];
+  const alone = (floor.notAlone ?? []).filter((k) => !(carried && k === 'fat'));
   const clears = strong.some((k) => !alone.includes(k)) || strong.length >= 2;
   if (!done && !clears) {
     why.push(strong.length ? `only ${strong.join(', ')} at Medium or above: needs acid, heat or fresh with it` : `no ${floor.flavours.join(', ')} at Medium or above`);
@@ -522,6 +524,7 @@ export function pierreTier(parts, form, { modifiers = [], inventory = [], verdic
   const physics = physicsVetoes(slotted, modifiers, rules);
   // Raw garlic vetoes a dish where nothing is cooked (pranjal, 20 Nov: "for now").
   const sharp = slotted.some((x) => x.state !== 'raw') ? [] : slotted.filter((x) => kb.foods?.[x.id]?.vetoUncooked).map((x) => x.id);
+  const carried = slotted.some((x) => x.state !== 'raw' && (floor.fatCarries ?? []).includes(foodClassOf(x.id)));
   let computed;
   let repairs = [];
   if (p?.inedible.length || raw.length || sharp.length || physics.length) {
@@ -554,18 +557,18 @@ export function pierreTier(parts, form, { modifiers = [], inventory = [], verdic
     const done = (anchor ? partVector(anchor, kb, techniques)?.distance === 0 : false)
       || slotted.some((x) => x.slot === 'base' && partVector(x, kb, techniques)?.distance === 0);
     if (!p) why.push('no rated parts');
-    else why.push(...belowFloor(p, floor, done));
+    else why.push(...belowFloor(p, floor, done, carried));
     computed = why.length ? 'floor' : 'pass';
   }
   let upgrade = null;
   // (Compare the reasons, not just their count: "can't judge makhana" is one reason too.)
-  const shortfall = p ? belowFloor(p, floor) : [];
+  const shortfall = p ? belowFloor(p, floor, false, carried) : [];
   if (computed === 'floor' && p && why.length && why.every((w) => shortfall.includes(w))) {
     // Only a taste/texture shortfall can be lifted by adding something.
     const has = new Set([...modifiers, ...parts.map((x) => (typeof x === 'string' ? x : x.id))]);
     const lifts = (extraParts, extraMods) => {
       const q = dishProfile([...parts, ...extraParts], kb, techniques, [...modifiers, ...extraMods]);
-      return q && !belowFloor(q, floor).length;
+      return q && !belowFloor(q, floor, false, carried).length;
     };
     // Cheapest first: a spice or condiment shaken in, then a rated minor food spooned on.
     // An upgrade keeps the dish's side: a sweet dish (a part at sugar 2+) takes only sweet

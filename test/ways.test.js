@@ -64,3 +64,12 @@ test('a result carries the ways answers', () => {
   const res = encodeRungResult(quiz, answers, { version: '1.59.0', at: 'x', testerId: 't' });
   assert.deepEqual(res.confirm.ways, { boil_eggs: ['egg_boiler'], scramble_eggs: ['pan'] });
 });
+
+// pranjal, 26 Nov: "a plain omelette, eggs + cooking fat + salt, should definitely not be a floor".
+test('a cooked egg with fat and salt passes Pierre with no pepper or chilli; paneer on fat alone still floors', async () => {
+  const { pierreTier } = await import('../src/brain/ingredients.js');
+  assert.equal(pierreTier([{ id: 'eggs', technique: 'omelette' }, { id: 'butter' }], 'open', { modifiers: ['salt'] }).computed, 'pass');
+  assert.equal(pierreTier([{ id: 'bread', technique: 'toasted' }, { id: 'eggs', technique: 'omelette' }, { id: 'butter' }], 'sandwich', { modifiers: ['salt'] }).computed, 'pass');
+  const paneer = pierreTier([{ id: 'paneer', technique: 'pan_fried' }], 'bowl', { modifiers: ['salt'] });
+  assert.equal(paneer.computed, 'floor', paneer.why.join('; '));
+});
