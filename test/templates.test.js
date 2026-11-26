@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { CATALOGUE } from '../src/brain/catalogue.js';
 import { buildInventory } from '../src/brain/inventory.js';
 import { importKitchens } from '../src/brain/kitchens.js';
-import { rank } from '../src/brain/ranker.js';
+import { rank, orderRung, isSweet } from '../src/brain/ranker.js';
 import { expandTemplates, variantsOf, NEVER_MICROWAVE, NEVER_SWAP } from '../src/brain/templates.js';
 import { buildRungQuiz, stratify, DECK_MAX } from '../src/brain/rung-quiz.js';
 import { PIERRE_RAW } from '../src/brain/pierre-raw.js';
@@ -116,4 +116,32 @@ test('frozen and ready-to-eat items are set aside: no food id, no dish', async (
   assert.ok(have.have.has('frozen_peas') && have.have.has('chickpeas'));
   assert.equal(matchTyped('frozen sweet corn').id, null);
   for (const k of kitchens) for (const i of k.items) assert.ok(!/frozen|ready-to-eat|takeaway|pouch/i.test(i.name), `${k.kitchen}: ${i.name}`);
+});
+
+test('rung 1: close macros tie, savoury before sweet, so the curd-banana bowl no longer leads (pranjal, 26 Nov)', () => {
+  const lv = (n) => kitchens.find((k) => Number(k.level) === n);
+  for (const n of [2, 3, 4, 5]) {
+    const have = buildInventory(lv(n).items);
+    const r = rank({ inventory: have, targets: { protein: 60, calories: 1200, fiber: 20 }, context: { hour: 21, weekday: 3, kind: 'meal' }, catalogue: expandTemplates(CATALOGUE, have) });
+    const rung1 = r.ladder.find((l) => l.rung === 1);
+    assert.equal(rung1.pick.meal.id, 'butter_cheese_sandwich', `L${n}`);
+    // Inside a band, sweet dishes keep Marco's score order.
+    const order = [rung1.pick, ...rung1.alternatives].map((x) => x.meal.id);
+    if (order.includes('pb_banana_sandwich') && order.includes('curd_peanut_banana_bowl')) {
+      const pb = r.ranked.find((x) => x.meal.id === 'pb_banana_sandwich');
+      const bowl = r.ranked.find((x) => x.meal.id === 'curd_peanut_banana_bowl');
+      assert.equal(order.indexOf('pb_banana_sandwich') < order.indexOf('curd_peanut_banana_bowl'), pb.score > bowl.score, `L${n}`);
+    }
+  }
+});
+
+test('orderRung: a tie band needs the same tier, protein within 3 g and friction within 0.1', () => {
+  const d = (id, tier, protein, score, friction, parts) => ({ rung: 1, score, friction, pierre: { tier }, meal: { id, macros: { protein }, parts: parts.map((p) => ({ id: p })), ingredients: [] } });
+  const sweet = d('sweet', 'pass', 17, 0.5, 0.5, ['curd', 'banana']);
+  const salty = d('salty', 'pass', 14, 0.2, 0.5, ['bread', 'cheese_slices']);
+  const far = d('far', 'pass', 10, 0.1, 0.5, ['bread', 'butter']);
+  const hard = d('hard', 'pass', 17, 0.4, 0.9, ['eggs']);
+  const floor = d('floor', 'floor', 17, 0.9, 0.5, ['eggs']);
+  assert.deepEqual(orderRung([sweet, salty, far, hard, floor]).map((x) => x.meal.id), ['salty', 'sweet', 'hard', 'far', 'floor']);
+  assert.ok(isSweet(sweet.meal) && !isSweet(salty.meal));
 });

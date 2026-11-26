@@ -7,7 +7,8 @@
 //      (crave > pass > floor) first, then by score.
 //   4. White v2 (Step 5B): the ladder. Each dish sits on one attention rung (nothing
 //      to watch, walk away, stand at it, juggle); inside a rung, tier → score
-//      (payoff − λ × friction) → friction. One pick per rung, so an easy dish never buries a better one.
+//      (payoff − λ × friction) → friction, with close-macro ties going savoury first (orderRung).
+//      One pick per rung, so an easy dish never buries a better one.
 //   5. Every score comes back as named parts, so the UI can say why it won.
 //
 // Pure: no DOM, no network, no randomness, no clock (the caller passes the time).
@@ -234,12 +235,56 @@ export function assemblyStepOf(meal, pierre, used) {
   return `Finish the ${what} with ${withWhat}.`;
 }
 
-/** Inside a rung: tier, then Marco's score (payoff − λ × friction), then friction, then id. */
-export function byRungOrder(a, b) {
+/** Inside a rung, before close-macro ties: tier, then Marco's score (payoff − λ × friction), then friction, then id. */
+function byScoreOrder(a, b) {
   return TIER_ORDER[b.pierre.tier] - TIER_ORDER[a.pierre.tier]
     || b.score - a.score
     || a.friction - b.friction
     || a.meal.id.localeCompare(b.meal.id);
+}
+
+/** Foods that make a dish sweet, for the close-macro tie (fruit, honey, chocolate whey, spreads). */
+export const SWEET_FOODS = new Set(['banana', 'apple', 'mango', 'pomegranate', 'dates', 'honey', 'jam', 'sugar', 'jaggery', 'whey', 'cocoa_powder', 'chocolate_spread', 'maple_syrup']);
+/** True when a dish's parts or required ingredients include a sweet food. */
+export function isSweet(meal) {
+  const ids = [
+    ...(meal.parts ?? []).map((p) => p.id),
+    ...(meal.ingredients ?? []).filter((i) => !i.optional).map((i) => i.id ?? i.anyOf?.[0]),
+  ];
+  return ids.some((id) => SWEET_FOODS.has(String(id ?? '').replace(/^x:/, '').replace(/ /g, '_')));
+}
+
+/**
+ * 1.56.0 (pranjal, 26 Nov: "close macros count as a tie"). Rung 1 is all one-bowl assemblies,
+ * so friction ties and Pierre passes them all; 1 g of estimated protein put the curd-banana
+ * bowl (testers: 2★) over the sandwiches. Now, in score order, the top dish left and every dish
+ * of its tier within `config.tie.proteinGrams` of its protein (and no more than
+ * `config.tie.friction` harder) form a tie band. Inside a band savoury dishes go before sweet
+ * ones, then score order. Pierre's tiers are untouched. Returns the items in rung order.
+ */
+export function orderRung(items, config = DEFAULT_CONFIG) {
+  const tie = config.tie ?? { proteinGrams: 0, friction: 0 };
+  const rest = [...items].sort(byScoreOrder);
+  const out = [];
+  while (rest.length) {
+    const head = rest[0];
+    const p = head.meal.macros?.protein ?? 0;
+    const band = rest.filter((x) => x.pierre.tier === head.pierre.tier
+      && Math.abs((x.meal.macros?.protein ?? 0) - p) <= tie.proteinGrams
+      && x.friction <= head.friction + tie.friction);
+    band.sort((a, b) => Number(isSweet(a.meal)) - Number(isSweet(b.meal)) || byScoreOrder(a, b));
+    for (const x of band) {
+      out.push(x);
+      rest.splice(rest.indexOf(x), 1);
+    }
+  }
+  return out;
+}
+
+/** Inside a rung: orderRung's place (set by rank()), else tier → score → friction → id. */
+export function byRungOrder(a, b) {
+  if (a.rung === b.rung && Number.isFinite(a.rungOrder) && Number.isFinite(b.rungOrder)) return a.rungOrder - b.rungOrder;
+  return byScoreOrder(a, b);
 }
 
 /** Groups ranked meals into the ladder: only rungs with a dish, one pick each. */
@@ -371,6 +416,7 @@ export function rank({ inventory, targets, context = {}, catalogue, config = DEF
   ranked.sort((a, b) => TIER_ORDER[b.pierre.tier] - TIER_ORDER[a.pierre.tier]
     || b.score - a.score || a.friction - b.friction || a.meal.id.localeCompare(b.meal.id));
   for (const r of ranked) r.reasons = headlineReasons(r);
+  for (const rung of [1, 2, 3, 4]) orderRung(ranked.filter((r) => r.rung === rung), config).forEach((r, i) => { r.rungOrder = i; });
   if (ranked.length > 1) ranked[0].beats = { other: ranked[1].meal, reasons: compareReasons(ranked[0], ranked[1]) };
 
   // "Buy X to unlock": meals blocked by exactly one ingredient (and no missing kit).
