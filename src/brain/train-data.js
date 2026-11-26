@@ -20,6 +20,10 @@ export const PIERRE_SEED = {
   stovetop_paneer_bhurji: { verdict: 'pass', why: 'Easy, and good' },
   besan_chilla: { verdict: 'pass', why: 'Easy, and good' },
   moong_dal_khichdi: { verdict: 'pass', why: 'Easy, and good' },
+  // pranjal, 26 Nov: "chai and buttered toast are two individual meals which are both pass, so
+  // together they should be a pass too." A ruling on this dish: Pierre judges buttered toast on
+  // its own as fat only (floor), so no general rule gets here without passing plain fat on bread.
+  chai_toast: { verdict: 'pass', tier: 'pass', why: 'Chai and buttered toast each pass on their own, so together they pass' },
   pasta_aglio_olio_paneer: { verdict: 'pass', why: 'Pierre approves' },
   // Staples (1.20.0). Round 3 (issue #52, 21 Nov) rated the same dishes; the staples sheet says the rest.
   maggi: { verdict: 'pass', tier: 'pass', why: 'Round 3: Maggi cooked with its masala, pass' },

@@ -69,6 +69,10 @@ export const DEFAULT_CONFIG = Object.freeze({
     // is a pass for sure, never a floor"). A cooked part of these classes carries the dish on salt
     // and fat alone. Eggs only: paneer, cheese and butter on fat alone stay floor (Step 4b).
     fatCarries: Object.freeze(['delicate_protein']),
+    // A cooked pair that carries the dish on salt alone, with no strong flavour at all (pranjal,
+    // 26 Nov: in khichdi "the main flavor comes from the salt + rice + dal"; ghee on top is an
+    // enhancer). Every id must be a cooked part. Dal on its own, with no tadka, stays floor.
+    saltCarries: Object.freeze([Object.freeze(['rice', 'dal'])]),
     flavourMin: 2,
     texturesMin: 1,
   }),

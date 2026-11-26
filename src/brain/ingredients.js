@@ -525,6 +525,8 @@ export function pierreTier(parts, form, { modifiers = [], inventory = [], verdic
   // Raw garlic vetoes a dish where nothing is cooked (pranjal, 20 Nov: "for now").
   const sharp = slotted.some((x) => x.state !== 'raw') ? [] : slotted.filter((x) => kb.foods?.[x.id]?.vetoUncooked).map((x) => x.id);
   const carried = slotted.some((x) => x.state !== 'raw' && (floor.fatCarries ?? []).includes(foodClassOf(x.id)));
+  const cooked = new Set(slotted.filter((x) => x.state !== 'raw').map((x) => x.id));
+  const saltCarried = (floor.saltCarries ?? []).some((set) => set.every((id) => cooked.has(id)));
   let computed;
   let repairs = [];
   if (p?.inedible.length || raw.length || sharp.length || physics.length) {
@@ -557,7 +559,7 @@ export function pierreTier(parts, form, { modifiers = [], inventory = [], verdic
     const done = (anchor ? partVector(anchor, kb, techniques)?.distance === 0 : false)
       || slotted.some((x) => x.slot === 'base' && partVector(x, kb, techniques)?.distance === 0);
     if (!p) why.push('no rated parts');
-    else why.push(...belowFloor(p, floor, done, carried));
+    else why.push(...belowFloor(p, floor, done || saltCarried, carried));
     computed = why.length ? 'floor' : 'pass';
   }
   let upgrade = null;

@@ -73,3 +73,19 @@ test('a cooked egg with fat and salt passes Pierre with no pepper or chilli; pan
   const paneer = pierreTier([{ id: 'paneer', technique: 'pan_fried' }], 'bowl', { modifiers: ['salt'] });
   assert.equal(paneer.computed, 'floor', paneer.why.join('; '));
 });
+
+// pranjal, 26 Nov, on the fat-only floor list.
+test('khichdi passes on salt, rice and dal; dal alone with no tadka, cheese pasta and the paneer cheese sandwich stay floor', async () => {
+  const { pierreTier } = await import('../src/brain/ingredients.js');
+  const tier = (parts, form) => pierreTier(parts, form, { modifiers: ['salt'] }).computed;
+  assert.equal(tier([{ id: 'rice', technique: 'boiled' }, { id: 'dal', technique: 'boiled' }, { id: 'ghee' }], 'one-pot'), 'pass');
+  assert.equal(tier([{ id: 'rice', technique: 'boiled' }, { id: 'dal', technique: 'boiled' }], 'one-pot'), 'pass');
+  assert.equal(tier([{ id: 'dal', technique: 'boiled' }, { id: 'ghee' }], 'one-pot'), 'floor');
+  assert.equal(tier([{ id: 'pasta', technique: 'boiled' }, { id: 'cheese_slices', technique: 'melted' }], 'coated_base'), 'floor');
+  assert.equal(tier([{ id: 'bread', technique: 'toasted' }, { id: 'paneer' }, { id: 'cheese_slices', technique: 'melted' }], 'sandwich'), 'floor');
+});
+
+test('chai with buttered toast is a pass (pranjal’s ruling)', async () => {
+  const { PIERRE_SEED } = await import('../src/brain/train-data.js');
+  assert.equal(PIERRE_SEED.chai_toast.tier, 'pass');
+});
