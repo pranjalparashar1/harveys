@@ -229,7 +229,9 @@ export const FORMS = {
   toast: { slots: { base: { need: true, states: ['cooked'] }, anchor: { need: true, states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } }, requires: ['topping'] },
   sandwich: { slots: { base: { need: true, states: ANY }, anchor: { need: true, states: ANY }, addOn: { states: ANY }, modifier: { states: ANY } } },
   mash: { slots: { anchor: { need: true, states: ['@mashed', 'cooked'] }, addOn: { states: ANY }, modifier: { states: ANY } } },
-  bhurji: { slots: { anchor: { need: true, states: ['cooked'] }, addOn: { states: ANY }, modifier: { states: ANY } } },
+  // 1.60.0: bread on the side is a bhurji's base (anda bhurji with pav), as a griddle's is. Before,
+  // "2 slices, on the side" floored the plain bhurji with "a bhurji has no base".
+  bhurji: { slots: { base: { states: ANY }, anchor: { need: true, states: ['cooked'] }, addOn: { states: ANY }, modifier: { states: ANY } } },
   griddle: { slots: { base: { states: ['cooked'] }, anchor: { need: true, states: ['cooked'] }, addOn: { states: ANY }, modifier: { states: ANY } } },
   'one-pot': { slots: { base: { states: ['cooked'] }, anchor: { need: true, states: ['cooked'] }, addOn: { states: ANY }, modifier: { states: ANY } } },
 };
@@ -355,10 +357,11 @@ export function fatRolesOf(parts, modifiers = [], kb = PIERRE_RAW) {
 /**
  * What coats a grain base (Step 5, §4.2 coated_base): a cohesive sauce or paste beside it (curd,
  * cooked dal, a simmered tomato, a mash), or a flavoured fat: a named fat (oil, ghee, butter)
- * with an aromatic cooked in it (garlic, onion: a tadka). A sautéed tomato is pieces, never a
- * sauce, and a plain fat only greases the base. Returns what coats it, or null.
+ * with an aromatic cooked in it (garlic, onion: a tadka), or that fat with an egg cooked in it
+ * (rules.coatingProteins). A sautéed tomato is pieces, never a sauce, and a plain fat only
+ * greases the base. Returns what coats it, or null.
  */
-export function coatingOf(parts, modifiers = [], kb = PIERRE_RAW, techniques = TECHNIQUES) {
+export function coatingOf(parts, modifiers = [], kb = PIERRE_RAW, techniques = TECHNIQUES, rules = DEFAULT_CONFIG.pierreRules) {
   const ps = parts.map((p) => (typeof p === 'string' ? { id: p } : p));
   const vs = ps.map((p) => partVector(p, kb, techniques)).filter(Boolean);
   const sauce = vs.find((v) => !isGrainBase(v.id, v.centre ?? 0) && (v.phase === 'cohesive_sauce' || v.phase === 'paste_mash'));
@@ -366,6 +369,11 @@ export function coatingOf(parts, modifiers = [], kb = PIERRE_RAW, techniques = T
   const fat = ps.find((p) => COATING_FATS.includes(p.id))?.id ?? OIL_MODIFIERS.find((o) => modifiers.includes(o)) ?? null;
   const aromatic = ps.find((p) => BLOOM_AROMATICS.includes(p.id) && inFat(p.technique));
   if (fat && aromatic) return { kind: 'flavored_fat', by: [fat, techKey(aromatic.id, aromatic.technique)] };
+  // 1.60.0: an egg scrambled or fried in that fat, tossed through the hot base, binds it (SFAH:
+  // fat and egg are an emulsion that clings). Egg rice and eggs stirred into pasta are coated;
+  // a plain fat with no egg still only greases the base (butter on pasta stays floor).
+  const egg = fat && ps.find((p) => rules.coatingProteins.includes(foodClassOf(p.id)) && inFat(p.technique));
+  if (egg) return { kind: 'egg_fat', by: [fat, techKey(egg.id, egg.technique)] };
   return null;
 }
 
@@ -448,7 +456,7 @@ function structureOf(slotted, form, modifiers, kb, techniques, rules) {
   const ids = [...slotted.map((x) => x.id), ...modifiers];
   const sweet = ids.some((id) => rules.sweetSide.includes(id));
   const bases = vs.filter((r) => isGrainBase(r.x.id, r.v.centre ?? 0) && r.v.phase !== 'raw_inedible');
-  if (bases.length && !sweet && !coatingOf(slotted, modifiers, kb, techniques)) {
+  if (bases.length && !sweet && !coatingOf(slotted, modifiers, kb, techniques, rules)) {
     const fats = slotted.filter((x) => COATING_FATS.includes(x.id) && !x.technique).map((x) => x.id);
     why.push(`no sauce: ${bases.map((r) => techKey(r.x.id, r.x.technique)).join(', ')} has nothing to coat it${fats.length ? ` (${fats.join(', ')} only greases it)` : ''}`);
   }

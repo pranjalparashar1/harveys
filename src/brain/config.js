@@ -89,6 +89,10 @@ export const DEFAULT_CONFIG = Object.freeze({
     // toasted paneer sandwich with raw onion passed (holdout). Raw bread, tomato, onion and
     // paneer (Step 4) and pan-fried paneer with raw onion and tomato (Step 4) didn't.
     sharpTamedByCookedBase: true,
+    // 1.60.0 (Fable's handoff, bare-kitchen egg flags): a cooked part of these classes, scrambled or
+    // fried in the dish's fat, coats a grain base with that fat (egg rice, eggs stirred into pasta).
+    // Eggs only; a fat with no egg still only greases it (butter on pasta stays floor).
+    coatingProteins: Object.freeze(['delicate_protein']),
     // One texture throughout floors only a soft texture (all creamy: 4b's three cases). All
     // crisp passed (holdout sandwich). A cold sweet dairy-and-fruit bowl is exempt: creamy is
     // the point of it (hung curd, banana, honey passed).
