@@ -1,0 +1,155 @@
+/* The home page (1.60.0) on Kiron's system: true black, Poppins, colour only for state, no
+   gradients, 44 px targets, transform/opacity-only motion on Kiron's curves. Tokens come from
+   styles.css; the kitchen tiles and the setup screens come from rung-quiz.css. */
+
+.hm { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+.hm-view[hidden] { display: none; }
+.hm-view { animation: rise .38s var(--settle) both; }
+.hm-eyebrow { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.hm-title { margin: 10px 0 18px; font-size: 32px; line-height: 1.12; font-weight: 800; letter-spacing: -.025em; text-wrap: balance; }
+.hm-title.sm { font-size: 24px; margin: 4px 0 16px; }
+.hm-label { margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.hm-error { margin: 0 0 14px; padding: 10px 12px; border-radius: 12px; background: var(--no-soft); color: var(--no-ink); font-size: 15px; font-weight: 400; }
+.hm-error[hidden] { display: none; }
+
+/* ── First visit ─────────────────────────────────────────────────────────── */
+.hm-welcome { padding-top: 18px; }
+.hm-welcome .hm-title { margin: 14px 0 26px; font-size: 36px; }
+.hm-paths { display: flex; flex-direction: column; gap: 12px; }
+.hm-path {
+  position: relative; display: grid; grid-template-columns: 44px 1fr; grid-template-rows: auto auto; column-gap: 14px; align-items: center;
+  min-height: 92px; padding: 16px 18px; text-align: left; cursor: pointer; touch-action: manipulation;
+  font: inherit; color: var(--ink); background: var(--surface); border: 2px solid var(--line); border-radius: 18px;
+  transition: transform .34s var(--pop);
+}
+.hm-path:active { transform: scale(.98); transition: none; }
+.hm-path svg { grid-row: 1 / 3; width: 44px; height: 44px; padding: 10px; border-radius: 12px; background: var(--surface2); fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.hm-path b { font-size: 19px; font-weight: 700; line-height: 1.25; }
+.hm-path span { font-size: 14px; color: var(--muted); font-weight: 400; }
+.hm-path.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: 0 5px 0 var(--lip); margin-bottom: 5px; }
+.hm-path.primary:active { transform: translateY(3px); }
+.hm-path.primary svg { background: rgba(0,0,0,.12); stroke: var(--accent-ink); }
+.hm-path.primary span { color: var(--accent-ink); opacity: .75; }
+.hm-paste { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 6px; }
+.hm-paste summary { font-size: 15px; color: var(--muted); font-weight: 500; }
+.hm-paste-in { padding: 6px 0 4px; }
+.hm-paste textarea { width: 100%; min-height: 132px; padding: 12px 14px; font: 500 16px/1.45 var(--font); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; resize: vertical; }
+.hm-paste textarea:focus { outline: none; border-color: var(--blue); }
+.hm-paste .btn.wide { margin-top: 10px; }
+.hm-ai { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+.hm-ai > .btn { flex: 1 1 100%; }
+.hm-ai-links { display: flex; gap: 8px; flex: 1 1 100%; }
+.hm-ai-links .btn { flex: 1; min-height: 44px; font-size: 15px; padding: 0 8px; text-decoration: none; color: var(--muted); }
+
+/* ── Scan ────────────────────────────────────────────────────────────────── */
+.hm-bar { display: flex; align-items: center; gap: 12px; padding: 0 0 10px; }
+.hm-bar .hm-eyebrow { flex: 1; text-align: center; }
+.hm-key { margin-top: 18px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.hm-key[hidden], .hm-key-saved[hidden] { display: none; }
+.hm-key .field { margin-bottom: 8px; }
+.hm-key .btn { margin-top: 8px; }
+.hm-key-saved { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 14px; font-size: 15px; color: var(--muted); }
+.hm-key-saved .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px var(--ok-soft); }
+.hm-scan .hm-error { margin: 14px 0 0; }
+.hm-scan .btn.link { display: flex; margin: 6px auto 0; }
+.hm-foot { position: sticky; bottom: 0; padding: 12px 0 calc(8px + env(safe-area-inset-bottom)); background: var(--bg); margin-top: 18px; }
+.hm-foot .btn.wide { margin-top: 0; }
+
+/* ── Home ────────────────────────────────────────────────────────────────── */
+.hm-top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 8px; padding: 6px 0 10px; background: var(--bg); }
+.hm-top .hm-eyebrow { flex: 1; }
+.hm-pill { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; font: 600 15px var(--font); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 99px; cursor: pointer; touch-action: manipulation; }
+.hm-pill:active { transform: scale(.96); }
+.hm-pill b { min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px; background: var(--surface2); font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+.hm-home .hm-title { margin: 8px 0 14px; }
+.hm-kind { margin-bottom: 14px; }
+.hm-soaked { margin: 0 0 14px; }
+.hm-soaked[hidden] { display: none; }
+.hm-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.hm-chip { position: relative; min-height: 44px; padding: 0 16px; font: 600 15px var(--font); color: var(--muted); background: var(--surface); border: 2px solid var(--line); border-radius: 99px; cursor: pointer; touch-action: manipulation; transition: border-color .15s, color .15s, background-color .15s; }
+.hm-chip:active { transform: scale(.96); }
+.hm-chip.on { color: var(--ink); border-color: var(--blue); background: var(--blue-soft); }
+
+/* One rung = one card. Effort pips, the pick, its recipe, then the rest of the rung. */
+#ladder.enter .hm-rung { animation: rise .42s var(--settle) both; animation-delay: calc(var(--i) * 70ms); }
+.hm-rung { margin: 0 0 12px; padding: 16px 16px 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+.hm-rung-head { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; font-size: 13px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.hm-pips { display: inline-flex; gap: 3px; }
+.hm-pips i { width: 14px; height: 6px; border-radius: 3px; background: var(--surface2); }
+.hm-pips i.on { background: var(--accent); }
+.hm-dish { padding-bottom: 8px; }
+.hm-dname { margin: 0; font-size: 18px; line-height: 1.25; font-weight: 700; letter-spacing: -.01em; color: var(--ink); text-transform: none; text-wrap: balance; }
+.hm-dish.main .hm-dname { font-size: 24px; font-weight: 800; letter-spacing: -.02em; }
+.hm-crave { display: inline-block; margin-left: 8px; padding: 2px 9px; vertical-align: 3px; font-size: 12px; font-weight: 700; letter-spacing: .04em; border-radius: 99px; color: var(--accent); background: var(--accent-soft); }
+.hm-meta { margin: 4px 0 0; font-size: 15px; color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+.hm-lift, .hm-pre { margin: 6px 0 0; font-size: 14px; font-weight: 500; color: var(--blue); }
+.hm-recipe { margin-top: 6px; }
+.hm-recipe summary { font-size: 15px; font-weight: 600; color: var(--ink); }
+.hm-recipe-in { padding: 2px 0 8px; animation: rise .3s var(--settle) both; }
+.hm-recipe-in .hm-label { margin-top: 10px; }
+.hm-ings { list-style: none; padding: 0; margin: 0; }
+.hm-ings li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.hm-ings li:last-child { border-bottom: 0; }
+.hm-ings b { font-weight: 600; }
+.hm-ings span { color: var(--muted); font-weight: 400; text-align: right; }
+.hm-kit { margin: 8px 0 0; font-size: 14px; color: var(--muted); font-weight: 400; }
+.hm-steps { margin: 0; padding-left: 22px; font-size: 16px; font-weight: 400; }
+.hm-steps li { margin: 6px 0; }
+.hm-steps li::marker { color: var(--muted); font-weight: 600; }
+.hm-macros { margin: 10px 0 0; font-size: 13px; color: var(--muted); font-weight: 400; }
+.hm-acts { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.hm-cook { min-width: 140px; gap: 6px; }
+.hm-cook.main { border-color: var(--accent); color: var(--accent); background: transparent; border-width: 2px; }
+.hm-cook svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.hm-cook.done, .hm-cook.done.main { background: var(--ok-soft); border-color: var(--ok-soft); color: var(--ok); }
+.hm-fix { margin: 6px 0 4px; display: grid; gap: 8px; }
+.hm-alts { border-top: 1px solid var(--line); margin-top: 2px; }
+.hm-alts summary { font-size: 15px; color: var(--muted); font-weight: 500; }
+.hm-alts-in .hm-dish { padding: 12px 0; border-top: 1px solid var(--line); }
+.hm-alts-in .hm-dish:first-child { border-top: 0; padding-top: 4px; }
+.hm-empty { padding: 22px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+.hm-empty h2 { font-size: 22px; color: var(--ink); text-transform: none; letter-spacing: -.01em; font-weight: 800; margin: 0 0 6px; }
+.hm-empty p { margin: 0; color: var(--muted); font-weight: 400; }
+.hm-card { margin: 0 0 12px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; }
+.hm-list { list-style: none; padding: 0; margin: 0; }
+.hm-list li { display: flex; flex-direction: column; padding: 8px 0; border-top: 1px solid var(--line); }
+.hm-list li:first-child { border-top: 0; padding-top: 0; }
+.hm-list b { font-weight: 600; }
+.hm-list span { font-size: 14px; color: var(--muted); font-weight: 400; }
+.hm-sig { padding-top: 20px; }
+.hm-sig span { min-height: 44px; display: inline-flex; align-items: center; padding: 0 12px; font-size: 13px; color: var(--muted); opacity: .4; }
+
+/* ── "Ran out of any of these?": at the thumb, over whatever the ladder does underneath ── */
+.hm-ranout { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; padding: 0 max(12px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); transform: translate3d(0, 24px, 0); opacity: 0; transition: transform .38s var(--settle), opacity .2s ease; }
+.hm-ranout.show { transform: none; opacity: 1; }
+.hm-ranout[hidden] { display: none; }
+.hm-ranout-in { max-width: var(--w); margin: 0 auto; padding: 16px; background: var(--surface2); border: 1px solid var(--line); border-radius: 20px; }
+.hm-ranout-q { margin: 0 0 12px; font-size: 18px; font-weight: 700; line-height: 1.3; }
+.hm-ranout-q span { display: block; font-size: 13px; font-weight: 600; color: var(--ok); margin-bottom: 2px; }
+.hm-ranout .hm-chip { background: var(--surface); }
+.hm-ranout .hm-chip.gone { color: var(--no-ink); border-color: var(--no); background: var(--no-soft); text-decoration: line-through; text-decoration-thickness: 2px; }
+.hm-ranout-done { width: 100%; margin-top: 12px; }
+
+/* ── My kitchen: a native <dialog>, drawn as a sheet from the bottom ─────── */
+html.hm-sheet-open, html.hm-sheet-open body { overflow: hidden; }
+.hm-sheet { width: 100%; max-width: var(--w); max-height: 92dvh; margin: auto auto 0; padding: 0; border: 1px solid var(--line); border-bottom: 0; border-radius: 22px 22px 0 0; background: var(--bg); color: var(--ink); overflow: hidden; }
+.hm-sheet[open] { display: flex; flex-direction: column; animation: hm-sheet-up .42s var(--fold) both; }
+.hm-sheet::backdrop { background: rgba(0,0,0,.6); animation: hm-fade .3s ease both; }
+.hm-sheet-in { overflow-y: auto; overscroll-behavior: contain; padding: 0 16px calc(20px + env(safe-area-inset-bottom)); }
+.hm-sheet-top { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 14px 0 10px; background: var(--bg); }
+.hm-sheet-top h2 { margin: 0; font-size: 22px; font-weight: 800; color: var(--ink); text-transform: none; letter-spacing: -.01em; }
+.hm-find { margin: 2px 0 6px; }
+.hm-find input { min-height: 50px; }
+.hm-found { margin: 8px 0 0; }
+.hm-found .rq-hint { margin-top: 4px; }
+.hm-sheet-actions { display: flex; flex-direction: column; margin-top: 22px; padding-top: 6px; border-top: 1px solid var(--line); }
+.hm-sheet-actions .btn.wide { margin-top: 10px; }
+.hm-backup { margin-top: 10px; font-size: 13px; }
+.hm-forget { margin: 12px auto 0 !important; }
+@keyframes hm-sheet-up { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
+@keyframes hm-fade { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-view, #ladder.enter .hm-rung, .hm-recipe-in, .hm-sheet[open] { animation: none; }
+  .hm-ranout { transition: opacity .2s ease; transform: none; }
+}

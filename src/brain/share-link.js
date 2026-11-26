@@ -13,6 +13,9 @@
 // CompressionStream). Both decode everywhere CompressionStream exists (Safari 16.4+, Chrome 80+).
 
 export const SITE = 'https://pranjalparashar1.github.io/harveys/';
+/** 1.60.0: the taste test moved off the home page, which is now the app itself. */
+export const RATE_PAGE = 'rate.html';
+export const RATE_SITE = `${SITE}${RATE_PAGE}`;
 const SEP = '~';
 const clean = (s, n) => String(s ?? '').replace(/[\r\n~]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
 
@@ -53,34 +56,46 @@ export function unpackKitchen(text) {
   };
 }
 
-/** A kitchen → the fragment value (no "#k="). */
-export async function encodeKitchen(k) {
-  const bytes = new TextEncoder().encode(packKitchen(k));
+/** Any text → a link-safe code: "1" + deflate-raw + base64url, or "0" + plain base64url. */
+export async function packText(text) {
+  const bytes = new TextEncoder().encode(String(text));
   if (typeof CompressionStream === 'undefined') return `0${b64url(bytes)}`;
   return `1${b64url(await pipe(bytes, new CompressionStream('deflate-raw')))}`;
 }
 
-/** The fragment value → a kitchen, or null if the link is broken or cut short. */
-export async function decodeKitchen(code) {
+/** A code from packText → the text, or null if it's broken or cut short. */
+export async function unpackText(code) {
   try {
     const s = String(code ?? '').trim();
     if (!/^[01][A-Za-z0-9_-]+$/.test(s)) return null;
     let bytes = unb64url(s.slice(1));
     if (s[0] === '1') bytes = await pipe(bytes, new DecompressionStream('deflate-raw'));
-    const k = unpackKitchen(new TextDecoder().decode(bytes));
-    return k.items.length ? k : null;
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   } catch {
     return null; // a link cut off by a chat app fails to inflate: say so, don't guess
   }
 }
 
+/** A kitchen → the fragment value (no "#k="). */
+export async function encodeKitchen(k) {
+  return packText(packKitchen(k));
+}
+
+/** The fragment value → a kitchen, or null if the link is broken or cut short. */
+export async function decodeKitchen(code) {
+  const text = await unpackText(code);
+  if (text == null) return null;
+  const k = unpackKitchen(text);
+  return k.items.length ? k : null;
+}
+
 /** A kitchen → its full share link. `name` (1.35.0) is the tester's first name: the page greets them with it. */
-export async function kitchenLink(k, site = SITE, name = '') {
+export async function kitchenLink(k, site = RATE_SITE, name = '') {
   return linkFor(await encodeKitchen(k), site, name);
 }
 
 /** An already-encoded kitchen + a name → the link (share.html re-links on every keystroke, no re-encode). */
-export function linkFor(code, site = SITE, name = '') {
+export function linkFor(code, site = RATE_SITE, name = '') {
   const n = cleanName(name);
   return `${site}#${n ? `n=${encodeURIComponent(n)}&` : ''}k=${code}`;
 }
@@ -103,6 +118,11 @@ export function guessName(label) {
   const [first, rest] = s.split(',');
   if (rest !== undefined && first.trim().split(' ').length <= 2) return first.trim();
   return '';
+}
+
+/** A tester link's hash (#k=…, with or without #n=) opened on the home page: where it belongs now. */
+export function rateRedirect(hash) {
+  return linkCode(hash) ? `${RATE_PAGE}${hash}` : null;
 }
 
 /** The code in a page's hash ("#k=…", maybe beside other keys), or null. */

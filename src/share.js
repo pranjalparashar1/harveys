@@ -5,12 +5,13 @@
 // tester's name on its card, and copy: two taps.
 import { importKitchens, buildInventory } from './brain/index.js';
 import { buildRungQuiz } from './brain/rung-quiz.js';
-import { encodeKitchen, linkFor, guessName, cleanName } from './brain/share-link.js';
+import { encodeKitchen, linkFor, guessName, cleanName, RATE_PAGE, RATE_SITE } from './brain/share-link.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const SITE = new URL('./', location.href).href; // "Try it" opens on this copy of the site
-const PUBLIC = /github\.io/.test(location.host) ? SITE : 'https://pranjalparashar1.github.io/harveys/';
+// 1.60.0: links open the taste test on rate.html; the home page is the app now.
+const SITE = new URL(RATE_PAGE, location.href).href; // "Try it" opens on this copy of the site
+const PUBLIC = /github\.io/.test(location.host) ? SITE : RATE_SITE;
 const DEFAULT_MSG = 'Hi {name}! Here’s your Harvey’s taste test. It takes a few minutes and it’s all taps:\n{link}';
 const KEYS = { text: 'harveys.share.text', msg: 'harveys.share.msg', names: 'harveys.share.names' };
 const get = (k) => { try { return localStorage.getItem(k); } catch { return null; } };

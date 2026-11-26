@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { encodeKitchen, decodeKitchen, kitchenLink, linkCode, linkName, guessName, packKitchen, unpackKitchen } from '../src/brain/share-link.js';
+import { encodeKitchen, decodeKitchen, kitchenLink, linkCode, linkName, guessName, packKitchen, unpackKitchen, rateRedirect } from '../src/brain/share-link.js';
 import { importKitchens } from '../src/brain/kitchens.js';
 import { kitchenId } from '../src/brain/kitchen-test.js';
 
@@ -18,7 +18,7 @@ test('a kitchen survives the link: same items, same kitchen id, so results line 
 test('a 58-item kitchen makes a link short enough for WhatsApp and SMS, in safe characters', async () => {
   const link = await kitchenLink(kitchen);
   assert.ok(link.length < 1200, `link is ${link.length} characters`);
-  assert.match(link, /^https:\/\/pranjalparashar1\.github\.io\/harveys\/#k=1[A-Za-z0-9_-]+$/);
+  assert.match(link, /^https:\/\/pranjalparashar1\.github\.io\/harveys\/rate\.html#k=1[A-Za-z0-9_-]+$/, '1.60.0: links open the taste test on rate.html');
   assert.equal(linkCode(new URL(link).hash), link.split('#k=')[1]);
 });
 
@@ -59,4 +59,12 @@ test('1.35.0: a first-name guess from the kitchen label, or nothing', () => {
   assert.equal(guessName("Arjun's flat, Pune"), 'Arjun');
   assert.equal(guessName('Aspirational bachelor kitchen'), '');
   assert.equal(guessName('Shared flat in Koramangala, 3 people'), '');
+});
+
+test('an old tester link on the home page goes to rate.html with its hash; nothing else moves', () => {
+  assert.equal(rateRedirect('#n=Riya&k=1abc_-'), 'rate.html#n=Riya&k=1abc_-');
+  assert.equal(rateRedirect('#k=1abc'), 'rate.html#k=1abc', 'a link made with no name');
+  assert.equal(rateRedirect('#restore=1abc'), null, 'a kitchen backup stays on the home page');
+  assert.equal(rateRedirect(''), null);
+  assert.equal(rateRedirect('#n=Riya'), null);
 });

@@ -1,6 +1,7 @@
 // "Start fresh" (1.40.0): one tap that clears what this phone remembers about a taste test,
 // drops any cached copies of the site, and opens the link again from the network.
-// Kept: unsent results (the outbox), the send token and relay, the AI key, the owner's
+// Kept: the home page's saved kitchen (harveys.kitchen.v1, 1.60.0), unsent results (the outbox),
+// the send token and relay, the AI key, the owner's
 // password, and the old stored tester name (unused from 1.47.1). Pure enough to test: storage and the page are passed in.
 
 /** What a fresh start forgets: the saved quiz runs and the kitchen the page last showed. */
