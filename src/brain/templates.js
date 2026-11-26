@@ -26,6 +26,13 @@ import { PIERRE_RAW } from './pierre-raw.js';
 export const NEVER_MICROWAVE = new Set(['eggs', 'dal', 'chickpeas', 'rajma', 'kala_chana', 'sprouts']);
 /** Foods no swap ever takes out of a dish or puts into one (pranjal, 26 Nov: soya always rates low). */
 export const NEVER_SWAP = new Set(['soya_chunks']);
+/**
+ * Foods that boil alone, never in the same water as anything else (pranjal, 26 Nov): soya
+ * chunks boiled with pasta or rice flavour it, and can't be fished out to squeeze. A recipe
+ * boils them first, drains and squeezes them, then boils the base in fresh water; Marco counts
+ * the extra boil. test/soya-boil.test.js holds every dish, written or opened, to it.
+ */
+export const BOIL_ALONE = Object.freeze(['soya_chunks']);
 
 // A member: pierre = the id Pierre tastes; have = inventory tokens that mean this food;
 // word = how steps and names call it; prep = PREP_KINDS for its slot; macros per serving (ESTIMATE).

@@ -1612,8 +1612,12 @@ export const CATALOGUE = [
     source: 'estimate',
   },
   {
+    // 1.59.0 (pranjal, 26 Nov): soya is never boiled in the same water as the pasta. The soya
+    // flavour soaks into the pasta, and the chunks can't be fished out to squeeze. So the soya
+    // boils first, alone, and the pot is refilled for the pasta. The co-boiled version (one step,
+    // one rinse) was rated 1★ for effort; this one has the extra boil and squeeze Marco counts.
     id: 'soya_pasta_pot',
-    name: 'Soya chunk pasta in one pot',
+    name: 'Soya chunk pasta (soya boiled first)',
     kind: 'meal',
     form: 'coated_base',
     parts: [{ id: 'pasta', technique: 'boiled' }, { id: 'soya_chunks', technique: 'boiled' }, { id: 'ketchup' }],
@@ -1627,12 +1631,13 @@ export const CATALOGUE = [
       { anyOf: ['chilli_flakes', 'black_pepper', 'oregano', 'role:heat'], amount: 'a pinch', prep: 'measure', optional: true },
     ],
     steps: [
-      { text: 'Boil the pasta and soya chunks together in salted water for 10 minutes.', active: 2, passive: 10 },
-      { text: 'Drain, holding the lid ajar, and squeeze the soya against the side with a spoon.', active: 2 },
-      { text: 'Stir in the sauce and chilli flakes in the warm pot.', active: 1 },
+      { text: 'Boil the soya chunks on their own in a pot of water for 5 minutes.', active: 1, passive: 6 },
+      { text: 'Drain, cool them under the tap, squeeze out the water and set them aside in a bowl.', active: 3 },
+      { text: 'Refill the pot with fresh salted water and boil the pasta for 10 minutes. Drain, holding the lid ajar.', active: 2, passive: 10 },
+      { text: 'Tip the soya back in and stir in the sauce and chilli flakes in the warm pot.', active: 1 },
     ],
     attention: 1,
-    cleanup: { dishes: 1, greasy: 0 },
+    cleanup: { dishes: 2, greasy: 0 },
     macros: { protein: 26, kcal: 470, fiber: 6 },
     source: 'estimate',
   },
@@ -1661,8 +1666,10 @@ export const CATALOGUE = [
     source: 'estimate',
   },
   {
+    // 1.59.0: the same rule as soya_pasta_pot. Soya boiled with the rice flavours the rice and
+    // can't be picked out of it to squeeze, so the soya boils first, alone.
     id: 'soya_jeera_rice',
-    name: 'Soya and jeera rice in one pot',
+    name: 'Soya and jeera rice (soya boiled first)',
     kind: 'meal',
     form: 'one-pot',
     parts: [{ id: 'rice', technique: 'boiled' }, { id: 'soya_chunks', technique: 'boiled' }],
@@ -1676,11 +1683,13 @@ export const CATALOGUE = [
       { anyOf: ['cumin', 'garam_masala', 'role:heat'], amount: '½ tsp', prep: 'measure', optional: true },
     ],
     steps: [
-      { text: 'Boil the rice and soya chunks together in plenty of water for 12 minutes and drain, holding the lid ajar.', active: 2, passive: 12 },
+      { text: 'Boil the soya chunks on their own in a pot of water for 5 minutes.', active: 1, passive: 6 },
+      { text: 'Drain, cool them under the tap, squeeze out the water and set them aside in a bowl.', active: 3 },
+      { text: 'Refill the pot and boil the rice in plenty of fresh water for 12 minutes. Drain, holding the lid ajar.', active: 2, passive: 12 },
       { text: 'Heat the oil in the empty pot, add the cumin for 30 seconds, then tip the rice and soya back in with salt and stir.', active: 3 },
     ],
     attention: 1,
-    cleanup: { dishes: 1, greasy: 1 },
+    cleanup: { dishes: 2, greasy: 1 },
     macros: { protein: 25, kcal: 400, fiber: 5 },
     source: 'estimate',
   },
