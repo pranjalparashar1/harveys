@@ -1,0 +1,536 @@
+{
+ "format": "harveys-rung-quiz/1",
+ "version": "1.58.0",
+ "at": "2026-11-26T08:51:57.666Z",
+ "source": "sample",
+ "kitchenId": "l1_mostly_orders_in-1eoe5",
+ "testerId": "t-txtk4n64n",
+ "runNo": 6,
+ "kitchenSource": "sample",
+ "kitchen": {
+  "kitchen": "L1 · Mostly orders in",
+  "diet": "veg+eggs",
+  "notes": "Kettle, single induction, small nonstick pan; nothing else; Orders in most days. Can boil water, make Maggi and an omelette or scrambled egg in a nonstick pan, and that's it. Doesn't want to cook more. Sparse fridge. Can't chop.",
+  "level": 1,
+  "items": [
+   {
+    "name": "single induction cooktop",
+    "category": "appliance"
+   },
+   {
+    "name": "electric kettle",
+    "category": "appliance"
+   },
+   {
+    "name": "small nonstick frying pan",
+    "category": "cookware"
+   },
+   {
+    "name": "plastic spatula",
+    "category": "utensil"
+   },
+   {
+    "name": "mugs",
+    "category": "utensil"
+   },
+   {
+    "name": "plates",
+    "category": "utensil"
+   },
+   {
+    "name": "eggs",
+    "category": "protein"
+   },
+   {
+    "name": "Maggi noodles",
+    "category": "grain"
+   },
+   {
+    "name": "cup noodles",
+    "category": "grain"
+   },
+   {
+    "name": "white bread",
+    "category": "bread"
+   },
+   {
+    "name": "Amul butter",
+    "category": "dairy"
+   },
+   {
+    "name": "Amul cheese slices",
+    "category": "dairy"
+   },
+   {
+    "name": "milk",
+    "category": "dairy"
+   },
+   {
+    "name": "instant coffee",
+    "category": "drink"
+   },
+   {
+    "name": "cornflakes",
+    "category": "grain"
+   },
+   {
+    "name": "ketchup",
+    "category": "condiment"
+   },
+   {
+    "name": "chocolate hazelnut spread",
+    "category": "sweet"
+   },
+   {
+    "name": "bananas",
+    "category": "fruit"
+   },
+   {
+    "name": "salt",
+    "category": "spice"
+   },
+   {
+    "name": "black pepper",
+    "category": "spice"
+   }
+  ]
+ },
+ "moment": "Weeknight, 9 PM, tired",
+ "targets": {
+  "protein": 60,
+  "calories": 1200,
+  "fiber": 20
+ },
+ "directions": {
+  "marco": "easiest first",
+  "pierre": "tastiest first",
+  "white": "tap order = preference"
+ },
+ "unmovedConfirmed": true,
+ "confirm": {
+  "asked": [],
+  "have": [],
+  "typed": [],
+  "unmatched": [],
+  "burners": null,
+  "noStove": false,
+  "removed": [
+   "Bananas",
+   "Chocolate hazelnut spread",
+   "Black pepper",
+   "Amul cheese slices",
+   "Cornflakes"
+  ],
+  "listed": 16,
+  "ms": 18090
+ },
+ "ingredients": {
+  "used": [
+   "single induction cooktop",
+   "small nonstick frying pan",
+   "plastic spatula",
+   "plates",
+   "eggs",
+   "white bread",
+   "Amul butter",
+   "ketchup",
+   "salt"
+  ],
+  "unused": [
+   {
+    "name": "electric kettle",
+    "category": "appliance",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "missing Oats, Peanuts or something crunchy or Peanut butter"
+     },
+     {
+      "dish": "Kettle oats with banana and peanuts (no milk)",
+      "why": "missing Oats, Banana, Peanuts or something crunchy"
+     }
+    ]
+   },
+   {
+    "name": "mugs",
+    "category": "utensil",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "no recipe uses it"
+     }
+    ]
+   },
+   {
+    "name": "Maggi noodles",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Maggi",
+      "why": "missing a pot to boil in"
+     },
+     {
+      "dish": "Cheese Maggi",
+      "why": "missing a pot to boil in, Cheese slices or Cheese (block or cubes)"
+     },
+     {
+      "dish": "Maggi with a fried egg",
+      "why": "missing a pot to boil in"
+     },
+     {
+      "dish": "Maggi with an egg stirred in",
+      "why": "missing a pot to boil in"
+     }
+    ]
+   },
+   {
+    "name": "cup noodles",
+    "category": "grain",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Microwave mug omelette",
+      "why": "missing Microwave"
+     },
+     {
+      "dish": "Chai and buttered toast",
+      "why": "missing Saucepan / pot, Tea leaves"
+     },
+     {
+      "dish": "Chai, boiled eggs and toast",
+      "why": "missing Saucepan / pot, Tea leaves"
+     },
+     {
+      "dish": "Banana milkshake",
+      "why": "missing Blender / mixer, Banana"
+     }
+    ]
+   },
+   {
+    "name": "Amul cheese slices",
+    "category": "dairy",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "milk",
+    "category": "dairy",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Whey and makhana bowl",
+      "why": "missing Whey protein, Makhana"
+     },
+     {
+      "dish": "Microwave protein oats",
+      "why": "missing Microwave, Oats, Whey protein"
+     },
+     {
+      "dish": "Oats cooked in milk",
+      "why": "missing a pot to boil in, Oats"
+     },
+     {
+      "dish": "Kettle oats with milk and peanuts",
+      "why": "missing Oats, Peanuts or something crunchy or Peanut butter"
+     }
+    ]
+   },
+   {
+    "name": "instant coffee",
+    "category": "drink",
+    "status": "unused",
+    "reasons": [
+     {
+      "dish": "Milk coffee",
+      "why": "a snack, and the test shows meals"
+     }
+    ]
+   },
+   {
+    "name": "cornflakes",
+    "category": "grain",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "chocolate hazelnut spread",
+    "category": "sweet",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "bananas",
+    "category": "fruit",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   },
+   {
+    "name": "black pepper",
+    "category": "spice",
+    "status": "unknown",
+    "reasons": [
+     {
+      "dish": null,
+      "why": "Harvey’s couldn’t tell what this is"
+     }
+    ]
+   }
+  ],
+  "gaps": [
+   "mugs",
+   "Amul cheese slices",
+   "cornflakes",
+   "chocolate hazelnut spread",
+   "bananas",
+   "black pepper"
+  ],
+  "blockers": [
+   {
+    "thing": "a pot to boil in",
+    "dishes": [
+     "Boiled eggs with salt and pepper",
+     "Boiled egg sandwich",
+     "Maggi",
+     "Maggi with a fried egg",
+     "Plain egg bhurji (no chopping)",
+     "Maggi with an egg stirred in",
+     "Maggi with boiled eggs (one pot)"
+    ]
+   },
+   {
+    "thing": "Air fryer",
+    "dishes": [
+     "Air-fryer egg-in-a-hole on protein bread"
+    ]
+   },
+   {
+    "thing": "Cheese slices or Cheese (block or cubes)",
+    "dishes": [
+     "Butter and cheese sandwich"
+    ]
+   },
+   {
+    "thing": "Microwave",
+    "dishes": [
+     "Microwave mug omelette"
+    ]
+   },
+   {
+    "thing": "Onion",
+    "dishes": [
+     "Masala omelette"
+    ]
+   }
+  ]
+ },
+ "dishes": {
+  "plain_omelette": {
+   "name": "Butter omelette",
+   "rung": 3,
+   "harveys": {
+    "order": 0,
+    "tier": "pass",
+    "friction": 2.278,
+    "score": -2.224
+   },
+   "raw": {
+    "protein": 19,
+    "tools": 3,
+    "handsOn": 7,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 3,
+    "attention": 2,
+    "cleanup": 4.5
+   }
+  },
+  "bread_omelette": {
+   "name": "Bread omelette",
+   "rung": 3,
+   "harveys": {
+    "order": 1,
+    "tier": "floor",
+    "friction": 1.988,
+    "score": -1.631
+   },
+   "raw": {
+    "protein": 19,
+    "tools": 2,
+    "handsOn": 7,
+    "waiting": 1,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 2,
+    "cleanup": 3.5
+   }
+  },
+  "egg_toast_pan": {
+   "name": "Masala French toast",
+   "rung": 3,
+   "harveys": {
+    "order": 2,
+    "tier": "floor",
+    "friction": 2.472,
+    "score": -2.308
+   },
+   "raw": {
+    "protein": 18,
+    "tools": 3,
+    "handsOn": 9,
+    "waiting": 0,
+    "prePrepMinutes": 0,
+    "peels": 0,
+    "cuts": 0,
+    "steps": 2,
+    "attention": 2,
+    "cleanup": 4.5
+   }
+  }
+ },
+ "marco": [],
+ "pierre": [],
+ "white": [],
+ "flow": "stars",
+ "order": [
+  "plain_omelette",
+  "bread_omelette",
+  "egg_toast_pan"
+ ],
+ "stars": [
+  {
+   "id": "plain_omelette",
+   "effort": 5,
+   "taste": 5,
+   "cant": null,
+   "ms": 1764
+  },
+  {
+   "id": "bread_omelette",
+   "effort": 5,
+   "taste": 5,
+   "cant": null,
+   "ms": 1171
+  },
+  {
+   "id": "egg_toast_pan",
+   "effort": 4,
+   "taste": 5,
+   "cant": null,
+   "ms": 2096
+  }
+ ],
+ "rated": 3,
+ "of": 3,
+ "difficulty": {
+  "scale": [
+   "Effortless",
+   "Easy",
+   "Some effort",
+   "Hard work",
+   "Too much tonight"
+  ],
+  "from": "effort stars, level = 6 - stars",
+  "ratings": [
+   {
+    "id": "plain_omelette",
+    "level": 1,
+    "ms": 1764
+   },
+   {
+    "id": "bread_omelette",
+    "level": 1,
+    "ms": 1171
+   },
+   {
+    "id": "egg_toast_pan",
+    "level": 2,
+    "ms": 2096
+   }
+  ],
+  "stoppedEarly": false
+ },
+ "bonus": {
+  "id": "maggi_fried_egg",
+  "name": "Maggi with a fried egg",
+  "rung": 4,
+  "need": {
+   "id": "saucepan",
+   "label": "Saucepan / pot",
+   "kind": "cookware"
+  },
+  "unlocks": [
+   "maggi_fried_egg",
+   "egg_drop_maggi",
+   "maggi",
+   "maggi_boiled_eggs",
+   "boiled_eggs",
+   "pot_egg_bhurji",
+   "boiled_egg_sandwich"
+  ],
+  "harveys": {
+   "tier": "crave",
+   "friction": 2.536,
+   "score": -2.716
+  },
+  "raw": {
+   "protein": 12,
+   "tools": 4,
+   "handsOn": 6.5,
+   "waiting": 4,
+   "prePrepMinutes": 0,
+   "peels": 0,
+   "cuts": 0,
+   "steps": 3,
+   "attention": 2,
+   "cleanup": 4.5
+  },
+  "effort": 3,
+  "taste": 5,
+  "cant": null,
+  "want": null,
+  "have": true,
+  "ms": 7509
+ },
+ "feedback": {
+  "chips": [],
+  "skipped": true,
+  "allGood": false,
+  "wrongItems": [],
+  "missedItems": [],
+  "dishIdeas": [],
+  "tooHard": [],
+  "wouldntEat": [],
+  "wouldntWhy": [],
+  "confusing": [],
+  "note": "",
+  "makes": "",
+  "ms": null
+ }
+}
