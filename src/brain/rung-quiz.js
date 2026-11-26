@@ -21,6 +21,7 @@ import { kitchenId, effortFacts, MOMENT, TARGETS, fitFrom } from './kitchen-test
 import { ingredientUsage, usageForResult } from './usage.js';
 import { cleanFeedback } from './feedback.js';
 import { withConfirmed } from './confirm.js';
+import { waysOut } from './ways.js';
 import { expandTemplates } from './templates.js';
 
 export const RUNG_FORMAT = 'harveys-rung-quiz/1';
@@ -322,6 +323,8 @@ const confirmOut = (c) => {
     unmatched: typed.filter((t) => !t.id).map((t) => t.text),
     burners: [1, 2, 3].includes(c.burners) ? c.burners : null,
     noStove: !!c.noStove,
+    // 1.59.0: "How do you…?" answers, { boil_eggs: ['pot', 'kettle'], scramble_eggs: ['none'] }.
+    ...(c.ways ? { ways: waysOut(c.ways) } : {}),
     // 1.44.0: the tester confirms the list instead of being asked. removed = listed items they
     // unticked (not in their kitchen); listed = how many listed items they were shown.
     ...(c.removed ? { removed: c.removed.map((n) => String(n).slice(0, 60)).slice(0, 80), listed: c.listed ?? null } : {}),

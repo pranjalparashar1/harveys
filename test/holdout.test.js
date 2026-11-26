@@ -26,7 +26,10 @@ test('Step 4c: no dish was in the Step 4 sheet or the catalogue, and all stay ve
 
 test('Step 4c: the key probes boundary passes and the sauté-vs-sauce cases', () => {
   const { key } = buildHoldout();
-  assert.ok(key.filter((k) => k.computed === 'pass' && k.boundary.length).length >= 5);
+  // 1.59.0: the bread omelette left the boundary (pranjal, 26 Nov: eggs + fat + salt pass without
+  // pepper), so 4 of the original 5 boundary passes remain.
+  assert.ok(key.filter((k) => k.computed === 'pass' && k.boundary.length).length >= 4);
+  assert.ok(!key.find((k) => k.id === 'ho_bread_omelette').boundary.length, 'bread omelette needs no pepper');
   assert.ok(key.filter((k) => k.probe.startsWith('sauté vs sauce')).length >= 3);
   assert.ok(key.some((k) => k.computed === 'floor') && key.some((k) => k.computed === 'veto'));
 });

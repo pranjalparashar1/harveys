@@ -15,6 +15,7 @@ import { labelFor, isSetAside } from './brain/vocabulary.js';
 import { CATALOGUE } from './brain/catalogue.js';
 import { expandTemplates } from './brain/templates.js';
 import { withConfirmed, matchTyped, listedSplit, addChoices, searchAdd, searchNote, FOOD_GROUPS } from './brain/confirm.js';
+import { WAYS, NONE, waysFromKit, toggleWay, waysKit } from './brain/ways.js';
 import { sendResult, flush, setToken, outbox } from './send.js';
 import { startFresh } from './fresh.js';
 import { blankFeedback, splitIdeas, norm } from './brain/feedback.js';
@@ -80,7 +81,8 @@ function loadStore() {
 }
 let store = loadStore();
 const newTesterId = () => `t-${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
-const blankDraft = () => ({ have: [], typed: [], removed: [], opened: [] });
+// ways (1.59.0): the "How do you…?" answers; wayKit: the kit ids they added to `have`.
+const blankDraft = () => ({ have: [], typed: [], removed: [], opened: [], ways: null, wayKit: [] });
 /** A new run: a new person holding the phone, so a new tester id. */
 const freshRun = (name = '') => ({ testerId: newTesterId(), runNo: ++store.seq, name, v: opts.version, answers: { marco: {}, pierre: {}, white: {}, stars: {}, bonusItem: {}, draft: blankDraft(), feedback: blankFeedback() }, at: 0, sent: false });
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch { /* private mode: keep going in memory */ } };
@@ -105,7 +107,8 @@ let sheetId = null; // the recipe open over a dish
 /** Every screen, in order. Each dish is its own screen. */
 function screens() {
   const out = [{ kind: 'intro' }];
-  if (opts.items) out.push({ kind: 'confirm', side: 'food' }, { kind: 'confirm', side: 'kit' });
+  // 1.59.0: how they cook comes between the foods and the cookware check.
+  if (opts.items) out.push({ kind: 'confirm', side: 'food' }, { kind: 'ways' }, { kind: 'confirm', side: 'kit' });
   out.push({ kind: 'think' }, { kind: 'reveal' });
   // 1.48.0: dishes come in the seeded shuffle, not Harvey's easiest-first order. Shown in
   // Harvey's order, the effort stars partly echo the position, and Marco trains on them.
@@ -323,6 +326,7 @@ function bar(list) {
   };
   return `<div class="rq-bar" aria-hidden="true">${[
     seg((s) => s.kind === 'confirm' && s.side === 'food'),
+    seg((s) => s.kind === 'ways'),
     seg((s) => s.kind === 'confirm' && s.side === 'kit'),
     seg((s) => s.kind === 'dish' && !s.bonus),
     seg((s) => s.kind === 'bonusinfo' || s.kind === 'bonus'),
@@ -347,6 +351,7 @@ function render(enter = false) {
 
   if (s.kind === 'intro') ({ body, foot } = introScreen());
   else if (s.kind === 'confirm') ({ body, foot } = confirmScreen(s.side, back));
+  else if (s.kind === 'ways') ({ body, foot } = waysScreen(back));
   else if (s.kind === 'think') ({ body, foot } = thinkScreen());
   else if (s.kind === 'reveal') ({ body, foot } = revealScreen(back));
   else if (s.kind === 'dish') ({ body, foot } = dishScreen(s, back));
@@ -463,7 +468,7 @@ function confirmScreen(side, back) {
     ? FOOD_GROUPS.map((g) => [g.label, rows.filter((r) => r.group === g.id)]).filter(([, r]) => r.length)
     : [['', rows]];
   const body = `
-      <p class="rq-eyebrow">Your kitchen · ${food ? 1 : 2} of 2</p>
+      <p class="rq-eyebrow">Your kitchen · ${food ? 1 : 3} of 3</p>
       <h1 class="rq-q">${food ? 'Confirm you have these foods' : 'Confirm your cookware'}</h1>
       <p class="rq-hint">${rows.length ? 'Untick any you don’t have. Add what’s missing.' : 'Tap Add more.'}</p>
       ${stoves.length ? `<p class="rq-group">Tap your stove</p><div class="rq-tiles add">${stoves.map((o) => tile('addopt', optAttrs(o), o.label, isAdded(o))).join('')}</div>` : ''}
@@ -471,6 +476,40 @@ function confirmScreen(side, back) {
       ${grouped.map(([label, list]) => `${label ? `<p class="rq-group">${esc(label)}</p>` : stoves.length || addedNoStove.length ? '<p class="rq-group">On the list</p>' : ''}<div class="rq-tiles">${list.map((r) => tile('untick', `data-name="${esc(r.name)}"`, r.name, !isRemoved(r.name))).join('')}</div>`).join('')}
       <button class="rq-more" data-act="more" type="button">${HX}<span>Have something else?</span><b>${PLUS}Add more</b></button>`;
   return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>${food ? 'Confirm foods' : 'Confirm cookware'}</span></button>` };
+}
+
+// ── How do you cook? (1.59.0) ───────────────────────────────────────────────
+// pranjal, 26 Nov: ask for a way, not a pan. Each way picked stands for kit (src/brain/ways.js),
+// which joins the kitchen like an Add more tap and shows on the cookware check next.
+/** Kit on the list (not unticked): ways that need only this start picked. */
+const listedKit = () => listed.kit.filter((r) => r.id && !isRemoved(r.name)).map((r) => r.id);
+function waysDraft() {
+  const d = draft();
+  d.wayKit ??= [];
+  d.ways ??= waysFromKit([...listedKit(), ...d.have]);
+  return d.ways;
+}
+/** Keeps `have` in step with the ways: kit a way needs joins it, kit only a dropped way needed leaves. */
+function syncWayKit() {
+  const d = draft();
+  const onList = new Set(listedKit());
+  const want = waysKit(d.ways).filter((k) => !onList.has(k));
+  for (const k of want) if (!d.have.includes(k)) { d.have.push(k); if (!d.wayKit.includes(k)) d.wayKit.push(k); }
+  for (const k of [...d.wayKit]) if (!want.includes(k)) { d.have = d.have.filter((x) => x !== k); d.wayKit = d.wayKit.filter((x) => x !== k); }
+}
+function waysScreen(back) {
+  const ways = waysDraft();
+  const row = (w) => {
+    const on = ways[w.id] ?? [];
+    const opts = [...w.opts, { id: NONE, label: 'I don’t' }];
+    return `<p class="rq-group">${esc(w.ask)}</p><div class="rq-tiles add">${opts.map((o) => tile('way', `data-q="${w.id}" data-o="${o.id}"`, o.label, on.includes(o.id))).join('')}</div>`;
+  };
+  const body = `
+      <p class="rq-eyebrow">Your kitchen · 2 of 3</p>
+      <h1 class="rq-q">How do you cook?</h1>
+      <p class="rq-hint">Tap every way you use. You’ll check your cookware next.</p>
+      ${WAYS.map(row).join('')}`;
+  return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>Next</span></button>` };
 }
 
 function catsHtml(side) {
@@ -1001,6 +1040,15 @@ function onClick(e) {
     save();
     return render();
   }
+  if (act === 'way') {
+    const before = snap();
+    const d = draft();
+    d.ways = toggleWay(waysDraft(), el.dataset.q, el.dataset.o);
+    syncWayKit();
+    save();
+    render();
+    return unlockToast(before);
+  }
   if (act === 'havebonus') { const w = run.answers.bonusItem; w.have = !w.have; if (w.have) w.want = 0; save(); return syncDish(quiz.bonus.id); }
   if (act === 'untick') {
     const d = draft();
@@ -1099,11 +1147,12 @@ function typeAddThen(form, then) {
 /** Keeps what's on screen. Time adds up if a tester comes back to a question. */
 function commit(s) {
   const ms = Math.round(performance.now() - shownAt);
-  if (s.kind === 'confirm') {
+  if (s.kind === 'confirm' || s.kind === 'ways') {
     const d = draft();
     const prev = run.answers.confirm;
     const next = {
       have: [...d.have], typed: d.typed.map(({ text, id, label, how }) => ({ text, id, label, how })), removed: [...d.removed], opened: [...d.opened],
+      ways: d.ways ? JSON.parse(JSON.stringify(d.ways)) : null,
       listed: listed.food.length + listed.kit.length, noStove: choices.noStove, burners: null, asked: [], ms: (prev?.ms ?? 0) + ms,
     };
     const changed = confKey(next) !== confKey(prev);
