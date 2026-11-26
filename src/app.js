@@ -16,7 +16,7 @@ import { buildRungQuiz, levelBelow } from './brain/rung-quiz.js';
 import { decodeKitchen, linkCode, linkName } from './brain/share-link.js';
 import { startFresh, reloadIfStale } from './fresh.js';
 
-const VERSION = '1.57.0';
+const VERSION = '1.58.0';
 const MAX_PHOTOS = 8;
 const $ = (id) => document.getElementById(id);
 

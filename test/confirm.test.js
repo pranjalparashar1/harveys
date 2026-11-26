@@ -102,3 +102,38 @@ test('bare-kitchen dishes need only what they say, and a strainer is never a blo
   assert.ok(can('egg_fried_rice', ['rice', 'eggs', 'induction', 'steel pot', 'nonstick pan']), 'no strainer listed');
   for (const m of CATALOGUE) assert.ok(!m.equipment.includes('strainer'), m.id);
 });
+
+// ── Type to search (1.58.0) ─────────────────────────────────────────────────
+import { searchAdd, searchNote, addChoices } from '../src/brain/confirm.js';
+
+test('searchAdd finds things by Hindi name, prefix and small typos', () => {
+  const { food, kit } = addChoices([{ name: 'Bread' }, { name: 'Eggs' }]);
+  const first = (q, groups = food) => searchAdd(q, groups)[0]?.label;
+  assert.equal(searchAdd('dahi', food)[0].id, 'curd');
+  assert.equal(searchAdd('dahi', food)[0].how, 'exact');
+  assert.equal(searchAdd('panir', food)[0].id, 'paneer');
+  assert.equal(searchAdd('tamatr', food)[0].id, 'tomato');
+  assert.equal(searchAdd('pyaz', food)[0].id, 'onion');
+  assert.equal(first('gobi'), 'Cauliflower');
+  assert.equal(first('suji'), 'Sooji (rava)');
+  assert.equal(searchAdd('presure', kit)[0].id, 'pressure_cooker');
+  assert.equal(searchAdd('kadhai', kit)[0].id, 'kadai');
+});
+
+test('searchAdd shows one tile per thing and no noise for a right spelling', () => {
+  const { food } = addChoices([]);
+  assert.equal(searchAdd('aloo', food).length, 1); // the potato id and the typed extra "Potato"
+  assert.deepEqual(searchAdd('dhania', food).map((o) => o.label), ['Coriander leaves', 'Coriander powder']);
+  assert.equal(searchAdd('oil', food).length, 0); // not "boiled chickpeas"; oil is always counted
+});
+
+test('searchAdd never offers set-aside food, tofu, or what is already listed', () => {
+  const { food } = addChoices([{ name: 'Paneer' }]);
+  assert.equal(searchAdd('frozen paratha', food).length, 0);
+  assert.equal(searchAdd('frozen', food).length, 0);
+  assert.equal(searchAdd('tofu', food).length, 0);
+  assert.ok(!searchAdd('paneer', food).some((o) => o.id === 'paneer'));
+  assert.deepEqual(searchNote('panir', [{ name: 'Paneer', id: 'paneer' }]), { kind: 'listed', names: ['Paneer'] });
+  assert.equal(searchNote('namak', []).kind, 'assumed');
+  assert.equal(searchNote('dahi', []), null);
+});

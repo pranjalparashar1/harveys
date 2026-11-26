@@ -11,10 +11,10 @@
 //
 // The brain work is src/brain/rung-quiz.js; this file is screens, storage and sending.
 import { buildRungQuiz, encodeRungResult, CANT, EFFORT_STARS, TASTE_STARS, WANT_STARS, TASTE_WHY } from './brain/rung-quiz.js';
-import { labelFor } from './brain/vocabulary.js';
+import { labelFor, isSetAside } from './brain/vocabulary.js';
 import { CATALOGUE } from './brain/catalogue.js';
 import { expandTemplates } from './brain/templates.js';
-import { withConfirmed, matchTyped, listedSplit, addChoices, FOOD_GROUPS } from './brain/confirm.js';
+import { withConfirmed, matchTyped, listedSplit, addChoices, searchAdd, searchNote, FOOD_GROUPS } from './brain/confirm.js';
 import { sendResult, flush, setToken, outbox } from './send.js';
 import { startFresh } from './fresh.js';
 import { blankFeedback, splitIdeas, norm } from './brain/feedback.js';
@@ -99,6 +99,7 @@ let kitchenIn = null;
 let listed = { food: [], kit: [] }; // the kitchen's list (a scan or a sample kitchen), split for the two confirm screens
 let choices = { food: [], kit: [], noStove: false }; // what "Add more" offers
 let panel = null; // on a confirm screen: null (the list), 'cats', or a category id
+let findQ = ''; // 1.58.0: what's typed in the search box on "Add more"
 let sheetId = null; // the recipe open over a dish
 
 /** Every screen, in order. Each dish is its own screen. */
@@ -175,8 +176,14 @@ function ensureRoot() {
   root.addEventListener('pointerup', () => setTimeout(unpress, 120), { passive: true });
   root.addEventListener('pointercancel', unpress, { passive: true });
   addEventListener('popstate', onPop);
-  root.addEventListener('submit', (e) => { e.preventDefault(); const f = e.target.closest('.rq-add'); if (f) typeAdd(f); });
+  root.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = e.target.closest('.rq-add');
+    if (f?.classList.contains('rq-find')) findSubmit(f);
+    else if (f) typeAdd(f);
+  });
   root.addEventListener('input', (e) => {
+    if (e.target.matches('.rq-find input')) { findQ = e.target.value.slice(0, 60); return refreshFound(e.target.form.dataset.side); }
     if (e.target.matches('.rq-makes textarea')) { run.answers.feedback.makes = e.target.value.slice(0, 1000); run.answers.feedback.seen = true; save(); }
   });
   document.addEventListener('keydown', onKey);
@@ -332,6 +339,7 @@ function render(enter = false) {
   shownKey = key;
   if (!same) shownAt = performance.now();
   if (!same) root.classList.remove('rq-skip');
+  if (!same) findQ = '';
   let body = '';
   let foot = '';
   const back = run.at > 0 || panel ? `<button class="rq-icon" data-act="back" type="button" aria-label="Back">${HX}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>` : '<span class="rq-icon ghost"></span>';
@@ -419,15 +427,18 @@ const optAttrs = (o) => (o.id ? `data-id="${esc(o.id)}"` : `data-text="${esc(o.t
 function confirmScreen(side, back) {
   const food = side === 'food';
   if (panel === 'cats') {
-    const groups = groupsOf(side);
+    // 1.58.0: a search box over every group, so one thing is one tap. The groups stay below.
     const body = `
       <p class="rq-eyebrow">Add more</p>
       <h1 class="rq-q">What’s missing?</h1>
-      <p class="rq-hint">Pick a group.</p>
-      <div class="rq-cats">${groups.map((g) => {
-        const n = g.opts.filter(isAdded).length + (g.type ? draft().typed.filter((t) => t.side === side && t.group === g.id).length : 0);
-        return `<button class="rq-cat" data-act="cat" data-id="${g.id}" type="button">${HX}<b>${esc(g.label)}</b><span>${n ? `${n} added` : `${g.opts.length} to pick from`}</span>${CHEV}</button>`;
-      }).join('')}</div>`;
+      <form class="rq-add rq-find" data-side="${side}" role="search">
+        <input type="search" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" autocapitalize="none" value="${esc(findQ)}" placeholder="${food ? 'Search foods' : 'Search cookware'}" aria-label="Search">
+      </form>
+      <div class="rq-found" aria-live="polite">${foundHtml(side)}</div>
+      <div class="rq-browse"${findQ.trim() ? ' hidden' : ''}>
+        <p class="rq-hint">Or pick a group.</p>
+        <div class="rq-cats">${catsHtml(side)}</div>
+      </div>`;
     return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="paneldone" type="button">${HX}<span>Done</span></button>` };
   }
   if (panel) {
@@ -462,6 +473,68 @@ function confirmScreen(side, back) {
   return { body, foot: `${back}<button class="btn primary xl rq-go" data-act="next" type="button">${HX}<span>${food ? 'Confirm foods' : 'Confirm cookware'}</span></button>` };
 }
 
+function catsHtml(side) {
+  return groupsOf(side).map((g) => {
+    const n = g.opts.filter(isAdded).length + (g.type ? draft().typed.filter((t) => t.side === side && t.group === g.id).length : 0);
+    return `<button class="rq-cat" data-act="cat" data-id="${g.id}" type="button">${HX}<b>${esc(g.label)}</b><span>${n ? `${n} added` : `${g.opts.length} to pick from`}</span>${CHEV}</button>`;
+  }).join('');
+}
+
+// ── Type to search (1.58.0) ─────────────────────────────────────────────────
+const typedGroup = (side) => (side === 'food' ? 'misc' : 'appliances'); // the groups that take typed things
+const SEARCH_ASIDE = 'Frozen and ready-made food isn’t in Harvey’s yet.';
+const noteText = (n) => (n.kind === 'assumed' ? 'Salt and oil are always counted.' : `On your list: ${n.names.map(esc).join(', ')}`);
+
+/** The results under the search box: matching tiles, then "Add “…”" when nothing is spelled that way. */
+function foundHtml(side) {
+  const q = findQ.replace(/\s+/g, ' ').trim();
+  if (!q) return '';
+  if (isSetAside(q)) return `<p class="rq-hint">${SEARCH_ASIDE}</p>`;
+  const res = searchAdd(q, groupsOf(side));
+  const note = searchNote(q, side === 'food' ? listed.food : listed.kit);
+  const typedOn = draft().typed.some((t) => t.side === side && norm(t.text) === norm(q));
+  const offerTyped = q.length >= 2 && note?.kind !== 'assumed' && !typedOn && !res.some((o) => o.how === 'exact') && !(note && !res.length);
+  const tiles = res.map((o) => tile('addopt', `${optAttrs(o)} data-group="${esc(o.group)}"`, o.label, isAdded(o))).join('')
+    + (offerTyped ? tile('findtype', `data-text="${esc(q.slice(0, 60))}" data-group="${typedGroup(side)}"`, `Add “${q.slice(0, 60)}”`, false, ' typed') : '');
+  return `${note ? `<p class="rq-hint">${noteText(note)}</p>` : !res.length ? '<p class="rq-hint">Nothing like that yet. Add it as typed:</p>' : ''}${tiles ? `<div class="rq-tiles add">${tiles}</div>` : ''}`;
+}
+
+/** Redraw only the results (and the group counts), so the keyboard stays up while they type. */
+function refreshFound(side) {
+  const found = root.querySelector('.rq-found');
+  if (!found) return;
+  found.innerHTML = foundHtml(side);
+  const browse = root.querySelector('.rq-browse');
+  if (browse) browse.hidden = !!findQ.trim();
+  const cats = root.querySelector('.rq-cats');
+  if (cats) cats.innerHTML = catsHtml(side);
+}
+
+/** A typed thing from the search box: it joins like "Something else?" does. */
+function findTyped(text, side, group) {
+  const d = draft();
+  const before = snap();
+  const m = matchTyped(text);
+  if (!m.text) return;
+  const dup = m.id ? d.have.includes(m.id) || d.typed.some((t) => t.id === m.id) : d.typed.some((t) => !t.id && norm(t.text) === norm(m.text));
+  if (!dup) d.typed.push({ text: m.text, id: m.id, label: m.label, how: m.how, side, group });
+  buzz();
+  save();
+  unlockToast(before);
+}
+
+/** Enter in the search box: the top result if it isn't added yet, else the typed words. */
+function findSubmit(form) {
+  const side = form.dataset.side;
+  const first = root.querySelector('.rq-found .rq-tile:not(.on)');
+  if (!first) return;
+  if (first.dataset.act === 'findtype') findTyped(first.dataset.text, side, first.dataset.group);
+  else { const before = snap(); toggleOpt(first, side); buzz(); save(); unlockToast(before); }
+  findQ = '';
+  form.querySelector('input').value = '';
+  refreshFound(side);
+}
+
 function toggleOpt(el, side) {
   const d = draft();
   if (el.dataset.id) {
@@ -473,7 +546,7 @@ function toggleOpt(el, side) {
     const text = el.dataset.text;
     const i = d.typed.findIndex((t) => norm(t.text) === norm(text));
     if (i >= 0) d.typed.splice(i, 1);
-    else { const m = matchTyped(text); d.typed.push({ text: m.text || text, id: m.id, label: m.label, how: m.how, side, group: panel && panel !== 'cats' ? panel : null }); }
+    else { const m = matchTyped(text); d.typed.push({ text: m.text || text, id: m.id, label: m.label, how: m.how, side, group: el.dataset.group || (panel && panel !== 'cats' ? panel : null) }); }
   }
 }
 
@@ -949,12 +1022,15 @@ function onClick(e) {
     const on = !el.classList.contains('on');
     el.classList.toggle('on', on);
     el.setAttribute('aria-pressed', String(on));
+    const cats = panel === 'cats' && root.querySelector('.rq-cats');
+    if (cats) cats.innerHTML = catsHtml(s.side);
     return;
   }
+  if (act === 'findtype') { findTyped(el.dataset.text, s.side, el.dataset.group); findQ = ''; const inp = root.querySelector('.rq-find input'); if (inp) inp.value = ''; return refreshFound(s.side); }
   if (act === 'more') { panel = 'cats'; return render(); }
   if (act === 'cat') { panel = el.dataset.id; const d = draft(); if (!d.opened.includes(`${s.side}:${panel}`)) d.opened.push(`${s.side}:${panel}`); save(); return render(); }
   if (act === 'paneldone') {
-    const form = root.querySelector('.rq-add');
+    const form = root.querySelector('.rq-add:not(.rq-find)');
     if (form?.querySelector('input').value.trim()) return typeAddThen(form, () => { panel = null; render(); });
     panel = null;
     return render();
