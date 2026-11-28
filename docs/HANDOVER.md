@@ -361,7 +361,7 @@ node scripts/ingest-pierre.mjs <export.txt>      # Pierre-trainer/tutor/bench/re
 node scripts/derive-prior.mjs                    # re-run after every ingest (rewrites technique-prior.js)
 node scripts/score-sheets.mjs <key> <answers> [<key> <answers>…] --md
 node scripts/pierre-tiers.mjs > tiers.md         # every catalogue meal's tier
-node scripts/refit-cooklog.mjs <copy-for-claude.json>   # refit Marco θ from Cooked this (prints only; want 20+ dinners)
+node scripts/refit-cooklog.mjs                          # refit Marco θ from data/cook-logs/ (1.64.0; prints only; want 20+ dinners; --device <id>, or pass paste files)
 node scripts/fit-prep.mjs <answers.txt> [--no-taste]     # fit Marco θ from the prep quiz (prints only)
 ```
 
